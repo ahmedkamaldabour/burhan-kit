@@ -51,9 +51,12 @@ reviewed).
     Finish with the conclusion and, if code should change, propose a new routed item. Then run the
     knowledge review (.workflow/phases/memory.md) and the close-out (.workflow/phases/close-out.md) with state `Done (no QC)` — onboarding a repository
     instead stops for the human to approve the baseline. Stop.
-  - Route includes **S** or **S+P** → write `<slug>-story.md` from `templates/story.md` (one combined
-    story + plan document when the route says **S+P**). Which files an item has, and their length
-    caps: `.workflow/phases/files.md`.
+  - Route includes **S** → write `<slug>-story.md` from `templates/story.md`.
+  - Route says **S+P** → one approval gate, two files: write both `<slug>-story.md` and
+    `<slug>-implementation-plan.md` from their templates (the plan as in the plan step below), present
+    them together and stop once. The approval covers both: the story's **Status** and the plan's
+    **Overall status** become `Approved`.
+  - Which files an item has, and their length caps: `.workflow/phases/files.md`.
   - Route starts at **P** (refactor, release) → skip the story; go to the plan step below. Too big for one plan → propose a split into a parent and children
     (.workflow/phases/lifecycle.md · Decomposition). **Present it and STOP for approval.**
 - **Story approved (or no story on this route), no plan** → investigate the real code (cite file:line), re-verify the story's
