@@ -33,7 +33,8 @@ check "git -C \"my dir\" commit" "$(c 'git -C "my dir" commit -m y')" has "PASS"
 check "bash -c \"git commit\"" "$(c 'bash -c "git commit -m y"')" has "PASS"
 check_eq "git commit-tree is not a commit" "$(c 'git commit-tree abc')" ""
 echo "  -- robustness (review)"
-P="$(proj 'WF_CHECK_CMD="head -c 600 /dev/zero | tr \"\\\\0\" Q; false"')"
+# Config values below are literal single-quoted lines: the only forms every runtime reads (docs/configuration.md).
+P="$(proj "WF_CHECK_CMD='head -c 600 /dev/zero | tr \"\\0\" Q; false'")"
 out="$(c 'git commit -m x')"
 check "FAIL output keeps 400 chars" "$out" has "$(printf 'Q%.0s' $(seq 400))"
 check "FAIL output trimmed at 400" "$out" lacks "$(printf 'Q%.0s' $(seq 401))"
@@ -42,7 +43,7 @@ check "non-numeric timeout falls back" "$(c 'git commit -m x')" has "PASS"
 P="$(proj 'WF_CHECK_CMD="(sleep 6 &); true"' 'WF_CHECK_TIMEOUT=2')"
 s=$(date +%s); c 'git commit -m x' >/dev/null; e=$(( $(date +%s) - s ))
 check "background child keeping stdout open does not hang the hook ($e s)" "$([ "$e" -lt 5 ] && echo fast)" has fast
-P="$(proj 'WF_CHECK_CMD="trap \"\" TERM; sleep 8"' 'WF_CHECK_TIMEOUT=1')"
+P="$(proj "WF_CHECK_CMD='trap \"\" TERM; sleep 8'" 'WF_CHECK_TIMEOUT=1')"
 s=$(date +%s); out="$(c 'git commit -m x')"; e=$(( $(date +%s) - s ))
 check "TERM-ignoring check is killed ($e s)" "$([ "$e" -lt 6 ] && echo fast)" has fast
 check "...and reported as timed out" "$out" has "timed out"

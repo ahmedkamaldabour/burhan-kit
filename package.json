@@ -44,10 +44,10 @@
     "workflow"
   ],
   "scripts": {
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json && node -e \"require('fs').copyFileSync('kit/hooks/core/gates.txt',process.argv[1])\" dist/hooks/gates.txt",
     "prepack": "npm run build",
-    "build:test": "node -e \"require('fs').rmSync('.test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json",
-    "test:node": "npm run build:test && node --test .test-build/test/*.test.js",
+    "build:test": "node -e \"require('fs').rmSync('.test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node -e \"require('fs').copyFileSync('kit/hooks/core/gates.txt',process.argv[1])\" .test-build/src/hooks/gates.txt",
+    "test:node": "npm run build:test && node --test \".test-build/test/**/*.test.js\"",
     "test:bash": "npm run build && bash tests/run.sh",
     "test": "npm run test:node && npm run test:bash",
     "lint": "bash tests/lint.sh && tsc -p tsconfig.test.json --noEmit"

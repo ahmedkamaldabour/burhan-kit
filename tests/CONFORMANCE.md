@@ -16,6 +16,14 @@ is checked. Every call goes through `tests/impl.sh`, so a port is verified by th
 - `tests/conformance.test.sh` proves the seam: the suites pass through a pass-through
   implementation and fail against a silent one.
 - Switch the generated hook commands from bash to the port only when it passes every suite.
+- `tests/node-port.test.sh` runs the suites already ported to Node (`PORTED_CORE`, …) inside `npm test`.
+- Config fixtures in the suites are literal lines (`KEY='text'`, `KEY="text"` without `$` `` ` `` `\`,
+  `KEY=word`): the Node hooks read only those, as the CLI does; the bash kit also sources other lines.
+- Regexes: the Node hooks read POSIX ERE as GNU grep -E does (measured, `test/hooks/ere.test.ts`), on an
+  engine with linear time and a work budget, so no pattern can hang a hook. They refuse back-references
+  (`\1`) and patterns over 2,000 states (e.g. `.{30000}`): the check that uses one stays silent.
+- Truncation (`cut -c`) counts characters, as on macOS and with uutils coreutils. GNU `cut -c` counts
+  bytes, so on GNU systems the bash kit may cut a multi-byte character the port keeps whole.
 
 ## Bash-only cases
 
