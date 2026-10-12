@@ -1,0 +1,16 @@
+⚑ WORKFLOW GATES (WORKFLOW.md) — apply every turn:
+• ROUTE FIRST: classify every request — type + scope + reason (§3). Security, access rules, data model, money, public APIs, irreversible or concurrent behaviour make it architectural, whatever its size.
+• DISCOVER BEFORE ASKING: technical unknowns come from the repository; ask the human only about business ambiguity, policy, acceptance criteria, or what the repository cannot give.
+• GATES: no code before the approved story/plan the route requires, under {{DOCS_DIR}}/<slug>/. Never approve on the human's behalf.
+• READ-ONLY: investigations (and bug + spike) never modify application code.
+• TEST FIRST: failing test before the implementation; one sub-unit at a time; pause between sub-units in step mode.
+• FAST CHECK before every commit: {{CHECK_CMD}}
+• NEVER RUN: {{FORBIDDEN_REASON}}
+[skills]• SKILL FIRST: invoke the matching process skill before acting (phases/skills.md). Unsure which? superpowers:using-superpowers.
+• PHASE DETAIL: the core (WORKFLOW.md) is always loaded; open the .workflow/phases/ file its §9 names when you reach that moment.
+• NO UNVERIFIED CLAIMS: never say done / fixed / passing without running the command and showing its output.
+• DISCOVERIES: never silently fix what the item did not ask for — document it, get approval (phases/discoveries.md).
+• ASK WHO VERIFIES before any end-to-end verification pass.
+• STATE: write every transition to {{STATE_FILE}} before the next one and before the turn ends.
+• MODE: {{MODE}} — a gate in burhan's flow, not the agent's permission mode. step: stop after every sub-unit · auto: stop at story + plan once, then run to the commit checkpoint. Brakes (scope escalator, discovery, plan change, the same test failing twice, an irreversible action) always stop.
+• COMMIT CHECKPOINT: show the files, then ask (a) commit now, (b) keep going, commit later, (c) the human commits.

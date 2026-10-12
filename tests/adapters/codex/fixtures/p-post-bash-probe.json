@@ -1,0 +1,1 @@
+{"session_id": "S1", "turn_id": "U1", "transcript_path": "T", "cwd": "/proj", "hook_event_name": "PostToolUse", "permission_mode": "bypassPermissions", "tool_name": "Bash", "tool_input": {"command": "pwd && test -e notes.txt && ls -l notes.txt || true"}, "tool_response": "/proj\n", "tool_use_id": "exec-3fcb7ddf-024f-4251-8fd1-4ef90614aa09"}

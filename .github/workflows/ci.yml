@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # The Ubuntu runners are pinned (not ubuntu-latest) so an image migration cannot change them
+        # silently. Node: the supported lines (engines: >=22). macOS runs once, on the newest Node, to
+        # keep its queue short, with Homebrew's current jq.
+        # The hooks must run on every supported jq (doctor: JQ_MIN = 1.6), not only on a current one:
+        # each Ubuntu image ships a fixed jq, checked below so an image update cannot change it silently.
+        # `jq` is a case pattern for `jq --version`: Ubuntu 24.04's 1.7.1 package prints "jq-1.7".
+        os: [ubuntu-24.04]
+        node: [22, 24]
+        jq: ['jq-1.7|jq-1.7.1']
+        include:
+          - { os: ubuntu-22.04, node: 22, jq: 'jq-1.6' }
+          - { os: macos-latest, node: 24, jq: '' }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      # The hooks need bash >= 4, jq, and timeout (pre-commit check). macOS ships bash 3.2 and no
+      # timeout: Homebrew's bash goes first on PATH; coreutils provides gtimeout (BSD tools stay default).
+      - name: bash 4+, jq and gtimeout (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install bash jq coreutils
+          echo "$(brew --prefix)/bin" >> "$GITHUB_PATH"
+      - name: jq (Linux)
+        if: runner.os == 'Linux'
+        run: command -v jq || sudo apt-get install -y jq
+      - run: bash --version | head -n 1
+      - run: jq --version
+      - name: jq version is ${{ matrix.jq }}
+        if: matrix.jq != ''
+        run: |
+          v="$(jq --version)"
+          case "$v" in ${{ matrix.jq }}) echo "jq: $v" ;; *) echo "::error::expected ${{ matrix.jq }}, got $v"; exit 1 ;; esac
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - name: package contents
+        run: npm pack --dry-run

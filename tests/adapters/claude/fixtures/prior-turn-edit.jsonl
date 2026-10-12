@@ -1,0 +1,9 @@
+{"type":"user","isSidechain":false,"message":{"role":"user","content":"fix the parser"}}
+{"type":"assistant","isSidechain":false,"message":{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Edit","input":{"file_path":"/proj/src/parser.src"}}]}}
+{"type":"user","isSidechain":false,"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"ok"}]}}
+{"type":"assistant","isSidechain":false,"message":{"role":"assistant","content":[{"type":"text","text":"fixed"}]}}
+{"type":"attachment","isSidechain":false,"attachment":{"type":"hook_additional_context","content":["⚠ VERIFICATION GATE: AI_SPEC/PROGRESS.md mentioned in a previous hook message"]}}
+{"type":"user","isSidechain":false,"message":{"role":"user","content":"now just open the browser and wait"}}
+{"type":"assistant","isSidechain":false,"message":{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Read","input":{"file_path":"/proj/README.md"}}]}}
+{"type":"user","isSidechain":false,"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"ok"}]}}
+{"type":"assistant","isSidechain":false,"message":{"role":"assistant","content":[{"type":"text","text":"Waiting for you."}]}}

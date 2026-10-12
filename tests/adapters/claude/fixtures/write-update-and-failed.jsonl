@@ -1,0 +1,8 @@
+{"type":"user","isSidechain":false,"message":{"role":"user","content":"update things"}}
+{"type":"assistant","isSidechain":false,"message":{"content":[{"type":"tool_use","id":"w1","name":"Write","input":{"file_path":"/proj/AI_SPEC/docs/foo/foo-story.md"}}]}}
+{"type":"user","isSidechain":false,"message":{"content":[{"type":"tool_result","tool_use_id":"w1","content":"ok"}]},"toolUseResult":{"type":"update","filePath":"/proj/AI_SPEC/docs/foo/foo-story.md"}}
+{"type":"assistant","isSidechain":false,"message":{"content":[{"type":"tool_use","id":"w2","name":"Write","input":{"file_path":"/proj/new.src"}}]}}
+{"type":"user","isSidechain":false,"message":{"content":[{"type":"tool_result","tool_use_id":"w2","content":"ok"}]},"toolUseResult":{"type":"create","filePath":"/proj/new.src"}}
+{"type":"assistant","isSidechain":false,"message":{"content":[{"type":"tool_use","id":"e1","name":"Edit","input":{"file_path":"/proj/failed.src"}}]}}
+{"type":"user","isSidechain":false,"message":{"content":[{"type":"tool_result","tool_use_id":"e1","is_error":true,"content":"String to replace not found"}]},"toolUseResult":"Error: String to replace not found"}
+{"type":"assistant","isSidechain":false,"message":{"content":[{"type":"text","text":"Now I will update the state file."}]}}

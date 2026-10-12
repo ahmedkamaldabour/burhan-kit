@@ -1,0 +1,59 @@
+{
+  "name": "burhan-kit",
+  "version": "0.1.0",
+  "description": "No \"done\" without proof — a governance layer for AI coding agents (Claude Code, Codex): a working agreement, hooks that audit every turn, an evidence ledger and independent QC.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "burhan": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "kit",
+    "docs/configuration.md",
+    "README.md",
+    "README.ar.md",
+    "ROADMAP.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahmedkamaldabour/burhan-kit.git"
+  },
+  "homepage": "https://github.com/ahmedkamaldabour/burhan-kit#readme",
+  "bugs": {
+    "url": "https://github.com/ahmedkamaldabour/burhan-kit/issues"
+  },
+  "keywords": [
+    "ai-agents",
+    "ai-coding",
+    "claude-code",
+    "codex",
+    "governance",
+    "hooks",
+    "evidence",
+    "verification",
+    "spec-driven-development",
+    "tdd",
+    "code-review",
+    "qa",
+    "workflow"
+  ],
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
+    "prepack": "npm run build",
+    "build:test": "node -e \"require('fs').rmSync('.test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json",
+    "test:node": "npm run build:test && node --test .test-build/test/*.test.js",
+    "test:bash": "npm run build && bash tests/run.sh",
+    "test": "npm run test:node && npm run test:bash",
+    "lint": "bash tests/lint.sh && tsc -p tsconfig.test.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,1 @@
+{"session_id": "S1", "turn_id": "U1", "transcript_path": "T", "cwd": "/proj", "hook_event_name": "PreToolUse", "permission_mode": "bypassPermissions", "tool_name": "Bash", "tool_input": {"command": "echo capture-done"}, "tool_use_id": "exec-63386e9a-4cd5-41ca-a4be-56eee5141a34"}

@@ -1,0 +1,93 @@
+# workflow.config — the machine-readable twin of .workflow/bindings.md (WORKFLOW.md §1).
+# TEAM file: committed, changed through review. Personal overrides go in
+# .workflow/local/workflow.config (git-ignored) — same format, read after this file, key by key.
+# Literal `KEY=value` lines only: KEY=word, KEY='text' or KEY="text" (no $ ` \ inside).
+# Every check whose key is left empty stays silent.
+# Lines marked "e.g." are examples for different stacks — pick or write your own.
+
+# ---- Where things live ---------------------------------------------------------------------
+# One folder per work item: <WF_DOCS_DIR>/<slug>/
+WF_DOCS_DIR="AI_SPEC/docs"
+# Dated discovery files (phases/discoveries.md).
+WF_DISCOVERY_DIR="AI_SPEC/discovery"
+# Live state file (WORKFLOW §5) — one per developer, git-ignored — and its line budget.
+WF_STATE_FILE=".workflow/local/PROGRESS.md"
+WF_STATE_BUDGET=80
+
+# ---- Fast check before every commit (non-mutating, seconds) --------------------------------
+# Empty -> the commit hook reports "NOT VERIFIED (no check configured)".
+WF_CHECK_CMD=""
+#   e.g. WF_CHECK_CMD="npx tsc --noEmit"
+#   e.g. WF_CHECK_CMD="php -l src/Service.php && composer validate --no-check-publish"
+#   e.g. WF_CHECK_CMD="python -m compileall -q src"
+# Team-only: a local override is ignored, because the agent's hook timeout (WF_CHECK_TIMEOUT + 10) is
+# written into the committed agent settings by `burhan upgrade`.
+WF_CHECK_TIMEOUT=60
+
+# ---- What counts as what (extended regular expressions, matched against file paths) --------
+# Source code — enables the "test first?" reminder and the unverified-"done" check.
+WF_CODE_REGEX=""
+#   e.g. WF_CODE_REGEX='\.(ts|tsx|js)$'
+#   e.g. WF_CODE_REGEX='\.(php|blade\.php)$'
+#   e.g. WF_CODE_REGEX='\.(py|go|rs|java|kt|cs)$'
+# Test files (checked before WF_CODE_REGEX).
+WF_TEST_REGEX=""
+#   e.g. WF_TEST_REGEX='\.(spec|test)\.(ts|js)$'
+#   e.g. WF_TEST_REGEX='(^|/)tests?/.*Test\.php$'
+#   e.g. WF_TEST_REGEX='(^|/)test_[^/]*\.py$'
+# Shell commands whose presence in a turn counts as verification evidence.
+WF_EVIDENCE_REGEX=""
+#   e.g. WF_EVIDENCE_REGEX='tsc --noEmit|eslint|npx jest [^ ]+'
+#   e.g. WF_EVIDENCE_REGEX='phpunit|php artisan test --filter'
+#   e.g. WF_EVIDENCE_REGEX='pytest [^ ]+|go test ./'
+# How to run ONE test file — shown in reminders. {{FILE}} is replaced by the edited file.
+WF_SINGLE_TEST_HINT=""
+#   e.g. WF_SINGLE_TEST_HINT='npx jest {{FILE}} --runInBand'
+#   e.g. WF_SINGLE_TEST_HINT='vendor/bin/phpunit {{FILE}}'
+
+# ---- Access control -------------------------------------------------------------------------
+# Paths whose changes affect authorization / visibility, and the reminder shown after editing one.
+WF_SENSITIVE_REGEX=""
+#   e.g. WF_SENSITIVE_REGEX='(guard|polic(y|ies)|permission|role|auth|scope)'
+WF_SENSITIVE_NOTE=""
+#   e.g. WF_SENSITIVE_NOTE='Access-control path: re-read authorization and record-level visibility; test allowed AND denied.'
+
+# ---- Resource / safety constraints ----------------------------------------------------------
+# Commands automation must never run; the end-of-turn audit flags any that appear.
+WF_FORBIDDEN_REGEX=""
+#   e.g. WF_FORBIDDEN_REGEX='(^|[;&| ])(npx jest|npm (run )?test)[[:space:]]*($|[;&|])'
+WF_FORBIDDEN_REASON=""
+#   e.g. WF_FORBIDDEN_REASON='The full test suite has exhausted memory on this machine; run one file at a time.'
+
+# ---- Process skills (phases/skills.md) -------------------------------------------------------
+# "superpowers" enables skill routing and the skill-usage audit; "none" turns both off.
+WF_SKILLS="none"
+
+# ---- Autonomy mode (phases/lifecycle.md · Modes) ------------------------------------------
+# Where burhan's flow stops for the human — not the agent's permission mode. step | auto.
+# The commit checkpoint always stops. A per-route default overrides it, e.g. WF_MODE_BUG_BOUNDED=auto
+WF_MODE_DEFAULT="step"
+
+# ---- Independent review (WORKFLOW §2 · 8) --------------------------------------------------
+# Model for the generated Claude subagent .claude/agents/burhan-reviewer.md (team-only: the file is
+# committed). Empty -> the subagent inherits the session's model. e.g. WF_MODEL_CLAUDE_REVIEWER=opus
+WF_MODEL_CLAUDE_REVIEWER=""
+# Optional role agents (a strong model to plan, a cheaper one to build, a cheap one to explore). A role
+# agent is generated only when its key is set; empty = that phase stays in the main session.
+#   e.g. WF_MODEL_CLAUDE_PLANNER=opus  WF_MODEL_CLAUDE_BUILDER=sonnet  WF_MODEL_CLAUDE_EXPLORER=haiku
+WF_MODEL_CLAUDE_PLANNER=""
+WF_MODEL_CLAUDE_BUILDER=""
+WF_MODEL_CLAUDE_EXPLORER=""
+# Who runs QC: same (a fresh subagent of the same agent) | claude | codex (the OTHER agent's CLI, run
+# non-interactively through your agent's own permission prompt). Codex model routing uses Codex profiles
+# in your own ~/.codex/config.toml — burhan never edits it.
+WF_REVIEWER_AGENT="same"
+
+# ---- Evidence ledger (WORKFLOW: enforcement) ------------------------------------------------
+# Each turn's edits and commands (with exit codes) are recorded outside the project, under
+# ${XDG_STATE_HOME:-~/.local/state}/burhan/evidence (private, pruned after 30 days). Command LINES are
+# stored — not their output — so a token typed on a command line would be stored too. "off" disables it.
+WF_EVIDENCE_LEDGER="on"
+# Where the ledger lives: an absolute LITERAL path (no $HOME, no ~ — the CLI reads literal values only).
+# Empty or relative = the default above. e.g. WF_EVIDENCE_DIR='/var/tmp/burhan-evidence'
+WF_EVIDENCE_DIR=""

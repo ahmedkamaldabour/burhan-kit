@@ -1,0 +1,1 @@
+{"session_id": "S1", "turn_id": "U1", "transcript_path": "T", "cwd": "/proj", "hook_event_name": "PreToolUse", "permission_mode": "bypassPermissions", "tool_name": "apply_patch", "tool_input": {"command": "*** Begin Patch\n*** Update File: /proj/notes.txt\n@@\n-first.\n+second.\n*** End Patch"}, "tool_use_id": "exec-0e0b8081-d5c7-42a8-91bf-531e22e747ce"}

@@ -1,0 +1,7 @@
+{"type":"user","isSidechain":false,"message":{"role":"user","content":"build the importer"}}
+{"type":"assistant","isSidechain":false,"message":{"content":[{"type":"tool_use","name":"Write","input":{"file_path":"/proj/imp.src"}}]}}
+{"type":"user","isSidechain":false,"message":{"content":[{"type":"tool_result","tool_use_id":"t","content":"ok"}]}}
+{"type":"user","isSidechain":false,"isCompactSummary":true,"message":{"role":"user","content":"This session is being continued from a previous conversation. Summary: ..."}}
+{"type":"assistant","isSidechain":false,"message":{"content":[{"type":"tool_use","name":"Edit","input":{"file_path":"/proj/imp.src"}}]}}
+{"type":"user","isSidechain":false,"message":{"content":[{"type":"tool_result","tool_use_id":"t","content":"ok"}]}}
+{"type":"assistant","isSidechain":false,"message":{"content":[{"type":"text","text":"done"}]}}

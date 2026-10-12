@@ -1,0 +1,160 @@
+# Rule inventory — every rule of the working agreement, the file it lives in (core = WORKFLOW.md), and a
+# key phrase that must appear there verbatim. tests/rules.test.sh enforces it: a rule is never deleted
+# silently.
+# ID | now in | key phrase
+R01|core|Detect, don't assume.
+R02|core|state the inference before relying on it
+R03|core|Never invent a command.
+R04|core|machine-readable twin
+R05|core|Discover before asking
+R06|core|Understand before changing
+R07|core|Process proportional to the work
+R08|core|wait for explicit approval before writing code
+R09|core|Smallest change, test-first
+R10|core|Prove before claiming
+R11|core|Remember after finishing
+R12|core|Independent QC
+R13|core|type + scope + one-line reason
+R14|core|Scope escalators
+R15|core|authorization or visibility rules
+R16|core|irreversible behaviour
+R17|core|not allowed — route as `investigation`
+R18|core|RO** diagnosis only
+R19|core|no application code is modified
+R20|phases/lifecycle.md|open a new routed item
+R21|phases/lifecycle.md|Work **one item at a time, end to end**
+R22|phases/lifecycle.md|⛔ STOP — explicit approval
+R23|phases/lifecycle.md|Re-validate the plan against current code before the first sub-unit
+R24|phases/lifecycle.md|Never build the whole item in one go
+R25|phases/lifecycle.md|A plan that no longer matches the code is worse than none
+R26|phases/lifecycle.md|ASK FIRST who performs it
+R27|core|Definition of done
+R28|core|Tests passing is not the finish line
+R29|phases/lifecycle.md|record an **impact entry**
+R30|phases/lifecycle.md|Evidence is
+R31|phases/lifecycle.md|Convergence findings on changed AC are
+R32|phases/lifecycle.md|never as "project done"
+R33|phases/lifecycle.md|never by itself authorizes
+R34|core|never run tests
+R35|core|one file at a time
+R36|core|not even when asked to "run
+R37|core|Heavy commands run **one at a time**
+R38|core|fails open
+R39|phases/files.md|Every file name starts with the
+R40|phases/files.md|Never claim an input was preserved when it was not.
+R41|phases/files.md|A limitation is never a
+R42|phases/files.md|cost if wrong
+R43|core|These are absolute.
+R44|core|ask whether the human wants to do it or wants the agent to
+R45|core|Never default to doing it autonomously.
+R46|core|Never commit without one of those three answers.
+R47|core|"Finish the task" is **not** authorization to
+R48|core|Never change tracker state
+R49|core|Never approve on the human's behalf
+R50|core|read it first in every session
+R51|core|Every transition is written to the state
+R52|core|Batching is a violation
+R53|core|edits the existing
+R54|core|pointer-only
+R55|core|Standing facts
+R56|phases/close-out.md|Status vocabularies
+R57|phases/close-out.md|⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed
+R58|phases/close-out.md|Awaiting QC
+R59|phases/close-out.md|never hand-edit it
+R60|phases/close-out.md|with the human's own words
+R61|phases/close-out.md|Handoff.
+R62|core|Team use.
+R63|phases/close-out.md|Timing (optional)
+R64|phases/review.md|Three different questions
+R65|phases/review.md|Record-level visibility
+R66|phases/review.md|both** allowed and denied cases
+R67|phases/review.md|Pre-existing vs introduced
+R68|phases/review.md|Unrequested behaviour
+R69|phases/review.md|wrong wording
+R70|core|No unverified claims.
+R71|core|Evidence is exact.
+R72|core|Evidence comes after the change.
+R73|core|Distinguish measured from assumed
+R74|core|Report failures plainly
+R75|core|Own mistakes explicitly
+R76|core|Uncertainty is information.
+R77|phases/discoveries.md|Never silently fix it.
+R78|phases/discoveries.md|Not a discovery:
+R79|phases/memory.md|Work records preserve history.
+R80|phases/memory.md|superseded, never rewritten
+R81|phases/memory.md|Transient runtime state is never a fact
+R82|phases/memory.md|Prior chat or model memory is never evidence.
+R83|phases/memory.md|Never approve it yourself
+R84|phases/memory.md|Never promote
+R85|phases/memory.md|Fact IDs
+R86|phases/skills.md|before acting
+R87|core|Debugging is not guessing
+R88|core|Don't add dependencies, folders, or
+R89|core|Scope discipline
+R90|phases/enforcement.md|Fail open.
+R91|phases/enforcement.md|Silent unless relevant.
+R92|phases/enforcement.md|Evidence ledger.
+R93|phases/enforcement.md|How strong each rule is
+R94|phases/enforcement.md|Only what is *blocked*
+R95|phases/lifecycle.md|approval is given on the card
+R96|phases/lifecycle.md|Ask **all open questions together, once**
+R97|phases/files.md|an absent section is never a
+R98|phases/close-out.md|Knowledge review: none
+R99|core|Blocking belongs to the agent's own permission layer
+R100|core|Never silently
+R101|phases/close-out.md|Primary objective
+R102|phases/close-out.md|in the same turn** it is resolved
+R103|phases/lifecycle.md|write nothing at all and report what would be recorded
+R104|core|check siblings before inventing a pattern
+R105|core|never application workarounds
+R106|core|If a claim is checkable, check it.
+R107|phases/close-out.md|A snapshot, not a journal
+R108|core|the smallest lane
+R109|core|any doubt → `bounded`
+R110|phases/lifecycle.md|re-check only the facts whose files it lists
+R111|phases/review.md|When in doubt, full.
+R112|core|the commit checkpoint always stops
+R113|phases/lifecycle.md|gate in burhan's flow, not the agent's permission mode
+R114|phases/lifecycle.md|Brakes — `auto` falls back to asking when:
+R115|core|surface additions for approval
+R116|core|or what the repository cannot give
+R117|core|(a pull request), like code
+R118|core|apply key by key
+R119|core|Pick the method before acting
+# Added later: each escalator, checklist and lifecycle rule on its own row.
+R120|core|security or privacy impact
+R121|core|authorization or visibility rules
+R122|core|persistent data-model or migration
+R123|core|money / accounting correctness
+R124|core|derived state shared across modules
+R125|core|external integration contracts or public APIs
+R126|core|irreversible behaviour
+R127|core|concurrency / transaction rules
+R128|phases/review.md|Secrets, tokens, credentials, internal identifiers: not logged, not returned, not committed.
+R129|phases/lifecycle.md|Pause between sub-units
+R130|phases/lifecycle.md|An open material question blocks approval.
+R131|core|skip the steps that depend on it
+R132|core|its docs and its runtime
+R133|core|a bounded bug needs no architectural ceremony
+R134|core|never committed or shared
+R135|phases/lifecycle.md|Name which one you are in
+# Added later: every security bullet of the checklist, and the remaining qualifiers.
+R136|phases/review.md|Authorization on every new/changed entry point.
+R137|phases/review.md|Record-level visibility:
+R138|phases/review.md|allowed and denied cases
+R139|phases/review.md|Untrusted input: injection, path traversal, unrestricted upload, unsafe deserialization.
+R140|phases/review.md|Publicly reachable routes/files that should not be.
+R141|phases/review.md|QC (`commands/qc.md`) always applies the whole checklist.
+R142|phases/lifecycle.md|exploration → specification → test-first implementation → systematic debugging → review →
+R143|core|others read it
+R144|phases/review.md|A missing filter silently returns *everything*
+R145|phases/review.md|Security & access control — highest consequence, check first
+R146|SETUP.md|**Never commit without asking (a) / (b) / (c)**
+R147|SETUP.md|**Never edit global** or user-level settings
+R148|SETUP.md|**Never enter, ask for, copy or print credentials**
+R149|SETUP.md|never approve the hooks yourself
+R150|SETUP.md|Start it only if the human says yes; never start it on your own.
+R151|SETUP.md|Write it only after the human approves
+R152|phases/lifecycle.md|**Plan only** is a stopping point, not a mode
+R153|phases/lifecycle.md|close the item at `Plan ready`, and write no code.
+R154|phases/lifecycle.md|**The route sets how many stops** the item has, by its risk — not the mode

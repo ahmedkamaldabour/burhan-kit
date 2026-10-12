@@ -1,0 +1,1 @@
+{"session_id":"s","transcript_path":"T","cwd":"/proj","hook_event_name":"PostToolUse","tool_name":"Edit","tool_input":{"file_path":"/proj/src/a.src"},"tool_response":{"filePath":"/proj/src/a.src"}}

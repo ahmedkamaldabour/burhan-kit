@@ -1,0 +1,4 @@
+{"timestamp":"t","type":"session_meta","payload":{"id":"S2"}}
+{"type":"event_msg","payload":{"type":"item_completed","turn_id":"U2","item":{"type":"CommandExecution","id":"exec-pass","command":["/usr/bin/zsh","-lc","verify-it a"],"status":"completed","stdout":"ok\n","exit_code":0}}}
+{"type":"event_msg","payload":{"type":"item_completed","turn_id":"U2","item":{"type":"CommandExecution","id":"exec-fail","command":["/usr/bin/zsh","-lc","verify-it b"],"status":"failed","stdout":"","exit_code":3}}}
+{"type":"response_item","payload":{"type":"custom_tool_call","name":"exec","input":"const r = await tools.exec_command({\"cmd\":\"verify-it b\"})"}}
