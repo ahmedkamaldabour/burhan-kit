@@ -195,9 +195,13 @@ the [Superpowers](https://github.com/obra/superpowers) plugin (brainstorming, pl
 development, debugging, review), and the turn audit notes a skipped skill. With `none` (or empty)
 no skill is referenced.
 
-Setup checks plugin availability read-only, independently of the saved skills preference. If absent,
-it suggests exactly one optional Claude Code command: `/plugin install superpowers@claude-plugins-official`.
-It never installs plugins, writes plugin files or overrides an explicit `WF_SKILLS` value.
+Setup checks plugin availability read-only, independently of the saved skills preference. If it finds an enabled plugin,
+it says: "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building,
+verification before "done". Recommended; turn off with `WF_SKILLS='none'`." If it finds one but the project explicitly
+has `WF_SKILLS='none'`, it says: "Superpowers found, but turned off for this project (`WF_SKILLS='none'`). To use it,
+set `WF_SKILLS='superpowers'`." If absent, it suggests exactly one optional Claude Code command:
+`/plugin install superpowers@claude-plugins-official`. It never installs plugins, writes plugin files or overrides an
+explicit `WF_SKILLS` value.
 
 ## Team use
 

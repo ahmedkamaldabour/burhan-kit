@@ -10,6 +10,8 @@
 - Existing project hooks always coexist; setup no longer offers hook removal or shared-folder moves.
 - Setup offers optional Claude Code Superpowers guidance without installing plugins or overriding
   explicit skills preferences.
+- Fresh setup now recommends shared `docs/burhan/work/` for each task's story, plan and reviews, and
+  its Superpowers summary distinguishes available, absent, and explicitly disabled plugins.
 
 ### Removed
 - Removed never-run configuration and setup options, the NEVER RUN gate and turn-audit check C;

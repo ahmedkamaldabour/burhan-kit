@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { PassThrough } from 'node:stream';
@@ -25,7 +25,7 @@ const hash = (d: string): string => createHash('sha256').update(JSON.stringify(t
 const cfg = (t: string) => parseConfig(readFileSync(join(t, '.burhan/workflow.config'), 'utf8')).values;
 
 for (const lang of ['en', 'ar'] as const) for (const present of [false, true]) {
-  test(`${lang}: wizard summary offers optional Superpowers once iff absent, present=${present}`, async () => {
+  test(`${lang}: wizard summary shows one Superpowers availability line, present=${present}`, async () => {
     const target = fresh();
     const suppliedHome = tmpDir('burhan-wizard-optional-home-');
     if (present) mkdirSync(join(suppliedHome, '.claude/plugins/superpowers'), { recursive: true });
@@ -35,8 +35,12 @@ for (const lang of ['en', 'ar'] as const) for (const present of [false, true]) {
     const result = capture(target);
     assert.equal(await runWizard(target, result.io, prompter, lang, suppliedHome), 0);
     const output = prompter.shown.join('\n') + result.o.out;
-    assert.equal(output.split('/plugin install superpowers@claude-plugins-official').length - 1, present ? 0 : 1);
-    if (!present) assert.match(output, /Claude Code/);
+    const expected = present
+      ? lang === 'en'
+        ? "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Recommended; turn off with WF_SKILLS='none'."
+        : "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". مقترح؛ وتقدر تقفله بـ WF_SKILLS='none'."
+      : '/plugin install superpowers@claude-plugins-official';
+    assert.equal(output.split(expected).length - 1, 1);
     assert.equal(hash(target), before);
     assert.equal(hash(suppliedHome), beforeHome);
   });
@@ -54,11 +58,28 @@ test('first screen: three outcome lines, "sends nothing", the recommended previe
   assert.match(s, /you'll see the full summary before anything is written/);
 });
 
+for (const lang of ['en', 'ar'] as const) {
+  test(`${lang}: wizard shows the explicit-none Superpowers line once`, async () => {
+    const t = fresh();
+    mkdirSync(join(t, '.burhan'));
+    writeFileSync(join(t, '.burhan/workflow.config'), "WF_SKILLS='none'\n");
+    const suppliedHome = tmpDir('burhan-wizard-disabled-home-');
+    mkdirSync(join(suppliedHome, '.claude/plugins/superpowers'), { recursive: true });
+    const p = scriptedPrompter(['use', 'cancel']); const { io } = capture(t);
+    assert.equal(await runWizard(t, io, p, lang, suppliedHome), 0);
+    const expected = lang === 'en'
+      ? "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'."
+      : "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'.";
+    const output = p.shown.join('\n');
+    assert.equal(output.split(expected).length - 1, 1);
+  });
+}
+
 test('fast path: two answers, files written (AC-03)', async () => {
   const t = fresh(); const p = scriptedPrompter(['use', 'apply']); const { o, io } = capture(t);
   assert.equal(await runWizard(t, io, p, 'en', home), 0);
   assert.equal(p.asked.length, 2);
-  assert.equal(cfg(t).WF_DOCS_DIR, '.burhan/work');
+  assert.equal(cfg(t).WF_DOCS_DIR, 'docs/burhan/work');
   assert.match(o.out, /npx burhan-kit uninstall/);
   assert.match(o.out, /change burhan settings/);
 });
@@ -113,7 +134,7 @@ test('a prompter that throws on its 2nd call: the numbered fallback re-asks and 
   const input = new PassThrough(); const out = new PassThrough();
   input.end('1\n');
   assert.equal(await runWizard(t, io, withFallback(flaky, () => numberedPrompter(input, out)), 'en', home), 0);
-  assert.equal(cfg(t).WF_DOCS_DIR, '.burhan/work');
+  assert.equal(cfg(t).WF_DOCS_DIR, 'docs/burhan/work');
 });
 
 test('numberedPrompter: "2" picks the 2nd, "9 then 1" re-asks, EOF cancels', async () => {

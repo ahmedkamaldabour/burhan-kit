@@ -17,10 +17,10 @@ export const QUESTIONS: Record<Lang, Question[]> = {
       { value: 'step', label: 'Show me the plan, then pause after each part', hint: 'recommended' },
       { value: 'auto', label: "Show me the plan once, then continue until it's ready to commit" },
     ] },
-    { id: 'docs', ask: 'Where should the work files be kept?', options: [
-      { value: 'private', label: 'Private, in .burhan/work/', hint: 'recommended; stays out of git' },
-      { value: 'shared', label: 'Shared in git' },
-      { value: 'custom', label: 'A folder I type' },
+    { id: 'docs', ask: "Where should burhan save each task's story, plan and reviews?", options: [
+      { value: 'shared', label: 'In git, for the team — docs/burhan/work/', hint: 'recommended' },
+      { value: 'private', label: 'Only on my machine — .burhan/work/ (not in git)' },
+      { value: 'custom', label: 'A folder I choose' },
     ] },
   ],
   ar: [
@@ -33,10 +33,10 @@ export const QUESTIONS: Record<Lang, Question[]> = {
       { value: 'step', label: 'وريني الخطة، وبعدين استنّى بعد كل جزء', hint: 'مقترح' },
       { value: 'auto', label: 'وريني الخطة مرة واحدة، وبعدين كمّل لحد ما الشغل يبقى جاهز للـ commit' },
     ] },
-    { id: 'docs', ask: 'ملفات الشغل تتحفظ فين؟', options: [
-      { value: 'private', label: 'خاصة بيك، في .burhan/work/', hint: 'مقترح؛ مش بتدخل git' },
-      { value: 'shared', label: 'مشتركة في git' },
-      { value: 'custom', label: 'فولدر أكتبه أنا' },
+    { id: 'docs', ask: 'burhan يحفظ الـ story والخطة والـ reviews بتاعة كل مهمة فين؟', options: [
+      { value: 'shared', label: 'في git للفريق — docs/burhan/work/', hint: 'مقترح' },
+      { value: 'private', label: 'على جهازي بس — .burhan/work/ (بره git)' },
+      { value: 'custom', label: 'فولدر أختاره أنا' },
     ] },
   ],
 };
@@ -61,8 +61,7 @@ export interface Messages {
   docs(label: string): string;
   docsPrivate: string; docsShared: string; docsCustom: string;
   models: string;
-  skills(s: 'superpowers' | 'none'): string;
-  optionalSuperpowers: string;
+  superpowers(available: boolean, disabled: boolean): string;
   branches: string;
   check(pending: boolean, cmd: string): string;
   changeUndo: string;
@@ -138,8 +137,11 @@ const en: Messages = {
   docs: (l) => `Work files: ${l}`,
   docsPrivate: 'private, not in git', docsShared: 'shared in git', docsCustom: 'your folder',
   models: 'Models: same as your session',
-  skills: (s) => s === 'superpowers' ? 'Skills: superpowers' : 'Skills: none',
-  optionalSuperpowers: 'Superpowers is optional (Claude Code): /plugin install superpowers@claude-plugins-official',
+  superpowers: (available, disabled) => !available
+    ? 'Superpowers is optional (Claude Code): /plugin install superpowers@claude-plugins-official'
+    : disabled
+      ? "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'."
+      : "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Recommended; turn off with WF_SKILLS='none'.",
   branches: 'Branches: feature branches + pull requests; commit only after the a/b/c checkpoint',
   check: (p, c) => p ? 'Check before commit: your agent sets this up on first use' : `Check before commit: ${c} (kept)`,
   changeUndo: 'Change anytime: npx burhan-kit setup · Undo: npx burhan-kit uninstall',
@@ -161,6 +163,7 @@ const en: Messages = {
       '- Never edit .burhan/ yourself; burhan writes it.',
       '- Put the answers in a JSON file shaped like "recommended" below, then run: npx burhan-kit setup --answers <file>',
       '- Show its summary to the person. Run it again with --apply only after the user says yes.',
+      '- Relay the Superpowers line below exactly as it appears. Do not paraphrase or omit it.',
     ],
     readFailed: (f, w) => `cannot read the answers file ${f}: ${w}`,
     notRegular: (f) => `the answers file ${f} is not a regular file`,
@@ -232,8 +235,11 @@ const ar: Messages = {
   docs: (l) => `ملفات الشغل: ${l}`,
   docsPrivate: 'خاصة بيك، بره git', docsShared: 'مشتركة في git', docsCustom: 'الفولدر بتاعك',
   models: 'الموديلات: نفس موديل الـ session بتاعتك',
-  skills: (s) => s === 'superpowers' ? 'الـ skills: superpowers' : 'الـ skills: مفيش',
-  optionalSuperpowers: 'Superpowers اختياري في Claude Code: /plugin install superpowers@claude-plugins-official',
+  superpowers: (available, disabled) => !available
+    ? 'Superpowers اختياري في Claude Code: /plugin install superpowers@claude-plugins-official'
+    : disabled
+      ? "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'."
+      : "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". مقترح؛ وتقدر تقفله بـ WF_SKILLS='none'.",
   branches: 'الـ branches: branch لكل ميزة + pull request؛ ومفيش commit غير بعد ما تختار a/b/c',
   check: (p, c) => p ? 'الفحص قبل الـ commit: الـ agent بتاعك هيظبطه أول ما يشتغل' : `الفحص قبل الـ commit: ${c} (زي ما هو)`,
   changeUndo: 'تغيّر في أي وقت: npx burhan-kit setup · ترجع في كلامك: npx burhan-kit uninstall',
@@ -255,6 +261,7 @@ const ar: Messages = {
       '- متعدّلش فولدر .burhan/ بنفسك؛ burhan هو اللي بيكتبه.',
       '- حط الإجابات في ملف JSON بنفس شكل "recommended" اللي تحت، وبعدين شغّل: npx burhan-kit setup --answers <file>',
       '- وري الشخص الملخص. ومتشغّلوش بـ --apply غير لما المستخدم يقول أيوه.',
+      '- وصّل سطر Superpowers اللي تحت زي ما هو بالظبط. متعيدش صياغته ومتسيبهوش.',
     ],
     readFailed: (f, w) => `مقدرتش أقرا ملف الإجابات ${f}: ${w}`,
     notRegular: (f) => `ملف الإجابات ${f} مش ملف عادي`,

@@ -46,7 +46,7 @@ const agentJson = (out: string): { recommended: SetupAnswers; questions: { id: s
 };
 
 for (const lang of ['en', 'ar'] as const) for (const present of [false, true]) for (const withHooks of [false, true]) {
-  test(`${lang}: optional-install hint occurs once iff absent in agent and answer summaries, hooks=${withHooks}, present=${present}`, () => {
+  test(`${lang}: agent and answer summaries relay one Superpowers availability line, hooks=${withHooks}, present=${present}`, () => {
     const target = repo();
     const suppliedHome = tmpDir('burhan-agent-optional-home-');
     if (present) mkdirSync(join(suppliedHome, '.claude/plugins/superpowers'), { recursive: true });
@@ -59,12 +59,36 @@ for (const lang of ['en', 'ar'] as const) for (const present of [false, true]) f
     const protocol = agentInstructions(target, lang, suppliedHome);
     const result = capture(target);
     assert.equal(runAnswers(target, answersFile({ agents: 'claude', mode: 'step', docs: 'private', lang }), false, result.io, lang, suppliedHome), 0);
+    const expected = present
+      ? lang === 'en'
+        ? "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Recommended; turn off with WF_SKILLS='none'."
+        : "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". مقترح؛ وتقدر تقفله بـ WF_SKILLS='none'."
+      : '/plugin install superpowers@claude-plugins-official';
     for (const output of [protocol, result.o.out]) {
-      assert.equal(output.split('/plugin install superpowers@claude-plugins-official').length - 1, present ? 0 : 1);
-      if (!present) assert.match(output, /Claude Code/);
+      assert.equal(output.split(expected).length - 1, 1);
     }
+    assert.match(protocol, lang === 'en' ? /Relay the Superpowers line below exactly as it appears\. Do not paraphrase or omit it\./ : /وصّل سطر Superpowers اللي تحت زي ما هو بالظبط\. متعيدش صياغته ومتسيبهوش\./);
     assert.equal(hash(target), before);
     assert.equal(hash(suppliedHome), beforeHome);
+  });
+}
+
+for (const lang of ['en', 'ar'] as const) {
+  test(`${lang}: agent and answers relay the explicit-none Superpowers line once`, () => {
+    const target = repo();
+    mkdirSync(join(target, '.burhan'));
+    writeFileSync(join(target, '.burhan/workflow.config'), "WF_SKILLS='none'\n");
+    const suppliedHome = tmpDir('burhan-agent-disabled-home-');
+    mkdirSync(join(suppliedHome, '.claude/plugins/superpowers'), { recursive: true });
+    const result = capture(target);
+    const outputs = [
+      agentInstructions(target, lang, suppliedHome),
+      (() => { assert.equal(runAnswers(target, answersFile({ agents: 'claude', mode: 'step', docs: 'private', lang }), false, result.io, lang, suppliedHome), 0); return result.o.out; })(),
+    ];
+    const expected = lang === 'en'
+      ? "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'."
+      : "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'.";
+    for (const output of outputs) assert.equal(output.split(expected).length - 1, 1);
   });
 }
 

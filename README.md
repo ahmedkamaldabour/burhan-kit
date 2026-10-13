@@ -107,10 +107,12 @@ npx burhan-kit doctor                                       # read-only health c
 - It proposes each config value with its file:line evidence and asks you only business questions.
 - If it finds existing hooks in the project, it lists them. They stay active and run alongside
   burhan's hooks; reminders may repeat.
-- Private work and discoveries live in `.burhan/work/` and `.burhan/discovery/`; only these and
-  `.burhan/local/` are ignored. With **Shared in git**, use `docs/burhan/work/` and `docs/burhan/discovery/`.
-- Superpowers is optional (Claude Code): `/plugin install superpowers@claude-plugins-official`.
-  Setup suggests it only when absent; it never installs plugins or changes an explicit skills preference.
+- Setup asks where to save each task's story, plan and reviews. For fresh projects it recommends
+  **In git, for the team — docs/burhan/work/**; private `.burhan/work/` and a folder you choose stay available.
+  Existing project choices stay unchanged. Discoveries sit alongside the chosen work folder.
+- If Superpowers is found, setup says how burhan uses it at each step. If it is absent, setup offers the
+  optional Claude Code command `/plugin install superpowers@claude-plugins-official`; it never installs plugins
+  or overrides an explicit skills preference.
 - After you approve the diff, it writes the config, runs your check once and runs `burhan doctor`.
 - By hand: set at least `WF_CODE_REGEX` and `WF_EVIDENCE_REGEX` in `.burhan/workflow.config`
   ([configuration](docs/configuration.md)).

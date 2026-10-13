@@ -118,10 +118,11 @@ npx burhan-kit doctor                                       # read-only health c
 - الـ agent بيقرا إعدادات الـ build والـ test والـ lint عندك من غير ما يغيّر حاجة.
 - بيقترح كل قيمة ومعاها دليلها (file:line)، ومش بيسألك غير أسئلة البيزنس.
 - لو لقى الـ hooks الموجودة في المشروع، بيعرضهم وبيفضلوا شغّالين جنب hooks بتاعة burhan؛ فممكن التنبيهات تتكرر.
-- ملفات الشغل الخاصة في `.burhan/work/` والاكتشافات في `.burhan/discovery/`؛ دول و`.burhan/local/` بس اللي بيتجاهلهم git.
-  مع **Shared in git**، المسارات هي `docs/burhan/work/` و`docs/burhan/discovery/`.
-- Superpowers اختياري في Claude Code: `/plugin install superpowers@claude-plugins-official`.
-  الـ setup بيقترحه لو مش موجود بس؛ مبيسطّبش plugins ومبيغيّرش اختيارك الصريح للـ skills.
+- الـ setup بيسأل burhan يحفظ الـ story والخطة والـ reviews بتاعة كل مهمة فين. في المشروع الجديد، المقترح هو
+  **في git للفريق — docs/burhan/work/**؛ `.burhan/work/` الخاص وفولدر تختاره لسه متاحين.
+  إعداد المشروع الموجود بيفضل زي ما هو. الاكتشافات بتبقى جنب فولدر الشغل المختار.
+- لو Superpowers موجود، الـ setup بيقول burhan بيستخدمه إزاي في كل خطوة. لو مش موجود، بيعرض أمر Claude Code
+  الاختياري `/plugin install superpowers@claude-plugins-official`؛ مش بيسطّب plugins ومبيغيّرش اختيار الـ skills الصريح.
 - بعد ما توافق على الـ diff: بيكتب الإعدادات، ويشغّل الـ check مرة، ويشغّل `burhan doctor`.
 - لو بإيدك: أقل حاجة `WF_CODE_REGEX` و `WF_EVIDENCE_REGEX` في `.burhan/workflow.config`.
 

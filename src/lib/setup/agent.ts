@@ -2,6 +2,7 @@ import { readFileSync, statSync } from 'node:fs';
 import type { Io } from '../../main.js';
 import { BurhanError } from '../errors.js';
 import { applySetup, currentAnswers, docsPathError, planSetup, recommended, renderSummary, type DocsChoice, type SetupAnswers, type SetupFilesystem } from './engine.js';
+import { superpowersLine } from './summary.js';
 import { messages, QUESTIONS, type Lang } from './messages.js';
 
 /** `setup --agent`: the rules for the agent, then one json block with the questions and the recommended answers. */
@@ -14,7 +15,7 @@ export function agentInstructions(target: string, lang: Lang, home: string): str
     recommended: recommendedAnswers,
     questions,
   };
-  const details = plan.existingHooks.length ? renderSummary(plan, lang) : !plan.superpowersAvailable ? m.optionalSuperpowers : '';
+  const details = plan.existingHooks.length ? renderSummary(plan, lang) : superpowersLine(plan, lang);
   return `${m.agent.rules.join('\n')}${details ? `\n\n${details}` : ''}\n\n\`\`\`json\n${JSON.stringify(body, null, 2)}\n\`\`\`\n`;
 }
 

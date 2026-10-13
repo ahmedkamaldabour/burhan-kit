@@ -26,6 +26,8 @@ export interface SetupPlan {
   install: InstallPlan;
   skills: 'superpowers' | 'none';
   superpowersAvailable: boolean;
+  /** An explicit project setting keeps detected Superpowers disabled. */
+  superpowersDisabled: boolean;
   /** Everything setup writes: the install's files plus the config, bindings and private-folder files it adds. */
   files: PlannedFile[];
 }
@@ -156,6 +158,7 @@ export function planSetup(target: string, a: SetupAnswers, home: string): SetupP
   const { docs, discovery } = folders(a);
 
   const superpowersAvailable = superpowersPresent(home);
+  const superpowersDisabled = have.WF_SKILLS === 'none';
   const skills: 'superpowers' | 'none' = existingConfig !== null && (have.WF_SKILLS ?? '') !== '' ? (have.WF_SKILLS === 'superpowers' ? 'superpowers' : 'none') : superpowersAvailable ? 'superpowers' : 'none';
   const base = existingConfig ?? readFileSync(join(kit, 'workflow.config.example'), 'utf8');
   const values: Record<string, string> = {
@@ -183,7 +186,7 @@ export function planSetup(target: string, a: SetupAnswers, home: string): SetupP
   };
   if (existingConfig !== null && config !== existingConfig) add('.burhan/workflow.config', true, 'config');
   if (existsSync(bf) && bindings !== null) add('.burhan/bindings.md', true, 'config');
-  return { answers: { ...a }, existingHooks, config, bindings, install, skills, superpowersAvailable, files };
+  return { answers: { ...a }, existingHooks, config, bindings, install, skills, superpowersAvailable, superpowersDisabled, files };
 }
 
 /** Writes config → bindings → the install, once. A blocked plan is refused before anything is written. */

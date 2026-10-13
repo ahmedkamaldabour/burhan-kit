@@ -15,10 +15,10 @@ export const PRIVATE_DISCOVERY = '.burhan/discovery';
 export const SHARED_DOCS = 'docs/burhan/work';
 export const SHARED_DISCOVERY = 'docs/burhan/discovery';
 
-/** The cautious defaults: the agents already used in this project (else claude), pause after each part, private work files. */
+/** Fresh projects use the agents already present (else claude), pause after each part, and share task artifacts with the team. */
 export function recommended(target: string, _home: string): SetupAnswers {
   const found = AGENTS.filter((a) => existsSync(join(target, `.${a}`)));
-  return { agents: found.length ? [...found] : ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en' };
+  return { agents: found.length ? [...found] : ['claude'], mode: 'step', docs: { kind: 'shared' }, lang: 'en' };
 }
 
 /** AC-17: the answers an existing install already stands for (the team config is the truth); null when burhan is not installed. */

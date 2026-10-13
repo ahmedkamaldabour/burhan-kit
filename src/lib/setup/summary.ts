@@ -48,6 +48,11 @@ function outsideSettings(target: string): { rel: string; real: string }[] {
   return out;
 }
 
+/** The one setup explanation for Superpowers, shared verbatim by summaries and agent instructions. */
+export function superpowersLine(p: SetupPlan, lang: 'en' | 'ar'): string {
+  return messages(lang).superpowers(p.superpowersAvailable, p.superpowersDisabled);
+}
+
 /** AC-06 / AC-03a / AC-05 / AC-18: what will change, the editable defaults, how to change or undo. Prints no setting names. */
 export function renderSummary(p: SetupPlan, lang: 'en' | 'ar'): string {
   const m = messages(lang);
@@ -69,10 +74,9 @@ export function renderSummary(p: SetupPlan, lang: 'en' | 'ar'): string {
     `  ${m.mode(p.answers.mode)}`,
     `  ${m.docs(docsLabel)}`,
     `  ${m.models}`,
-    `  ${m.skills(p.skills)}`,
     `  ${m.branches}`,
     `  ${m.check(cfg.WF_STACK_SETUP === 'pending', cfg.WF_CHECK_CMD || 'none')}`);
-  if (!p.superpowersAvailable) out.push(`  ${m.optionalSuperpowers}`);
+  out.push(`  ${superpowersLine(p, lang)}`);
   if (p.existingHooks.length) out.push('', ...m.existingHooks(p.existingHooks));
   const ignored = ignoredCommittedSetupFiles(p.install.target, p.files);
   if (ignored.length) out.push('', ...m.ignoredCommittedFiles(ignored));

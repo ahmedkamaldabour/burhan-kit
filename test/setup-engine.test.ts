@@ -38,9 +38,9 @@ const section = (s: string, head: string): string => {
   return m ? m[1] : '';
 };
 
-test('recommended: installed agent dirs, else claude; cautious defaults', () => {
+test('recommended: installed agent dirs, else claude; fresh projects share work files', () => {
   const t = fresh();
-  assert.deepEqual(recommended(t, home), answers());
+  assert.deepEqual(recommended(t, home), answers({ docs: { kind: 'shared' } }));
   mkdirSync(join(t, '.codex'));
   assert.deepEqual(recommended(t, home).agents, ['codex']);
   mkdirSync(join(t, '.claude'));
@@ -118,11 +118,14 @@ test('re-running with the same answers changes nothing', () => {
   assert.equal(hash(t), h);
 });
 
-test('currentAnswers: null when not installed; prefilled when installed', () => {
+test('currentAnswers: null when not installed; prefilled saved private, shared, and custom choices stay unchanged', () => {
   const t = fresh();
   assert.equal(currentAnswers(t), null);
   applySetup(planSetup(t, answers({ mode: 'auto', docs: { kind: 'shared' } }), home));
   assert.deepEqual(currentAnswers(t), answers({ mode: 'auto', docs: { kind: 'shared' } }));
+  const p = fresh();
+  applySetup(planSetup(p, answers({ docs: { kind: 'private' } }), home));
+  assert.deepEqual(currentAnswers(p)?.docs, { kind: 'private' });
   const c = fresh();
   applySetup(planSetup(c, answers({ docs: { kind: 'custom', path: 'x/y' } }), home));
   assert.deepEqual(currentAnswers(c)?.docs, { kind: 'custom', path: 'x/y' });
@@ -162,8 +165,21 @@ test('R-6: superpowers is detected read-only from the home plugins folder', () =
   assert.equal(cfgOf(t).values.WF_SKILLS, 'superpowers');
 });
 
+const SUPERPOWERS_LINES = {
+  en: {
+    found: "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Recommended; turn off with WF_SKILLS='none'.",
+    disabled: "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'.",
+    absent: 'Superpowers is optional (Claude Code): /plugin install superpowers@claude-plugins-official',
+  },
+  ar: {
+    found: "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". مقترح؛ وتقدر تقفله بـ WF_SKILLS='none'.",
+    disabled: "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'.",
+    absent: 'Superpowers اختياري في Claude Code: /plugin install superpowers@claude-plugins-official',
+  },
+} as const;
+
 for (const present of [false, true]) for (const skills of ['none', 'superpowers']) {
-  test(`optional plugin availability is independent of configured ${skills}, present=${present}`, () => {
+test(`Superpowers summary has exactly one availability line for configured ${skills}, present=${present}`, () => {
     const target = fresh();
     const suppliedHome = tmpDir('burhan-optional-home-');
     if (present) mkdirSync(join(suppliedHome, '.claude/plugins/cache/vendor/superpowers'), { recursive: true });
@@ -175,9 +191,10 @@ for (const present of [false, true]) for (const skills of ['none', 'superpowers'
     assert.equal(plan.superpowersAvailable, present);
     for (const lang of ['en', 'ar'] as const) {
       const summary = renderSummary(plan, lang);
-      const lines = summary.split('\n').filter((line) => line.includes('/plugin install superpowers@claude-plugins-official'));
-      assert.equal(lines.length, present ? 0 : 1);
-      if (!present) assert.match(lines[0], lang === 'en' ? /optional \(Claude Code\)/ : /اختياري في Claude Code/);
+      const expected = present ? skills === 'none' ? SUPERPOWERS_LINES[lang].disabled : SUPERPOWERS_LINES[lang].found : SUPERPOWERS_LINES[lang].absent;
+      const allLines = Object.values(SUPERPOWERS_LINES[lang]);
+      assert.equal(summary.split(expected).length - 1, 1);
+      assert.equal(allLines.reduce((count, line) => count + (summary.includes(line) ? 1 : 0), 0), 1);
     }
     applySetup(plan);
     assert.equal(cfgOf(target).values.WF_SKILLS, skills);
@@ -245,10 +262,36 @@ test('A3: a blocked plan is refused before anything is written', () => {
   assert.deepEqual(tree(t), before);
 });
 
-test('question texts: three questions, no internal terms', () => {
+test('Q3 names each task artifact and presents path-labelled private, shared, and custom choices in order', () => {
+  const expected = {
+    en: {
+      ask: "Where should burhan save each task's story, plan and reviews?",
+      choices: [
+        ['shared', 'In git, for the team — docs/burhan/work/', 'recommended'],
+        ['private', 'Only on my machine — .burhan/work/ (not in git)', ''],
+        ['custom', 'A folder I choose', ''],
+      ],
+    },
+    ar: {
+      ask: 'burhan يحفظ الـ story والخطة والـ reviews بتاعة كل مهمة فين؟',
+      choices: [
+        ['shared', 'في git للفريق — docs/burhan/work/', 'مقترح'],
+        ['private', 'على جهازي بس — .burhan/work/ (بره git)', ''],
+        ['custom', 'فولدر أختاره أنا', ''],
+      ],
+    },
+  } as const;
+  for (const lang of ['en', 'ar'] as const) {
+    const q = QUESTIONS[lang][2];
+    assert.equal(q.ask, expected[lang].ask);
+    assert.deepEqual(q.options.map((o) => [o.value, o.label, o.hint ?? '']), expected[lang].choices);
+  }
+});
+
+test('question texts: three questions, no internal terms other than Q3 task artifacts', () => {
   assert.equal(QUESTIONS.en.length, 3);
   assert.equal(QUESTIONS.ar.length, 3);
-  const banned = /WF_|\bstory\b|\bQC\b|evidence|\bgate|superpowers|regex/i;
+  const banned = /WF_|\bQC\b|evidence|\bgate|superpowers|regex/i;
   for (const lang of ['en', 'ar'] as const)
     for (const q of QUESTIONS[lang]) {
       const text = [q.ask, ...q.options.map((o) => `${o.label} ${o.hint ?? ''}`)].join('\n');
