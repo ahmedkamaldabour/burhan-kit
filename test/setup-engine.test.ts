@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, realpathSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parseConfig } from '../src/lib/config.js';
@@ -175,7 +175,8 @@ test('summary: codex adds the trust line (AC-18)', () => {
 });
 
 test('summary ends by asking for a new agent session in the project (AC-20)', () => {
-  const t = fresh();
+  // The summary names the physical project dir (macOS: /var is a link to /private/var).
+  const t = realpathSync(fresh());
   const p = planSetup(t, answers(), home);
   const en = renderSummary(p, 'en').trimEnd().split('\n').at(-1);
   assert.equal(en, `Start a new agent session in ${t} for burhan's hooks to take effect.`);

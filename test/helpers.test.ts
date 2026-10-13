@@ -46,7 +46,7 @@ test('three migrated test files leave no temp directory behind', () => {
   try {
     const files = ['fs-safe.test.js', 'stats.test.js', 'status.test.js'].map((file) => new URL(`./${file}`, import.meta.url).pathname);
     const env = { ...Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== 'NODE_TEST_CONTEXT')), TMPDIR: own };
-    const result = spawnSync(process.execPath, ['--test', ...files], { encoding: 'utf8', env });
+    const result = spawnSync(process.execPath, ['--test', '--test-reporter=spec', ...files], { encoding: 'utf8', env });
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ℹ pass [1-9]/, 'the three files really ran');
     assert.deepEqual(readdirSync(own), []);
