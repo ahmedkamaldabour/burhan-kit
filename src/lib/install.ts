@@ -16,7 +16,8 @@ const SNIPPET: Record<Agent, string> = { claude: 'hooks/adapters/claude/settings
 const BOOT_FILE: Record<Agent, string> = { claude: 'CLAUDE.md', codex: 'AGENTS.md' };
 const COMMANDS = ['e2e', 'qc'];
 
-export interface InstallOptions { mode: 'init' | 'upgrade'; target: string; agents: Agent[] | null; apply: boolean; bootstrap: boolean }
+/** keepProjectFiles: never create workflow.config / bindings.md from the templates — `burhan setup` writes them itself, first. */
+export interface InstallOptions { mode: 'init' | 'upgrade'; target: string; agents: Agent[] | null; apply: boolean; bootstrap: boolean; keepProjectFiles?: boolean }
 
 export function parseAgents(s: string): Agent[] {
   const list = s.split(',').filter(Boolean);
@@ -57,7 +58,13 @@ function hookRuntimeMissing(): string[] {
   return spawnSync('bash', ['-c', 'command -v jq'], { stdio: 'ignore' }).status === 0 ? [] : ['jq'];
 }
 
-export function install(o: InstallOptions, io: Io): number {
+/** A file the plan writes or removes; `rel` is project-relative, forward slashes. Kit files are listed at
+ *  directory level (trailing `/`, e.g. `.workflow/hooks/core/`) because the whole directory is replaced. */
+export interface PlannedFile { rel: string; existed: boolean; action: 'create' | 'modify' | 'remove'; kind: 'kit' | 'config' | 'hooks' | 'bootstrap' | 'managed' | 'gitignore' }
+export interface InstallPlan { version: string; target: string; blocked: string[]; steps: { say: string; run?: () => void }[]; files: PlannedFile[]; agents: Agent[] }
+
+/** Validates and plans; prints nothing and writes nothing. Throws BurhanError on invalid input. */
+export function planInstall(o: InstallOptions): InstallPlan {
   const kit = kitDir();
   const version = readVersion();
   if (!existsSync(o.target) || !statSync(o.target).isDirectory()) throw new BurhanError(`target is not a directory: ${o.target}`);
@@ -155,9 +162,16 @@ export function install(o: InstallOptions, io: Io): number {
   // ---------------------------------------------------------------- 2. plan
   const steps: { say: string; run?: () => void }[] = [];
   const step = (say: string, run?: () => void) => steps.push({ say, run });
+  const files: PlannedFile[] = [];
+  const file = (rel: string, kind: PlannedFile['kind'], remove = false): void => {
+    const existed = existsSync(join(target, rel));
+    files.push({ rel, existed, action: remove ? 'remove' : existed ? 'modify' : 'create', kind });
+  };
   if (o.mode === 'init' && installed) step(`already installed (${oldVersion ?? 'unknown version'}) — refreshing, same as \`burhan upgrade\``);
   if (oldVersion && oldVersion !== version) step(`upgrade: ${oldVersion} → ${version}`);
 
+  for (const f of ['WORKFLOW.md', 'SETUP.md', 'VERSION']) file(`.workflow/${f}`, 'kit');
+  for (const d of ['phases', 'templates', 'commands', 'hooks/core', ...adapters.map((a) => `hooks/adapters/${a}`)]) file(`.workflow/${d}/`, 'kit');
   step(`kit files → .workflow/ (WORKFLOW.md, SETUP.md, VERSION, phases/, templates/, commands/, hooks/core/, hooks/adapters/{${adapters.join(',')}})`, () => {
     putFile(join(W, 'WORKFLOW.md'), readFileSync(join(kit, 'WORKFLOW.md')));
     putFile(join(W, 'SETUP.md'), readFileSync(join(kit, 'SETUP.md')));
@@ -166,32 +180,34 @@ export function install(o: InstallOptions, io: Io): number {
     for (const a of adapters) replaceDir(join(kit, 'hooks/adapters', a), join(W, 'hooks/adapters', a));
   });
 
+  if (giNeeded) file('.workflow/.gitignore', 'gitignore');
   if (giNeeded)
     step('.workflow/.gitignore ← local/ (each developer\'s state file and overrides stay out of git)', () =>
       putFile(gi, (giText && !giText.endsWith('\n') ? giText + '\n' : giText ?? '') + 'local/\n'));
 
   if (existsSync(join(W, 'bindings.md'))) step('bindings.md exists — kept as is (your WORKFLOW §1)');
-  else step('bindings.md ← templates/bindings.md (fill it in: WORKFLOW §1)', () => putFile(join(W, 'bindings.md'), readFileSync(join(kit, 'templates/bindings.md'))));
+  else if (!o.keepProjectFiles) { file('.workflow/bindings.md', 'config'); step('bindings.md ← templates/bindings.md (fill it in: WORKFLOW §1)', () => putFile(join(W, 'bindings.md'), readFileSync(join(kit, 'templates/bindings.md')))); }
   if (existsSync(join(W, 'workflow.config'))) step('workflow.config exists — kept as is');
-  else step('workflow.config ← workflow.config.example (fill it in, with bindings.md)', () => putFile(join(W, 'workflow.config'), readFileSync(join(kit, 'workflow.config.example'))));
+  else if (!o.keepProjectFiles) { file('.workflow/workflow.config', 'config'); step('workflow.config ← workflow.config.example (fill it in, with bindings.md)', () => putFile(join(W, 'workflow.config'), readFileSync(join(kit, 'workflow.config.example')))); }
 
   for (const a of agents) {
+    file(HOOKS_FILE[a], 'hooks');
     step(`hooks → ${a}: ${HOOKS_FILE[a]} (merged; your other settings and hooks kept)`, () => putFile(join(target, HOOKS_FILE[a]), merged.get(a)!));
     if (a === 'claude') {
       for (const c of COMMANDS) {
         const rel = `.claude/commands/burhan/${c}.md`;
         const dest = join(target, rel);
         if (existsSync(dest) && !isManagedCommand(readFileSync(dest, 'utf8'))) step(`skipped ${rel} — an existing file not managed by burhan`);
-        else step(`command → /burhan:${c} (${rel})`, () => putFile(dest, withManagedMark(readFileSync(join(kit, 'commands', `${c}.md`), 'utf8'))));
+        else { file(rel, 'managed'); step(`command → /burhan:${c} (${rel})`, () => putFile(dest, withManagedMark(readFileSync(join(kit, 'commands', `${c}.md`), 'utf8')))); }
       }
       for (const m of managed) {
         const dest = join(target, m.rel);
         const text = m.text;
         if (text === null) {
-          if (ownedOld(m.rel)) step(`removed ${m.rel} — ${m.why}`, () => rmSync(dest));
+          if (ownedOld(m.rel)) { file(m.rel, 'managed', true); step(`removed ${m.rel} — ${m.why}`, () => rmSync(dest)); }
           else if (m.rel.endsWith('verify/SKILL.md')) step(`verify skill skipped — ${m.why}`);
         } else if (existsSync(dest) && !isManagedCommand(readFileSync(dest, 'utf8'))) step(`skipped ${m.rel} — an existing file not managed by burhan`);
-        else step(`managed → ${m.rel}`, () => putFile(dest, text));
+        else { file(m.rel, 'managed'); step(`managed → ${m.rel}`, () => putFile(dest, text)); }
       }
       for (const n of notes) step(n);
     }
@@ -199,6 +215,7 @@ export function install(o: InstallOptions, io: Io): number {
     if (b) {
       const bf = join(target, BOOT_FILE[a]);
       if (b.editedInside) step(`WARNING: ${BOOT_FILE[a]} was edited inside the managed block — ${o.apply ? 'saved' : 'will save'} a copy to ${BOOT_FILE[a]}.burhan-backup; keep your own text outside the block`);
+      file(BOOT_FILE[a], 'bootstrap');
       step(`bootstrap block → ${BOOT_FILE[a]} (content outside the block untouched)`, () => {
         if (b.editedInside) copyFileSync(realTarget(bf), bf + '.burhan-backup');
         putFile(bf, b.content);
@@ -214,15 +231,30 @@ export function install(o: InstallOptions, io: Io): number {
   const missing = hookRuntimeMissing();
   if (missing.length) step(`NOTE: the hooks need bash and jq at run time — missing here: ${missing.join(', ')}. On Windows, run the agent from Git Bash or WSL (a native port is planned).`);
 
+  return { version, target, blocked, steps, files, agents };
+}
+
+function runStep(s: { say: string; run?: () => void }): void {
+  if (s.run) {
+    try { s.run(); } catch (e) { throw new BurhanError(`failed: ${s.say}: ${(e as Error).message}`); }
+  }
+}
+
+/** Runs every step's write; throws BurhanError on the first failure. Callers refuse a plan with `blocked` first. */
+export function applyPlan(p: InstallPlan): void {
+  for (const s of p.steps) runStep(s);
+}
+
+export function install(o: InstallOptions, io: Io): number {
+  const plan = planInstall(o);
+  const { version, target, blocked, steps, agents } = plan;
   // ---------------------------------------------------------------- 3. apply
   if (blocked.length && o.apply) throw new BurhanError(`${blocked[0]} — nothing was changed`);
   io.stdout(o.apply ? `burhan ${version} → ${target}\n` : `DRY RUN — burhan ${version} → ${target} (nothing will change; add --apply)\n`);
   for (const b of blocked) io.stdout(`  BLOCKED: ${b} — --apply would stop here and change nothing; make it writable (or run the command outside the agent's sandbox)\n`);
   for (const s of steps) {
     io.stdout(`  ${s.say}\n`);
-    if (o.apply && s.run) {
-      try { s.run(); } catch (e) { throw new BurhanError(`failed: ${s.say}: ${(e as Error).message}`); }
-    }
+    if (o.apply) runStep(s); // per step, so a failure leaves the same partial output as before
   }
   io.stdout(`
 Next: ask your agent to follow .workflow/SETUP.md (guided setup: it proposes the config with evidence and

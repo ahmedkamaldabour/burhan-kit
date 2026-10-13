@@ -13,6 +13,7 @@
 .claude/agents/burhan-reviewer.md · .claude/skills/verify/SKILL.md (if WF_CHECK_CMD is set)   (claude)
 .claude/agents/burhan-{planner,builder,explorer}.md (if WF_MODEL_CLAUDE_* is set)                (claude)
 .codex/hooks.json · AGENTS.md block                                           (codex)
+.burhan/    work/ .gitignore                                   work files (`.burhan/work/`), per project; `.burhan/.gitignore`
 ```
 
 - `.workflow/bindings.md` (WORKFLOW §1) and `.workflow/workflow.config` are created **only if
@@ -38,6 +39,12 @@
 | Command | What it does |
 |---|---|
 | `burhan init --agents claude,codex [--apply]` | Install the kit (dry run without `--apply`) |
+| `burhan setup [dir] [--lang en\|ar]` | Guided setup in a terminal (also bare `npx burhan-kit` in a terminal); shows a summary and writes nothing until you confirm |
+| `burhan setup [dir] --agent [--lang en\|ar]` | Prints the questions and rules for an AI agent to ask, with the recommended answers |
+| `burhan setup [dir] --answers <file> [--apply]` | Shows, or with `--apply` writes, the setup for the answers in a JSON file |
+| `burhan setup [dir] --stack` | Prints the first-use instructions for an AI agent  |
+| `burhan setup [dir] --set check=<cmd\|none> [never-run=<a;b>] [sensitive=<p;q>] [--force]` | Sets the check, the never-run commands and the sensitive paths directly |
+| `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.workflow/local/` and the work files in `.burhan/`; `--all` removes them too (a work-files folder outside `.burhan/` is always kept). Validates everything before the first change, never follows a symlink out of the project, and touches only files carrying burhan's mark |
 | `burhan upgrade [--apply]` | Refresh kit-owned files; agents default to the installed ones; idempotent. Never rewrites `workflow.config` — `doctor` lists keys a newer version added |
 | `burhan doctor` | Read-only: bash ≥ 4, `jq` ≥ 1.6 (an older jq cannot compile the hooks' filters), a sha256 tool, `timeout`; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust (read from `~/.codex/config.toml`, never written); the state file's size. `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
 | `burhan status [--write]` | The work-item index, derived from the item files; `--write` regenerates `<docs>/README.md` (a hand-written index is never overwritten without `--force`, which keeps a backup) |
@@ -62,6 +69,7 @@ holds personal overrides, read after the team file, key by key.
 | `WF_SINGLE_TEST_HINT` | how to run one test file (`{{FILE}}` placeholder) |
 | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` | access-control paths and the reminder after editing one |
 | `WF_FORBIDDEN_REGEX`, `WF_FORBIDDEN_REASON` | commands automation must never run, and why |
+| `WF_STACK_SETUP` | `pending` = the agent sets up the project checks on first use (`setup --stack`); empty or `done` = nothing to do |
 | `WF_SKILLS` | `superpowers` to bind the process-skill mapping, or `none` (see below) |
 | `WF_MODE_DEFAULT`, `WF_MODE_<TYPE>_<SCOPE>` | the mode when an item does not set one: `step` (default) or `auto`; any other value = `step`. E.g. `WF_MODE_BUG_BOUNDED=auto` |
 | `WF_MODEL_CLAUDE_REVIEWER` | model for the generated `burhan-reviewer` subagent (team-only); empty = the session's model |

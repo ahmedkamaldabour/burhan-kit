@@ -24,6 +24,10 @@ WF_CHECK_CMD=""
 # written into the committed agent settings by `burhan upgrade`.
 WF_CHECK_TIMEOUT=60
 
+# ---- First-use setup -------------------------------------------------------------------------
+# pending = the agent sets up the project checks on first use; empty or done = nothing to do.
+WF_STACK_SETUP=""
+
 # ---- What counts as what (extended regular expressions, matched against file paths) --------
 # Source code — enables the "test first?" reminder and the unverified-"done" check.
 WF_CODE_REGEX=""

@@ -60,3 +60,26 @@ export function applyBlock(existing: string | null, agent: Agent, version: strin
   const text = out.join('\n') + '\n';
   return { content: crlf ? text.replace(/\n/g, '\r\n') : text, editedInside };
 }
+
+/** The file without the burhan block. `content: null` → the file held only the block (delete it).
+ *  A file with no block is returned unchanged; a broken marker pair throws BlockError. */
+export function removeBlock(existing: string): { content: string | null } {
+  const crlf = /\r\n/.test(existing);
+  const lines = existing.split('\n').map((l) => l.replace(/\r$/, ''));
+  if (lines[lines.length - 1] === '') lines.pop();
+  const begins = lines.flatMap((l, i) => (BEGIN_RE.test(l) ? [i] : []));
+  const ends = lines.flatMap((l, i) => (l === END_LINE ? [i] : []));
+  if (begins.length === 0 && ends.length === 0) return { content: existing };
+  if (begins.length !== 1 || ends.length !== 1)
+    throw new BlockError(`found ${begins.length} begin / ${ends.length} end burhan markers — expected exactly one pair. Fix the file by hand, then re-run.`);
+  const [b, e] = [begins[0], ends[0]];
+  if (b > e) throw new BlockError('the burhan end marker comes before the begin marker. Fix it by hand, then re-run.');
+  const before = lines.slice(0, b);
+  const after = lines.slice(e + 1);
+  // `applyBlock` put one blank line between the user's text and a block it appended: take it back out.
+  if (after.length === 0 && before.length > 0 && before[before.length - 1] === '') before.pop();
+  const out = [...before, ...after];
+  if (out.every((l) => l.trim() === '')) return { content: null };
+  const text = out.join('\n') + '\n';
+  return { content: crlf ? text.replace(/\n/g, '\r\n') : text };
+}

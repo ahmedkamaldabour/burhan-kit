@@ -9,4 +9,5 @@ process.exitCode = await runCli(process.argv.slice(2), {
   stdout: (s) => process.stdout.write(s),
   stderr: (s) => process.stderr.write(s),
   cwd: process.cwd(),
+  interactive: process.stdin.isTTY === true && process.stdout.isTTY === true,
 });

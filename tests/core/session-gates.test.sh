@@ -45,6 +45,18 @@ check "unknown WF_SKILLS value -> no superpowers names" "$(core $S "$(ev '{"even
 P="$(proj)"; mkdir -p "$P/.workflow/local"
 { echo "## Now"; printf -- '- %*s\n' 300000 x | tr ' ' 'y'; } > "$P/.workflow/local/PROGRESS.md"
 check "a huge line in Now does not suppress the gates" "$(core $S "$(ev '{"event":"session_start"}')" | jq -r .message)" has "WORKFLOW GATES"
+echo "  -- first-use trigger (WF_STACK_SETUP)"
+FU="⚑ FIRST USE: burhan's project checks are not set up yet. Before other work, run \`burhan setup --stack\` and follow it."
+P="$(proj 'WF_STACK_SETUP=pending')"
+out="$(core $S "$(ev '{"event":"session_start"}')" | jq -r .message)"
+check "FIRST USE line when WF_STACK_SETUP=pending" "$out" has "$FU"
+check "...and the gates are still there" "$out" has "WORKFLOW GATES"
+for v in 'WF_STACK_SETUP=done' 'WF_STACK_SETUP=' 'WF_STACK_SETUP=Pending' 'WF_STACK_SETUP=other'; do
+  P="$(proj "$v")"
+  check "no FIRST USE line for $v" "$(core $S "$(ev '{"event":"session_start"}')" | jq -r .message)" lacks "FIRST USE"
+done
+P="$(proj)"
+check "no FIRST USE line when the key is absent" "$(core $S "$(ev '{"event":"session_start"}')" | jq -r .message)" lacks "FIRST USE"
 echo "  -- autonomy modes"
 P="$(proj)"
 out="$(core $S "$(ev '{"event":"session_start"}')" | jq -r .message)"

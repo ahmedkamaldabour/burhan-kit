@@ -18,6 +18,12 @@
 
 </div>
 
+## للـ AI agents
+
+بتجهّز burhan لإنسان؟ شغّل `npx burhan-kit setup --agent` وامشي على اللي بيطبعه: الأسئلة اللي
+تسألها، والإجابات الموصى بيها، والقواعد (متعملش commit، ولا تغيّر إعدادات عامة، ولا تلمس
+credentials). أول استخدام في المشروع: `npx burhan-kit setup --stack`.
+
 ## المشكلة ← الحل
 
 | من غير burhan | مع burhan |
@@ -57,28 +63,48 @@ assistant  › I haven't verified this change. […] The "Done ✅" only means t
 
 ## ابدأ بسرعة
 
-الصق البرومت ده في Claude Code أو Codex جوه الـ repo بتاعك:
+جوه الـ repo بتاعك، في terminal:
+
+</div>
+
+```bash
+npx burhan-kit
+```
+
+<div dir="rtl">
+
+الـ wizard بيسألك كام سؤال، وبيعرض ملخص، ومش بيكتب حاجة غير لما توافق.
+
+أو الصق البرومت ده في Claude Code أو Codex:
 
 </div>
 
 ```text
-Set up burhan-kit in this repository.
-1. Run `npx burhan-kit@latest init --agents <claude,codex>` as a dry run and show me the plan.
-   Apply with --apply only after I approve.
-2. Then follow .workflow/SETUP.md step by step.
+Set up burhan-kit in this repository: run `npx burhan-kit setup --agent` and follow it.
 Never commit, never change my global settings, and ask me before anything you can't verify.
 ```
 
 <div dir="rtl">
 
-أو بإيدك:
+## تغيير الإعدادات / الإزالة
+
+- تغيّر الإعدادات: `npx burhan-kit setup`، أو قول للـ agent بتاعك: "change burhan settings".
+- تشيل burhan: `npx burhan-kit uninstall` بيعرض اللي هيتشال وما بيغيّرش حاجة؛ ضيف `--apply`
+  عشان ينفّذ. بيسيب الحاجات بتاعتك: `.workflow/workflow.config` و`.workflow/bindings.md`
+  و`.workflow/local/` وملفات الشغل في `.burhan/`. `--all` بيشيلهم هما كمان (أي فولدر شغل بره
+  `.burhan/` بيفضل دايمًا).
+
+## للـ scripts والـ CI
+
+`init` و`upgrade` لسه موجودين للـ scripts، وهما dry run لحد ما تضيف `--apply`:
 
 </div>
 
 ```bash
-npx burhan-kit init --agents claude,codex            # dry run: prints the plan, writes nothing
-npx burhan-kit init --agents claude,codex --apply    # write it (project root)
-npx burhan-kit doctor                                # read-only health check
+npx burhan-kit@latest init --agents claude,codex            # dry run: prints the plan, writes nothing
+npx burhan-kit@latest init --agents claude,codex --apply    # write it (project root)
+npx burhan-kit upgrade --apply                              # refresh kit-owned files
+npx burhan-kit doctor                                       # read-only health check
 ```
 
 <div dir="rtl">
@@ -161,7 +187,7 @@ flowchart LR
 | Hooks | بوابات أول الـ session، واقتراحات على البرومت، وcheck قبل الـ commit، وتذكيرات بعد التعديل، ومراجعة آخر الـ turn |
 | Evidence ledger | كل تعديل وكل أمر بترتيبه وبالـ exit code — برّه المشروع |
 | QC مستقل | subagent جديد أو الـ agent التاني، ومتسجّل مين عمله |
-| CLI | `init` `upgrade` `doctor` `status` `stats` `evidence` `changed` `pr-body` |
+| CLI | `setup` `uninstall` `init` `upgrade` `doctor` `status` `stats` `evidence` `changed` `pr-body` |
 
 مفيش افتراض عن لغة أو framework أو test runner أو tracker: كل حاجة خاصة بالـ stack في
 `.workflow/workflow.config`.

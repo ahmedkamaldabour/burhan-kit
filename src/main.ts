@@ -3,13 +3,20 @@ import { BurhanError } from './lib/errors.js';
 import { install, parseAgents } from './lib/install.js';
 import { readVersion } from './lib/kit.js';
 import { changed } from './lib/changed.js';
+import { uninstall } from './lib/uninstall.js';
 import { doctor } from './lib/doctor.js';
 import { prBody } from './lib/pr-body.js';
 import { evidence } from './lib/evidence.js';
 import { stats } from './lib/stats.js';
 import { status } from './lib/status.js';
+import { homedir } from 'node:os';
+import { clackPrompter, numberedPrompter, withFallback } from './lib/setup/prompter.js';
+import { runWizard } from './lib/setup/wizard.js';
+import { agentInstructions, runAnswers } from './lib/setup/agent.js';
+import { messages } from './lib/setup/messages.js';
+import { parseSetArgs, setStack, stackInstructions } from './lib/setup/stack.js';
 
-export interface Io { stdout(s: string): void; stderr(s: string): void; cwd: string }
+export interface Io { stdout(s: string): void; stderr(s: string): void; cwd: string; /** stdin and stdout are both terminals: only then may a prompt be shown. */ interactive?: boolean }
 
 export const USAGE = `usage: burhan <command> [options]
 
@@ -27,10 +34,21 @@ export const USAGE = `usage: burhan <command> [options]
                        the evidence ledger: every command with its exit code, in order, per turn
   pr-body [dir] --item <slug> [--docs <path>]
                        a pull-request description from the item's files (read-only; for gh pr create --body-file)
+  setup [dir] [--lang en|ar]
+                       guided setup in a terminal (also: no command at all); shows a summary before writing anything
+  setup [dir] --agent [--lang en|ar]
+                       print the questions and rules for an AI agent to ask, with the recommended answers
+  setup [dir] --answers <file> [--apply]
+                       show (or, with --apply, write) the setup for the answers in a JSON file
+  setup [dir] --stack  print the first-use instructions for an AI agent
+  setup [dir] --set check=<cmd|none> [never-run=<a;b>] [sensitive=<p;q>] [--force]
+                       save the project's check command (runs it once first)
+  uninstall [dir] [--apply] [--all]
+                       remove burhan from a project; keeps workflow.config, bindings.md, local/ and your work files unless --all
   doctor [dir]         read-only health check: runtime, install, config, hook wiring, state (exit 1 on a fail)
   --version | --help
 
-Without --apply, init and upgrade are a dry run: they print what they would do and change nothing.
+Without --apply, init, upgrade and uninstall are a dry run: they print what they would do and change nothing.
 `;
 
 export async function runCli(argv: string[], io: Io): Promise<number> {
@@ -90,16 +108,44 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         return prBody({ target: positionals[0] ?? io.cwd, item: values.item, docs: values.docs }, io);
       }
+      case 'uninstall': {
+        const { values, positionals } = parseArgs({
+          args: rest, allowPositionals: true, strict: true,
+          options: { apply: { type: 'boolean' }, all: { type: 'boolean' } },
+        });
+        if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
+        return uninstall({ target: positionals[0] ?? io.cwd, apply: values.apply === true, all: values.all === true }, io);
+      }
       case 'doctor': {
         const { positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: {} });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         return doctor({ target: positionals[0] ?? io.cwd }, io);
+      }
+      case 'setup': {
+        const { values, positionals } = parseArgs({
+          args: rest, allowPositionals: true, strict: true,
+          options: { lang: { type: 'string' }, stack: { type: 'boolean' }, set: { type: 'boolean' }, force: { type: 'boolean' }, agent: { type: 'boolean' }, answers: { type: 'string' }, apply: { type: 'boolean' } },
+        });
+        const lang = values.lang ?? 'en';
+        if (lang !== 'en' && lang !== 'ar') throw new BurhanError(`--lang must be en or ar, not "${lang}"`);
+        // With --set the KEY=VALUE pairs are the positionals that contain "="; a quoted `check=npm test` stays one argument.
+        const pairs = values.set ? positionals.filter((x) => x.includes('=')) : [];
+        const dirs = positionals.filter((x) => !pairs.includes(x));
+        if (dirs.length > 1) throw new BurhanError(`unexpected argument: ${dirs[1]}`);
+        const target = dirs[0] ?? io.cwd;
+        if (values.agent) { io.stdout(agentInstructions(target, lang, homedir())); return 0; }
+        if (values.answers !== undefined) return runAnswers(target, values.answers, values.apply === true, io, lang, homedir());
+        if (values.apply) throw new BurhanError('--apply needs --answers <file>');
+        if (values.stack) { io.stdout(stackInstructions(lang) + '\n'); return 0; }
+        if (values.set) return await setStack(target, parseSetArgs(pairs), { force: values.force === true }, io);
+        return await setupWizard(target, io, lang);
       }
       case '--version': case '-v':
         io.stdout(readVersion() + '\n'); return 0;
       case '--help': case '-h': case 'help':
         io.stdout(USAGE); return 0;
       case undefined:
+        if (io.interactive) return await setupWizard(io.cwd, io, 'en');
         io.stdout(USAGE); return 2;
       default:
         io.stderr(`burhan: unknown command: ${cmd}\n`); io.stdout(USAGE); return 2;
@@ -109,4 +155,14 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
     if (e instanceof BurhanError || code.startsWith('ERR_PARSE_ARGS')) { io.stderr(`burhan: ${(e as Error).message}\n`); return 2; }
     throw e;
   }
+}
+
+/** The terminal wizard: clack when it loads, numbered lists when it does not or breaks mid-way (AC-08). */
+async function setupWizard(target: string, io: Io, lang: 'en' | 'ar'): Promise<number> {
+  if (!io.interactive) { io.stderr(messages(lang).wizard.terminalOnly + '\n'); return 2; }
+  const numbered = (): ReturnType<typeof numberedPrompter> => numberedPrompter(process.stdin, process.stdout);
+  const clack = await clackPrompter();
+  const p = clack ? withFallback(clack, numbered) : numbered();
+  try { return await runWizard(target, io, p, lang, homedir()); }
+  finally { p.close?.(); }
 }

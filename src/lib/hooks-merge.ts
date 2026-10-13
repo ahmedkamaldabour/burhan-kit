@@ -35,3 +35,24 @@ export function mergeHooks(current: Settings, snippet: Settings, marker: string,
   out.hooks = hooks;
   return out;
 }
+
+/** `current` without our entries (a command exactly equal to one in `commands`, whatever its timeout). Groups and events left empty by that
+ *  disappear, and so does an empty "hooks" key. null → nothing else is left in the file (delete it). */
+export function removeHooks(current: Settings, commands: readonly string[]): Settings | null {
+  const ours = new Set(commands);
+  const out = structuredClone(current);
+  if (isObject(out.hooks)) {
+    const hooks: Record<string, HookGroup[]> = {};
+    for (const [event, groups] of Object.entries(out.hooks)) {
+      const kept = groups.flatMap((g) => {
+        if (!Array.isArray(g.hooks)) return [g];
+        const rest = g.hooks.filter((e) => !(typeof e.command === 'string' && ours.has(e.command)));
+        if (rest.length === g.hooks.length) return [g];
+        return rest.length ? [{ ...g, hooks: rest }] : [];
+      });
+      if (kept.length) hooks[event] = kept;
+    }
+    if (Object.keys(hooks).length) out.hooks = hooks; else delete out.hooks;
+  } else if (out.hooks === null) delete out.hooks;
+  return Object.keys(out).length ? out : null;
+}

@@ -16,6 +16,12 @@ that check the agent against it at every turn (each agent reply).
 
 </div>
 
+## For AI agents
+
+Setting this up for a human? Run `npx burhan-kit setup --agent` and follow what it prints: the
+questions to ask, the recommended answers, and the rules (never commit, never touch global
+settings, never handle credentials). First use in a project: `npx burhan-kit setup --stack`.
+
 ## The problem → the fix
 
 | Without burhan | With burhan |
@@ -57,28 +63,43 @@ assistant  › I haven't verified this change. […] The "Done ✅" only means t
 
 ## Quick start
 
-Paste this into Claude Code or Codex, in your repository:
+In your repository, in a terminal:
+
+```bash
+npx burhan-kit
+```
+
+The wizard asks a few questions, shows a summary, and writes nothing until you confirm.
+
+Or paste this into Claude Code or Codex:
 
 ```text
-Set up burhan-kit in this repository.
-1. Run `npx burhan-kit@latest init --agents <claude,codex>` as a dry run and show me the plan.
-   Apply with --apply only after I approve.
-2. Then follow .workflow/SETUP.md step by step.
+Set up burhan-kit in this repository: run `npx burhan-kit setup --agent` and follow it.
 Never commit, never change my global settings, and ask me before anything you can't verify.
 ```
 
-Or by hand:
+## Change settings / Uninstall
+
+- Change settings: `npx burhan-kit setup`, or ask your agent: "change burhan settings".
+- Remove burhan: `npx burhan-kit uninstall` is a dry run; add `--apply` to remove it. It keeps what
+  is yours: `.workflow/workflow.config`, `.workflow/bindings.md`, `.workflow/local/` and the work files
+  in `.burhan/`. `--all` removes those too (a work-files folder outside `.burhan/` is always kept).
+
+## Scripts and CI
+
+`init` and `upgrade` stay available for scripts; both are a dry run until `--apply`:
 
 ```bash
-npx burhan-kit init --agents claude,codex            # dry run: prints the plan, writes nothing
-npx burhan-kit init --agents claude,codex --apply    # write it (project root)
-npx burhan-kit doctor                                # read-only health check
+npx burhan-kit@latest init --agents claude,codex            # dry run: prints the plan, writes nothing
+npx burhan-kit@latest init --agents claude,codex --apply    # write it (project root)
+npx burhan-kit upgrade --apply                              # refresh kit-owned files
+npx burhan-kit doctor                                       # read-only health check
 ```
 
 <details>
 <summary>What the guided setup does · the minimum config</summary>
 
-- `.workflow/SETUP.md` has the agent read your build, test and lint setup without changing
+- `.workflow/SETUP.md` points the agent at `setup --agent`; it has the agent read your build, test and lint setup without changing
   anything.
 - It proposes each config value with its file:line evidence and asks you only business questions.
 - After you approve the diff, it writes the config, runs your check once and runs `burhan doctor`.
@@ -147,7 +168,7 @@ commit later, or you commit.
 | Hooks | Session gates, prompt hints, pre-commit check, post-edit reminders, end-of-turn audit |
 | Evidence ledger | Every edit and command, in order, with its exit code — outside the project |
 | Independent QC | A fresh subagent or the other agent; who performed it is recorded |
-| CLI | `init` `upgrade` `doctor` `status` `stats` `evidence` `changed` `pr-body` |
+| CLI | `setup` `uninstall` `init` `upgrade` `doctor` `status` `stats` `evidence` `changed` `pr-body` |
 
 Nothing assumes a language, framework, test runner or tracker: stack specifics live in
 `.workflow/workflow.config`.

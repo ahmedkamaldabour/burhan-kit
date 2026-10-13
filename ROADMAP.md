@@ -82,3 +82,6 @@ These are by design, and listed so nobody mistakes them for guarantees:
   can warn after you trusted every hook — the `Trusted` line in Codex's `/hooks` is what counts.
 - **The `verify` skill.** Claude Code calls it at the model's discretion. The pre-commit hook runs
   `WF_CHECK_CMD` on every `git commit` regardless.
+- **Hook-file formatting.** Setup writes `.claude/settings.json` and `.codex/hooks.json` back as
+  indented JSON, and `uninstall` does the same when it removes burhan's entries. Your settings and
+  hooks are kept, but a compact file's original layout is not restored.

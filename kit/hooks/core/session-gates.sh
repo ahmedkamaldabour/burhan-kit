@@ -51,6 +51,7 @@ done
 [ -n "${WF_FORBIDDEN_REGEX:-}" ] && [ -z "${WF_FORBIDDEN_REASON:-}" ] && WF_FORBIDDEN_REASON="commands matching WF_FORBIDDEN_REGEX in .workflow/workflow.config."
 
 wf_say "$(fill)"
+[ "${WF_STACK_SETUP:-}" = "pending" ] && wf_say "⚑ FIRST USE: burhan's project checks are not set up yet. Before other work, run \`burhan setup --stack\` and follow it."
 [ -n "$old_plan_only" ] && wf_say "$old_plan_only"
 
 now="$(wf_state_now | cut -c1-300)"
