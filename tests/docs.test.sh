@@ -6,7 +6,13 @@ cd "$T_ROOT" || exit 1
 README="$(cat README.md)"; AR="$(cat README.ar.md)"; SETUP="$(cat kit/SETUP.md)"
 first30() { head -30 "$1"; }
 qs_block() { awk '/^## (Quick start|ابدأ بسرعة)/{f=1;next} /^## /{f=0} f' "$1"; }
-section_block() { awk -v heading="$2" '$0 == heading { found=1; next } found && /^## / { exit } found' "$1"; }
+# section_block <file> <heading line>: the lines under that exact heading, up to the next "## ".
+# grep -F -x finds the heading: macOS awk did not match an Arabic heading passed with -v (CI, 0.2.1).
+section_block() {
+  local start; start="$(grep -n -F -x -- "$2" "$1" | head -n 1 | cut -d: -f1)"
+  [ -n "$start" ] || return 0
+  tail -n "+$((start + 1))" "$1" | awk '/^## /{exit} {print}'
+}
 
 echo "README.md — the agent path comes first"
 check "setup --agent within the first 30 lines" "$(first30 README.md)" has "setup --agent"
