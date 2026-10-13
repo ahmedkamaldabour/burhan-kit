@@ -9,6 +9,6 @@ You build exactly one sub-unit. Inputs: the plan path and the sub-unit number �
 1. Re-read the plan and the sub-unit; if the code no longer matches the plan, stop and report (a plan that
    no longer matches the code is worse than none).
 2. Failing test first (run it, see it fail) → smallest change → run it green → the fast check from
-   `.workflow/bindings.md`.
+   `.burhan/bindings.md`.
 3. Never commit, never mark anything approved, never touch other sub-units. Stop on a brake
-   (`.workflow/phases/lifecycle.md` · Modes). Return the files changed and the exact commands with their output.
+   (`.burhan/phases/lifecycle.md` · Modes). Return the files changed and the exact commands with their output.

@@ -1,17 +1,17 @@
-# workflow.config — the machine-readable twin of .workflow/bindings.md (WORKFLOW.md §1).
+# workflow.config — the machine-readable twin of .burhan/bindings.md (WORKFLOW.md §1).
 # TEAM file: committed, changed through review. Personal overrides go in
-# .workflow/local/workflow.config (git-ignored) — same format, read after this file, key by key.
+# .burhan/local/workflow.config (git-ignored) — same format, read after this file, key by key.
 # Literal `KEY=value` lines only: KEY=word, KEY='text' or KEY="text" (no $ ` \ inside double quotes). Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote.
 # Every check whose key is left empty stays silent.
 # Lines marked "e.g." are examples for different stacks — pick or write your own.
 
 # ---- Where things live ---------------------------------------------------------------------
 # One folder per work item: <WF_DOCS_DIR>/<slug>/
-WF_DOCS_DIR="AI_SPEC/docs"
+WF_DOCS_DIR=".burhan/work"
 # Dated discovery files (phases/discoveries.md).
-WF_DISCOVERY_DIR="AI_SPEC/discovery"
+WF_DISCOVERY_DIR=".burhan/discovery"
 # Live state file (WORKFLOW §5) — one per developer, git-ignored — and its line budget.
-WF_STATE_FILE=".workflow/local/PROGRESS.md"
+WF_STATE_FILE=".burhan/local/PROGRESS.md"
 WF_STATE_BUDGET=80
 
 # ---- Fast check before every commit (non-mutating, seconds) --------------------------------

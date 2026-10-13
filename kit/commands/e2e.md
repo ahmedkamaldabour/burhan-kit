@@ -1,20 +1,20 @@
 ---
-description: Drive one work item end to end — route, story, plan, build sub-unit by sub-unit (test-first), review — following .workflow/WORKFLOW.md
+description: Drive one work item end to end — route, story, plan, build sub-unit by sub-unit (test-first), review — following .burhan/WORKFLOW.md
 argument-hint: <slug>, or a short title if the item does not exist yet
 ---
 
 You are running the **per-item end-to-end** workflow for: **$ARGUMENTS**
 
-The authoritative process is `.workflow/WORKFLOW.md` — follow it; this command only sequences it.
+The authoritative process is `.burhan/WORKFLOW.md` — follow it; this command only sequences it.
 Project values (docs location, state file, check and test commands) come from
-`.workflow/bindings.md` (WORKFLOW §1) and `.workflow/workflow.config`. **Never invent a command.**
+`.burhan/bindings.md` (WORKFLOW §1) and `.burhan/workflow.config`. **Never invent a command.**
 
 If `$ARGUMENTS` is empty, ask which item to work on and stop.
 
 ## 1) Assess where we are — report before doing anything
 
 - Read the state file first. A hook's finding in the context is explained in
-  `.workflow/phases/enforcement.md`.
+  `.burhan/phases/enforcement.md`.
 - Does `<docs>/<slug>/` exist? Try `$ARGUMENTS` as a slug (kebab-case a title).
 - If it exists, read `<slug>-story.md`, `<slug>-implementation-plan.md` or `<slug>-findings.md`, and
   everything in `reviews/`. **Cross-check against the actual code** — don't trust status markers
@@ -22,7 +22,7 @@ If `$ARGUMENTS` is empty, ask which item to work on and stop.
 - Print a short status: route (type / scope), which gates are done, sub-units done / in progress /
   to do, open questions, the *Primary objective*.
 
-**The mode decides where you stop** (`.workflow/phases/lifecycle.md` · Modes): read `Mode:` from the
+**The mode decides where you stop** (`.burhan/phases/lifecycle.md` · Modes): read `Mode:` from the
 item's block in the state file (ask at the start if unset; exact forms: phases/files.md · Fields). `step` pauses after every sub-unit; `auto` runs the
 sub-units without pausing until a brake or the commit checkpoint. "Plan only" is a stopping point, not a
 mode: stop after the plan is approved, close the item at `Plan ready`, write no code.
@@ -43,22 +43,22 @@ reviewed).
 
 ## 2) Branch on state
 
-- **No item yet** → intake (.workflow/phases/lifecycle.md ①): restate the request, **classify type + scope + one-line
+- **No item yet** → intake (.burhan/phases/lifecycle.md ①): restate the request, **classify type + scope + one-line
   reason** (§3, including scope escalators), preserve material inputs under `sources/`. Discover
   before asking — question the human only about business ambiguity.
   - **Read-only route** (investigation, bug + spike) → write `<slug>-findings.md` from
     `templates/findings.md`; mark `**Read-only:** yes` in the state file; never modify application code.
     Finish with the conclusion and, if code should change, propose a new routed item. Then run the
-    knowledge review (.workflow/phases/memory.md) and the close-out (.workflow/phases/close-out.md) with state `Done (no QC)` — onboarding a repository
+    knowledge review (.burhan/phases/memory.md) and the close-out (.burhan/phases/close-out.md) with state `Done (no QC)` — onboarding a repository
     instead stops for the human to approve the baseline. Stop.
   - Route includes **S** → write `<slug>-story.md` from `templates/story.md`.
   - Route says **S+P** → one approval gate, two files: write both `<slug>-story.md` and
     `<slug>-implementation-plan.md` from their templates (the plan as in the plan step below), present
     them together and stop once. The approval covers both: the story's **Status** and the plan's
     **Overall status** become `Approved`.
-  - Which files an item has, and their length caps: `.workflow/phases/files.md`.
+  - Which files an item has, and their length caps: `.burhan/phases/files.md`.
   - Route starts at **P** (refactor, release) → skip the story; go to the plan step below. Too big for one plan → propose a split into a parent and children
-    (.workflow/phases/lifecycle.md · Decomposition). **Present it and STOP for approval.**
+    (.burhan/phases/lifecycle.md · Decomposition). **Present it and STOP for approval.**
 - **Story approved (or no story on this route), no plan** → investigate the real code (cite file:line), re-verify the story's
   facts, then write `<slug>-implementation-plan.md` from `templates/plan.md`. An open *material*
   question blocks approval. **Present it and STOP for approval.**
@@ -85,14 +85,14 @@ For the next unimplemented sub-unit only:
 
 ## 4) Review the sub-unit
 
-- An independent review of the sub-unit's diff against `.workflow/phases/review.md` (security first), in a fresh
+- An independent review of the sub-unit's diff against `.burhan/phases/review.md` (security first), in a fresh
   context where feasible (Claude Code: the `burhan-reviewer` subagent, given only the paths; wait for its
   report before the next sub-unit). Record
   **Performed by** in the review file, in the exact form of phases/files.md · Fields.
 - Add the sub-unit's section to `reviews/<slug>-review.md` (from `templates/review.md`): a **short**
   checklist when it touches nothing sensitive and no scope escalator, the **full** review otherwise
-  (`.workflow/phases/review.md` · Sized by risk).
-- Fix in-scope findings; carry the rest forward (`.workflow/phases/discoveries.md` for anything out of scope).
+  (`.burhan/phases/review.md` · Sized by risk).
+- Fix in-scope findings; carry the rest forward (`.burhan/phases/discoveries.md` for anything out of scope).
 - Re-run the affected tests and the fast check after fixes. Show the output.
 
 ## 5) Between sub-units
@@ -115,8 +115,8 @@ criterion, and record every run — failed ones included — in `reviews/<slug>-
 **Completed**. Then:
 - Route includes **Q** → suggest `burhan:qc $ARGUMENTS` (it runs the knowledge review and the
   close-out).
-- No **Q** → if the route includes **K**, run the knowledge review now (.workflow/phases/memory.md: propose with evidence;
-  the human promotes or rejects; or record "none"). Then the close-out (.workflow/phases/close-out.md) with state
+- No **Q** → if the route includes **K**, run the knowledge review now (.burhan/phases/memory.md: propose with evidence;
+  the human promotes or rejects; or record "none"). Then the close-out (.burhan/phases/close-out.md) with state
   `Done (no QC)`.
 
 Record any small unrequested tweak in the plan under "Out-of-scope changes".

@@ -23,7 +23,7 @@ check "slow check -> NOT VERIFIED (timed out" "$(c 'git commit -m x')" has "NOT 
 P="$(proj)"
 check "no check configured" "$(c 'git commit -m x')" has "NOT VERIFIED (no check configured)"
 
-P="$(proj 'WF_CHECK_CMD="test -f .workflow/workflow.config"')"
+P="$(proj 'WF_CHECK_CMD="test -f .burhan/workflow.config"')"
 check "check sees project-relative files" "$(c 'git commit -m x')" has "PASS"
 echo "  -- commit detection (review)"
 P="$(proj 'WF_CHECK_CMD="true"')"

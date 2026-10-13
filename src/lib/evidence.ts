@@ -36,11 +36,11 @@ export const ereToJs = (re: string): string => re
   .replace(/\\[<>]/g, '\\b')          // GNU grep word boundaries
   .replace(/\{,(\d+)\}/g, '{0,$1}');   // ERE {,n}; JS reads it literally
 
-/** The project a path belongs to: the nearest ancestor holding .workflow/ (else the path itself). */
+/** The project a path belongs to: the nearest ancestor holding .burhan/ (else the path itself). */
 export function projectRoot(target: string): string {
   let d = realTarget(target);
   for (;;) {
-    if (existsSync(join(d, '.workflow'))) return d;
+    if (existsSync(join(d, '.burhan'))) return d;
     const up = dirname(d);
     if (up === d) return realTarget(target);
     d = up;

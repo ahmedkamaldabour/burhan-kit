@@ -5,6 +5,7 @@ import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'n
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { runCli } from '../src/main.js';
+import { agentInstructions, runAnswers } from '../src/lib/setup/agent.js';
 import { scriptedPrompter } from '../src/lib/setup/prompter.js';
 import { runWizard } from '../src/lib/setup/wizard.js';
 import { currentAnswers, recommended, type SetupAnswers } from '../src/lib/setup/engine.js';
@@ -44,6 +45,29 @@ const agentJson = (out: string): { recommended: SetupAnswers; questions: { id: s
   return JSON.parse(blocks[0][1]);
 };
 
+for (const lang of ['en', 'ar'] as const) for (const present of [false, true]) for (const withHooks of [false, true]) {
+  test(`${lang}: optional-install hint occurs once iff absent in agent and answer summaries, hooks=${withHooks}, present=${present}`, () => {
+    const target = repo();
+    const suppliedHome = tmpDir('burhan-agent-optional-home-');
+    if (present) mkdirSync(join(suppliedHome, '.claude/plugins/superpowers'), { recursive: true });
+    if (withHooks) {
+      mkdirSync(join(target, '.claude'));
+      writeFileSync(join(target, '.claude/settings.json'), JSON.stringify({ hooks: { Stop: [{ hooks: [{ command: 'echo mine' }] }] } }));
+    }
+    const before = hash(target);
+    const beforeHome = hash(suppliedHome);
+    const protocol = agentInstructions(target, lang, suppliedHome);
+    const result = capture(target);
+    assert.equal(runAnswers(target, answersFile({ agents: 'claude', mode: 'step', docs: 'private', lang }), false, result.io, lang, suppliedHome), 0);
+    for (const output of [protocol, result.o.out]) {
+      assert.equal(output.split('/plugin install superpowers@claude-plugins-official').length - 1, present ? 0 : 1);
+      if (!present) assert.match(output, /Claude Code/);
+    }
+    assert.equal(hash(target), before);
+    assert.equal(hash(suppliedHome), beforeHome);
+  });
+}
+
 test('--agent prints rules and one json block: same questions as the wizard, recommended on a fresh repo (AC-09)', async () => {
   const t = repo(); const { o, io } = capture(t);
   assert.equal(await runCli(['setup', t, '--agent'], io), 0);
@@ -54,10 +78,10 @@ test('--agent prints rules and one json block: same questions as the wizard, rec
   assert.deepEqual(j.recommended, recommended(t, home));
 });
 
-test('--agent rules: never edit .workflow/, apply only after the user says yes, one question per message', async () => {
+test('--agent rules: never edit .burhan/, apply only after the user says yes, one question per message', async () => {
   const t = repo(); const { o, io } = capture(t);
   assert.equal(await runCli(['setup', t, '--agent'], io), 0);
-  assert.match(o.out, /never edit `?\.workflow\//i);
+  assert.match(o.out, /never edit `?\.burhan\//i);
   assert.match(o.out, /only after the user says yes/i);
   assert.match(o.out, /one question per message/i);
   assert.match(o.out, /setup --answers/);

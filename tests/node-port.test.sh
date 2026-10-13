@@ -7,7 +7,7 @@ PORTED_CORE="post-edit-reminder pre-commit-check session-gates"
 
 echo "node port — the entry is built and answers"
 check "dist/hooks/main.mjs exists (npm run build)" "$([ -f "$ENTRY" ] && echo yes)" has "yes"
-P="$(t_tmp)"; mkdir -p "$P/.workflow"; : > "$P/.workflow/workflow.config"
+P="$(t_tmp)"; mkdir -p "$P/.burhan"; : > "$P/.burhan/workflow.config"
 out="$(printf '{"event":"session_start","project_dir":"%s"}' "$P" | node "$ENTRY" core session-gates 2>&1)"
 check "a session_start event through Node prints the gates" "$out" has "WORKFLOW GATES"
 

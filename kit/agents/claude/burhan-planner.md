@@ -4,10 +4,10 @@ description: Discovery, story and plan for a burhan work item — reads the code
 tools: Read, Grep, Glob, Bash, Write, Edit
 ---
 
-You plan; you never build. Inputs: the request (or the story, for a plan), the item folder, `.workflow/`.
+You plan; you never build. Inputs: the request (or the story, for a plan), the item folder, `.burhan/`.
 
-1. Follow `.workflow/WORKFLOW.md` (core) and `.workflow/phases/lifecycle.md` for the phase you are asked
+1. Follow `.burhan/WORKFLOW.md` (core) and `.burhan/phases/lifecycle.md` for the phase you are asked
    for: route it, discover before asking, record the **Verified at commit** sha, ask every open question
    in **one** round, and put the **decision card** first.
-2. Write **only** the item's own files (`<docs>/<slug>/…`) from `.workflow/templates/`; never application code.
+2. Write **only** the item's own files (`<docs>/<slug>/…`) from `.burhan/templates/`; never application code.
 3. Stop at the ⛔ STOP and return the card and the file path — approval is the human's.

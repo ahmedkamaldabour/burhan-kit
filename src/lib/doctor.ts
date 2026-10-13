@@ -75,13 +75,13 @@ const groups = (v: HookFile, event: string): { hooks?: { command?: unknown }[] }
 
 const SUBS = /\b(session-gates|prompt-router|pre-commit-check|post-edit-reminder|turn-audit)\b/;
 /** Each snippet event with the core hook it runs. */
-function wanted(agent: 'claude' | 'codex'): { event: string; sub: string }[] {
+function wanted(agent: 'claude' | 'codex'): { event: string; sub: string; command: string }[] {
   const s = (readJson(join(kitDir(), HOOKS[agent].snippet)) ?? {}) as HookFile;
-  const out: { event: string; sub: string }[] = [];
+  const out: { event: string; sub: string; command: string }[] = [];
   for (const [event, groups] of Object.entries(s.hooks ?? {}))
     for (const g of groups) for (const h of g.hooks ?? []) {
       const m = SUBS.exec(String(h.command));
-      if (m) out.push({ event, sub: m[1] });
+      if (m && typeof h.command === 'string') out.push({ event, sub: m[1], command: h.command });
     }
   return out;
 }
@@ -114,11 +114,11 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
   // ---- install
   if (!existsSync(targetIn) || !statSync(targetIn).isDirectory()) { add('fail', `not a directory: ${targetIn}`); return cs; }
   const target = realTarget(targetIn);
-  const W = join(target, '.workflow');
+  const W = join(target, '.burhan');
   const parts = ['WORKFLOW.md', 'phases', 'hooks/core'].filter((f) => !existsSync(join(W, f)));
-  if (!existsSync(join(W, 'WORKFLOW.md'))) { add('fail', `burhan is not installed here (.workflow/WORKFLOW.md missing) — run burhan init ${target} --agents claude[,codex] --apply`); return cs; }
-  if (parts.length) add('fail', `.workflow/ is incomplete (missing: ${parts.join(', ')}) — run burhan upgrade --apply`);
-  for (const f of ['.workflow/WORKFLOW.md', '.workflow/VERSION'])
+  if (!existsSync(join(W, 'WORKFLOW.md'))) { add('fail', `burhan is not installed here (.burhan/WORKFLOW.md missing) — run burhan init ${target} --agents claude[,codex] --apply`); return cs; }
+  if (parts.length) add('fail', `.burhan/ is incomplete (missing: ${parts.join(', ')}) — run burhan upgrade --apply`);
+  for (const f of ['.burhan/WORKFLOW.md', '.burhan/VERSION'])
     if (unreadable(join(target, f))) add('fail', `unreadable: ${f} — check its permissions`);
   const version = readVersion();
   const stamp = readText(join(W, 'VERSION'))?.trim() ?? 'unknown';
@@ -132,7 +132,7 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
   const differ = kitFiles.filter((f) => {
     try { return readFileSync(join(W, f), 'utf8') !== readFileSync(join(kit, f), 'utf8'); } catch { return true; }
   });
-  if (differ.length) add('warn', `kit files differ from this CLI's kit (${differ.slice(0, 5).map((f) => `.workflow/${f}`).join(', ')}${differ.length > 5 ? ` and ${differ.length - 5} more` : ''}) — edited in place or another build; run burhan upgrade --apply`);
+  if (differ.length) add('warn', `kit files differ from this CLI's kit (${differ.slice(0, 5).map((f) => `.burhan/${f}`).join(', ')}${differ.length > 5 ? ` and ${differ.length - 5} more` : ''}) — edited in place or another build; run burhan upgrade --apply`);
   else add('ok', 'kit files match this CLI');
 
   // ---- config: the same parser the CLI uses, mirroring what the hooks read (team, then local)
@@ -170,9 +170,8 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     const rel = HOOKS[agent].file;
     const v = readJson(join(target, rel)) as HookFile | undefined;
     if (v === undefined || typeof v !== 'object' || v === null) { add('fail', `${rel}: missing or not valid JSON — run burhan upgrade --apply`); continue; }
-    const marker = `.workflow/hooks/adapters/${agent}/hook.sh`;
-    const unwired = wanted(agent).filter(({ event, sub }) => !groups(v, event).some((g) => Array.isArray(g.hooks) &&
-      g.hooks.some((h) => h && typeof h.command === 'string' && h.command.includes(marker) && SUBS.exec(h.command)?.[1] === sub)));
+    const unwired = wanted(agent).filter(({ event, command }) => !groups(v, event).some((g) => Array.isArray(g.hooks) &&
+      g.hooks.some((h) => h && h.command === command)));
     if (unwired.length) add('fail', `${rel}: hooks not wired — ${unwired.map((u) => `${u.event} (${u.sub})`).join(', ')} — run burhan upgrade --apply`);
     else add('ok', `${rel}: all ${wanted(agent).length} hooks wired`);
 
@@ -184,7 +183,7 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
         else if (!isManagedCommand(readText(p)!)) add('warn', `${f}: not managed by burhan (your own file) — upgrades skip it`);
         else add('ok', f);
       }
-      if (existsSync(join(target, '.claude/skills/verify/SKILL.md'))) {
+      if (existsSync(join(target, '.claude/skills/burhan-verify/SKILL.md'))) {
         const cv = probe.claudeVersion();
         if (cv === null) add('skip', 'claude CLI version: not found on PATH — the verify skill needs Claude Code ≥ ' + VERIFY_MIN);
         else if (older(cv, VERIFY_MIN)) add('warn', `Claude Code ${cv}: the verify skill needs ≥ ${VERIFY_MIN} — update Claude Code`);
@@ -217,10 +216,10 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
 
   // ---- state
   const gi = join(W, '.gitignore');
-  if (unreadable(gi)) add('warn', 'unreadable: .workflow/.gitignore — cannot tell whether local/ is ignored');
-  else if (/^\/?local\/?\r?$/m.test(readText(gi) ?? '')) add('ok', '.workflow/.gitignore ignores local/');
-  else add('warn', '.workflow/.gitignore does not ignore local/ — each developer\'s state file would be committed (burhan upgrade --apply adds it)');
-  const stateRel = cfg.values.WF_STATE_FILE || '.workflow/local/PROGRESS.md';
+  if (unreadable(gi)) add('warn', 'unreadable: .burhan/.gitignore — cannot tell whether local/ is ignored');
+  else if (/^\/?local\/?\r?$/m.test(readText(gi) ?? '')) add('ok', '.burhan/.gitignore ignores local/');
+  else add('warn', '.burhan/.gitignore does not ignore local/ — each developer\'s state file would be committed (burhan upgrade --apply adds it)');
+  const stateRel = cfg.values.WF_STATE_FILE || '.burhan/local/PROGRESS.md';
   const budget = /^\d+$/.test(cfg.values.WF_STATE_BUDGET ?? '') ? Number(cfg.values.WF_STATE_BUDGET) : 80;
   const sp = join(target, stateRel);
   if (existsSync(sp) && statSync(sp).isFile()) {

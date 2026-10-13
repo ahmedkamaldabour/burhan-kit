@@ -49,9 +49,9 @@ test('round trip, including the real example config', () => {
 for (const setting of ['never-run=touch marker', 'never-run-regex=^touch', 'never-run=', 'never-run-regex=a(']) {
   test(`setup --set rejects removed ${setting} without changing config or running a check`, async () => {
     const target = installed();
-    const config = join(target, '.workflow/workflow.config');
-    const local = join(target, '.workflow/local/workflow.config');
-    mkdirSync(join(target, '.workflow/local'), { recursive: true });
+    const config = join(target, '.burhan/workflow.config');
+    const local = join(target, '.burhan/local/workflow.config');
+    mkdirSync(join(target, '.burhan/local'), { recursive: true });
     writeFileSync(config, readFileSync(config, 'utf8') + "WF_FORBIDDEN_REGEX='^touch'\nWF_FORBIDDEN_REASON='legacy'\nWF_SINGLE_TEST_HINT='legacy runner'\n");
     writeFileSync(local, "WF_FORBIDDEN_REGEX='^echo'\nWF_FORBIDDEN_REASON='local legacy'\nWF_SINGLE_TEST_HINT='local runner'\n");
     const before = readFileSync(config, 'utf8');

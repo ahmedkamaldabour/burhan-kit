@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { runChecks, type Probe } from '../src/lib/doctor.js';
-import { applySetup, planSetup, renderSummary, type SetupAnswers } from '../src/lib/setup/engine.js';
+import { applySetup, ignoredCommittedSetupFiles, planSetup, renderSummary, type SetupAnswers } from '../src/lib/setup/engine.js';
 import { tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-gitignore-home-');
@@ -17,6 +17,32 @@ const ignoredCommittedFiles = [
   '!/.claude/agents/burhan-reviewer.md',
   '!/.codex/hooks.json',
 ];
+
+test('one scoped ignore writer keeps kit, config and memory trackable and private files ignored', () => {
+  const target = repo('# mine\n');
+  const selected: SetupAnswers = { ...answers, docs: { kind: 'private' } };
+  applySetup(planSetup(target, selected, home));
+  const ignore = join(target, '.burhan/.gitignore');
+  assert.equal(readFileSync(ignore, 'utf8'), '/local/\n/work/\n/discovery/\n');
+  for (const rel of ['local/state.md', 'work/item/story.md', 'discovery/finding.md', 'context/stack.md']) {
+    mkdirSync(join(target, '.burhan', rel, '..'), { recursive: true });
+    writeFileSync(join(target, '.burhan', rel), 'private or memory\n');
+  }
+  writeFileSync(join(target, '.burhan/PROJECT.md'), 'memory\n');
+  for (const rel of ['local/state.md', 'work/item/story.md', 'discovery/finding.md'])
+    assert.equal(spawnSync('git', ['check-ignore', '--quiet', '--', `.burhan/${rel}`], { cwd: target }).status, 0, rel);
+  for (const rel of ['WORKFLOW.md', 'workflow.config', 'PROJECT.md', 'context/stack.md'])
+    assert.equal(spawnSync('git', ['check-ignore', '--quiet', '--', `.burhan/${rel}`], { cwd: target }).status, 1, rel);
+  assert.deepEqual(ignoredCommittedSetupFiles(target), []);
+  assert.deepEqual(ignoredCommittedSetupFiles(target, planSetup(target, selected, home).files), []);
+  const user = '# keep my rules\r\n/cache/\r\n/local/\r\n';
+  writeFileSync(ignore, user);
+  applySetup(planSetup(target, selected, home));
+  assert.equal(readFileSync(ignore, 'utf8'), user + '/work/\n/discovery/\n');
+  applySetup(planSetup(target, selected, home));
+  assert.equal(readFileSync(ignore, 'utf8'), user + '/work/\n/discovery/\n');
+  assert.equal(readFileSync(join(target, '.gitignore'), 'utf8'), '# mine\n');
+});
 
 function repo(gitignore: string): string {
   const target = tmpDir('burhan-gitignore-');
@@ -55,17 +81,17 @@ test('AC-18: ignored committed setup files warn in both summaries and doctor wit
 });
 
 test('AC-18: printed lines unignore planned kit files in a fresh repo', () => {
-  const fixture = repo('/.workflow\n/.claude/*\n.codex\n');
+  const fixture = repo('/.burhan\n/.claude/*\n.codex\n');
   const hidden = readFileSync(join(fixture, '.gitignore'), 'utf8');
   const target = repo(hidden);
   const plan = planSetup(target, answers, home);
   const lines = ignoredLines(renderSummary(plan, 'en'));
-  assert.ok(lines.includes('!/.workflow/WORKFLOW.md'), 'summary includes a kit file from a directory not yet in the target');
+  assert.ok(lines.includes('!/.burhan/WORKFLOW.md'), 'summary includes a kit file from a directory not yet in the target');
   assert.deepEqual(lines.filter((line) => line.startsWith('!/.codex') || line.startsWith('/.codex')),
     ['!/.codex/', '/.codex/*', '!/.codex/hooks.json'], 'the ignored .codex parent is opened before its file');
 
   writeFileSync(join(target, '.gitignore'), hidden + lines.join('\n') + '\n');
   applySetup(plan);
-  for (const rel of ['.workflow/WORKFLOW.md', '.workflow/hooks/core/turn-audit.sh', '.claude/settings.json', '.claude/commands/burhan/e2e.md', '.codex/hooks.json'])
+  for (const rel of ['.burhan/WORKFLOW.md', '.burhan/hooks/core/turn-audit.sh', '.claude/settings.json', '.claude/commands/burhan/e2e.md', '.codex/hooks.json'])
     assert.notEqual(spawnSync('git', ['-C', target, 'check-ignore', '--quiet', '--no-index', '--', rel]).status, 0, `${rel} is no longer ignored after adding the printed lines`);
 });

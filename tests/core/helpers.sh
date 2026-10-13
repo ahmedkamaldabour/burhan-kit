@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # Helpers for core hook tests. Source after tests/lib.sh.
-#   proj [config-lines...]        -> new project dir with .workflow/workflow.config
+#   proj [config-lines...]        -> new project dir with .burhan/workflow.config
 #   ev <json-fragment>            -> normalized event JSON (defaults filled, project_dir = $P)
 #   core <script> <event-json>    -> runs hooks/core/<script>.sh with the event on stdin
 CORE="$T_KIT/hooks/core"
 
 proj() {
   P="$(t_tmp)"
-  mkdir -p "$P/.workflow"
-  : > "$P/.workflow/workflow.config"
+  mkdir -p "$P/.burhan"
+  : > "$P/.burhan/workflow.config"
   local line
-  for line in "$@"; do printf '%s\n' "$line" >> "$P/.workflow/workflow.config"; done
+  for line in "$@"; do printf '%s\n' "$line" >> "$P/.burhan/workflow.config"; done
   printf '%s' "$P"
 }
 

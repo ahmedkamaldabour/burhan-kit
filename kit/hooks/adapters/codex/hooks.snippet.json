@@ -6,7 +6,7 @@
           {
             "type": "command",
             "timeout": 10,
-            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.workflow/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.workflow/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" session-gates; exit 0"
+            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" session-gates; exit 0"
           }
         ]
       }
@@ -17,7 +17,7 @@
           {
             "type": "command",
             "timeout": 10,
-            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.workflow/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.workflow/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" prompt-router; exit 0"
+            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" prompt-router; exit 0"
           }
         ]
       }
@@ -28,7 +28,7 @@
           {
             "type": "command",
             "timeout": 70,
-            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.workflow/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.workflow/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" pre-commit-check; exit 0"
+            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" pre-commit-check; exit 0"
           }
         ]
       }
@@ -39,7 +39,7 @@
           {
             "type": "command",
             "timeout": 10,
-            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.workflow/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.workflow/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" post-edit-reminder; exit 0"
+            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" post-edit-reminder; exit 0"
           }
         ]
       }
@@ -50,7 +50,7 @@
           {
             "type": "command",
             "timeout": 15,
-            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.workflow/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.workflow/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" turn-audit; exit 0"
+            "command": "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" turn-audit; exit 0"
           }
         ]
       }

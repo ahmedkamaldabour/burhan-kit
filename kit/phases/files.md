@@ -1,5 +1,5 @@
 # Work-item files
-> Part of the burhan working agreement (core: `.workflow/WORKFLOW.md`). **Read this when:** you create or name a work-item file, preserve a source, or record a limitation or ruling.
+> Part of the burhan working agreement (core: `.burhan/WORKFLOW.md`). **Read this when:** you create or name a work-item file, preserve a source, or record a limitation or ruling.
 
 One folder per item under the docs location: `<docs>/<slug>/`. **Every file name starts with the
 slug** — a file opened in an editor tab, pasted into a diff or found by search keeps its context.
@@ -16,7 +16,7 @@ slug** — a file opened in an editor tab, pasted into a diff or found by search
 | `<docs>/README.md` (index) | `templates/docs-index.md` | close-out (generated — phases/close-out.md) |
 | `<discovery>/YYYY-MM-DD-<slug>.md` | `templates/discovery.md` | phases/discoveries.md |
 | state file | `templates/progress.md` | every transition (core §5) |
-| `PROJECT.md`, `context/<area>.md` | `templates/project.md`, `templates/context-area.md` | phases/memory.md |
+| `.burhan/PROJECT.md`, `.burhan/context/<area>.md` | `templates/project.md`, `templates/context-area.md` | phases/memory.md |
 
 **Sources.** A material user input (requirements document, screenshot, spreadsheet) is kept as the
 original file under `sources/` and never edited — a new version is a new file. If it cannot be

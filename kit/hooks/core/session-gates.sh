@@ -43,7 +43,7 @@ old_plan_only=""
 is_plan_only() { printf '%s' "$1" | tr -d '`*' | grep -qiE '^[[:space:]]*plan[-_ ]?only[[:space:]]*$'; }
 for v in "the item's Mode=$mode_val" "$route_key=$route_mode" "WF_MODE_DEFAULT=${WF_MODE_DEFAULT:-}"; do
   if is_plan_only "${v#*=}"; then
-    old_plan_only="⚑ plan-only is no longer a mode (step | auto): the old value in ${v%%=*} is ignored; this session runs as $WF_MODE. To stop after the plan, say so — the item closes at Plan ready (.workflow/phases/lifecycle.md · Modes)."
+    old_plan_only="⚑ plan-only is no longer a mode (step | auto): the old value in ${v%%=*} is ignored; this session runs as $WF_MODE. To stop after the plan, say so — the item closes at Plan ready (.burhan/phases/lifecycle.md · Modes)."
     break
   fi
 done

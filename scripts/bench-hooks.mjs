@@ -25,10 +25,10 @@ else if (values.runtime === 'node') {
 const fx = join(root, 'tests/adapters/claude/fixtures');
 const tmp = mkdtempSync(join(tmpdir(), 'burhan-bench-'));
 const proj = join(tmp, 'p');
-mkdirSync(join(proj, '.workflow/local'), { recursive: true });
-writeFileSync(join(proj, '.workflow/workflow.config'),
+mkdirSync(join(proj, '.burhan/local'), { recursive: true });
+writeFileSync(join(proj, '.burhan/workflow.config'),
   "WF_CODE_REGEX='\\.src$'\nWF_EVIDENCE_REGEX='verify-it'\nWF_CHECK_CMD=\"true\"\n");
-writeFileSync(join(proj, '.workflow/local/PROGRESS.md'), '## Now\n### foo\n- **Route:** feature / bounded\n');
+writeFileSync(join(proj, '.burhan/local/PROGRESS.md'), '## Now\n### foo\n- **Route:** feature / bounded\n');
 const steps = readFileSync(join(fx, 'steps.jsonl'), 'utf8');
 writeFileSync(join(tmp, 'big.jsonl'), steps.repeat(300)); // 4,500 lines
 const fixture = (f, patch = {}) => JSON.stringify({ ...JSON.parse(readFileSync(join(fx, f), 'utf8')), ...patch });

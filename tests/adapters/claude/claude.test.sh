@@ -52,7 +52,7 @@ check_eq "compaction mid-turn does not reset the turn (created)" "$(jq -c .files
 check_eq "compaction mid-turn does not reset the turn (edited)" "$(jq -c .files_edited <<<"$t")" '["/proj/imp.src"]'
 t="$(turn write-update-and-failed.jsonl)"
 check_eq "Write over an existing file -> edited, not created (QC5)" "$(jq -c .files_created <<<"$t")" '["/proj/new.src"]'
-check "Write over an existing file is listed as edited" "$(jq -c .files_edited <<<"$t")" has '"/proj/AI_SPEC/docs/foo/foo-story.md"'
+check "Write over an existing file is listed as edited" "$(jq -c .files_edited <<<"$t")" has '"/proj/.burhan/work/foo/foo-story.md"'
 check "a failed Edit is not counted" "$(jq -c .files_edited <<<"$t")" lacks "failed.src"
 t="$(jq -c --arg tp "$FX/write-update-and-failed.jsonl" '.transcript_path=$tp | .last_assistant_message="All done ✅"' "$FX/p-stop.json" | CLAUDE_PROJECT_DIR=/proj "${IMPL[@]}" normalize | jq -c .turn)"
 check "Stop payload last_assistant_message is included (live E2E miss)" "$(jq -r .assistant_text <<<"$t")" has "All done ✅"
@@ -110,8 +110,8 @@ done
 check_eq "empty core output -> no output" "$(printf '' | "${IMPL[@]}" emit turn_end)" ""
 
 echo "claude hook.sh — end to end"
-P="$(t_tmp)"; mkdir -p "$P/.workflow"
-printf '%s\n' "WF_CODE_REGEX='\\.src\$'" "WF_EVIDENCE_REGEX='^verify-it'" > "$P/.workflow/workflow.config"
+P="$(t_tmp)"; mkdir -p "$P/.burhan"
+printf '%s\n' "WF_CODE_REGEX='\\.src\$'" "WF_EVIDENCE_REGEX='^verify-it'" > "$P/.burhan/workflow.config"
 e2e() { jq -c --arg tp "$FX/$2" --arg p "$P" '.transcript_path=$tp | .cwd=$p' "$FX/$1" | CLAUDE_PROJECT_DIR="$P" "${IMPL[@]}" hook "$3"; echo "rc=$?"; }
 check "text-only turn after a code turn -> silent" "$(e2e p-stop.json prior-turn-edit.jsonl turn-audit)" lacks "GATE"
 out="$(e2e p-stop.json tool-results.jsonl turn-audit)"
@@ -168,7 +168,7 @@ sed -n '1,3p;8p' "$SD/s1.jsonl" > "$SD/s2.jsonl"
 sed -n '1,7p' "$SD/s1/subagents/agent-a111.jsonl" > "$SD/s2/subagents/agent-a111.jsonl"
 check "delegated code edit with no evidence after it + 'done' -> fires (was silent: the edit was invisible)" "$(sae "$SD/s2.jsonl")" has "ran before the last code edit"
 EV="$(t_tmp)"
-printf '%s\n' "WF_EVIDENCE_DIR='$EV'" >> "$P/.workflow/workflow.config"
+printf '%s\n' "WF_EVIDENCE_DIR='$EV'" >> "$P/.burhan/workflow.config"
 sae "$SD/s1.jsonl" >/dev/null
 check_eq "the ledger records who ran each step" \
   "$(cat "$EV"/*/*/u-sa.jsonl 2>/dev/null | jq -r '.by // "main"' | paste -sd, -)" \
@@ -254,6 +254,8 @@ check_eq "...within the Stop hook's time budget (< 8 s here)" "$( [ $((t1 - t0))
 echo "claude settings snippet"
 SN="$A/settings.snippet.json"
 check_eq "valid JSON" "$(jq -e . "$SN" >/dev/null && echo ok)" "ok"
+check "commands use the canonical adapter path" "$(jq -r '.. | .command? // empty' "$SN")" has ".burhan/hooks/adapters/claude/hook.sh"
+check "no ownership comments in commands" "$(jq -r '.. | .command? // empty' "$SN")" lacks "<!--"
 for c in session-gates prompt-router pre-commit-check post-edit-reminder turn-audit; do
   check "wires $c" "$(jq -r '.. | .command? // empty' "$SN")" has "hook.sh\" $c"
   check "$c script exists" "$( [ -f "$T_KIT/hooks/core/$c.sh" ] && echo yes)" has yes

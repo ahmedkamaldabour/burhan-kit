@@ -20,9 +20,9 @@ function audit(project: string, evdir: string, session: string, turn: string, st
 
 function project(): string {
   const p = tmp('burhan-ev-');
-  mkdirSync(join(p, '.workflow/local'), { recursive: true });
-  writeFileSync(join(p, '.workflow/workflow.config'), "WF_EVIDENCE_REGEX='^verify-it'\nWF_CODE_REGEX='\\.src$'\n");
-  writeFileSync(join(p, '.workflow/local/PROGRESS.md'), '## Now\n### add-export\n');
+  mkdirSync(join(p, '.burhan/local'), { recursive: true });
+  writeFileSync(join(p, '.burhan/workflow.config'), "WF_EVIDENCE_REGEX='^verify-it'\nWF_CODE_REGEX='\\.src$'\n");
+  writeFileSync(join(p, '.burhan/local/PROGRESS.md'), '## Now\n### add-export\n');
   return p;
 }
 
@@ -92,7 +92,7 @@ test('CLI edge cases: --last 0, a subdirectory, an empty env var, the config val
     'a config line WF_EVIDENCE_DIR="" overrides the environment with "unset", as when bash sources it');
   assert.ok(new RegExp(ereToJs('\\<node\\>')).test('run node now') && !new RegExp(ereToJs('\\<node\\>')).test('nodejs'), 'GNU word boundaries');
   assert.ok(new RegExp(ereToJs('^a{,2}$')).test('aa'), '{,n} means {0,n} in ERE');
-  writeFileSync(join(p, '.workflow/workflow.config'), `WF_EVIDENCE_DIR='${ev}'\nWF_EVIDENCE_REGEX='^verify-it'\n`);
+  writeFileSync(join(p, '.burhan/workflow.config'), `WF_EVIDENCE_DIR='${ev}'\nWF_EVIDENCE_REGEX='^verify-it'\n`);
   const c = capture();
   assert.equal(await runCli(['evidence', p], c.io), 0);
   assert.match(c.o.out, /verify-it a/, 'WF_EVIDENCE_DIR from the config reaches the CLI as it reaches the hooks');

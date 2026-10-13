@@ -2,8 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /** workflow.config: one parser for the CLI and the hooks (src/lib/config.ts re-exports it). */
-export const TEAM_CONFIG = '.workflow/workflow.config';
-export const LOCAL_CONFIG = '.workflow/local/workflow.config';
+export const TEAM_CONFIG = '.burhan/workflow.config';
+export const LOCAL_CONFIG = '.burhan/local/workflow.config';
 
 export interface ConfigProblem { file: string; line: number; text: string; reason: string }
 export interface ParsedConfig { values: Record<string, string>; problems: ConfigProblem[] }
@@ -77,9 +77,9 @@ export function loadHookConfig(project: string, env: NodeJS.ProcessEnv): HookCon
     if (team !== undefined) c.WF_CHECK_TIMEOUT = team; else delete c.WF_CHECK_TIMEOUT;
   }
   const def = (k: string, v: string): void => { if (!c[k]) c[k] = v; };
-  def('WF_DOCS_DIR', 'AI_SPEC/docs');
-  def('WF_DISCOVERY_DIR', 'AI_SPEC/discovery');
-  def('WF_STATE_FILE', '.workflow/local/PROGRESS.md');
+  def('WF_DOCS_DIR', '.burhan/work');
+  def('WF_DISCOVERY_DIR', '.burhan/discovery');
+  def('WF_STATE_FILE', '.burhan/local/PROGRESS.md');
   def('WF_STATE_BUDGET', '80');
   def('WF_CHECK_TIMEOUT', '60');
   def('WF_SKILLS', 'none');

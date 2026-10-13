@@ -1,7 +1,7 @@
 # Project bindings
-The project-specific half of the working agreement (`.workflow/WORKFLOW.md` §1). Created once by
+The project-specific half of the working agreement (`.burhan/WORKFLOW.md` §1). Created once by
 `burhan init` and **never overwritten** — upgrades keep it. Keep it consistent with
-`.workflow/workflow.config`, its machine-readable twin. Mark anything not applicable with `—`.
+`.burhan/workflow.config`, its machine-readable twin. Mark anything not applicable with `—`.
 
 | Binding | Value in this project | Config key |
 |---|---|---|
@@ -9,11 +9,11 @@ The project-specific half of the working agreement (`.workflow/WORKFLOW.md` §1)
 | **Work-item vocabulary** | *(story / ticket / task / bug / chore)* | — |
 | **Work-item docs location** | *(one folder per item)* | `WF_DOCS_DIR` |
 | **Discovery location** | *(dated files for things found mid-task)* | `WF_DISCOVERY_DIR` |
-| **Live state file** | *(per developer — default `.workflow/local/PROGRESS.md`, git-ignored — §5)* | `WF_STATE_FILE`, `WF_STATE_BUDGET` |
+| **Live state file** | *(per developer — default `.burhan/local/PROGRESS.md`, git-ignored — §5)* | `WF_STATE_FILE`, `WF_STATE_BUDGET` |
 | **Work-item index** | *(generated — `<docs>/README.md`, written by the kit's status command; never hand-edited)* | — |
 | **Kit command** | *(how this project runs the kit CLI, e.g. `npx burhan-kit` or `burhan`)* | — |
 | **Discovery index** | *(default `<discovery>/README.md` — one line per discovery)* | — |
-| **Project memory location** | *(PROJECT.md + context/ — phases/memory.md)* | — |
+| **Project memory location** | *(.burhan/PROJECT.md + .burhan/context/ — phases/memory.md)* | — |
 | **Fast check command** | *(non-mutating, seconds — run before every commit)* | `WF_CHECK_CMD` |
 | **Test command** | | — |
 | **Run / preview command** | | — |

@@ -1,5 +1,5 @@
 # Process skills (optional binding)
-> Part of the burhan working agreement (core: `.workflow/WORKFLOW.md`). **Read this when:** `WF_SKILLS` is set in the config.
+> Part of the burhan working agreement (core: `.burhan/WORKFLOW.md`). **Read this when:** `WF_SKILLS` is set in the config.
 
 If the bindings (core §1) name a skills plugin (`WF_SKILLS`), invoke the matching skill **before acting** in each
 phase. With the Superpowers plugin:

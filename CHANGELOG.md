@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Changed
+- Unified installs under `.burhan/`, with private work/discovery defaults, scoped ignore rules,
+  namespaced `burhan-verify` and project memory.
+- Bootstrap blocks use exact `<!-- burhan:start -->` / `<!-- burhan:end -->` delimiters;
+  hook ownership uses exact snippet commands, without JSON command markers.
+- Existing project hooks always coexist; setup no longer offers hook removal or shared-folder moves.
+- Setup offers optional Claude Code Superpowers guidance without installing plugins or overriding
+  explicit skills preferences.
+
 ### Removed
 - Removed never-run configuration and setup options, the NEVER RUN gate and turn-audit check C;
   audit labels D–H remain unchanged.

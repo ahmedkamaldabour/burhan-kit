@@ -5,30 +5,38 @@
 ## What `init --apply` writes
 
 ```
-.workflow/  WORKFLOW.md SETUP.md VERSION phases/ templates/ commands/ hooks/   kit-owned, refreshed on upgrade
+.burhan/  WORKFLOW.md SETUP.md VERSION phases/ templates/ commands/ hooks/   kit-owned, refreshed on upgrade
             bindings.md workflow.config                        team-owned: created once, committed
-            .gitignore  ("local/")
+            .gitignore  ("/local/", "/work/", "/discovery/")
             local/      PROGRESS.md workflow.config            per developer, git-ignored
+            work/ discovery/                                  private work and discoveries, when created
+            PROJECT.md context/                               project memory, only when the memory workflow creates it
 .claude/settings.json · .claude/commands/burhan/{e2e,qc}.md · CLAUDE.md block    (claude)
-.claude/agents/burhan-reviewer.md · .claude/skills/verify/SKILL.md (if WF_CHECK_CMD is set)   (claude)
+.claude/agents/burhan-reviewer.md · .claude/skills/burhan-verify/SKILL.md (if WF_CHECK_CMD is set)   (claude)
 .claude/agents/burhan-{planner,builder,explorer}.md (if WF_MODEL_CLAUDE_* is set)                (claude)
 .codex/hooks.json · AGENTS.md block                                           (codex)
-.burhan/    work/ .gitignore                                   work files (`.burhan/work/`), per project; `.burhan/.gitignore`
+docs/burhan/work/ docs/burhan/discovery/                        optional shared work and discoveries
 ```
 
-- `.workflow/bindings.md` (WORKFLOW §1) and `.workflow/workflow.config` are created **only if
-  absent**, never overwritten. Everything else under `.workflow/` is kit-owned and refreshed on
-  upgrade — to customise a template, copy it elsewhere.
-- Agent hook config is merged: your existing settings and hooks are kept; entries pointing at
-  burhan's own adapter are replaced, so upgrades never leave stale copies. The pre-commit hook's
+- `.burhan/bindings.md` (WORKFLOW §1) and `.burhan/workflow.config` are created **only if
+  absent**, never overwritten by init/upgrade. Only the listed kit-owned files are refreshed on
+  upgrade — to customise a template, copy it elsewhere. Memory, work and unknown files are not kit-owned.
+- The installer appends missing `/local/`, `/work/` and `/discovery/` rules to `.burhan/.gitignore`
+  without changing existing text or the root `.gitignore`. Kit, team config and memory remain trackable.
+  Private defaults are `.burhan/work/` and `.burhan/discovery/`; shared paths are
+  `docs/burhan/work/` and `docs/burhan/discovery/`. Custom paths need no burhan namespace.
+- Agent hook config is merged: your existing settings and hooks stay active; only exact command
+  matches from shipped/installed burhan snippets are replaced. Merely mentioning an adapter path
+  does not make a command owned. Hook JSON has no ownership comments in command strings. The pre-commit hook's
   timeout is `WF_CHECK_TIMEOUT + 10` (run `burhan upgrade` after changing it).
 - A versioned, hashed **bootstrap block** in `CLAUDE.md` / `AGENTS.md` points the agent at
-  `.workflow/WORKFLOW.md`. Text outside the block is never touched (CRLF files and symlinks
+  `.burhan/WORKFLOW.md`, between exact `<!-- burhan:start -->` and `<!-- burhan:end -->` lines;
+  version/hash metadata stays inside the pair. Text outside the block is never touched (CRLF files and symlinks
   included). If you edited text *inside* the block, the file is backed up to `<file>.burhan-backup`
   before the block is refreshed. A file with a broken marker pair is refused, not repaired.
   `--no-bootstrap` skips it.
 - Claude commands go to `.claude/commands/burhan/` (`/burhan:e2e`, `/burhan:qc`). A command file you
-  wrote yourself is never overwritten. Codex reads them from `.workflow/commands/` via `AGENTS.md`.
+  wrote yourself is never overwritten. Codex reads them from `.burhan/commands/` via `AGENTS.md`.
 - **Safety:** everything is validated before the first write — any problem (invalid agent config,
   broken markers, unwritable file) exits non-zero and writes nothing. A dry run that meets an
   unwritable path (an agent's sandbox — Codex protects `.codex/`) still prints the whole plan, marks
@@ -44,7 +52,7 @@
 | `burhan setup [dir] --answers <file> [--apply]` | Shows, or with `--apply` writes, the setup for the answers in a JSON file |
 | `burhan setup [dir] --stack` | Prints the first-use instructions for an AI agent  |
 | `burhan setup [dir] --set check=<cmd\|none> [sensitive=<p;q>] [--force]` | Sets the check and the sensitive paths directly |
-| `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.workflow/local/` and the work files in `.burhan/`; `--all` removes them too (a work-files folder outside `.burhan/` is always kept). Validates everything before the first change, never follows a symlink out of the project, and touches only files carrying burhan's mark |
+| `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.burhan/local/` and private work/discovery files; `--all` removes them too. Work outside `.burhan/`, project memory and unknown files always stay. Removes only owned kit files, blocks, exact hook commands and marked Claude files; keeps user ignore rules and protection for retained private data. Validates before the first change and never follows a symlink out of the project |
 | `burhan upgrade [--apply]` | Refresh kit-owned files; agents default to the installed ones; idempotent. Never rewrites `workflow.config` — `doctor` lists keys a newer version added |
 | `burhan doctor` | Read-only: bash ≥ 4, `jq` ≥ 1.6 (an older jq cannot compile the hooks' filters), a sha256 tool, `timeout`; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust (read from `~/.codex/config.toml`, never written); the state file's size. `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
 | `burhan status [--write]` | The work-item index, derived from the item files; `--write` regenerates `<docs>/README.md` (a hand-written index is never overwritten without `--force`, which keeps a backup) |
@@ -55,9 +63,9 @@
 
 ## `workflow.config`
 
-`.workflow/workflow.config` holds literal `KEY=value` lines (`KEY=word`, `KEY='text'`, or `KEY="text"`
+`.burhan/workflow.config` holds literal `KEY=value` lines (`KEY=word`, `KEY='text'`, or `KEY="text"`
 without `$` `` ` `` `\`). Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote. `init`/`upgrade` and `doctor` report any other line. Regexes are POSIX
-extended (`grep -E`). Every check whose key is empty stays silent. `.workflow/local/workflow.config`
+extended (`grep -E`). Every check whose key is empty stays silent. `.burhan/local/workflow.config`
 holds personal overrides, read after the team file, key by key.
 
 | Key | Purpose |
@@ -124,7 +132,7 @@ QC uses a fresh context: in Claude Code `/burhan:qc` delegates to the
 generated `burhan-reviewer` subagent, which reads only the files; other agents run it in a new
 session. Every QC and review records **Performed by** (`<agent> · <model> · <context>`); same-session
 work is written down as a limitation and counted as self-review. With Claude Code ≥ 2.1.286, the
-generated `verify` skill (your `WF_CHECK_CMD`) is available before commits; an existing `verify` skill
+generated `burhan-verify` skill (your `WF_CHECK_CMD`) is available before commits; an existing `burhan-verify` skill
 of yours is never overwritten.
 
 In Claude Code, `WF_MODEL_CLAUDE_*` generates role subagents with a `model:`, and `/burhan:e2e`
@@ -187,12 +195,16 @@ the [Superpowers](https://github.com/obra/superpowers) plugin (brainstorming, pl
 development, debugging, review), and the turn audit notes a skipped skill. With `none` (or empty)
 no skill is referenced.
 
+Setup checks plugin availability read-only, independently of the saved skills preference. If absent,
+it suggests exactly one optional Claude Code command: `/plugin install superpowers@claude-plugins-official`.
+It never installs plugins, writes plugin files or overrides an explicit `WF_SKILLS` value.
+
 ## Team use
 
-- **Committed, changed through review:** `.workflow/bindings.md`, `.workflow/workflow.config`,
-  work-item folders (one owner each), `PROJECT.md` and `context/` (project memory).
-- **Per developer, git-ignored:** `.workflow/local/PROGRESS.md` (the state file) and
-  `.workflow/local/workflow.config`.
+- **Committed, changed through review:** `.burhan/bindings.md`, `.burhan/workflow.config`,
+  work-item folders (one owner each), `.burhan/PROJECT.md` and `.burhan/context/` (project memory).
+- **Per developer, git-ignored:** `.burhan/local/PROGRESS.md` (the state file) and
+  `.burhan/local/workflow.config`.
 - **Generated, never hand-edited:** the work-item index (`burhan status --write`); a merge conflict
   in it is resolved by re-running the command.
 - **Project-memory fact IDs** are slugs (`DATA-email-unique`), never sequential numbers.

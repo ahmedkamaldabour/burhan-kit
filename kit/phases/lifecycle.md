@@ -1,5 +1,5 @@
 # Lifecycle of a work item
-> Part of the burhan working agreement (core: `.workflow/WORKFLOW.md`). **Read this when:** you take in a request, write a story or a plan, or the approved intent changes.
+> Part of the burhan working agreement (core: `.burhan/WORKFLOW.md`). **Read this when:** you take in a request, write a story or a plan, or the approved intent changes.
 
 ## The lifecycle of one work item
 

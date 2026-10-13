@@ -18,7 +18,7 @@ export const preCommitCheck: Check = async ({ ev, cfg, project, env }) => {
   const cmd = cfg.WF_CHECK_CMD ?? '';
   const t = cfg.WF_CHECK_TIMEOUT ?? '60';
   let res: string;
-  if (cmd === '') res = 'NOT VERIFIED (no check configured). Set WF_CHECK_CMD in .workflow/workflow.config.';
+  if (cmd === '') res = 'NOT VERIFIED (no check configured). Set WF_CHECK_CMD in .burhan/workflow.config.';
   else {
     const r = await runCheck(cmd, project, Number(t), env);
     if (r.kind === 'pass') res = `PASS — \`${cmd}\` run by this hook just now.`;

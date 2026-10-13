@@ -7,7 +7,7 @@ import { isManagedCommand, withManagedMark } from './commands.js';
 import { parseConfig, readProjectConfig, TEAM_CONFIG } from './config.js';
 import { BurhanError } from './errors.js';
 import { isWritable, putFile, realTarget, replaceDir } from './fs-safe.js';
-import { mergeHooks, validHooksFile, type Settings } from './hooks-merge.js';
+import { burhanHookCommands, mergeHooks, validHooksFile, type Settings } from './hooks-merge.js';
 import { kitDir, readVersion } from './kit.js';
 
 export const AGENTS: readonly Agent[] = ['claude', 'codex'];
@@ -59,7 +59,7 @@ function hookRuntimeMissing(): string[] {
 }
 
 /** A file the plan writes or removes; `rel` is project-relative, forward slashes. Kit files are listed at
- *  directory level (trailing `/`, e.g. `.workflow/hooks/core/`) because the whole directory is replaced. */
+ *  directory level (trailing `/`, e.g. `.burhan/hooks/core/`) because the whole directory is replaced. */
 export interface PlannedFile { rel: string; existed: boolean; action: 'create' | 'modify' | 'remove'; kind: 'kit' | 'config' | 'hooks' | 'bootstrap' | 'managed' | 'gitignore' }
 export interface InstallPlan { version: string; target: string; blocked: string[]; steps: { say: string; run?: () => void }[]; files: PlannedFile[]; agents: Agent[] }
 
@@ -69,7 +69,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
   const version = readVersion();
   if (!existsSync(o.target) || !statSync(o.target).isDirectory()) throw new BurhanError(`target is not a directory: ${o.target}`);
   const target = realTarget(o.target);
-  const W = join(target, '.workflow');
+  const W = join(target, '.burhan');
   if ((realTarget(kit) + sep).startsWith(W + sep)) throw new BurhanError(`the kit is inside ${W} — install it somewhere else and run it from there`);
   const installed = existsSync(join(W, 'WORKFLOW.md'));
   if (o.mode === 'upgrade' && !installed) throw new BurhanError(`burhan is not installed in ${target} — run \`burhan init\` first`);
@@ -106,8 +106,8 @@ export function planInstall(o: InstallOptions): InstallPlan {
     roleAgent('builder', 'WF_MODEL_CLAUDE_BUILDER', false);
     roleAgent('explorer', 'WF_MODEL_CLAUDE_EXPLORER', false);
     managed.push(checkCmd
-      ? { rel: '.claude/skills/verify/SKILL.md', text: withManagedMark(readFileSync(join(kit, 'skills/claude/verify/SKILL.md'), 'utf8').split('{{CHECK_CMD}}').join(checkCmd)), why: '' }
-      : { rel: '.claude/skills/verify/SKILL.md', text: null, why: 'WF_CHECK_CMD is not set in the team .workflow/workflow.config (set it there, then `burhan upgrade`)' });
+      ? { rel: '.claude/skills/burhan-verify/SKILL.md', text: withManagedMark(readFileSync(join(kit, 'skills/claude/burhan-verify/SKILL.md'), 'utf8').split('{{CHECK_CMD}}').join(checkCmd)), why: '' }
+      : { rel: '.claude/skills/burhan-verify/SKILL.md', text: null, why: 'WF_CHECK_CMD is not set in the team .burhan/workflow.config (set it there, then `burhan upgrade`)' });
   }
   const ownedOld = (rel: string): boolean => {
     const f = join(target, rel);
@@ -120,7 +120,8 @@ export function planInstall(o: InstallOptions): InstallPlan {
   const blocks = new Map<Agent, { content: string; editedInside: boolean }>();
   const gi = join(W, '.gitignore');
   const giText = existsSync(gi) && statSync(gi).isFile() ? readFileSync(gi, 'utf8') : null;
-  const giNeeded = giText === null || !/^\/?local\/?\r?$/m.test(giText);
+  const giMissing = ['/local/', '/work/', '/discovery/'].filter((rule) => !(giText ?? '').split(/\r?\n/).includes(rule));
+  const giNeeded = giMissing.length > 0;
   // Project-owned files are written only when absent; existing ones are never touched, so not checked.
   const writes: string[] = [join(W, 'WORKFLOW.md'), join(W, 'SETUP.md'), join(W, 'VERSION'),
     ...(giNeeded ? [gi] : []),
@@ -137,7 +138,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
       current = v;
     }
     const snippet = JSON.parse(readFileSync(join(kit, SNIPPET[a]), 'utf8')) as Settings;
-    merged.set(a, JSON.stringify(mergeHooks(current, snippet, `.workflow/hooks/adapters/${a}/hook.sh`, timeout + 10), null, 2) + '\n');
+    merged.set(a, JSON.stringify(mergeHooks(current, snippet, burhanHookCommands(target, a), timeout + 10), null, 2) + '\n');
     writes.push(hf);
     if (a === 'claude') for (const c of COMMANDS) writes.push(join(target, `.claude/commands/burhan/${c}.md`));
     if (o.bootstrap) {
@@ -170,9 +171,9 @@ export function planInstall(o: InstallOptions): InstallPlan {
   if (o.mode === 'init' && installed) step(`already installed (${oldVersion ?? 'unknown version'}) — refreshing, same as \`burhan upgrade\``);
   if (oldVersion && oldVersion !== version) step(`upgrade: ${oldVersion} → ${version}`);
 
-  for (const f of ['WORKFLOW.md', 'SETUP.md', 'VERSION']) file(`.workflow/${f}`, 'kit');
-  for (const d of ['phases', 'templates', 'commands', 'hooks/core', ...adapters.map((a) => `hooks/adapters/${a}`)]) file(`.workflow/${d}/`, 'kit');
-  step(`kit files → .workflow/ (WORKFLOW.md, SETUP.md, VERSION, phases/, templates/, commands/, hooks/core/, hooks/adapters/{${adapters.join(',')}})`, () => {
+  for (const f of ['WORKFLOW.md', 'SETUP.md', 'VERSION']) file(`.burhan/${f}`, 'kit');
+  for (const d of ['phases', 'templates', 'commands', 'hooks/core', ...adapters.map((a) => `hooks/adapters/${a}`)]) file(`.burhan/${d}/`, 'kit');
+  step(`kit files → .burhan/ (WORKFLOW.md, SETUP.md, VERSION, phases/, templates/, commands/, hooks/core/, hooks/adapters/{${adapters.join(',')}})`, () => {
     putFile(join(W, 'WORKFLOW.md'), readFileSync(join(kit, 'WORKFLOW.md')));
     putFile(join(W, 'SETUP.md'), readFileSync(join(kit, 'SETUP.md')));
     putFile(join(W, 'VERSION'), version + '\n');
@@ -180,15 +181,15 @@ export function planInstall(o: InstallOptions): InstallPlan {
     for (const a of adapters) replaceDir(join(kit, 'hooks/adapters', a), join(W, 'hooks/adapters', a));
   });
 
-  if (giNeeded) file('.workflow/.gitignore', 'gitignore');
+  if (giNeeded) file('.burhan/.gitignore', 'gitignore');
   if (giNeeded)
-    step('.workflow/.gitignore ← local/ (each developer\'s state file and overrides stay out of git)', () =>
-      putFile(gi, (giText && !giText.endsWith('\n') ? giText + '\n' : giText ?? '') + 'local/\n'));
+    step('.burhan/.gitignore ← /local/, /work/, /discovery/ (private files stay out of git)', () =>
+      putFile(gi, (giText && !giText.endsWith('\n') ? giText + '\n' : giText ?? '') + giMissing.join('\n') + '\n'));
 
   if (existsSync(join(W, 'bindings.md'))) step('bindings.md exists — kept as is (your WORKFLOW §1)');
-  else if (!o.keepProjectFiles) { file('.workflow/bindings.md', 'config'); step('bindings.md ← templates/bindings.md (fill it in: WORKFLOW §1)', () => putFile(join(W, 'bindings.md'), readFileSync(join(kit, 'templates/bindings.md')))); }
+  else if (!o.keepProjectFiles) { file('.burhan/bindings.md', 'config'); step('bindings.md ← templates/bindings.md (fill it in: WORKFLOW §1)', () => putFile(join(W, 'bindings.md'), readFileSync(join(kit, 'templates/bindings.md')))); }
   if (existsSync(join(W, 'workflow.config'))) step('workflow.config exists — kept as is');
-  else if (!o.keepProjectFiles) { file('.workflow/workflow.config', 'config'); step('workflow.config ← workflow.config.example (fill it in, with bindings.md)', () => putFile(join(W, 'workflow.config'), readFileSync(join(kit, 'workflow.config.example')))); }
+  else if (!o.keepProjectFiles) { file('.burhan/workflow.config', 'config'); step('workflow.config ← workflow.config.example (fill it in, with bindings.md)', () => putFile(join(W, 'workflow.config'), readFileSync(join(kit, 'workflow.config.example')))); }
 
   for (const a of agents) {
     file(HOOKS_FILE[a], 'hooks');
@@ -226,8 +227,8 @@ export function planInstall(o: InstallOptions): InstallPlan {
   const cfg = readProjectConfig(target);
   for (const p of cfg.problems) step(`NOTE: ${p.file}:${p.line}: ${p.reason}`);
   const state = cfg.values.WF_STATE_FILE;
-  if (state !== undefined && !state.replace(/^(\.\/)+/, '').startsWith('.workflow/local/'))
-    step(`NOTE: WF_STATE_FILE is "${state}" — shared by everyone who commits it. For team use, delete that line from .workflow/workflow.config (the default is .workflow/local/PROGRESS.md, git-ignored) and move your current file there.`);
+  if (state !== undefined && !state.replace(/^(\.\/)+/, '').startsWith('.burhan/local/'))
+    step(`NOTE: WF_STATE_FILE is "${state}" — shared by everyone who commits it. For team use, delete that line from .burhan/workflow.config (the default is .burhan/local/PROGRESS.md, git-ignored) and move your current file there.`);
   const missing = hookRuntimeMissing();
   if (missing.length) step(`NOTE: the hooks need bash and jq at run time — missing here: ${missing.join(', ')}. On Windows, run the agent from Git Bash or WSL (a native port is planned).`);
 
@@ -257,9 +258,9 @@ export function install(o: InstallOptions, io: Io): number {
     if (o.apply) runStep(s); // per step, so a failure leaves the same partial output as before
   }
   io.stdout(`
-Next: ask your agent to follow .workflow/SETUP.md (guided setup: it proposes the config with evidence and
-asks before writing) — or fill in .workflow/bindings.md (WORKFLOW §1) and .workflow/workflow.config
-yourself, and commit them for the team; personal overrides go in .workflow/local/workflow.config. Checks whose config key is empty stay
+Next: ask your agent to follow .burhan/SETUP.md (guided setup: it proposes the config with evidence and
+asks before writing) — or fill in .burhan/bindings.md (WORKFLOW §1) and .burhan/workflow.config
+yourself, and commit them for the team; personal overrides go in .burhan/local/workflow.config. Checks whose config key is empty stay
 silent; the session gates always speak. Re-run \`burhan upgrade\` after changing WF_CHECK_TIMEOUT, or to
 upgrade — bindings.md and workflow.config are never overwritten.
 `);
@@ -269,7 +270,7 @@ error (untrusted hooks are skipped SILENTLY). Trust them yourself: open Codex in
 at "Hooks need review" choose "Review hooks" (or type /hooks); for each of SessionStart, UserPromptSubmit,
 PreToolUse, PostToolUse and Stop, select the hook whose Source is "Project config - …/.codex/hooks.json"
 and press t. Trust again when Codex shows one as "Modified since last trusted". Steps:
-.workflow/SETUP.md § 7 · \`burhan doctor\` checks it.
+.burhan/SETUP.md § 7 · \`burhan doctor\` checks it.
 `);
   return blocked.length ? 1 : 0;
 }

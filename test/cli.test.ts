@@ -63,7 +63,7 @@ test('setup --stack prints the first-use block; setup --set saves the check end 
   await runWizard(t, capture(t).io, scriptedPrompter(['use', 'apply']), 'en', t);
   const b = capture(t);
   assert.equal(await runCli(['setup', t, '--set', 'check=true', 'sensitive=a;b'], b.io), 0);
-  assert.equal(parseConfig(readFileSync(join(t, '.workflow/workflow.config'), 'utf8')).values.WF_CHECK_CMD, 'true');
+  assert.equal(parseConfig(readFileSync(join(t, '.burhan/workflow.config'), 'utf8')).values.WF_CHECK_CMD, 'true');
 });
 
 test('setup allowed flag forms still dispatch normally (AC-05)', async () => {
@@ -78,8 +78,11 @@ test('setup allowed flag forms still dispatch normally (AC-05)', async () => {
   await runWizard(setTarget, capture(setTarget).io, scriptedPrompter(['use', 'apply']), 'en', setTarget);
   assert.equal(await runCli(['setup', setTarget, '--set', 'check=true'], capture(setTarget).io), 0);
 
-  assert.equal(await runCli(['setup', '--stack'], capture().io), 0);
-  assert.equal(await runCli(['setup', '--agent'], capture().io), 0);
+  // Run against a fresh repository, not the process cwd (this checkout may carry its own install).
+  assert.equal(await runCli(['setup', setTarget, '--stack'], capture(setTarget).io), 0);
+  const agentTarget = tmpDir('burhan-cli-agent-');
+  spawnSync('git', ['init', '-q'], { cwd: agentTarget });
+  assert.equal(await runCli(['setup', agentTarget, '--agent'], capture(agentTarget).io), 0);
 });
 
 test('an error inside an async setup command is a plain "burhan: …" message with exit 2, not a stack trace (review I-1)', async () => {

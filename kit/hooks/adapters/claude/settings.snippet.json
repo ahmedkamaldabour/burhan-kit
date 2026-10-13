@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.workflow/hooks/adapters/claude/hook.sh\" session-gates",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" session-gates",
             "timeout": 10
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.workflow/hooks/adapters/claude/hook.sh\" prompt-router",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" prompt-router",
             "timeout": 10
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.workflow/hooks/adapters/claude/hook.sh\" pre-commit-check",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" pre-commit-check",
             "timeout": 70
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.workflow/hooks/adapters/claude/hook.sh\" post-edit-reminder",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" post-edit-reminder",
             "timeout": 10
           }
         ]
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.workflow/hooks/adapters/claude/hook.sh\" turn-audit",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" turn-audit",
             "timeout": 15
           }
         ]

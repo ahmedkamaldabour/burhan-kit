@@ -1,5 +1,5 @@
 # State transitions and close-out
-> Part of the burhan working agreement (core: `.workflow/WORKFLOW.md`). **Read this when:** you change a status, close an item, or hand off to a fresh session.
+> Part of the burhan working agreement (core: `.burhan/WORKFLOW.md`). **Read this when:** you change a status, close an item, or hand off to a fresh session.
 
 **Timing (optional).** Record the start and end of each phase in the plan's *Phase log* (tokens only
 if the agent reports them); `burhan stats` averages them.

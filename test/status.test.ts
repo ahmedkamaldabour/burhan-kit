@@ -3,12 +3,21 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runCli } from '../src/main.js';
+import { docsLocation } from '../src/lib/status.js';
 import { capture, tmpDir } from './helpers.js';
+
+test('missing and empty docs settings use the same private default', () => {
+  const target = tmpDir('burhan-defaults-');
+  assert.equal(docsLocation(target).rel, '.burhan/work');
+  mkdirSync(join(target, '.burhan'));
+  writeFileSync(join(target, '.burhan/workflow.config'), 'WF_DOCS_DIR=""\n');
+  assert.equal(docsLocation(target).rel, '.burhan/work');
+});
 
 function project(): string {
   const p = tmpDir('burhan-st-');
-  mkdirSync(join(p, '.workflow'), { recursive: true });
-  writeFileSync(join(p, '.workflow/workflow.config'), 'WF_DOCS_DIR="work"\n');
+  mkdirSync(join(p, '.burhan'), { recursive: true });
+  writeFileSync(join(p, '.burhan/workflow.config'), 'WF_DOCS_DIR="work"\n');
   mkdirSync(join(p, 'work/foo'), { recursive: true });
   writeFileSync(join(p, 'work/foo/foo-story.md'), '- **Status:** Approved\n');
   return p;

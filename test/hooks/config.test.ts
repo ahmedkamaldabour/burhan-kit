@@ -9,9 +9,9 @@ import { tmpDir } from '../helpers.js';
 
 function proj(team: string[] | null, local: string[] | null = null): string {
   const p = tmpDir('burhan-hcfg-');
-  mkdirSync(join(p, '.workflow/local'), { recursive: true });
-  if (team) writeFileSync(join(p, '.workflow/workflow.config'), team.join('\n') + '\n');
-  if (local) writeFileSync(join(p, '.workflow/local/workflow.config'), local.join('\n') + '\n');
+  mkdirSync(join(p, '.burhan/local'), { recursive: true });
+  if (team) writeFileSync(join(p, '.burhan/workflow.config'), team.join('\n') + '\n');
+  if (local) writeFileSync(join(p, '.burhan/local/workflow.config'), local.join('\n') + '\n');
   return p;
 }
 
@@ -20,15 +20,15 @@ test('the CLI and the hooks share one parser', () => {
 });
 test('defaults (wf_init), also for empty values', () => {
   const c = loadHookConfig(proj(['WF_DOCS_DIR=""', 'WF_SKILLS=']), {});
-  assert.equal(c.WF_DOCS_DIR, 'AI_SPEC/docs');
-  assert.equal(c.WF_DISCOVERY_DIR, 'AI_SPEC/discovery');
-  assert.equal(c.WF_STATE_FILE, '.workflow/local/PROGRESS.md');
+  assert.equal(c.WF_DOCS_DIR, '.burhan/work');
+  assert.equal(c.WF_DISCOVERY_DIR, '.burhan/discovery');
+  assert.equal(c.WF_STATE_FILE, '.burhan/local/PROGRESS.md');
   assert.equal(c.WF_STATE_BUDGET, '80');
   assert.equal(c.WF_CHECK_TIMEOUT, '60');
   assert.equal(c.WF_SKILLS, 'none');
 });
 test('missing config -> defaults', () => {
-  assert.equal(loadHookConfig(proj(null), {}).WF_DOCS_DIR, 'AI_SPEC/docs');
+  assert.equal(loadHookConfig(proj(null), {}).WF_DOCS_DIR, '.burhan/work');
 });
 test('paths lose leading ./ and a trailing /', () => {
   const c = loadHookConfig(proj(['WF_DOCS_DIR="././docs/"', 'WF_STATE_FILE=./s/NOW.md']), {});

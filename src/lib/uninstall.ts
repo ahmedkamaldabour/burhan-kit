@@ -6,22 +6,12 @@ import { isManagedCommand } from './commands.js';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { isWritable, putFile, realTarget } from './fs-safe.js';
-import { kitDir } from './kit.js';
-import { removeHooks, validHooksFile, type Settings } from './hooks-merge.js';
+import { burhanHookCommands, removeHooks, validHooksFile, type Settings } from './hooks-merge.js';
 import { AGENTS } from './install.js';
 
 const HOOKS_FILE: Record<Agent, string> = { claude: '.claude/settings.json', codex: '.codex/hooks.json' };
 const BOOT_FILE: Record<Agent, string> = { claude: 'CLAUDE.md', codex: 'AGENTS.md' };
 const KIT = ['WORKFLOW.md', 'SETUP.md', 'VERSION', 'phases', 'templates', 'commands', 'hooks']; // .gitignore: handled apart (I-5)
-const SNIPPET: Record<Agent, string> = { claude: 'hooks/adapters/claude/settings.snippet.json', codex: 'hooks/adapters/codex/hooks.snippet.json' };
-
-/** Every command string in a hooks snippet file (none if it is missing or unreadable). */
-function snippetCommands(file: string): string[] {
-  try {
-    const hooks = (JSON.parse(readFileSync(file, 'utf8')) as Settings).hooks ?? {};
-    return Object.values(hooks).flatMap((groups) => groups.flatMap((g) => (g.hooks ?? []).flatMap((e) => (typeof e.command === 'string' ? [e.command] : []))));
-  } catch { return []; }
-}
 const PROJECT = ['workflow.config', 'bindings.md', 'local']; // R-9: kept unless --all
 const MAX_MARK_SCAN = 1_000_000;
 
@@ -30,7 +20,7 @@ interface Op { say: string; run: () => void; rel?: string }
 export function uninstall(o: { target: string; apply: boolean; all: boolean }, io: Io): number {
   if (!existsSync(o.target) || !statSync(o.target).isDirectory()) throw new BurhanError(`target is not a directory: ${o.target}`);
   const target = realTarget(o.target);
-  const W = join(target, '.workflow');
+  const W = join(target, '.burhan');
   if (!existsSync(join(W, 'WORKFLOW.md'))) throw new BurhanError(`burhan is not installed in ${target}`);
 
   const ops: Op[] = [];
@@ -76,7 +66,7 @@ export function uninstall(o: { target: string; apply: boolean; all: boolean }, i
       let v: unknown;
       try { v = JSON.parse(readFileSync(abs(hf), 'utf8')); } catch { v = undefined; }
       if (!validHooksFile(v)) throw new BurhanError(`${hf}: expected a JSON object whose "hooks" (if present) maps event names to arrays of hook groups — fix it, then re-run`);
-      const commands = [...snippetCommands(join(kitDir(), SNIPPET[a])), ...snippetCommands(abs(`.workflow/${SNIPPET[a]}`))];
+      const commands = burhanHookCommands(target, a);
       const next = removeHooks(v, commands);
       if (JSON.stringify(next) !== JSON.stringify(v)) {
         if (next === null) rm(hf, `remove ${hf} (it held only burhan's hooks)`);
@@ -112,39 +102,40 @@ export function uninstall(o: { target: string; apply: boolean; all: boolean }, i
   };
   if (isLink(abs('.claude'))) skipLink('.claude'); else walk(abs('.claude'));
 
-  // ---- 3. kit files under .workflow/
-  for (const f of KIT) if (existsSync(abs(`.workflow/${f}`)) || isFile(abs(`.workflow/${f}`))) rm(`.workflow/${f}`, `remove .workflow/${f}`);
-  // I-5: a .gitignore stays while the folder it hides is kept
-  if (existsSync(abs('.workflow/.gitignore')) || isLink(abs('.workflow/.gitignore'))) {
-    if (!o.all && existsSync(abs('.workflow/local'))) left.push('.workflow/.gitignore (it keeps .workflow/local/ out of git while that is kept)');
-    else rm('.workflow/.gitignore', 'remove .workflow/.gitignore');
-  }
+  // ---- 3. kit files under .burhan/
+  for (const f of KIT) if (existsSync(abs(`.burhan/${f}`)) || isFile(abs(`.burhan/${f}`))) rm(`.burhan/${f}`, `remove .burhan/${f}`);
 
   // ---- 4. project files and work files (R-9)
   const cfg = readProjectConfig(target).values;
-  const inside = (p: string): boolean => /^\.burhan(\/|$)/.test(p) && !p.split('/').includes('..');
+  const privateRoots = ['.burhan/work', '.burhan/discovery'];
   for (const f of PROJECT) {
-    const rel = `.workflow/${f}`;
+    const rel = `.burhan/${f}`;
     if (!existsSync(abs(rel))) continue;
     if (o.all) rm(rel, `remove ${rel}`); else kept.push(rel);
   }
-  const work = [...new Set([cfg.WF_DOCS_DIR, cfg.WF_DISCOVERY_DIR, '.burhan/work', '.burhan/discovery'].filter((x): x is string => !!x))]
+  const work = [...new Set([cfg.WF_DOCS_DIR, cfg.WF_DISCOVERY_DIR, ...privateRoots].filter((x): x is string => !!x))]
     .map((p) => p.replace(/^(\.\/)+/, '').replace(/\/+$/, '')).filter((p) => p !== '' && existsSync(abs(p)));
   for (const p of [...new Set(work)]) {
+    if (privateRoots.some((root) => p.startsWith(`${root}/`)) && !p.split('/').includes('..')) continue;
     if (!o.all) kept.push(p);
-    else if (!inside(p)) left.push(`${p} (your work files, outside .burhan/ — never removed)`);
+    else if (!privateRoots.includes(p)) left.push(`${p} (your files, outside the private work/discovery folders — never removed)`);
     else if (isLink(abs(p))) skipLink(p);
     else rm(p, `remove ${p}`);
   }
   const ig = '.burhan/.gitignore';
-  if (existsSync(abs(ig)) && contentSafe(ig) && readFileSync(abs(ig), 'utf8') === '*\n') {
-    if (o.all || readdirSync(abs('.burhan')).every((e) => e === '.gitignore')) rm(ig, `remove ${ig}`);
-    else left.push(`${ig} (it keeps .burhan/ out of git while your work files there are kept)`);
+  if (existsSync(abs(ig)) || isLink(abs(ig))) {
+    const protectedKept = ['local', 'work', 'discovery'].some((name) => {
+      const rel = `.burhan/${name}`;
+      return (existsSync(abs(rel)) || isLink(abs(rel))) && !ops.some((op) => op.rel === rel);
+    });
+    if (isLink(abs(ig)) || !contentSafe(ig)) skipLink(ig);
+    else if (!protectedKept && readFileSync(abs(ig), 'utf8') === '/local/\n/work/\n/discovery/\n') rm(ig, `remove ${ig}`);
+    else left.push(`${ig} (private-file protection and your ignore rules are kept)`);
   }
 
-  // ---- 5. what is in .workflow/ that is not ours, and so stays
-  const known = new Set([...KIT, ...PROJECT, '.gitignore']); // .gitignore is burhan's: kept or removed by I-5, listed there
-  for (const e of readdirSync(W)) if (!known.has(e)) left.push(`.workflow/${e} (not a burhan file)`);
+  // ---- 5. what is in .burhan/ that is not ours, and so stays
+  const known = new Set([...KIT, ...PROJECT, '.gitignore', 'work', 'discovery']);
+  for (const e of readdirSync(W)) if (!known.has(e)) left.push(`.burhan/${e} (not a burhan file)`);
 
   // ---- output / apply
   io.stdout(o.apply ? `burhan uninstall ← ${target}\n` : `DRY RUN — burhan uninstall ← ${target} (nothing will change; add --apply)\n`);

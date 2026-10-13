@@ -1,5 +1,5 @@
 # Handling discoveries
-> Part of the burhan working agreement (core: `.workflow/WORKFLOW.md`). **Read this when:** you find something mid-task that the task did not ask for.
+> Part of the burhan working agreement (core: `.burhan/WORKFLOW.md`). **Read this when:** you find something mid-task that the task did not ask for.
 
 Something found mid-task that wasn't in the task — a bug, security gap, edge case, tech debt:
 

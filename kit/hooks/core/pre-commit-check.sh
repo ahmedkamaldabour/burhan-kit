@@ -18,7 +18,7 @@ tbin="${WF_TIMEOUT_BIN:-}"
 [ "$tbin" = none ] && tbin=""
 
 if [ -z "$WF_CHECK_CMD" ]; then
-  res="NOT VERIFIED (no check configured). Set WF_CHECK_CMD in .workflow/workflow.config."
+  res="NOT VERIFIED (no check configured). Set WF_CHECK_CMD in .burhan/workflow.config."
 elif [ -z "$tbin" ]; then
   res="NOT VERIFIED (no timeout utility found — install coreutils). Run \`$WF_CHECK_CMD\` yourself before committing."
 else

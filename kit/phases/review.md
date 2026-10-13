@@ -1,5 +1,5 @@
 # Review checklist
-> Part of the burhan working agreement (core: `.workflow/WORKFLOW.md`). **Read this when:** you review a sub-unit's diff, or run QC (with `.workflow/commands/qc.md`).
+> Part of the burhan working agreement (core: `.burhan/WORKFLOW.md`). **Read this when:** you review a sub-unit's diff, or run QC (with `.burhan/commands/qc.md`).
 
 ## Sized by risk
 

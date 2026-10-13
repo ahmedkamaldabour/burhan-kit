@@ -68,9 +68,9 @@ test('CRLF lines are reported (bash would keep the \\r in the value)', () => {
 
 test('local config overrides the team config key by key', () => {
   const p = tmpDir('burhan-proj-');
-  mkdirSync(join(p, '.workflow/local'), { recursive: true });
-  writeFileSync(join(p, '.workflow/workflow.config'), 'WF_CHECK_CMD="team"\nWF_SKILLS=none\n');
-  writeFileSync(join(p, '.workflow/local/workflow.config'), 'WF_CHECK_CMD="mine"\n');
+  mkdirSync(join(p, '.burhan/local'), { recursive: true });
+  writeFileSync(join(p, '.burhan/workflow.config'), 'WF_CHECK_CMD="team"\nWF_SKILLS=none\n');
+  writeFileSync(join(p, '.burhan/local/workflow.config'), 'WF_CHECK_CMD="mine"\n');
   assert.deepEqual(readProjectConfig(p).values, { WF_CHECK_CMD: 'mine', WF_SKILLS: 'none' });
 });
 

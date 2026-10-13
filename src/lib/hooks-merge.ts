@@ -1,5 +1,6 @@
 import { readFileSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, relative, sep } from 'node:path';
+import { kitDir } from './kit.js';
 
 export interface HookEntry { type?: string; command?: string; timeout?: number; [k: string]: unknown }
 export interface HookGroup { matcher?: string; hooks: HookEntry[]; [k: string]: unknown }
@@ -36,6 +37,18 @@ export function validHooksFile(v: unknown): v is Settings {
   return isObject(h) && Object.values(h).every((groups) => Array.isArray(groups) && groups.every(validGroup));
 }
 
+export function burhanHookCommands(target: string, agent: 'claude' | 'codex'): string[] {
+  const snippet = `hooks/adapters/${agent}/${agent === 'claude' ? 'settings' : 'hooks'}.snippet.json`;
+  return [join(kitDir(), snippet), join(target, '.burhan', snippet)].flatMap((file) => {
+    try {
+      const settings: unknown = JSON.parse(readFileSync(file, 'utf8'));
+      if (!validHooksFile(settings)) return [];
+      return Object.values(settings.hooks ?? {}).flatMap((groups) => groups.flatMap((group) =>
+        (group.hooks ?? []).flatMap((entry) => typeof entry.command === 'string' ? [entry.command] : [])));
+    } catch { return []; }
+  });
+}
+
 /** Reads user commands on events burhan uses. Bad or missing files are left for install's validation. */
 export function readExistingHooks(target: string, agents: readonly ('claude' | 'codex')[]): ExistingHook[] {
   const out: ExistingHook[] = [];
@@ -49,14 +62,14 @@ export function readExistingHooks(target: string, agents: readonly ('claude' | '
     let settings: unknown;
     try { settings = JSON.parse(readFileSync(realFile, 'utf8')); } catch { continue; }
     if (!isObject(settings) || !isObject(settings.hooks)) continue;
-    const marker = `.workflow/hooks/adapters/${agent}/hook.sh`;
+    const owned = new Set(burhanHookCommands(root, agent));
     for (const [event, groups] of Object.entries(settings.hooks)) {
       if (!BURHAN_EVENTS.has(event) || !Array.isArray(groups)) continue;
       for (const [groupIndex, group] of groups.entries()) {
         if (!isObject(group) || !Array.isArray(group.hooks)) continue;
         const matcher = typeof group.matcher === 'string' ? group.matcher : undefined;
         for (const [hookIndex, entry] of group.hooks.entries()) {
-          if (!isObject(entry) || typeof entry.command !== 'string' || entry.command.includes(marker)) continue;
+          if (!isObject(entry) || typeof entry.command !== 'string' || owned.has(entry.command)) continue;
           out.push({ agent, event, command: entry.command, ...(matcher === undefined ? {} : { matcher }), groupIndex, hookIndex, hookJson: JSON.stringify(entry) });
         }
       }
@@ -65,20 +78,15 @@ export function readExistingHooks(target: string, agents: readonly ('claude' | '
   return out;
 }
 
-/** Our entries (commands containing `marker`) are replaced by the snippet's; everything else is kept. */
-export function mergeHooks(current: Settings, snippet: Settings, marker: string, preCommitTimeout: number): Settings {
+/** Exact owned commands are replaced by the snippet's; everything else is kept. */
+export function mergeHooks(current: Settings, snippet: Settings, commands: readonly string[], preCommitTimeout: number): Settings {
   const ours = structuredClone(snippet.hooks ?? {});
   for (const g of ours.PreToolUse ?? [])
     for (const e of g.hooks) if ((e.command ?? '').includes('pre-commit-check')) e.timeout = preCommitTimeout;
-  const out = structuredClone(current);
+  const out = removeHooks(current, commands) ?? {};
   const hooks: Record<string, HookGroup[]> = { ...(out.hooks ?? {}) };
   for (const [event, groups] of Object.entries(ours)) {
-    const kept = (hooks[event] ?? []).flatMap((g) => {
-      if (!Array.isArray(g.hooks)) return [g];
-      const rest = g.hooks.filter((e) => !(e.command ?? '').includes(marker));
-      return rest.length ? [{ ...g, hooks: rest }] : [];
-    });
-    hooks[event] = [...kept, ...groups];
+    hooks[event] = [...(hooks[event] ?? []), ...groups];
   }
   out.hooks = hooks;
   return out;
@@ -89,6 +97,7 @@ export function mergeHooks(current: Settings, snippet: Settings, marker: string,
 export function removeHooks(current: Settings, commands: readonly string[]): Settings | null {
   const ours = new Set(commands);
   const out = structuredClone(current);
+  let removed = false;
   if (isObject(out.hooks)) {
     const hooks: Record<string, HookGroup[]> = {};
     for (const [event, groups] of Object.entries(out.hooks)) {
@@ -96,11 +105,14 @@ export function removeHooks(current: Settings, commands: readonly string[]): Set
         if (!Array.isArray(g.hooks)) return [g];
         const rest = g.hooks.filter((e) => !(typeof e.command === 'string' && ours.has(e.command)));
         if (rest.length === g.hooks.length) return [g];
+        removed = true;
         return rest.length ? [{ ...g, hooks: rest }] : [];
       });
-      if (kept.length) hooks[event] = kept;
+      if (kept.length || groups.length === 0) hooks[event] = kept;
     }
-    if (Object.keys(hooks).length) out.hooks = hooks; else delete out.hooks;
-  } else if (out.hooks === null) delete out.hooks;
-  return Object.keys(out).length ? out : null;
+    if (removed) {
+      if (Object.keys(hooks).length) out.hooks = hooks; else delete out.hooks;
+    }
+  }
+  return !removed || Object.keys(out).length ? out : null;
 }

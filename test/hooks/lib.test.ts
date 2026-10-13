@@ -35,7 +35,7 @@ test('relPath (wf_rel_stream)', () => {
   assert.equal(relPath('a/../../../x', P), '../../x');
   assert.equal(relPath('./a/./b/../c', P), 'a/c');
   assert.equal(relPath('a/b/..', P), 'a');
-  assert.equal(relPath('/p/proj/s/../AI_SPEC/P.md', P), 'AI_SPEC/P.md');
+  assert.equal(relPath('/p/proj/s/../.burhan/P.md', P), '.burhan/P.md');
   assert.equal(relPath('/other/x', P), '/other/x');
   assert.equal(relPath('/../x', P), '/x');
   assert.equal(relPath('/p/proj', P), '/p/proj', 'the project itself is not inside itself');
@@ -49,13 +49,13 @@ test('relPath on Windows: backslashes and drive-letter case (W3)', () => {
   assert.equal(relPath('a\\b', '/p', false), 'a\\b', 'not on Windows: a backslash is part of a name');
 });
 
-function project(state: string | null, file = '.workflow/local/PROGRESS.md'): string {
+function project(state: string | null, file = '.burhan/local/PROGRESS.md'): string {
   const p = tmpDir('burhan-lib-');
-  mkdirSync(join(p, '.workflow/local'), { recursive: true });
+  mkdirSync(join(p, '.burhan/local'), { recursive: true });
   if (state !== null) { mkdirSync(join(p, file, '..'), { recursive: true }); writeFileSync(join(p, file), state); }
   return p;
 }
-const cfg = { WF_STATE_FILE: '.workflow/local/PROGRESS.md' };
+const cfg = { WF_STATE_FILE: '.burhan/local/PROGRESS.md' };
 
 test('stateNow: only the "## Now" section; empty when absent', () => {
   const p = project('# PROGRESS\n## Now\n### foo\n- x\n## Waiting on you\n- secret\n');

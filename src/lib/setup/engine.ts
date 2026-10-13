@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { applyPlan, planInstall, type InstallPlan, type PlannedFile } from '../install.js';
@@ -8,9 +8,8 @@ import { cfgPath } from '../../hooks/core/config.mjs';
 import { putFile, realTarget } from '../fs-safe.js';
 import { kitDir } from '../kit.js';
 import { readExistingHooks, type ExistingHook } from '../hooks-merge.js';
-import { LEGACY_SHARED_DISCOVERY, LEGACY_SHARED_DOCS, PRIVATE_DISCOVERY, PRIVATE_DOCS, SHARED_DISCOVERY, SHARED_DOCS, type SetupAnswers } from './answers.js';
+import { PRIVATE_DISCOVERY, PRIVATE_DOCS, SHARED_DISCOVERY, SHARED_DOCS, type SetupAnswers } from './answers.js';
 import { assertWritable, setConfigKeys } from './config-write.js';
-import { messages } from './messages.js';
 
 export { recommended, currentAnswers } from './answers.js';
 export type { DocsChoice, SetupAnswers } from './answers.js';
@@ -26,20 +25,17 @@ export interface SetupPlan {
   bindings: string | null;
   install: InstallPlan;
   skills: 'superpowers' | 'none';
+  superpowersAvailable: boolean;
   /** Everything setup writes: the install's files plus the config, bindings and private-folder files it adds. */
   files: PlannedFile[];
-  /** Rename an existing AI_SPEC shared layout before saving its new config paths. */
-  moveLegacyShared: boolean;
 }
 
-/** Filesystem seam for the one transactional move; callers use the real operations by default. */
+/** Config write seam; callers use the real operation by default. */
 export interface SetupFilesystem {
-  mkdir(path: string, options: { recursive: true }): void;
-  rename(from: string, to: string): void;
   put(path: string, data: string): void;
 }
 
-const realSetupFilesystem: SetupFilesystem = { mkdir: mkdirSync, rename: renameSync, put: putFile };
+const realSetupFilesystem: SetupFilesystem = { put: putFile };
 
 function filesBelow(target: string, rel: string): string[] {
   const path = join(target, rel);
@@ -53,19 +49,20 @@ function filesBelow(target: string, rel: string): string[] {
 
 /** Files setup expects in git, excluding per-user state and the intentional private-work ignore file. */
 function committedSetupFiles(target: string, planned?: readonly PlannedFile[]): string[] {
+  const privateFile = (rel: string): boolean => /^\.burhan\/(local|work|discovery)(\/|$)/.test(rel);
   if (planned) return planned.flatMap((file) => {
-    if (file.action === 'remove' || file.rel === '.burhan/.gitignore') return [];
+    if (file.action === 'remove' || privateFile(file.rel)) return [];
     if (!file.rel.endsWith('/')) return [file.rel];
-    const kitRel = file.rel.replace(/^\.workflow\//, '').replace(/\/$/, '');
-    return file.rel.startsWith('.workflow/')
-      ? filesBelow(kitDir(), kitRel).map((rel) => `.workflow/${rel}`)
+    const kitRel = file.rel.replace(/^\.burhan\//, '').replace(/\/$/, '');
+    return file.rel.startsWith('.burhan/')
+      ? filesBelow(kitDir(), kitRel).map((rel) => `.burhan/${rel}`)
       : filesBelow(target, file.rel);
   });
-  const files = filesBelow(target, '.workflow');
-  for (const rel of ['.claude/settings.json', '.claude/commands/burhan/e2e.md', '.claude/commands/burhan/qc.md', '.claude/agents/burhan-reviewer.md', '.claude/skills/verify/SKILL.md', '.codex/hooks.json', 'CLAUDE.md', 'AGENTS.md']) {
+  const files = filesBelow(target, '.burhan');
+  for (const rel of ['.claude/settings.json', '.claude/commands/burhan/e2e.md', '.claude/commands/burhan/qc.md', '.claude/agents/burhan-reviewer.md', '.claude/skills/burhan-verify/SKILL.md', '.codex/hooks.json', 'CLAUDE.md', 'AGENTS.md']) {
     try { if (statSync(join(target, rel)).isFile()) files.push(rel); } catch { /* absent is fine */ }
   }
-  return files.filter((rel) => !rel.startsWith('.workflow/local/'));
+  return files.filter((rel) => !privateFile(rel));
 }
 
 /** AC-18: exact negate lines for setup-owned committed files that git currently ignores. */
@@ -119,7 +116,7 @@ function folders(a: SetupAnswers): { docs: string; discovery: string } {
   if (path.split('/').some((s) => s === '..' || s === '')) bad('leaves this project');
   if (path.split('/').some((s) => s === '.')) bad('has a "." step — type the folder plainly, like docs/work');
   // Never the project root itself, git's internals or burhan's own folder.
-  if (/^\.?$|^\.git(\/|$)|^\.workflow(\/|$)/.test(path)) bad('is a folder burhan or git keeps for itself');
+  if (/^\.?$|^\.git(\/|$)|^\.burhan(\/|$)/.test(path)) bad('is a folder burhan or git keeps for itself');
   if (/[$`"]/.test(path)) bad('has a character that cannot be saved');
   assertWritable('the work files folder', path);
   return { docs: path, discovery: `${path}-discovery` };
@@ -156,114 +153,45 @@ export function planSetup(target: string, a: SetupAnswers, home: string): SetupP
   const configPath = join(real, TEAM_CONFIG);
   const existingConfig = existsSync(configPath) ? readFileSync(configPath, 'utf8') : null;
   const have = parseConfig(existingConfig ?? '').values;
-  const legacyShared = existingConfig !== null && a.docs.kind === 'shared' && cfgPath(have.WF_DOCS_DIR || LEGACY_SHARED_DOCS) === LEGACY_SHARED_DOCS;
-  const moveLegacyShared = legacyShared && a.moveDocs === 'move';
-  const selectedFolders = legacyShared && !moveLegacyShared
-    ? { docs: LEGACY_SHARED_DOCS, discovery: LEGACY_SHARED_DISCOVERY }
-    : folders(a);
-  const { docs, discovery } = selectedFolders;
-  if (moveLegacyShared && (existsSync(join(real, SHARED_DOCS)) || existsSync(join(real, SHARED_DISCOVERY)))) {
-    throw new BurhanError(`cannot move the old shared folders: ${SHARED_DOCS} or ${SHARED_DISCOVERY} already exists — nothing was changed`);
-  }
+  const { docs, discovery } = folders(a);
 
-  const skills: 'superpowers' | 'none' = existingConfig !== null && (have.WF_SKILLS ?? '') !== '' ? (have.WF_SKILLS === 'superpowers' ? 'superpowers' : 'none') : superpowersPresent(home) ? 'superpowers' : 'none';
+  const superpowersAvailable = superpowersPresent(home);
+  const skills: 'superpowers' | 'none' = existingConfig !== null && (have.WF_SKILLS ?? '') !== '' ? (have.WF_SKILLS === 'superpowers' ? 'superpowers' : 'none') : superpowersAvailable ? 'superpowers' : 'none';
   const base = existingConfig ?? readFileSync(join(kit, 'workflow.config.example'), 'utf8');
   const values: Record<string, string> = {
     WF_MODE_DEFAULT: a.mode,
   };
-  // Keeping a legacy layout, including an unset path read through the hooks' fallback, must not materialise
-  // new config lines. Moving it is the explicit point at which the new paths are saved.
-  if (!legacyShared || moveLegacyShared) {
-    values.WF_DOCS_DIR = docs;
-    // An unchanged docs folder keeps the discovery folder the project already has (AC-17).
-    values.WF_DISCOVERY_DIR = cfgPath(have.WF_DOCS_DIR ?? '') === docs && (have.WF_DISCOVERY_DIR ?? '') !== '' ? have.WF_DISCOVERY_DIR : discovery;
-  }
+  values.WF_DOCS_DIR = docs;
+  values.WF_DISCOVERY_DIR = cfgPath(have.WF_DOCS_DIR || PRIVATE_DOCS) === docs && (have.WF_DISCOVERY_DIR ?? '') !== '' ? have.WF_DISCOVERY_DIR : discovery;
   if (!(existingConfig !== null && (have.WF_SKILLS ?? '') !== '')) values.WF_SKILLS = skills === 'superpowers' ? 'superpowers' : 'none';
   else values.WF_SKILLS = have.WF_SKILLS;
   const checkEmpty = (have.WF_CHECK_CMD ?? '') === '';
   if (checkEmpty && have.WF_STACK_SETUP !== 'done') values.WF_STACK_SETUP = 'pending';
   const config = setConfigKeys(base, values);
 
-  const bf = join(real, '.workflow/bindings.md');
+  const bf = join(real, '.burhan/bindings.md');
   const label = a.docs.kind === 'private' ? `\`${docs}/\` (private, git-ignored)` : a.docs.kind === 'shared' ? `\`${docs}/\` (shared in git)` : `\`${docs}/\` (your folder)`;
   const bindings = planBindings(existsSync(bf) ? readFileSync(bf, 'utf8') : null, readFileSync(join(kit, 'templates/bindings.md'), 'utf8'), label);
 
   // setup writes the config and bindings itself (before the install): the install must not create them from the templates.
-  const install = planInstall({ mode: existsSync(join(real, '.workflow/WORKFLOW.md')) ? 'upgrade' : 'init', target, agents: a.agents, apply: true, bootstrap: true, keepProjectFiles: true });
+  const install = planInstall({ mode: existsSync(join(real, '.burhan/WORKFLOW.md')) ? 'upgrade' : 'init', target, agents: a.agents, apply: true, bootstrap: true, keepProjectFiles: true });
   const existingHooks = readExistingHooks(real, a.agents);
 
   const files = [...install.files];
   const add = (rel: string, existed: boolean, kind: PlannedFile['kind']): void => {
     if (!files.some((f) => f.rel === rel)) files.push({ rel, existed, action: existed ? 'modify' : 'create', kind });
   };
-  if (existingConfig !== null && config !== existingConfig) add('.workflow/workflow.config', true, 'config');
-  if (existsSync(bf) && bindings !== null) add('.workflow/bindings.md', true, 'config');
-  if (a.docs.kind === 'private') {
-    const ig = join(real, '.burhan/.gitignore');
-    if (!existsSync(ig) || readFileSync(ig, 'utf8') !== '*\n') add('.burhan/.gitignore', existsSync(ig), 'gitignore');
-  }
-  return { answers: { ...a, existingHooks: a.existingHooks ?? 'keep' }, existingHooks, config, bindings, install, skills, files, moveLegacyShared };
+  if (existingConfig !== null && config !== existingConfig) add('.burhan/workflow.config', true, 'config');
+  if (existsSync(bf) && bindings !== null) add('.burhan/bindings.md', true, 'config');
+  return { answers: { ...a }, existingHooks, config, bindings, install, skills, superpowersAvailable, files };
 }
 
-/** Writes config → bindings → private folder ignore file → the install, once. A blocked plan is refused before anything is written. */
+/** Writes config → bindings → the install, once. A blocked plan is refused before anything is written. */
 export function applySetup(p: SetupPlan, fs: SetupFilesystem = realSetupFilesystem): void {
   const { blocked, target } = p.install;
   if (blocked.length) throw new BurhanError(`${blocked[0]} — nothing was changed`);
-  let movedWork = false;
-  let movedDiscovery = false;
-  const newRoot = join(target, 'docs/burhan');
-  const rootExisted = existsSync(newRoot);
-  const docsRoot = join(target, 'docs');
-  const docsRootExisted = existsSync(docsRoot);
-  if (p.moveLegacyShared) {
-    try {
-      fs.mkdir(newRoot, { recursive: true });
-      if (existsSync(join(target, LEGACY_SHARED_DOCS))) { fs.rename(join(target, LEGACY_SHARED_DOCS), join(target, SHARED_DOCS)); movedWork = true; }
-      if (existsSync(join(target, LEGACY_SHARED_DISCOVERY))) { fs.rename(join(target, LEGACY_SHARED_DISCOVERY), join(target, SHARED_DISCOVERY)); movedDiscovery = true; }
-    } catch {
-      const rollbackFailed = rollbackLegacyMove(target, movedWork, movedDiscovery, rootExisted, docsRootExisted, fs);
-      throw new BurhanError(rollbackFailed ? rollbackFailureMessage(target, p.answers.lang) : messages(p.answers.lang).moveFailed);
-    }
-  }
   const configPath = join(target, TEAM_CONFIG);
-  try {
-    if (!existsSync(configPath) || readFileSync(configPath, 'utf8') !== p.config) fs.put(configPath, p.config);
-  } catch {
-    const rollbackFailed = p.moveLegacyShared && rollbackLegacyMove(target, movedWork, movedDiscovery, rootExisted, docsRootExisted, fs);
-    throw new BurhanError(rollbackFailed ? rollbackFailureMessage(target, p.answers.lang) : messages(p.answers.lang).moveFailed);
-  }
-  if (p.bindings !== null) putFile(join(target, '.workflow/bindings.md'), p.bindings);
-  if (p.answers.docs.kind === 'private') {
-    const ig = join(target, '.burhan/.gitignore');
-    if (!existsSync(ig) || readFileSync(ig, 'utf8') !== '*\n') putFile(ig, '*\n');
-  }
+  if (!existsSync(configPath) || readFileSync(configPath, 'utf8') !== p.config) fs.put(configPath, p.config);
+  if (p.bindings !== null) putFile(join(target, '.burhan/bindings.md'), p.bindings);
   applyPlan(p.install);
-}
-
-function rollbackLegacyMove(target: string, movedWork: boolean, movedDiscovery: boolean, rootExisted: boolean, docsRootExisted: boolean, fs: SetupFilesystem): boolean {
-  let failed = false;
-  try { if (movedDiscovery) fs.rename(join(target, SHARED_DISCOVERY), join(target, LEGACY_SHARED_DISCOVERY)); } catch { failed = true; }
-  try { if (movedWork) fs.rename(join(target, SHARED_DOCS), join(target, LEGACY_SHARED_DOCS)); } catch { failed = true; }
-  if (!rootExisted) try { rmdirSync(join(target, 'docs/burhan')); } catch { /* empty or concurrently changed */ }
-  if (!docsRootExisted) try { rmdirSync(join(target, 'docs')); } catch { /* empty or concurrently changed */ }
-  return failed;
-}
-
-function rollbackFailureMessage(target: string, lang: 'en' | 'ar'): string {
-  const location = (oldRel: string, newRel: string): string => {
-    const oldHere = existsSync(join(target, oldRel));
-    const newHere = existsSync(join(target, newRel));
-    if (newHere && !oldHere) return newRel;
-    if (oldHere && !newHere) return oldRel;
-    if (oldHere && newHere) return `${oldRel} and ${newRel}`;
-    return `neither ${oldRel} nor ${newRel}`;
-  };
-  let config: Record<string, string> = {};
-  try { config = parseConfig(readFileSync(join(target, TEAM_CONFIG), 'utf8')).values; } catch { /* report an unavailable value below */ }
-  return messages(lang).moveRollbackFailed(
-    location(LEGACY_SHARED_DOCS, SHARED_DOCS),
-    location(LEGACY_SHARED_DISCOVERY, SHARED_DISCOVERY),
-    config.WF_DOCS_DIR ?? '(not set)',
-    config.WF_DISCOVERY_DIR ?? '(not set)',
-  );
 }

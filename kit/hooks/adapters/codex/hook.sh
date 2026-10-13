@@ -6,9 +6,9 @@
 set +e
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/ledger.sh"
-# The project is where the kit is installed (<project>/.workflow/hooks/adapters/codex), not the
+# The project is where the kit is installed (<project>/.burhan/hooks/adapters/codex), not the
 # session cwd — Codex may be started from a subdirectory.
-case "$here" in */.workflow/hooks/adapters/codex) export WF_PROJECT_ROOT="${here%/.workflow/hooks/adapters/codex}" ;; esac
+case "$here" in */.burhan/hooks/adapters/codex) export WF_PROJECT_ROOT="${here%/.burhan/hooks/adapters/codex}" ;; esac
 payload="$(cat 2>/dev/null)"
 printf '%s' "$payload" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
 jr() { printf '%s' "$payload" | jq -r "($1) // empty" 2>/dev/null; }

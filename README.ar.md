@@ -92,9 +92,10 @@ Never commit, never change my global settings, and ask me before anything you ca
 
 - تغيّر الإعدادات: `npx burhan-kit setup`، أو قول للـ agent بتاعك: "change burhan settings".
 - تشيل burhan: `npx burhan-kit uninstall` بيعرض اللي هيتشال وما بيغيّرش حاجة؛ ضيف `--apply`
-  عشان ينفّذ. بيسيب الحاجات بتاعتك: `.workflow/workflow.config` و`.workflow/bindings.md`
-  و`.workflow/local/` وملفات الشغل في `.burhan/`. `--all` بيشيلهم هما كمان (أي فولدر شغل بره
-  `.burhan/` بيفضل دايمًا).
+  عشان ينفّذ. بيسيب الحاجات بتاعتك: `.burhan/workflow.config` و`.burhan/bindings.md`
+  و`.burhan/local/` وملفات الشغل في `.burhan/`. `--all` بيشيلهم هما كمان (أي فولدر شغل بره
+  `.burhan/` بيفضل دايمًا). ذاكرة المشروع والملفات اللي مش بتاعة burhan بتفضل، وقواعد التجاهل بتاعتك
+  وحماية الملفات الخاصة اللي فضلت مبيتشلّوش.
 
 ## للـ scripts والـ CI
 
@@ -116,10 +117,13 @@ npx burhan-kit doctor                                       # read-only health c
 
 - الـ agent بيقرا إعدادات الـ build والـ test والـ lint عندك من غير ما يغيّر حاجة.
 - بيقترح كل قيمة ومعاها دليلها (file:line)، ومش بيسألك غير أسئلة البيزنس.
-- لو لقى الـ hooks الموجودة في المشروع، بيعرضهم و هتتسأل: نخلي الاتنين ولا تشيل بتوعك. burhan عمره ما بيعدّلهم.
-- مع **Shared in git**، ملفات الشغل بتكون في `docs/burhan/`.
+- لو لقى الـ hooks الموجودة في المشروع، بيعرضهم وبيفضلوا شغّالين جنب hooks بتاعة burhan؛ فممكن التنبيهات تتكرر.
+- ملفات الشغل الخاصة في `.burhan/work/` والاكتشافات في `.burhan/discovery/`؛ دول و`.burhan/local/` بس اللي بيتجاهلهم git.
+  مع **Shared in git**، المسارات هي `docs/burhan/work/` و`docs/burhan/discovery/`.
+- Superpowers اختياري في Claude Code: `/plugin install superpowers@claude-plugins-official`.
+  الـ setup بيقترحه لو مش موجود بس؛ مبيسطّبش plugins ومبيغيّرش اختيارك الصريح للـ skills.
 - بعد ما توافق على الـ diff: بيكتب الإعدادات، ويشغّل الـ check مرة، ويشغّل `burhan doctor`.
-- لو بإيدك: أقل حاجة `WF_CODE_REGEX` و `WF_EVIDENCE_REGEX` في `.workflow/workflow.config`.
+- لو بإيدك: أقل حاجة `WF_CODE_REGEX` و `WF_EVIDENCE_REGEX` في `.burhan/workflow.config`.
 
 </details>
 
@@ -192,21 +196,21 @@ flowchart LR
 كل sub-unit: test بيفشل الأول → code → reviewer agent منفصل يراجعها في fresh context. الحالة بتمشي:
 ⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed.
 
-تابع التقدم من ملف الـ plan، أو `.workflow/local/PROGRESS.md`، أو `burhan status`. لو المسار فيه بوابة Q،
+تابع التقدم من ملف الـ plan، أو `.burhan/local/PROGRESS.md`، أو `burhan status`. لو المسار فيه بوابة Q،
 agent جديد بيعمل QC بعد الـ verification. وكل المسارات بتقف عند commit checkpoint قبل أي commit.
 
 ## هتاخد إيه
 
 | الجزء | بيعمل إيه |
 |---|---|
-| اتفاق الشغل | التصنيف، والموافقات، والتست الأول، ووقفة الـ commit (`.workflow/`) |
+| اتفاق الشغل | التصنيف، والموافقات، والتست الأول، ووقفة الـ commit (`.burhan/`) |
 | Hooks | بوابات أول الـ session، واقتراحات على البرومت، وcheck قبل الـ commit، وتذكيرات بعد التعديل، ومراجعة آخر الـ turn |
 | Evidence ledger | كل تعديل وكل أمر بترتيبه وبالـ exit code — برّه المشروع |
 | QC مستقل | subagent جديد أو الـ agent التاني، ومتسجّل مين عمله |
 | CLI | `setup` `uninstall` `init` `upgrade` `doctor` `status` `stats` `evidence` `changed` `pr-body` |
 
 مفيش افتراض عن لغة أو framework أو test runner أو tracker: كل حاجة خاصة بالـ stack في
-`.workflow/workflow.config`.
+`.burhan/workflow.config`.
 
 ## بصراحة: إيه حدوده
 

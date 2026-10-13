@@ -15,8 +15,8 @@ function repo(storyLine: (sha: string) => string): { p: string; sha: string } {
   writeFileSync(join(p, 'src/a.js'), 'a\n'); writeFileSync(join(p, 'src/b.js'), 'b\n');
   git(p, 'add', '-A'); git(p, 'commit', '-qm', 'base');
   const sha = git(p, 'rev-parse', '--short', 'HEAD').stdout.trim();
-  mkdirSync(join(p, 'AI_SPEC/docs/foo'), { recursive: true });
-  writeFileSync(join(p, 'AI_SPEC/docs/foo/foo-story.md'), `## Codebase verification\n${storyLine(sha)}\n`);
+  mkdirSync(join(p, '.burhan/work/foo'), { recursive: true });
+  writeFileSync(join(p, '.burhan/work/foo/foo-story.md'), `## Codebase verification\n${storyLine(sha)}\n`);
   return { p, sha };
 }
 
@@ -29,7 +29,7 @@ test('lists files changed since the verified commit: committed, uncommitted and 
   assert.equal(await runCli(['changed', p, '--item', 'foo'], io), 0);
   assert.match(o.out, new RegExp(`changed since ${sha}`));
   for (const f of ['src/a.js', 'src/b.js', 'src/c.js']) assert.match(o.out, new RegExp(f.replace('.', '\\.')));
-  assert.doesNotMatch(o.out, /AI_SPEC\/docs/, 'the item\'s own docs are not code facts');
+  assert.doesNotMatch(o.out, /\.burhan\/work/, 'the item\'s own docs are not code facts');
 });
 
 test('no change since the commit -> says so', async () => {
@@ -60,8 +60,8 @@ test('a target below the repository root: paths relative to it, nothing outside 
   writeFileSync(join(root, 'app/src/a.js'), 'a\n'); writeFileSync(join(root, 'other/o.js'), 'o\n');
   git(root, 'add', '-A'); git(root, 'commit', '-qm', 'base');
   const sha = git(root, 'rev-parse', '--short', 'HEAD').stdout.trim();
-  mkdirSync(join(root, 'app/AI_SPEC/docs/foo'), { recursive: true });
-  writeFileSync(join(root, 'app/AI_SPEC/docs/foo/foo-story.md'), `- **Verified at commit:** ${sha}\n`);
+  mkdirSync(join(root, 'app/.burhan/work/foo'), { recursive: true });
+  writeFileSync(join(root, 'app/.burhan/work/foo/foo-story.md'), `- **Verified at commit:** ${sha}\n`);
   git(root, 'add', '-A'); git(root, 'commit', '-qm', 'story');
   writeFileSync(join(root, 'app/src/a.js'), 'a2\n'); writeFileSync(join(root, 'other/o.js'), 'o2\n');
   writeFileSync(join(root, 'app/src/مثال.js'), 'x\n');
@@ -76,8 +76,8 @@ test('--item must be a slug; a non-repository says so', async () => {
   assert.equal(await runCli(['changed', p, '--item', '../../etc'], a.io), 2);
   assert.match(a.o.err, /not a work-item slug/);
   const plain = tmpDir('burhan-ch-norepo-');
-  mkdirSync(join(plain, 'AI_SPEC/docs/foo'), { recursive: true });
-  writeFileSync(join(plain, 'AI_SPEC/docs/foo/foo-story.md'), `- **Verified at commit:** ${sha}\n`);
+  mkdirSync(join(plain, '.burhan/work/foo'), { recursive: true });
+  writeFileSync(join(plain, '.burhan/work/foo/foo-story.md'), `- **Verified at commit:** ${sha}\n`);
   const b = capture();
   assert.equal(await runCli(['changed', plain, '--item', 'foo'], b.io), 0);
   assert.match(b.o.out, /not a git repository/);

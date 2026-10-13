@@ -33,9 +33,9 @@ test('planInstall lists the files it would write and writes nothing', () => {
   const f = (rel: string) => p.files.find((x) => x.rel === rel);
   assert.deepEqual(f('CLAUDE.md'), { rel: 'CLAUDE.md', existed: false, action: 'create', kind: 'bootstrap' });
   assert.deepEqual(f('.claude/settings.json'), { rel: '.claude/settings.json', existed: false, action: 'create', kind: 'hooks' });
-  assert.equal(f('.workflow/hooks/core/')?.kind, 'kit');
-  assert.equal(f('.workflow/bindings.md')?.kind, 'config');
-  assert.equal(f('.workflow/.gitignore')?.kind, 'gitignore');
+  assert.equal(f('.burhan/hooks/core/')?.kind, 'kit');
+  assert.equal(f('.burhan/bindings.md')?.kind, 'config');
+  assert.equal(f('.burhan/.gitignore')?.kind, 'gitignore');
   assert.ok(p.agents.includes('claude'));
   assert.ok(p.steps.length > 0);
 });
@@ -62,8 +62,8 @@ test('keepProjectFiles: the plan never creates workflow.config or bindings.md (s
   spawnSync('git', ['init', '-q', t]);
   const p = planInstall({ mode: 'init', target: t, agents: ['claude'], apply: true, bootstrap: true, keepProjectFiles: true });
   applyPlan(p);
-  assert.equal(existsSync(join(t, '.workflow/workflow.config')), false);
-  assert.equal(existsSync(join(t, '.workflow/bindings.md')), false);
-  assert.equal(existsSync(join(t, '.workflow/WORKFLOW.md')), true, 'the rest of the install still ran');
-  assert.ok(!p.files.some((f) => f.rel === '.workflow/workflow.config' || f.rel === '.workflow/bindings.md'));
+  assert.equal(existsSync(join(t, '.burhan/workflow.config')), false);
+  assert.equal(existsSync(join(t, '.burhan/bindings.md')), false);
+  assert.equal(existsSync(join(t, '.burhan/WORKFLOW.md')), true, 'the rest of the install still ran');
+  assert.ok(!p.files.some((f) => f.rel === '.burhan/workflow.config' || f.rel === '.burhan/bindings.md'));
 });

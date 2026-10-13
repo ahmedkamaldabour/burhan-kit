@@ -41,12 +41,12 @@ for mark in '⬜' '🟡' '🔵' '🟢' '✅'; do
   check "README.md work-item section has status $mark" "$WORK_ITEM" has "$mark"
   check "README.ar.md work-item section has status $mark" "$AR_WORK_ITEM" has "$mark"
 done
-for text in 'sub-unit' 'reviewer agent' '.workflow/local/PROGRESS.md' 'burhan status' 'QC'; do
+for text in 'sub-unit' 'reviewer agent' '.burhan/local/PROGRESS.md' 'burhan status' 'QC'; do
   check "README.md work-item section names $text" "$WORK_ITEM" has "$text"
 done
 check "README.md work-item section qualifies QC by Q gate" "$WORK_ITEM" has "For routes that include the Q gate"
 check "README.md work-item section keeps the commit checkpoint universal" "$WORK_ITEM" has "Every route stops at the commit checkpoint"
-for text in 'sub-unit' 'reviewer' '.workflow/local/PROGRESS.md' 'burhan status' 'QC'; do
+for text in 'sub-unit' 'reviewer' '.burhan/local/PROGRESS.md' 'burhan status' 'QC'; do
   check "README.ar.md work-item section names $text" "$AR_WORK_ITEM" has "$text"
 done
 check "README.ar.md work-item section qualifies QC by Q gate" "$AR_WORK_ITEM" has "لو المسار فيه بوابة Q"
@@ -59,10 +59,10 @@ for f in README.md README.ar.md; do
   CONTENT="$(cat "$f")"
   check "$f mentions docs/burhan/" "$CONTENT" has "docs/burhan/"
 done
-check "README.md says existing hooks are listed and asked about" "$README" has "existing hooks"
-check "README.md asks about existing hooks" "$README" has "ask"
-check "README.ar.md says existing hooks are listed and asked about" "$AR" has "الـ hooks الموجودة"
-check "README.ar.md asks about existing hooks" "$AR" has "هتتسأل"
+check "README.md keeps existing hooks active" "$README" has "existing hooks"
+check "README.md describes coexistence" "$README" has "run alongside"
+check "README.ar.md lists existing hooks" "$AR" has "الـ hooks الموجودة"
+check "README.ar.md describes coexistence" "$AR" has "بيفضلوا شغّالين"
 
 echo "kit/SETUP.md — short, points at setup --agent, keeps the rules"
 check "contains setup --agent" "$SETUP" has "setup --agent"
@@ -71,9 +71,9 @@ check "at most 40 lines" "$( [ "$(wc -l < kit/SETUP.md)" -le 40 ] && echo yes)" 
 while IFS='|' read -r id file phrase; do
   check "SETUP.md keeps $id" "$SETUP" has "$phrase"
 done < <(grep -E '^R14[6-9]\||^R15[01]\|' tests/rule-inventory.txt)
-workflow_rule='The agent may edit .workflow/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files.'
-check "SETUP.md has the one approved .workflow edit rule" "$SETUP" has "$workflow_rule"
-check "SETUP.md drops the old blanket .workflow edit ban" "$SETUP" lacks "Do not edit the .workflow/ files yourself."
+workflow_rule='The agent may edit .burhan/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files.'
+check "SETUP.md has the one approved .burhan edit rule" "$SETUP" has "$workflow_rule"
+check "SETUP.md drops the old blanket .burhan edit ban" "$SETUP" lacks "Do not edit the .burhan/ files yourself."
 
 config_grammar='Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote.'
 check "configuration docs state the single-quote grammar" "$(cat docs/configuration.md)" has "$config_grammar"

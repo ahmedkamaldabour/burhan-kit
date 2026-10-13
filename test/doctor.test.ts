@@ -17,7 +17,7 @@ function project(agents: ('claude' | 'codex')[] = ['claude']): string {
   install({ mode: 'init', target: p, agents, apply: true, bootstrap: false }, capture(p).io);
   return p;
 }
-const cfg = (p: string) => join(p, '.workflow/workflow.config');
+const cfg = (p: string) => join(p, '.burhan/workflow.config');
 const edit = (f: string, fn: (s: string) => string) => writeFileSync(f, fn(readFileSync(f, 'utf8')));
 const find = (cs: Check[], status: Check['status'], text: string) => cs.find((c) => c.status === status && c.text.includes(text));
 const bad = (cs: Check[]) => cs.filter((c) => c.status === 'fail' || c.status === 'warn').map((c) => `${c.status} ${c.text}`);
@@ -33,8 +33,8 @@ test('legacy config keys are silently ignored in team and local config; upgrade 
   const target = project();
   const legacy = "WF_FORBIDDEN_REGEX='^true'\nWF_FORBIDDEN_REASON='legacy reason'\nWF_SINGLE_TEST_HINT='legacy runner {{FILE}}'\n";
   edit(cfg(target), (text) => text + '# legacy settings stay untouched\n' + legacy);
-  const local = join(target, '.workflow/local/workflow.config');
-  mkdirSync(join(target, '.workflow/local'), { recursive: true });
+  const local = join(target, '.burhan/local/workflow.config');
+  mkdirSync(join(target, '.burhan/local'), { recursive: true });
   writeFileSync(local, '# personal settings\n' + legacy.replace('legacy reason', 'local reason'));
   const before = readFileSync(cfg(target), 'utf8');
   const localBefore = readFileSync(local, 'utf8');
@@ -84,7 +84,7 @@ test('install: not installed fails; an older kit stamp says run upgrade', () => 
   const empty = tmpDir('burhan-doctor-empty-');
   assert.ok(find(runChecks(empty, probe()), 'fail', 'burhan init'));
   const p = project();
-  writeFileSync(join(p, '.workflow/VERSION'), '0.0.9\n');
+  writeFileSync(join(p, '.burhan/VERSION'), '0.0.9\n');
   const c = find(runChecks(p, probe()), 'warn', '0.0.9');
   assert.ok(c && c.text.includes('burhan upgrade --apply') && c.text.includes(readVersion()), c?.text);
 });
@@ -92,7 +92,7 @@ test('install: not installed fails; an older kit stamp says run upgrade', () => 
 test('install: kit files that differ from this CLI\'s kit (same version, edited or another build) warn', () => {
   const p = project();
   assert.ok(find(runChecks(p, probe()), 'ok', 'kit files match'));
-  writeFileSync(join(p, '.workflow/hooks/core/turn-audit.sh'), '# edited\n');
+  writeFileSync(join(p, '.burhan/hooks/core/turn-audit.sh'), '# edited\n');
   const c = find(runChecks(p, probe()), 'warn', 'hooks/core/turn-audit.sh');
   assert.ok(c && c.text.includes('burhan upgrade --apply'), c?.text);
 });
@@ -117,8 +117,8 @@ test('config: missing keys (vs the shipped example), unknown keys, unreadable li
   const crlfWarn = runChecks(crlf, probe()).filter((c) => c.text.includes('CRLF'));
   assert.equal(crlfWarn.length, 1, 'CRLF is reported once per file');
   const l = project();
-  mkdirSync(join(l, '.workflow/local'), { recursive: true });
-  writeFileSync(join(l, '.workflow/local/workflow.config'), 'WF_EVIDENCE_DIR="rel"\n');
+  mkdirSync(join(l, '.burhan/local'), { recursive: true });
+  writeFileSync(join(l, '.burhan/local/workflow.config'), 'WF_EVIDENCE_DIR="rel"\n');
   assert.ok(find(runChecks(l, probe()), 'warn', 'WF_EVIDENCE_DIR'), 'the local override is read too');
 });
 
@@ -206,26 +206,35 @@ test('codex trust: the key is matched under the project path as given and as res
 });
 
 test('unreadable files are reported, never a crash', { skip: process.getuid?.() === 0 }, () => {
-  for (const f of ['.workflow/workflow.config', '.workflow/VERSION', '.workflow/.gitignore', '.workflow/WORKFLOW.md']) {
+  for (const f of ['.burhan/workflow.config', '.burhan/VERSION', '.burhan/.gitignore', '.burhan/WORKFLOW.md']) {
     const p = project();
     chmodSync(join(p, f), 0o000);
     const c = runChecks(p, probe()).find((x) => x.text.includes('unreadable'));
     assert.ok(c && c.status !== 'ok' && c.text.includes(f), `${f}: ${c?.text}`);
   }
   const q = project();
-  mkdirSync(join(q, '.workflow/local'), { recursive: true });
-  writeFileSync(join(q, '.workflow/local/PROGRESS.md'), 'x\n');
-  chmodSync(join(q, '.workflow/local/PROGRESS.md'), 0o000);
+  mkdirSync(join(q, '.burhan/local'), { recursive: true });
+  writeFileSync(join(q, '.burhan/local/PROGRESS.md'), 'x\n');
+  chmodSync(join(q, '.burhan/local/PROGRESS.md'), 0o000);
   assert.ok(find(runChecks(q, probe()), 'warn', 'unreadable'));
+});
+
+test('doctor does not consider a command mentioning the adapter path wired', () => {
+  const target = project();
+  const file = join(target, '.claude/settings.json');
+  const settings = JSON.parse(readFileSync(file, 'utf8'));
+  settings.hooks.Stop[0].hooks[0].command = 'echo .burhan/hooks/adapters/claude/hook.sh turn-audit';
+  writeFileSync(file, JSON.stringify(settings));
+  assert.ok(find(runChecks(target, probe()), 'fail', 'Stop'));
 });
 
 test('state: local/ not git-ignored and a state file over budget warn', () => {
   const p = project();
-  writeFileSync(join(p, '.workflow/.gitignore'), '# nothing\n');
+  writeFileSync(join(p, '.burhan/.gitignore'), '# nothing\n');
   assert.ok(find(runChecks(p, probe()), 'warn', 'local/'));
   const q = project();
-  mkdirSync(join(q, '.workflow/local'), { recursive: true });
-  writeFileSync(join(q, '.workflow/local/PROGRESS.md'), 'x\n'.repeat(81));
+  mkdirSync(join(q, '.burhan/local'), { recursive: true });
+  writeFileSync(join(q, '.burhan/local/PROGRESS.md'), 'x\n'.repeat(81));
   assert.ok(find(runChecks(q, probe()), 'warn', '81 lines'));
 });
 

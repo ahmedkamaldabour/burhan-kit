@@ -47,8 +47,8 @@ test('keeps the user\'s own CLAUDE.md text and settings.json hook byte-identical
   assert.equal(r.code, 0, r.err + r.out);
   assert.equal(readFileSync(join(t, 'CLAUDE.md'), 'utf8'), claudeMd);
   assert.equal(readFileSync(join(t, '.claude/settings.json'), 'utf8'), settings);
-  assert.equal(has(t, '.workflow/hooks'), false);
-  assert.equal(has(t, '.workflow/WORKFLOW.md'), false);
+  assert.equal(has(t, '.burhan/hooks'), false);
+  assert.equal(has(t, '.burhan/WORKFLOW.md'), false);
   assert.equal(has(t, '.claude/commands/burhan'), false);
 });
 
@@ -59,7 +59,7 @@ test('fresh repo: install then uninstall --apply --all restores the pre-install 
   setup(t);
   const r = await un(t, '--apply', '--all');
   assert.equal(r.code, 0, r.err + r.out);
-  assert.deepEqual(tree(t), before); // incl. no leftover empty .claude/ .workflow/ .burhan/ folders
+  assert.deepEqual(tree(t), before); // incl. no leftover empty .claude/ .burhan/ .burhan/ folders
 });
 
 test('same for a plain install() without setup (config + bindings created from templates)', async () => {
@@ -71,19 +71,19 @@ test('same for a plain install() without setup (config + bindings created from t
   assert.deepEqual(tree(t), before);
 });
 
-test('a .claude file without the burhan mark survives; so does a non-kit file inside .workflow/ (and is listed)', async () => {
+test('a .claude file without the burhan mark survives; so does a non-kit file inside .burhan/ (and is listed)', async () => {
   const t = fresh();
   put(t, '.claude/agents/mine.md', '---\nname: mine\n---\nhello\n');
   put(t, '.claude/commands/other.md', 'no mark\n');
   setup(t);
-  put(t, '.workflow/notes.md', 'my notes\n');
+  put(t, '.burhan/notes.md', 'my notes\n');
   const r = await un(t, '--apply', '--all');
   assert.equal(r.code, 0, r.err + r.out);
   assert.equal(readFileSync(join(t, '.claude/agents/mine.md'), 'utf8'), '---\nname: mine\n---\nhello\n');
   assert.equal(readFileSync(join(t, '.claude/commands/other.md'), 'utf8'), 'no mark\n');
-  assert.equal(readFileSync(join(t, '.workflow/notes.md'), 'utf8'), 'my notes\n');
+  assert.equal(readFileSync(join(t, '.burhan/notes.md'), 'utf8'), 'my notes\n');
   assert.match(r.out, /notes\.md/);
-  assert.equal(has(t, '.workflow/WORKFLOW.md'), false);
+  assert.equal(has(t, '.burhan/WORKFLOW.md'), false);
   assert.equal(has(t, '.claude/agents/burhan-reviewer.md'), false);
 });
 
@@ -119,28 +119,28 @@ test('not installed: exit 2, "burhan: burhan is not installed"', async () => {
 test('R-9: plain uninstall keeps config, bindings, local/ and .burhan/work, and says kept', async () => {
   const t = fresh();
   setup(t);
-  put(t, '.workflow/local/PROGRESS.md', 'state\n');
+  put(t, '.burhan/local/PROGRESS.md', 'state\n');
   put(t, '.burhan/work/item/story.md', 'story\n');
   const r = await un(t, '--apply');
   assert.equal(r.code, 0, r.err + r.out);
-  for (const k of ['.workflow/workflow.config', '.workflow/bindings.md', '.workflow/local/PROGRESS.md', '.burhan/work/item/story.md']) assert.ok(has(t, k), `kept ${k}`);
+  for (const k of ['.burhan/workflow.config', '.burhan/bindings.md', '.burhan/local/PROGRESS.md', '.burhan/work/item/story.md']) assert.ok(has(t, k), `kept ${k}`);
   assert.match(r.out, /kept:/);
   for (const k of ['workflow.config', 'bindings.md', 'local', 'work']) assert.ok(r.out.includes(k), `says kept ${k}`);
   assert.equal(has(t, '.burhan/.gitignore'), true); // I-5 (a): kept while .burhan/work is kept
-  assert.equal(has(t, '.workflow/WORKFLOW.md'), false);
+  assert.equal(has(t, '.burhan/WORKFLOW.md'), false);
 });
 
 test('R-9: --all removes config, bindings, local/ and the work folder inside .burhan/', async () => {
   const t = fresh();
   setup(t);
-  put(t, '.workflow/local/PROGRESS.md', 'state\n');
+  put(t, '.burhan/local/PROGRESS.md', 'state\n');
   put(t, '.burhan/work/item/story.md', 'story\n');
   const r = await un(t, '--apply', '--all');
   assert.equal(r.code, 0, r.err + r.out);
-  for (const k of ['.workflow', '.burhan']) assert.equal(has(t, k), false, `${k} gone`);
+  for (const k of ['.burhan', '.burhan']) assert.equal(has(t, k), false, `${k} gone`);
 });
 
-test('R-9: --all never removes a work-files folder outside .burhan/ and .workflow/', async () => {
+test('R-9: --all never removes a work-files folder outside .burhan/ and .burhan/', async () => {
   const t = fresh();
   setup(t, { docs: { kind: 'custom', path: 'docs/work' } });
   put(t, 'docs/work/item/story.md', 'story\n');
@@ -150,7 +150,7 @@ test('R-9: --all never removes a work-files folder outside .burhan/ and .workflo
   assert.equal(readFileSync(join(t, 'docs/work/item/story.md'), 'utf8'), 'story\n');
   assert.ok(has(t, 'docs/work-discovery/d.md'));
   assert.match(r.out, /docs\/work/);
-  assert.equal(has(t, '.workflow'), false);
+  assert.equal(has(t, '.burhan'), false);
 });
 
 test('codex: an install with claude+codex is fully reversed', async () => {
@@ -210,7 +210,7 @@ test('removeBlock: a file that is only the block → null; no block → unchange
   assert.deepEqual(removeBlock('# just mine\n'), { content: '# just mine\n' });
 });
 
-const M = '.workflow/hooks/adapters/claude/hook.sh';
+const M = '.burhan/hooks/adapters/claude/hook.sh';
 const C = (x: string): string => `bash ${M} ${x}`; // stand-ins for the commands burhan installs
 test('removeHooks: only marker entries go; emptied groups/events vanish; other keys and entries stay', () => {
   const s: Settings = { model: 'x', hooks: {
@@ -249,6 +249,7 @@ test('I-1b: .burhan symlinked outside + --all: the outside dir is untouched', as
   setup(t);
   rmSync(join(t, '.burhan'), { recursive: true, force: true });
   put(out, 'work/f', 'x\n');
+  put(out, 'WORKFLOW.md', 'installed kit marker\n');
   symlinkSync(out, join(t, '.burhan'));
   const before = hash(out);
   const r = await un(t, '--apply', '--all');
@@ -268,13 +269,13 @@ test('I-1c: a symlinked docs dir under .burhan/ + --all: its target is untouched
   assert.equal(hash(out), before);
 });
 
-for (const docs of ['.workflow', '.workflow/x', '.claude', '.codex']) {
+for (const docs of ['.burhan', '.burhan/x', '.claude', '.codex']) {
   test(`I-2: --all with WF_DOCS_DIR=${docs} keeps it and the foreign files, and lists it as kept`, async () => {
     const t = fresh();
     setup(t);
-    writeFileSync(join(t, '.workflow/workflow.config'), readFileSync(join(t, '.workflow/workflow.config'), 'utf8') + `\nWF_DOCS_DIR="${docs}"\n`);
+    writeFileSync(join(t, '.burhan/workflow.config'), readFileSync(join(t, '.burhan/workflow.config'), 'utf8') + `\nWF_DOCS_DIR="${docs}"\n`);
     put(t, `${docs}/mine.txt`, 'mine\n');
-    if (docs === '.workflow') put(t, '.workflow/other.txt', 'other\n');
+    if (docs === '.burhan') put(t, '.burhan/other.txt', 'other\n');
     const r = await un(t, '--apply', '--all');
     assert.equal(r.code, 0, r.err + r.out);
     assert.equal(readFileSync(join(t, `${docs}/mine.txt`), 'utf8'), 'mine\n');
@@ -303,7 +304,7 @@ test('I-3: a read-only .claude/commands/burhan: --apply exits 2 "nothing was cha
 test('I-3: a broken block pair changes nothing (validated before the first write)', async () => {
   const t = fresh();
   setup(t);
-  writeFileSync(join(t, 'CLAUDE.md'), readFileSync(join(t, 'CLAUDE.md'), 'utf8') + '\n<!-- burhan:begin -->\n');
+  writeFileSync(join(t, 'CLAUDE.md'), readFileSync(join(t, 'CLAUDE.md'), 'utf8') + '\n<!-- burhan:start -->\n');
   const before = hash(t);
   const r = await un(t, '--apply');
   assert.equal(r.code, 2);
@@ -329,7 +330,7 @@ test('M-1: a user hook whose command merely mentions the adapter path survives; 
   setup(t);
   const f = join(t, '.claude/settings.json');
   const s = JSON.parse(readFileSync(f, 'utf8')) as Settings;
-  const mine = 'echo .workflow/hooks/adapters/claude/hook.sh';
+  const mine = 'echo .burhan/hooks/adapters/claude/hook.sh';
   s.hooks!.Stop = [...(s.hooks!.Stop ?? []), { hooks: [{ type: 'command', command: mine }] }];
   writeFileSync(f, JSON.stringify(s, null, 2));
   const r = await un(t, '--apply');
@@ -338,27 +339,72 @@ test('M-1: a user hook whose command merely mentions the adapter path survives; 
   assert.deepEqual(after, { hooks: { Stop: [{ hooks: [{ type: 'command', command: mine }] }] } });
 });
 
-test('I-5: plain uninstall keeps both .gitignore files; git shows neither local/ nor .burhan/ as untracked', async () => {
+test('I-5: plain uninstall keeps the scoped ignore file and private data stays ignored', async () => {
   const t = fresh();
   setup(t);
-  put(t, '.workflow/local/PROGRESS.md', 'state\n');
+  put(t, '.burhan/local/PROGRESS.md', 'state\n');
   put(t, '.burhan/work/item/story.md', 'story\n');
   const r = await un(t, '--apply');
   assert.equal(r.code, 0, r.err + r.out);
-  assert.ok(readFileSync(join(t, '.workflow/.gitignore'), 'utf8').includes('local/'));
-  assert.equal(readFileSync(join(t, '.burhan/.gitignore'), 'utf8'), '*\n');
+  assert.ok(readFileSync(join(t, '.burhan/.gitignore'), 'utf8').includes('local/'));
+  assert.equal(readFileSync(join(t, '.burhan/.gitignore'), 'utf8'), '/local/\n/work/\n/discovery/\n');
   const st = spawnSync('git', ['status', '--porcelain', '--untracked-files=all'], { cwd: t, encoding: 'utf8' }).stdout;
-  assert.ok(!st.includes('.workflow/local') && !st.includes('.burhan'), st);
+  assert.ok(!st.includes('.burhan/local/') && !st.includes('.burhan/work/'), st);
+  assert.ok(st.includes('.burhan/workflow.config'), st);
 });
 
-test('I-5: --all removes both .gitignore files with their folders', async () => {
+test('I-5: --all removes the generated ignore file with empty protected folders', async () => {
   const t = fresh();
   setup(t);
-  put(t, '.workflow/local/PROGRESS.md', 'state\n');
+  put(t, '.burhan/local/PROGRESS.md', 'state\n');
   put(t, '.burhan/work/item/story.md', 'story\n');
   await un(t, '--apply', '--all');
-  assert.equal(has(t, '.workflow'), false);
   assert.equal(has(t, '.burhan'), false);
+});
+
+for (const alias of ['.burhan', './.burhan/', '.burhan/context', '.burhan/PROJECT.md', '.burhan/work/../context']) {
+  test(`--all cannot remove root or memory through configured alias ${alias}`, async () => {
+    const target = fresh();
+    setup(target);
+    put(target, '.burhan/workflow.config', `WF_DOCS_DIR="${alias}"\nWF_DISCOVERY_DIR="${alias}"\n`);
+    put(target, '.burhan/PROJECT.md', 'project memory\n');
+    put(target, '.burhan/context/stack.md', 'stack memory\n');
+    put(target, '.burhan/unknown.txt', 'unknown\n');
+    const result = await un(target, '--apply', '--all');
+    assert.equal(result.code, 0, result.err);
+    assert.equal(readFileSync(join(target, '.burhan/PROJECT.md'), 'utf8'), 'project memory\n');
+    assert.equal(readFileSync(join(target, '.burhan/context/stack.md'), 'utf8'), 'stack memory\n');
+    assert.equal(readFileSync(join(target, '.burhan/unknown.txt'), 'utf8'), 'unknown\n');
+  });
+}
+
+test('--all keeps user ignore rules even when no protected data remains', async () => {
+  const target = fresh();
+  setup(target);
+  const text = '# mine\n/local/\n/work/\n/discovery/\n/cache/\n';
+  put(target, '.burhan/.gitignore', text);
+  const result = await un(target, '--apply', '--all');
+  assert.equal(result.code, 0, result.err);
+  assert.equal(readFileSync(join(target, '.burhan/.gitignore'), 'utf8'), text);
+});
+
+test('--all cannot remove memory through a symlink ancestor inside private work', async () => {
+  const target = fresh();
+  setup(target);
+  put(target, '.burhan/context/stack.md', 'memory\n');
+  put(target, '.burhan/PROJECT.md', 'project memory\n');
+  put(target, '.burhan/work/item/story.md', 'private work\n');
+  symlinkSync('..', join(target, '.burhan/work/link'));
+  put(target, '.burhan/workflow.config', 'WF_DOCS_DIR=".burhan/work/link/context"\nWF_DISCOVERY_DIR=".burhan/work/link/PROJECT.md"\n');
+  const result = await un(target, '--apply', '--all');
+  assert.equal(result.code, 0, result.err);
+  assert.equal(readFileSync(join(target, '.burhan/context/stack.md'), 'utf8'), 'memory\n');
+  assert.equal(readFileSync(join(target, '.burhan/PROJECT.md'), 'utf8'), 'project memory\n');
+  assert.equal(has(target, '.burhan/work'), false);
+  for (const line of result.out.split('\n').filter((line) => line.includes('kept:'))) {
+    const rel = /kept: (\S+)/.exec(line)![1];
+    assert.ok(has(target, rel), line);
+  }
 });
 
 test('never reports as "kept" a file the same run removes (confirmation review M-4)', async () => {

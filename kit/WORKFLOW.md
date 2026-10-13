@@ -3,15 +3,15 @@
 > **Technology-agnostic:** nothing here assumes a language, framework, runtime, tracker, front end
 > or back end.
 
-**Use:** read this core at every session start; open the `.workflow/phases/` file §9
+**Use:** read this core at every session start; open the `.burhan/phases/` file §9
 names **when you reach that moment**. A binding left as `—` means "not applicable": skip the steps that depend on it.
 
 ---
 
 ## 1 · Project bindings
 
-`.workflow/bindings.md` (from `templates/bindings.md`; never overwritten on upgrade) holds the project's values
-(locations, commands, what counts as code and evidence). `.workflow/workflow.config` is its machine-readable twin — keep
+`.burhan/bindings.md` (from `templates/bindings.md`; never overwritten on upgrade) holds the project's values
+(locations, commands, what counts as code and evidence). `.burhan/workflow.config` is its machine-readable twin — keep
 them consistent. Every "§1" means that file.
 
 **Detect, don't assume.** If a binding is blank, infer it from the repo and **state the inference before relying on it**. Never invent a command.
@@ -99,7 +99,7 @@ Editing descriptions/comments is fine.
 ## 5 · Live state file
 
 One file (§1) answers **"where am I and what's next"** — read it first in every session. It is **per
-developer** (default `.workflow/local/PROGRESS.md`, git-ignored); the durable truth is the work-item
+developer** (default `.burhan/local/PROGRESS.md`, git-ignored); the durable truth is the work-item
 files.
 
 **State-transition rule (hard requirement).** A transition is any change to a sub-unit status, the
@@ -112,8 +112,8 @@ interrupted turn loses the state.
 line**; **pointer-only** — link files, never copy findings or output.
 
 **Team use.** The state file is never committed or shared; one owner per item folder, others read it; shared files
-(`bindings.md`, `workflow.config`, `PROJECT.md`, `context/`) change only through review (a pull
-request), like code; personal overrides in `.workflow/local/workflow.config` apply key by key.
+(`bindings.md`, `workflow.config`, `.burhan/PROJECT.md`, `.burhan/context/`) change only through review (a pull
+request), like code; personal overrides in `.burhan/local/workflow.config` apply key by key.
 
 ---
 
@@ -145,7 +145,7 @@ Pick the method before acting, and name it. **Debugging is not guessing:** repro
 hypothesis, test it, fix the cause. Match the surrounding code; check siblings before inventing a pattern. **Don't add dependencies, folders, or
 architecture** without approval. **Scope discipline:** build exactly what was asked; surface additions for approval. **Never silently
 fix a discovery** — document it, get approval, then act (`phases/discoveries.md`). Before work, read
-`PROJECT.md` and only the memory areas the item touches (`phases/memory.md`).
+`.burhan/PROJECT.md` and only the memory areas the item touches (`phases/memory.md`).
 
 ---
 

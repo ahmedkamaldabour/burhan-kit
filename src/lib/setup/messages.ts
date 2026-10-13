@@ -1,6 +1,5 @@
 import type { Agent } from '../bootstrap.js';
 import type { ExistingHook } from '../hooks-merge.js';
-import type { ExistingHooksChoice } from './answers.js';
 
 export type Lang = 'en' | 'ar';
 export interface Option { value: string; label: string; hint?: string }
@@ -63,24 +62,21 @@ export interface Messages {
   docsPrivate: string; docsShared: string; docsCustom: string;
   models: string;
   skills(s: 'superpowers' | 'none'): string;
+  optionalSuperpowers: string;
   branches: string;
   check(pending: boolean, cmd: string): string;
   changeUndo: string;
   nothingCommitted: string;
   codexTrust: string;
   newAgentSession(target: string): string;
-  moveFailed: string;
-  moveRollbackFailed(work: string, discovery: string, configDocs: string, configDiscovery: string): string;
   ignoredCommittedFiles(lines: readonly string[]): string[];
   outsideSettings(paths: readonly { rel: string; real: string }[]): string[];
-  existingHooks(hooks: readonly ExistingHook[], choice: ExistingHooksChoice): string[];
+  existingHooks(hooks: readonly ExistingHook[]): string[];
   wizard: {
     what: string[]; scope: string; recommended: string; current: string;
     useOrChoose: string; use: string; choose: string;
     applyOrChange: string; apply: string; change: string; cancel: string;
     customPath: string; cancelled: string;
-    existingHooks: { ask: string; keep: string; removeMine: string };
-    moveDocs: { ask: string; keep: string; move: string };
     done: string; askAgent: string; runCheck(cmd: string): string; runYes: string; runNo: string;
     terminalOnly: string;
   };
@@ -97,8 +93,6 @@ export interface Messages {
     badMode: string;
     badDocs: string;
     badLang: string;
-    badExistingHooks: string;
-    badMoveDocs: string;
   };
   stack: {
     instructions: string;
@@ -117,7 +111,6 @@ export interface Messages {
     bootstrap(created: boolean): string;
     managed(created: boolean): string;
     gitignore: string;
-    privateIgnore: string;
     removed: string;
   };
 }
@@ -132,8 +125,6 @@ const en: Messages = {
     applyOrChange: 'What now?', apply: 'Apply', change: 'Change something', cancel: 'Cancel',
     customPath: 'Type the folder for the work files, inside this project (for example docs/work):',
     cancelled: 'Cancelled. Nothing was changed.',
-    existingHooks: { ask: 'What do you want to do with your existing hooks on these events?', keep: 'Keep both (recommended)', removeMine: "I\'ll remove mine" },
-    moveDocs: { ask: 'Your shared work files use the old AI_SPEC folder. What do you want to do?', keep: 'Keep the old folder (recommended)', move: 'Move to docs/burhan/' },
     done: 'Done. burhan is set up in this project.',
     askAgent: 'To change settings later, run npx burhan-kit setup, or ask your agent: change burhan settings',
     runCheck: (c) => `Run the check now (${c})?`, runYes: 'Yes, run it', runNo: 'Not now',
@@ -147,32 +138,27 @@ const en: Messages = {
   docs: (l) => `Work files: ${l}`,
   docsPrivate: 'private, not in git', docsShared: 'shared in git', docsCustom: 'your folder',
   models: 'Models: same as your session',
-  skills: (s) => s === 'superpowers' ? 'Skills: superpowers (found on this computer)' : 'Skills: none',
+  skills: (s) => s === 'superpowers' ? 'Skills: superpowers' : 'Skills: none',
+  optionalSuperpowers: 'Superpowers is optional (Claude Code): /plugin install superpowers@claude-plugins-official',
   branches: 'Branches: feature branches + pull requests; commit only after the a/b/c checkpoint',
   check: (p, c) => p ? 'Check before commit: your agent sets this up on first use' : `Check before commit: ${c} (kept)`,
   changeUndo: 'Change anytime: npx burhan-kit setup · Undo: npx burhan-kit uninstall',
   nothingCommitted: 'Nothing is committed · nothing outside this project changes',
   codexTrust: "Codex: first-use setup starts after you trust burhan's hooks in Codex (open Codex in this project and review them).",
   newAgentSession: (target) => `Start a new agent session in ${target} for burhan's hooks to take effect.`,
-  moveFailed: 'Could not move the old shared folders. Nothing was changed.',
-  moveRollbackFailed: (work, discovery, configDocs, configDiscovery) => `Could not finish moving the old shared folders. The work folder is now at ${work}; the discovery folder is now at ${discovery}. .workflow/workflow.config still says WF_DOCS_DIR=${configDocs} and WF_DISCOVERY_DIR=${configDiscovery}. Fix the folders or the config, then run setup again.`,
   ignoredCommittedFiles: (lines) => ['Warning: these files are ignored by this project’s .gitignore. Add these exact lines; burhan did not edit it:', ...lines],
   outsideSettings: (paths) => ['Warning: these settings files are symlinks to real files outside this project:', ...paths.map((path) => `  ${path.rel} → ${path.real} — outside this project`)],
-  existingHooks: (hooks, choice) => [
+  existingHooks: (hooks) => [
     'Your existing hooks',
     ...hooks.map((hook) => `  ${hook.agent} — ${hook.event}${hook.matcher === undefined ? '' : ` (${hook.matcher})`}: ${hook.command}`),
     "These will run alongside burhan's hooks, so reminders may repeat.",
-    ...(choice === 'remove-mine' ? [
-      'Remove these exact entries yourself; burhan will not edit them:',
-      ...hooks.map((hook) => `  ${hook.event}${hook.matcher === undefined ? '' : ` (${hook.matcher})`}: ${hook.hookJson}`),
-    ] : []),
   ],
   agent: {
     rules: [
       'burhan setup, for an AI agent. Follow these rules exactly:',
       '- Ask the person the questions below in order, one question per message, using the exact text and choices. Wait for each answer.',
       '- Use plain words. No tables and no setting names or config keys.',
-      '- Never edit .workflow/ yourself; burhan writes it.',
+      '- Never edit .burhan/ yourself; burhan writes it.',
       '- Put the answers in a JSON file shaped like "recommended" below, then run: npx burhan-kit setup --answers <file>',
       '- Show its summary to the person. Run it again with --apply only after the user says yes.',
     ],
@@ -187,8 +173,6 @@ const en: Messages = {
     badMode: 'mode must be "step" or "auto"',
     badDocs: 'docs must be "private" or "shared", {"kind":"private"} or {"kind":"shared"}, or {"kind":"custom","path":"<folder inside the project>"}',
     badLang: 'lang must be "en" or "ar"',
-    badExistingHooks: 'existingHooks must be "keep" or "remove-mine"',
-    badMoveDocs: 'moveDocs must be "keep" or "move"',
   },
   stack: {
     instructions: [
@@ -204,7 +188,7 @@ const en: Messages = {
       "   npx burhan-kit setup --set check='<command or none>' sensitive='<p;q>'",
       "   Separate list items with ';'. Leave a list out when it is empty. A value cannot contain a single quote (') or a line break: put the command in a small script instead.",
       '5. The command runs the check once and shows its output. If it fails, show the person the output and ask; do not retry with a different command on your own. Add --force only if they confirm a slow but valid check.',
-      '6. The agent may edit .workflow/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files.',
+      '6. The agent may edit .burhan/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files.',
     ].join('\n'),
     notInstalled: 'burhan is not installed in this project — run npx burhan-kit setup first',
     running: (c, n) => `Running the check once: ${c}  (stops after ${n}s)`,
@@ -220,8 +204,7 @@ const en: Messages = {
     hooks: (c, a) => c ? `burhan's hooks for ${a}` : `burhan's hooks added for ${a}; your other settings kept`,
     bootstrap: (c) => c ? 'a short pointer to the working agreement' : 'a short block at the end, your text untouched',
     managed: (c) => c ? 'managed by burhan' : 'refreshed (managed by burhan)',
-    gitignore: 'one line added so personal files stay out of git',
-    privateIgnore: 'keeps your work files out of git',
+    gitignore: 'scoped rules keep local state, private work and discoveries out of git; kit, config and memory stay trackable',
     removed: 'no longer needed with these settings',
   },
 };
@@ -236,8 +219,6 @@ const ar: Messages = {
     applyOrChange: 'نعمل إيه دلوقتي؟', apply: 'نفّذ', change: 'غيّر حاجة', cancel: 'إلغاء',
     customPath: 'اكتب فولدر ملفات الشغل جوّه المشروع ده (مثلًا docs/work):',
     cancelled: 'اتلغى. مفيش حاجة اتغيّرت.',
-    existingHooks: { ask: 'عندك hooks على الأحداث دي. تحب تعمل إيه؟', keep: 'سيب الاتنين (مقترح)', removeMine: 'أنا هشيل بتوعي' },
-    moveDocs: { ask: 'ملفات الشغل المشتركة عندك لسه في فولدر AI_SPEC القديم. تحب تعمل إيه؟', keep: 'سيب الفولدر القديم (مقترح)', move: 'انقل لـ docs/burhan/' },
     done: 'خلاص. burhan جاهز في المشروع ده.',
     askAgent: 'عشان تغيّر الإعدادات بعدين: شغّل npx burhan-kit setup، أو قول للـ agent بتاعك: غيّر إعدادات burhan',
     runCheck: (c) => `أشغّل الفحص دلوقتي (${c})؟`, runYes: 'أيوه، شغّله', runNo: 'مش دلوقتي',
@@ -251,32 +232,27 @@ const ar: Messages = {
   docs: (l) => `ملفات الشغل: ${l}`,
   docsPrivate: 'خاصة بيك، بره git', docsShared: 'مشتركة في git', docsCustom: 'الفولدر بتاعك',
   models: 'الموديلات: نفس موديل الـ session بتاعتك',
-  skills: (s) => s === 'superpowers' ? 'الـ skills: superpowers (متسطّبة على الجهاز ده)' : 'الـ skills: مفيش',
+  skills: (s) => s === 'superpowers' ? 'الـ skills: superpowers' : 'الـ skills: مفيش',
+  optionalSuperpowers: 'Superpowers اختياري في Claude Code: /plugin install superpowers@claude-plugins-official',
   branches: 'الـ branches: branch لكل ميزة + pull request؛ ومفيش commit غير بعد ما تختار a/b/c',
   check: (p, c) => p ? 'الفحص قبل الـ commit: الـ agent بتاعك هيظبطه أول ما يشتغل' : `الفحص قبل الـ commit: ${c} (زي ما هو)`,
   changeUndo: 'تغيّر في أي وقت: npx burhan-kit setup · ترجع في كلامك: npx burhan-kit uninstall',
   nothingCommitted: 'مفيش حاجة بتتعمل لها commit · ومفيش حاجة بتتغيّر بره المشروع ده',
   codexTrust: 'Codex: الـ setup بتاع أول استخدام بيبدأ بعد ما توافق على الـ hooks بتاعة burhan جوّه Codex (افتح Codex في المشروع ده وراجعها).',
   newAgentSession: (target) => `ابدأ session جديدة للـ agent جوّه ${target} عشان hooks burhan تشتغل.`,
-  moveFailed: 'مقدرناش ننقل فولدرات الشغل المشتركة القديمة. مفيش حاجة اتغيّرت.',
-  moveRollbackFailed: (work, discovery, configDocs, configDiscovery) => `مقدرناش نكمّل نقل فولدرات الشغل المشتركة القديمة. فولدر الشغل موجود دلوقتي في ${work}؛ وفولدر الاكتشاف موجود دلوقتي في ${discovery}. .workflow/workflow.config لسه بيقول WF_DOCS_DIR=${configDocs} و WF_DISCOVERY_DIR=${configDiscovery}. ظبّط الفولدرات أو الإعداد، وبعدها شغّل setup تاني.`,
   ignoredCommittedFiles: (lines) => ['تحذير: الـ .gitignore بتاع المشروع مخبّي الملفات دي. ضيف السطور دي زي ما هي؛ burhan ماعدّلهاش:', ...lines],
   outsideSettings: (paths) => ['تحذير: ملفات الإعدادات دي symlink لملفات حقيقية برّه المشروع:', ...paths.map((path) => `  ${path.rel} → ${path.real} — دي برّه المشروع`)],
-  existingHooks: (hooks, choice) => [
+  existingHooks: (hooks) => [
     'الـ hooks اللي عندك',
     ...hooks.map((hook) => `  ${hook.agent} — ${hook.event}${hook.matcher === undefined ? '' : ` (${hook.matcher})`}: ${hook.command}`),
     'دول هيشتغلوا جنب hooks بتاعة burhan، فممكن التنبيهات تتكرر.',
-    ...(choice === 'remove-mine' ? [
-      'شيل الإدخالات دي بنفسك؛ burhan مش هيعدّلها:',
-      ...hooks.map((hook) => `  ${hook.event}${hook.matcher === undefined ? '' : ` (${hook.matcher})`}: ${hook.hookJson}`),
-    ] : []),
   ],
   agent: {
     rules: [
       'إعداد burhan عن طريق AI agent. امشي على القواعد دي بالظبط:',
       '- اسأل الشخص الأسئلة اللي تحت بالترتيب، سؤال واحد في كل رسالة، بنفس النص والاختيارات. واستنّى كل إجابة.',
       '- كلام بسيط. من غير جداول ومن غير أسماء إعدادات.',
-      '- متعدّلش فولدر .workflow/ بنفسك؛ burhan هو اللي بيكتبه.',
+      '- متعدّلش فولدر .burhan/ بنفسك؛ burhan هو اللي بيكتبه.',
       '- حط الإجابات في ملف JSON بنفس شكل "recommended" اللي تحت، وبعدين شغّل: npx burhan-kit setup --answers <file>',
       '- وري الشخص الملخص. ومتشغّلوش بـ --apply غير لما المستخدم يقول أيوه.',
     ],
@@ -291,8 +267,6 @@ const ar: Messages = {
     badMode: 'mode لازم يبقى "step" أو "auto"',
     badDocs: 'docs لازم يبقى "private" أو "shared"، أو {"kind":"private"} أو {"kind":"shared"}، أو {"kind":"custom","path":"<فولدر جوّه المشروع>"}',
     badLang: 'lang لازم يبقى "en" أو "ar"',
-    badExistingHooks: 'existingHooks لازم يبقى "keep" أو "remove-mine"',
-    badMoveDocs: 'moveDocs لازم يبقى "keep" أو "move"',
   },
   stack: {
     instructions: [
@@ -308,7 +282,7 @@ const ar: Messages = {
       "   npx burhan-kit setup --set check='<الأمر أو none>' sensitive='<p;q>'",
       "   افصل عناصر القوايم بـ ';'. ولو القايمة فاضية شيلها. القيمة مينفعش يبقى فيها علامة تنصيص مفردة (') ولا سطر جديد: حط الأمر في script صغير واستخدمه.",
       '5. الأمر ده بيشغّل الفحص مرة واحدة ويطبع النتيجة. لو فشل، وري النتيجة للمستخدم واسأله؛ ومتجرّبش أمر تاني من دماغك. ضيف --force بس لو هو أكّد إن الفحص صح بس بطيء.',
-      '6. الـ agent يقدر يعدّل .workflow/workflow.config بس، بعد ما يورّي الـ diff وياخد موافقة؛ ده ملف مشترك، فالتغيير يوصل للفريق من خلال review (pull request) زي الكود؛ عمره ما يعدّل ملفات الـ kit.',
+      '6. الـ agent يقدر يعدّل .burhan/workflow.config بس، بعد ما يورّي الـ diff وياخد موافقة؛ ده ملف مشترك، فالتغيير يوصل للفريق من خلال review (pull request) زي الكود؛ عمره ما يعدّل ملفات الـ kit.',
     ].join('\n'),
     notInstalled: 'burhan مش متسطّب في المشروع ده — شغّل npx burhan-kit setup الأول',
     running: (c, n) => `بشغّل الفحص مرة واحدة: ${c}  (هيقف بعد ${n} ثانية)`,
@@ -324,8 +298,7 @@ const ar: Messages = {
     hooks: (c, a) => c ? `الـ hooks بتاعة burhan لـ ${a}` : `بيضيف الـ hooks بتاعة burhan لـ ${a}؛ وباقي إعداداتك زي ما هي`,
     bootstrap: (c) => c ? 'إشارة قصيرة لاتفاق الشغل' : 'block قصير في الآخر، والنص بتاعك زي ما هو',
     managed: (c) => c ? 'burhan هو اللي بيديره' : 'متحدّث (burhan بيديره)',
-    gitignore: 'سطر واحد عشان الملفات الشخصية تفضل بره git',
-    privateIgnore: 'بيخلّي ملفات الشغل بره git',
+    gitignore: 'قواعد للفولدرات الخاصة بس: الحالة والشغل والاكتشافات بره git؛ والـ kit والإعدادات والذاكرة ينفع يتسجّلوا',
     removed: 'مبقاش له لازمة بالإعدادات دي',
   },
 };

@@ -14,6 +14,7 @@ while IFS='|' read -r id where phrase; do
   check "$id ($where): $phrase" "$(norm < "$f" 2>/dev/null)" has "$(printf '%s' "$phrase" | norm)"
 done < "$T_ROOT/tests/rule-inventory.txt"
 check "inventory is not empty ($n rules)" "$([ "$n" -ge 100 ] && echo yes)" has yes
+check_eq "rule identifiers are unique" "$(cut -d '|' -f 1 "$T_ROOT/tests/rule-inventory.txt" | grep -E '^R[0-9]+$' | sort | uniq -d)" ''
 
 echo "lean core"
 w="$(sed '/^## الخلاصة/,$d' WORKFLOW.md | wc -w | tr -d ' ')"
@@ -34,7 +35,7 @@ echo "S+P is one gate over two files (issue #1: a combined document left burhan 
 check "e2e no longer asks for one combined story + plan document" "$(norm < commands/e2e.md)" lacks "one combined story + plan document"
 check "e2e names both files for S+P" "$(norm < commands/e2e.md)" has "write both \`<slug>-story.md\` and \`<slug>-implementation-plan.md\`"
 echo "QC and templates"
-check "QC opens the whole review checklist" "$(norm < commands/qc.md)" has "Apply the **whole** review checklist in \`.workflow/phases/review.md\` — security first"
+check "QC opens the whole review checklist" "$(norm < commands/qc.md)" has "Apply the **whole** review checklist in \`.burhan/phases/review.md\` — security first"
 for t in templates/*.md; do
   case "$t" in templates/bindings.md|templates/docs-index.md|templates/progress.md) continue ;; esac  # generated or config, not prose
   check "$t says empty sections may be deleted" "$(cat "$t")" has "Delete any section that does not apply"

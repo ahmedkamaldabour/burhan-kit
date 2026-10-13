@@ -1,25 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as hooksMerge from '../src/lib/hooks-merge.js';
 import { BurhanError } from '../src/lib/errors.js';
 import { runCli } from '../src/main.js';
-import { readAnswers } from '../src/lib/setup/agent.js';
+import { agentInstructions, readAnswers } from '../src/lib/setup/agent.js';
 import { applySetup, planSetup, renderSummary, type SetupAnswers } from '../src/lib/setup/engine.js';
 import { scriptedPrompter } from '../src/lib/setup/prompter.js';
 import { runWizard } from '../src/lib/setup/wizard.js';
 import { capture, tmpDir } from './helpers.js';
 
 type ExistingHook = { agent: 'claude' | 'codex'; event: string; command: string };
-type ExistingHooksChoice = 'keep' | 'remove-mine';
-type ExistingSetupAnswers = SetupAnswers & { existingHooks?: ExistingHooksChoice };
 
 const home = tmpDir('burhan-existing-hooks-home-');
 const USER_COMMAND = 'echo my-own-reminder';
 
-const answers = (existingHooks?: ExistingHooksChoice): ExistingSetupAnswers => ({
-  agents: ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en', ...(existingHooks === undefined ? {} : { existingHooks }),
+const answers = (): SetupAnswers => ({
+  agents: ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en',
 });
 
 function project(): string {
@@ -53,7 +51,7 @@ test('readExistingHooks lists only user commands on events burhan uses, without 
   const file = writeClaudeHooks(target, {
     SessionStart: [{ hooks: [
       { type: 'command', command: USER_COMMAND },
-      { type: 'command', command: 'bash ".workflow/hooks/adapters/claude/hook.sh" session-gates' },
+      { type: 'command', command: 'bash "${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh" session-gates' },
     ] }],
     Notification: [{ hooks: [{ type: 'command', command: 'echo not-on-a-burhan-event' }] }],
   });
@@ -117,71 +115,59 @@ test('the setup summary names each existing command per event in English and Egy
   assert.match(ar, /[\u0600-\u06ff]/);
 });
 
-test('the existing-hooks question appears only when the wizard or setup --agent finds a user hook', async () => {
-  const empty = project();
-  const emptyPrompter = scriptedPrompter(['use', 'apply']);
-  assert.equal(await runWizard(empty, capture(empty).io, emptyPrompter, 'en', home), 0);
-  assert.ok(!emptyPrompter.asked.some((question) => /existing hooks|keep both|remove mine/i.test(question)));
-  const emptyAgent = capture(empty);
-  assert.equal(await runCli(['setup', empty, '--agent'], emptyAgent.io), 0);
-  assert.doesNotMatch(emptyAgent.o.out, /existingHooks|keep both|remove-mine/i);
-
-  const target = project();
-  writeClaudeHooks(target, { SessionStart: [{ hooks: [{ type: 'command', command: USER_COMMAND }] }] });
-  const prompter = scriptedPrompter(['use', 'keep', 'apply']);
-  assert.equal(await runWizard(target, capture(target).io, prompter, 'en', home), 0);
-  assert.ok(prompter.asked.some((question) => /existing hooks/i.test(question)));
-  assert.ok(prompter.shown.some((line) => /keep both/i.test(line)));
-
-  const agent = capture(target);
-  assert.equal(await runCli(['setup', target, '--agent'], agent.io), 0);
-  assert.match(agent.o.out, /SessionStart[\s\S]*echo my-own-reminder/);
-  assert.match(agent.o.out, /existingHooks[\s\S]*keep[\s\S]*remove-mine/);
-});
-
-test('keep and remove-mine preserve the user hook entry byte-for-byte after apply, while remove-mine prints the exact entry for the person to remove', async () => {
-  for (const choice of ['keep', 'remove-mine'] as const) {
+for (const lang of ['en', 'ar'] as const) {
+  test(`${lang}: existing hooks stay listed without a fourth question or removal instructions`, async () => {
     const target = project();
     const file = writeClaudeHooks(target, { SessionStart: [{ hooks: [{ type: 'command', command: USER_COMMAND }] }] });
     const before = userEntryBytes(file);
-    const plan = planSetup(target, answers(choice), home);
-    const summary = renderSummary(plan, 'en');
-    if (choice === 'remove-mine') assert.match(summary, /echo my-own-reminder/);
-    applySetup(plan);
-    assert.deepEqual(userEntryBytes(file), before, choice);
-  }
-});
+    const prompter = scriptedPrompter(['use', 'apply']);
+    assert.equal(await runWizard(target, capture(target).io, prompter, lang, home), 0);
+    assert.equal(prompter.asked.length, 2);
+    assert.ok(prompter.shown.some((line) => line.includes(USER_COMMAND)));
+    assert.deepEqual(userEntryBytes(file), before);
+    const output = agentInstructions(target, lang, home);
+    const protocol = JSON.parse(output.match(/```json\n([\s\S]*?)\n```/)![1]);
+    assert.deepEqual(protocol.questions.map((question: { id: string }) => question.id), ['agents', 'mode', 'docs']);
+    assert.equal('existingHooks' in protocol.recommended, false);
+    assert.match(output, /SessionStart[\s\S]*echo my-own-reminder/);
+    for (const text of [output, ...prompter.shown])
+      assert.doesNotMatch(text, /remove-mine|keep both|Remove these exact|شيل الإدخالات|هشيل بتوعي/i);
+  });
 
-test('remove-mine names each matching group and prints the exact hook JSON in English and Egyptian Arabic', () => {
+  test(`${lang}: existingHooks is rejected as an unknown answer before writes`, async () => {
+    for (const value of ['keep', 'remove-mine', 'delete-them']) {
+      const target = project();
+      const file = writeClaudeHooks(target, { Stop: [{ hooks: [{ command: USER_COMMAND }] }] });
+      const before = readFileSync(file, 'utf8');
+      const answerFile = join(project(), 'answers.json');
+      writeFileSync(answerFile, JSON.stringify({ agents: 'claude', mode: 'step', docs: 'private', existingHooks: value }));
+      assert.throws(() => readAnswers(answerFile, lang), /existingHooks/);
+      const result = capture(target);
+      assert.equal(await runCli(['setup', target, '--lang', lang, '--answers', answerFile, '--apply'], result.io), 2);
+      assert.match(result.o.err, /existingHooks/);
+      assert.equal(readFileSync(file, 'utf8'), before);
+      assert.deepEqual(readdirSync(target), ['.claude']);
+    }
+  });
+}
+
+test('setup, reapply, upgrade and uninstall keep mixed-event/group foreign hooks in order', async () => {
   const target = project();
-  const first = { type: 'command', command: USER_COMMAND, timeout: 10, note: 'first group' };
-  const second = { type: 'command', command: USER_COMMAND, timeout: 30, note: 'second group' };
-  writeClaudeHooks(target, { Stop: [
-    { matcher: 'first-matcher', hooks: [first] },
-    { matcher: 'second-matcher', hooks: [second] },
-  ] });
-  const plan = planSetup(target, answers('remove-mine'), home);
-
-  assert.deepEqual(plan.existingHooks, [
-    { agent: 'claude', event: 'Stop', command: USER_COMMAND, matcher: 'first-matcher', groupIndex: 0, hookIndex: 0, hookJson: JSON.stringify(first) },
-    { agent: 'claude', event: 'Stop', command: USER_COMMAND, matcher: 'second-matcher', groupIndex: 1, hookIndex: 0, hookJson: JSON.stringify(second) },
-  ]);
-  for (const summary of [renderSummary(plan, 'en'), renderSummary(plan, 'ar')]) {
-    assert.match(summary, /Stop[\s\S]*first-matcher[\s\S]*\{"type":"command","command":"echo my-own-reminder","timeout":10,"note":"first group"\}/);
-    assert.match(summary, /Stop[\s\S]*second-matcher[\s\S]*\{"type":"command","command":"echo my-own-reminder","timeout":30,"note":"second group"\}/);
+  const foreign = { hooks: {
+    SessionStart: [{ matcher: 'first', hooks: [{ command: USER_COMMAND, timeout: 4 }, { command: 'echo .burhan/hooks/adapters/claude/hook.sh' }] }],
+    Stop: [{ matcher: 'second', hooks: [{ command: USER_COMMAND, timeout: 9 }] }, { hooks: [] }],
+    Notification: [{ hooks: [{ command: 'echo other-event' }] }],
+  }, custom: { untouched: null } };
+  const file = writeClaudeHooks(target, foreign.hooks);
+  writeFileSync(file, JSON.stringify(foreign));
+  const plan = planSetup(target, answers(), home);
+  assert.equal(plan.existingHooks.length, 3);
+  applySetup(plan);
+  for (let repeat = 0; repeat < 2; repeat++) {
+    applySetup(planSetup(target, answers(), home));
+    assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')).hooks.SessionStart[0], foreign.hooks.SessionStart[0]);
   }
-});
-
-test('answers accept keep or remove-mine, default an absent existingHooks field to keep, and reject any other value', () => {
-  const dir = project();
-  const writeAnswers = (name: string, value: Record<string, unknown>): string => {
-    const file = join(dir, `${name}.json`);
-    writeFileSync(file, JSON.stringify({ agents: 'claude', mode: 'step', docs: 'private', ...value }));
-    return file;
-  };
-
-  const absent = readAnswers(writeAnswers('absent', {}), 'en') as ExistingSetupAnswers;
-  assert.equal(absent.existingHooks, 'keep');
-  assert.equal((readAnswers(writeAnswers('remove', { existingHooks: 'remove-mine' }), 'en') as ExistingSetupAnswers).existingHooks, 'remove-mine');
-  assert.throws(() => readAnswers(writeAnswers('invalid', { existingHooks: 'delete-them' }), 'en'), /existingHooks[\s\S]*keep[\s\S]*remove-mine/i);
+  assert.equal(await runCli(['upgrade', target, '--apply'], capture(target).io), 0);
+  assert.equal(await runCli(['uninstall', target, '--apply'], capture(target).io), 0);
+  assert.deepEqual(JSON.parse(readFileSync(file, 'utf8')), foreign);
 });

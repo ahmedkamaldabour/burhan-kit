@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { PassThrough } from 'node:stream';
@@ -22,7 +22,25 @@ function tree(dir: string, base = dir, out: Record<string, string> = {}): Record
   return out;
 }
 const hash = (d: string): string => createHash('sha256').update(JSON.stringify(tree(d))).digest('hex');
-const cfg = (t: string) => parseConfig(readFileSync(join(t, '.workflow/workflow.config'), 'utf8')).values;
+const cfg = (t: string) => parseConfig(readFileSync(join(t, '.burhan/workflow.config'), 'utf8')).values;
+
+for (const lang of ['en', 'ar'] as const) for (const present of [false, true]) {
+  test(`${lang}: wizard summary offers optional Superpowers once iff absent, present=${present}`, async () => {
+    const target = fresh();
+    const suppliedHome = tmpDir('burhan-wizard-optional-home-');
+    if (present) mkdirSync(join(suppliedHome, '.claude/plugins/superpowers'), { recursive: true });
+    const before = hash(target);
+    const beforeHome = hash(suppliedHome);
+    const prompter = scriptedPrompter(['use', 'cancel']);
+    const result = capture(target);
+    assert.equal(await runWizard(target, result.io, prompter, lang, suppliedHome), 0);
+    const output = prompter.shown.join('\n') + result.o.out;
+    assert.equal(output.split('/plugin install superpowers@claude-plugins-official').length - 1, present ? 0 : 1);
+    if (!present) assert.match(output, /Claude Code/);
+    assert.equal(hash(target), before);
+    assert.equal(hash(suppliedHome), beforeHome);
+  });
+}
 
 test('first screen: three outcome lines, "sends nothing", the recommended preview and the summary promise (AC-02, AC-03)', async () => {
   const t = fresh(); const p = scriptedPrompter([CANCEL]); const { io } = capture(t);

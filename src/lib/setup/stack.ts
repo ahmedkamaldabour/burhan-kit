@@ -43,7 +43,7 @@ export function parseSetArgs(args: string[]): StackValues {
 export async function setStack(target: string, v: StackValues, o: { force: boolean }, io: Io): Promise<number> {
   const m = messages('en').stack;
   const real = realTarget(target);
-  if (!existsSync(join(real, '.workflow/WORKFLOW.md'))) throw new BurhanError(m.notInstalled);
+  if (!existsSync(join(real, '.burhan/WORKFLOW.md'))) throw new BurhanError(m.notInstalled);
   const configPath = join(real, TEAM_CONFIG);
   const text = existsSync(configPath) ? readFileSync(configPath, 'utf8') : '';
   const have = parseConfig(text).values;
@@ -75,7 +75,7 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
   putFile(configPath, setConfigKeys(text, values));
   // The verify skill carries the check command: regenerate it (and anything else that depends on the config).
   // The bootstrap block only where the project already has it: a --no-bootstrap install stays without one.
-  const hasBlock = ['CLAUDE.md', 'AGENTS.md'].some((f) => { try { return /^<!-- burhan:begin /m.test(readFileSync(join(target, f), 'utf8')); } catch { return false; } });
+  const hasBlock = ['CLAUDE.md', 'AGENTS.md'].some((f) => { try { return /^<!-- burhan:start -->\r?$/m.test(readFileSync(join(target, f), 'utf8')); } catch { return false; } });
   applyPlan(planInstall({ mode: 'upgrade', target, agents: null, apply: true, bootstrap: hasBlock, keepProjectFiles: true }));
   io.stdout(m.saved(check) + '\n');
   return 0;

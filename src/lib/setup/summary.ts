@@ -10,7 +10,6 @@ const AGENT_OF: Record<string, string> = { 'CLAUDE.md': 'claude', 'AGENTS.md': '
 function describe(f: PlannedFile, m: Messages): string {
   const created = f.action === 'create';
   if (f.action === 'remove') return m.what.removed;
-  if (f.rel === '.burhan/.gitignore') return m.what.privateIgnore;
   switch (f.kind) {
     case 'kit': return m.what.kit(created);
     case 'config': return f.rel.endsWith('bindings.md') ? m.what.bindings(created) : m.what.config(created);
@@ -27,8 +26,8 @@ function collapse(files: PlannedFile[]): PlannedFile[] {
   let kit: PlannedFile | null = null;
   for (const f of files) {
     if (f.kind !== 'kit') { out.push(f); continue; }
-    if (!kit) { kit = { rel: '.workflow/', existed: f.existed, action: f.action, kind: 'kit' }; out.unshift(kit); }
-    if (f.rel === '.workflow/WORKFLOW.md') { kit.existed = f.existed; kit.action = f.action; }
+    if (!kit) { kit = { rel: '.burhan/', existed: f.existed, action: f.action, kind: 'kit' }; out.unshift(kit); }
+    if (f.rel === '.burhan/WORKFLOW.md') { kit.existed = f.existed; kit.action = f.action; }
   }
   return out;
 }
@@ -73,7 +72,8 @@ export function renderSummary(p: SetupPlan, lang: 'en' | 'ar'): string {
     `  ${m.skills(p.skills)}`,
     `  ${m.branches}`,
     `  ${m.check(cfg.WF_STACK_SETUP === 'pending', cfg.WF_CHECK_CMD || 'none')}`);
-  if (p.existingHooks.length) out.push('', ...m.existingHooks(p.existingHooks, p.answers.existingHooks ?? 'keep'));
+  if (!p.superpowersAvailable) out.push(`  ${m.optionalSuperpowers}`);
+  if (p.existingHooks.length) out.push('', ...m.existingHooks(p.existingHooks));
   const ignored = ignoredCommittedSetupFiles(p.install.target, p.files);
   if (ignored.length) out.push('', ...m.ignoredCommittedFiles(ignored));
   const outside = outsideSettings(p.install.target);

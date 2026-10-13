@@ -84,8 +84,9 @@ Never commit, never change my global settings, and ask me before anything you ca
 
 - Change settings: `npx burhan-kit setup`, or ask your agent: "change burhan settings".
 - Remove burhan: `npx burhan-kit uninstall` is a dry run; add `--apply` to remove it. It keeps what
-  is yours: `.workflow/workflow.config`, `.workflow/bindings.md`, `.workflow/local/` and the work files
+  is yours: `.burhan/workflow.config`, `.burhan/bindings.md`, `.burhan/local/` and the work files
   in `.burhan/`. `--all` removes those too (a work-files folder outside `.burhan/` is always kept).
+  Project memory and unknown files stay, as do user ignore rules and protection for retained private files.
 
 ## Scripts and CI
 
@@ -101,14 +102,17 @@ npx burhan-kit doctor                                       # read-only health c
 <details>
 <summary>What the guided setup does · the minimum config</summary>
 
-- `.workflow/SETUP.md` points the agent at `setup --agent`; it has the agent read your build, test and lint setup without changing
+- `.burhan/SETUP.md` points the agent at `setup --agent`; it has the agent read your build, test and lint setup without changing
   anything.
 - It proposes each config value with its file:line evidence and asks you only business questions.
-- If it finds existing hooks in the project, it lists them and asks whether to keep both or remove
-  yours. burhan never edits them.
-- With **Shared in git**, work files live in `docs/burhan/`.
+- If it finds existing hooks in the project, it lists them. They stay active and run alongside
+  burhan's hooks; reminders may repeat.
+- Private work and discoveries live in `.burhan/work/` and `.burhan/discovery/`; only these and
+  `.burhan/local/` are ignored. With **Shared in git**, use `docs/burhan/work/` and `docs/burhan/discovery/`.
+- Superpowers is optional (Claude Code): `/plugin install superpowers@claude-plugins-official`.
+  Setup suggests it only when absent; it never installs plugins or changes an explicit skills preference.
 - After you approve the diff, it writes the config, runs your check once and runs `burhan doctor`.
-- By hand: set at least `WF_CODE_REGEX` and `WF_EVIDENCE_REGEX` in `.workflow/workflow.config`
+- By hand: set at least `WF_CODE_REGEX` and `WF_EVIDENCE_REGEX` in `.burhan/workflow.config`
   ([configuration](docs/configuration.md)).
 
 </details>
@@ -175,7 +179,7 @@ For every sub-unit: write a failing test first, then write the code, then a sepa
 reviews it in a fresh context. Its status moves through: ⬜ Draft → 🟡 Approved → 🔵 In progress →
 🟢 Implemented → ✅ Reviewed.
 
-Follow progress in the plan file, `.workflow/local/PROGRESS.md`, or `burhan status`. For routes that
+Follow progress in the plan file, `.burhan/local/PROGRESS.md`, or `burhan status`. For routes that
 include the Q gate, a fresh agent does QC after verification. Every route stops at the commit
 checkpoint before a commit.
 
@@ -183,14 +187,14 @@ checkpoint before a commit.
 
 | Part | What it does |
 |---|---|
-| Working agreement | Routing, approvals, test-first, the commit checkpoint (`.workflow/`) |
+| Working agreement | Routing, approvals, test-first, the commit checkpoint (`.burhan/`) |
 | Hooks | Session gates, prompt hints, pre-commit check, post-edit reminders, end-of-turn audit |
 | Evidence ledger | Every edit and command, in order, with its exit code — outside the project |
 | Independent QC | A fresh subagent or the other agent; who performed it is recorded |
 | CLI | `setup` `uninstall` `init` `upgrade` `doctor` `status` `stats` `evidence` `changed` `pr-body` |
 
 Nothing assumes a language, framework, test runner or tracker: stack specifics live in
-`.workflow/workflow.config`.
+`.burhan/workflow.config`.
 
 ## Honest about limits
 

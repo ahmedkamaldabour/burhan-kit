@@ -155,3 +155,6 @@ R152|phases/lifecycle.md|**Plan only** is a stopping point, not a mode
 R153|phases/lifecycle.md|close the item at `Plan ready`, and write no code.
 R154|phases/lifecycle.md|**The route sets how many stops** the item has, by its risk — not the mode
 R155|commands/e2e.md|**S+P** → one approval gate, two files
+R156|core|`.burhan/bindings.md`
+R157|phases/memory.md|`.burhan/PROJECT.md`
+R158|phases/memory.md|`.burhan/context/<area>.md`

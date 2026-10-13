@@ -1,5 +1,5 @@
 # Automated enforcement
-> Part of the burhan working agreement (core: `.workflow/WORKFLOW.md`). **Read this when:** you read a hook's finding, change the hooks, or need to know how strong a rule is.
+> Part of the burhan working agreement (core: `.burhan/WORKFLOW.md`). **Read this when:** you read a hook's finding, change the hooks, or need to know how strong a rule is.
 
 The kit's `hooks/` enforce the high-value parts of this document at the agent's own lifecycle, for
 every supported agent, from one shared core. They are configured only through `workflow.config`.

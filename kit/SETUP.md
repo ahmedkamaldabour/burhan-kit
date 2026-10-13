@@ -11,7 +11,7 @@
 - Ask before anything you cannot verify; never guess a value.
 
 ## 1. Installed or not
-If `.workflow/WORKFLOW.md` exists, use `upgrade` (dry run, then `--apply` once approved), never `init`; keep the existing config. If the output says **BLOCKED** (the sandbox cannot write a path, e.g. Codex protects `.codex/`), show the human the exact command to run outside it and wait.
+If `.burhan/WORKFLOW.md` exists, use `upgrade` (dry run, then `--apply` once approved), never `init`; keep the existing config. If the output says **BLOCKED** (the sandbox cannot write a path, e.g. Codex protects `.codex/`), show the human the exact command to run outside it and wait.
 ## 2. Confirm the agents
 Look for `.claude/` and `.codex/` / `AGENTS.md`; Confirm the agents the human uses. Add a missing one with `--agents` (dry run first).
 ## 3. Discover — change nothing
@@ -20,9 +20,9 @@ Regexes are POSIX extended regular expressions (`grep -E`): no `\d`, `\w` or loo
 ## 4. Ask only business questions
 All together, once: the branch rule, the sensitive paths.
 ## 5. Write the config — after approval
-The agent may edit .workflow/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files. Show the change as a diff; Write it only after the human approves. If `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` or a `WF_MODEL_*` key changed, run `upgrade` (dry run, then `--apply`).
+The agent may edit .burhan/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files. Show the change as a diff; Write it only after the human approves. If `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` or a `WF_MODEL_*` key changed, run `upgrade` (dry run, then `--apply`).
 ## 6. Prove it works
-Run `WF_CHECK_CMD` once; show the command, its full output and its exit code (not 0: fix the value with the human, never the code). Run the kit's `doctor` (e.g. `npx burhan-kit doctor`); every `fail` is fixed or explained. `.workflow/local/` must be git-ignored.
+Run `WF_CHECK_CMD` once; show the command, its full output and its exit code (not 0: fix the value with the human, never the code). Run the kit's `doctor` (e.g. `npx burhan-kit doctor`); every `fail` is fixed or explained. `.burhan/local/` must be git-ignored.
 ## 7. Codex hook trust
 Codex skips untrusted project hooks silently, so burhan does nothing there until the human trusts them. Trust is theirs: **never approve the hooks yourself**, never edit `~/.codex/config.toml`. Tell them (screens from Codex CLI 0.150.1):
 1. Open Codex in this project; at **Hooks need review** choose **Review hooks** (later: `/hooks`).

@@ -48,12 +48,12 @@ wf_init() {
   [ "$WF_PROJECT" != / ] && WF_PROJECT="${WF_PROJECT%/}"
 
   local explicit="${WF_CONFIG:-}"   # captured first: a config file must not switch the local layer off
-  local cfg="${explicit:-$WF_PROJECT/.workflow/workflow.config}"
+  local cfg="${explicit:-$WF_PROJECT/.burhan/workflow.config}"
   # shellcheck disable=SC1090
   [ -f "$cfg" ] && . "$cfg" 2>/dev/null
   # Personal overrides (git-ignored), key by key over the team file — unless WF_CONFIG points elsewhere.
   # WF_CHECK_TIMEOUT stays the team's: the agent's own hook timeout is derived from it and committed.
-  local lcfg="$WF_PROJECT/.workflow/local/workflow.config" team_timeout="${WF_CHECK_TIMEOUT-}" team_timeout_set="${WF_CHECK_TIMEOUT+x}"
+  local lcfg="$WF_PROJECT/.burhan/local/workflow.config" team_timeout="${WF_CHECK_TIMEOUT-}" team_timeout_set="${WF_CHECK_TIMEOUT+x}"
   # shellcheck disable=SC1090
   if [ -z "$explicit" ] && [ -f "$lcfg" ]; then
     . "$lcfg" 2>/dev/null
@@ -61,9 +61,9 @@ wf_init() {
   fi
   set +eu +o pipefail   # a config that enables strict modes must not kill the checks
 
-  : "${WF_DOCS_DIR:=AI_SPEC/docs}"
-  : "${WF_DISCOVERY_DIR:=AI_SPEC/discovery}"
-  : "${WF_STATE_FILE:=.workflow/local/PROGRESS.md}"
+  : "${WF_DOCS_DIR:=.burhan/work}"
+  : "${WF_DISCOVERY_DIR:=.burhan/discovery}"
+  : "${WF_STATE_FILE:=.burhan/local/PROGRESS.md}"
   : "${WF_STATE_BUDGET:=80}"
   : "${WF_CHECK_TIMEOUT:=60}"
   : "${WF_SKILLS:=none}"

@@ -48,7 +48,7 @@ if [ "${step_switch:-0}" = 0 ] && m "^[[:space:]]*(plan only|only the plan)${PO_
   add "• Plan only → a stopping point, not a mode: stop after the plan is approved, close the item at Plan ready, write no code." ""
 fi
 if m "${W}(permissions?|roles?|authoriz[a-z]*|authenticat[a-z]*|visibility|access control|access rules?|tenants?|row-level|record-level)${WE}|صلاحي|اذونات|أذونات"; then
-  add "• Access/visibility work → record-level visibility is the highest-consequence check: a missing filter returns everything. Test allowed AND denied cases; verify as the affected identity (.workflow/phases/review.md)." ""
+  add "• Access/visibility work → record-level visibility is the highest-consequence check: a missing filter returns everything. Test allowed AND denied cases; verify as the affected identity (.burhan/phases/review.md)." ""
 fi
 # A scope escalator word means it is not a patch, however small it sounds.
 if m "${W}(typos?|spelling|one[- ]line|one-liner|wording|rename)${WE}|إملائي|املائي|سطر واحد" \
@@ -56,7 +56,7 @@ if m "${W}(typos?|spelling|one[- ]line|one-liner|wording|rename)${WE}|إملائ
   add "• Trivial change → the patch lane only if no scope escalator and nothing sensitive: a routing line (patch — reason), the change, evidence after it, the (a)/(b)/(c) checkpoint. Any escalator or any doubt → bounded." ""
 fi
 if m "${W}(investigate|investigation|why does|how does|what causes|understand)${WE}|ليه بيحصل|${AB}(ازاي|إزاي|افهم|فهمني|تحقيق)${AE}"; then
-  add "• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.workflow/phases/lifecycle.md)." "superpowers:systematic-debugging"
+  add "• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.burhan/phases/lifecycle.md)." "superpowers:systematic-debugging"
 fi
 if m "${W}(bug|fix|error|broken|fail|fails|failing|crash|regress|exception|wrong|incorrect)${WE}|not work|doesn.t work|مش شغال|${AB}(مشكلة|مشكله|خطأ|غلط|باظ|باظت|عطل)${AE}"; then
   add "• Bug → reproduce and find the root cause with evidence before proposing a fix; then a failing regression test first." "superpowers:systematic-debugging, then superpowers:test-driven-development"
@@ -65,10 +65,10 @@ if m "burhan:e2e|burhan:qc|${W}(story|subtasks?|sub-units?)${WE}|ستوري|سب
   add "• Work-item flow → burhan:e2e <slug>, then burhan:qc <slug>; read the state file first." ""
 fi
 if m "${W}(build|implement|feature|refactor|add|new|create|support|modify|change|update|enable|rename)${WE}|${AB}(بناء|اضف|أضف|ضيف|ميزة|فيتشر|انشئ|عدل|عدّل|غيّر)${AE}"; then
-  add "• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.workflow/phases/lifecycle.md)." "superpowers:brainstorming → superpowers:writing-plans → superpowers:test-driven-development"
+  add "• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.burhan/phases/lifecycle.md)." "superpowers:brainstorming → superpowers:writing-plans → superpowers:test-driven-development"
 fi
 if m "${W}(review|done|finish|finished|complete|commit|ship)${WE}|${AB}(راجع|مراجعة|خلص|خلصت|خلصنا|سلّم|سلم)${AE}"; then
-  add "• Wrapping up → review (.workflow/phases/review.md), then run the checks and SHOW the output before claiming done; commit only after the (a)/(b)/(c) checkpoint (.workflow/phases/close-out.md)." "superpowers:requesting-code-review, then superpowers:verification-before-completion"
+  add "• Wrapping up → review (.burhan/phases/review.md), then run the checks and SHOW the output before claiming done; commit only after the (a)/(b)/(c) checkpoint (.burhan/phases/close-out.md)." "superpowers:requesting-code-review, then superpowers:verification-before-completion"
 fi
 if m "${W}(merge|branch)${WE}|pull request|دمج|فرع|ميرج"; then
   add "• Finishing a branch → merge / PR / cleanup is the human's decision." "superpowers:finishing-a-development-branch"

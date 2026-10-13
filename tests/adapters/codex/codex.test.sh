@@ -95,8 +95,8 @@ done
 check_eq "empty core output -> nothing" "$(printf '' | "${IMPL[@]}" emit turn_end)" ""
 
 echo "codex hook.sh — end to end"
-P="$(t_tmp)"; mkdir -p "$P/.workflow"
-printf '%s\n' "WF_CODE_REGEX='\\.src\$'" "WF_EVIDENCE_REGEX='^verify-it'" > "$P/.workflow/workflow.config"
+P="$(t_tmp)"; mkdir -p "$P/.burhan"
+printf '%s\n' "WF_CODE_REGEX='\\.src\$'" "WF_EVIDENCE_REGEX='^verify-it'" > "$P/.burhan/workflow.config"
 WF_CODEX_LEDGER_DIR="$(t_tmp)"
 cw() { jq -c --arg p "$P" '.cwd=$p | (.. | strings) |= gsub("/proj"; $p)' "$FX/$1"; }
 run() { cw "$1" | "${IMPL[@]}" hook "$2"; echo "rc=$?"; }
@@ -155,16 +155,16 @@ done
 check_eq "skill names by install layout" "$(WF_CODEX_LEDGER_DIR="$L" "${IMPL[@]}" normalize < "$FX/p-stop.json" | jq -c .turn.skills_used)" \
   '["superpowers:brainstorming","superpowers:test-driven-development","superpowers:writing-plans","foo","bar","baz"]'
 
-P2="$(t_tmp)"; mkdir -p "$P2/.workflow"; printf '%s\n' "WF_CODE_REGEX='\\.src\$'" > "$P2/.workflow/workflow.config"
+P2="$(t_tmp)"; mkdir -p "$P2/.burhan"; printf '%s\n' "WF_CODE_REGEX='\\.src\$'" > "$P2/.burhan/workflow.config"
 out="$(jq -c --arg p "$P2" '.cwd=$p | (.. | strings) |= gsub("/proj"; $p)' "$FX/p-post-patch-multi.json" | WF_CODEX_LEDGER_DIR="$(t_tmp)" "${IMPL[@]}" hook post-edit-reminder | jq -r .hookSpecificOutput.additionalContext)"
 check_eq "multi-file patch -> reminder not repeated" "$(printf '%s' "$out" | grep -c 'failing test written FIRST')" "1"
 
 # QC3: Codex launched from a subdirectory -> payload cwd is the subdir; config must still be found
-SUB="$(t_tmp)"; mkdir -p "$SUB/.workflow/hooks/adapters" "$SUB/pkg/inner"
-cp -R "$T_KIT/hooks/core" "$SUB/.workflow/hooks/core"; cp -R "$A" "$SUB/.workflow/hooks/adapters/codex"
-printf '%s\n' "WF_CODE_REGEX='\\.src\$'" > "$SUB/.workflow/workflow.config"
+SUB="$(t_tmp)"; mkdir -p "$SUB/.burhan/hooks/adapters" "$SUB/pkg/inner"
+cp -R "$T_KIT/hooks/core" "$SUB/.burhan/hooks/core"; cp -R "$A" "$SUB/.burhan/hooks/adapters/codex"
+printf '%s\n' "WF_CODE_REGEX='\\.src\$'" > "$SUB/.burhan/workflow.config"
 out="$(jq -c --arg c "$SUB/pkg/inner" --arg f "$SUB/pkg/inner/x.src" '.cwd=$c | .tool_input.command=("*** Begin Patch\n*** Add File: " + $f + "\n+x\n*** End Patch")' "$FX/p-post-patch-add.json" \
-  | WF_CODEX_LEDGER_DIR="$(t_tmp)" bash "$SUB/.workflow/hooks/adapters/codex/hook.sh" post-edit-reminder)"
+  | WF_CODEX_LEDGER_DIR="$(t_tmp)" bash "$SUB/.burhan/hooks/adapters/codex/hook.sh" post-edit-reminder)"
 check "cwd = subdirectory -> project config still applies (QC3)" "$out" has "failing test written FIRST"
 
 L="$(t_tmp)/burhan/codex"; mkdir -p "$L/S1"
@@ -174,13 +174,14 @@ check_eq "a >128 KB Codex turn still produces turn_end (ARG_MAX)" "$(jq -c '.las
 echo "codex hooks snippet"
 SN="$A/hooks.snippet.json"
 check_eq "valid JSON" "$(jq -e . "$SN" >/dev/null && echo ok)" "ok"
+check "no ownership comments in commands" "$(jq -r '.. | .command? // empty' "$SN")" lacks "<!--"
 for c in session-gates prompt-router pre-commit-check post-edit-reminder turn-audit; do
   check "wires $c" "$(jq -r '.. | .command? // empty' "$SN")" has "\" $c;"
 done
-check "commands locate the kit via .workflow/hooks/adapters/codex/hook.sh" "$(jq -r '.. | .command? // empty' "$SN")" has ".workflow/hooks/adapters/codex/hook.sh"
+check "commands locate the kit via .burhan/hooks/adapters/codex/hook.sh" "$(jq -r '.. | .command? // empty' "$SN")" has ".burhan/hooks/adapters/codex/hook.sh"
 # Run the real snippet command from a SUBDIRECTORY of a non-git project: it must find the kit by walking up.
-NP="$(t_tmp)"; mkdir -p "$NP/.workflow/hooks/adapters" "$NP/deep/er"
-cp -R "$T_KIT/hooks/core" "$NP/.workflow/hooks/core"; cp -R "$A" "$NP/.workflow/hooks/adapters/codex"
+NP="$(t_tmp)"; mkdir -p "$NP/.burhan/hooks/adapters" "$NP/deep/er"
+cp -R "$T_KIT/hooks/core" "$NP/.burhan/hooks/core"; cp -R "$A" "$NP/.burhan/hooks/adapters/codex"
 cmd="$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$SN")"
 out="$(cd "$NP/deep/er" && jq -c --arg p "$NP" '.cwd=$p' "$FX/p-session.json" | bash -c "$cmd" 2>&1; echo "rc=$?")"
 check "snippet command works from a subdirectory of a non-git project" "$out" has "WORKFLOW GATES"

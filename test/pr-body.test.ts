@@ -9,8 +9,8 @@ import { capture, tmpDir } from './helpers.js';
 function item(files: Record<string, string>): string {
   const p = tmpDir('burhan-pr-');
   for (const [f, t] of Object.entries(files)) {
-    mkdirSync(join(p, 'AI_SPEC/docs/foo', f, '..'), { recursive: true });
-    writeFileSync(join(p, 'AI_SPEC/docs/foo', f), t);
+    mkdirSync(join(p, '.burhan/work/foo', f, '..'), { recursive: true });
+    writeFileSync(join(p, '.burhan/work/foo', f), t);
   }
   return p;
 }
@@ -115,7 +115,7 @@ test('the latest QC round is used', async () => {
 
 test('template placeholders are never printed as facts', async () => {
   const p = tmpDir('burhan-pr-tpl-');
-  const d = join(p, 'AI_SPEC/docs/foo');
+  const d = join(p, '.burhan/work/foo');
   mkdirSync(join(d, 'reviews'), { recursive: true });
   const t = join(kitDir(), 'templates');
   cpSync(join(t, 'story.md'), join(d, 'foo-story.md'));
@@ -133,7 +133,7 @@ test('an item folder that is a symlink out of the project is refused', async () 
   const outside = tmpDir('burhan-pr-out-');
   mkdirSync(join(outside, 'x'));
   writeFileSync(join(outside, 'x/x-story.md'), '# secret\n');
-  symlinkSync(join(outside, 'x'), join(p, 'AI_SPEC/docs/x'));
+  symlinkSync(join(outside, 'x'), join(p, '.burhan/work/x'));
   const c = capture(p);
   assert.equal(await runCli(['pr-body', p, '--item', 'x'], c.io), 2);
   assert.match(c.o.err, /outside the project/);

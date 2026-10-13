@@ -1,10 +1,10 @@
 # Project memory
-> Part of the burhan working agreement (core: `.workflow/WORKFLOW.md`). **Read this when:** you onboard a repository, read or write project facts, or run the knowledge review.
+> Part of the burhan working agreement (core: `.burhan/WORKFLOW.md`). **Read this when:** you onboard a repository, read or write project facts, or run the knowledge review.
 
 **Work records preserve history. Project memory preserves current understanding.**
 
-- `PROJECT.md` (`templates/project.md`) — purpose, areas, and where to look first.
-- `context/<area>.md` (`templates/context-area.md`) — one per area: architecture, stack, data,
+- `.burhan/PROJECT.md` (`templates/project.md`) — purpose, areas, and where to look first.
+- `.burhan/context/<area>.md` (`templates/context-area.md`) — one per area: architecture, stack, data,
   integrations, environments, conventions, business rules, decisions.
 - **Every fact** carries: **confidence** (`confirmed` — direct evidence · `inferred` — strong
   interpretation · `unresolved` — could not be established), **evidence** (a repository path,
@@ -16,13 +16,13 @@
   settled). A fact that stops being true is **superseded, never rewritten** — history stays.
 - **Transient runtime state is never a fact** (running processes, open ports, the current branch,
   machine-specific paths). Record the configuration that declares it instead.
-- **Before work:** read `PROJECT.md` and only the areas the item touches. If a fact's evidence file
+- **Before work:** read `.burhan/PROJECT.md` and only the areas the item touches. If a fact's evidence file
   has changed since it was verified, treat the fact as *may be stale* and re-check it before relying
   on it. Prior chat or model memory is never evidence.
 
 **Onboarding an existing repository** = an `investigation` item ("understand this project"): bounded
 discovery of structure, stack, architecture, data, integrations, conventions, material documents
-and business rules → a draft `PROJECT.md` + `context/` with every fact evidenced, plus the
+and business rules → a draft `.burhan/PROJECT.md` + `.burhan/context/` with every fact evidenced, plus the
 limitations of the discovery → **the human reviews and approves** → it becomes project memory.
 Never approve it yourself; an unapproved draft is not memory.
 

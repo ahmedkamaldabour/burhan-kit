@@ -32,7 +32,7 @@ function tree(dir: string, base = dir, out: Record<string, string> = {}): Record
 }
 const hash = (dir: string): string => createHash('sha256').update(JSON.stringify(tree(dir))).digest('hex');
 const answers = (o: Partial<SetupAnswers> = {}): SetupAnswers => ({ agents: ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en', ...o });
-const cfgOf = (t: string) => parseConfig(readFileSync(join(t, '.workflow/workflow.config'), 'utf8'));
+const cfgOf = (t: string) => parseConfig(readFileSync(join(t, '.burhan/workflow.config'), 'utf8'));
 const section = (s: string, head: string): string => {
   const m = s.match(new RegExp(`^${head}\\b[^\\n]*\\n([\\s\\S]*?)(?=^\\S|$(?![\\s\\S]))`, 'm'));
   return m ? m[1] : '';
@@ -66,11 +66,11 @@ test('applySetup: config, private folder ignore file, healthy doctor', () => {
   assert.equal(c.values.WF_STACK_SETUP, 'pending');
   assert.equal(c.values.WF_MODE_DEFAULT, 'step');
   assert.deepEqual(c.problems, []);
-  assert.equal(readFileSync(join(t, '.burhan/.gitignore'), 'utf8'), '*\n');
+  assert.equal(readFileSync(join(t, '.burhan/.gitignore'), 'utf8'), '/local/\n/work/\n/discovery/\n');
   const cs = runChecks(t, good);
   assert.deepEqual(cs.filter((x) => x.status === 'fail'), []);
   assert.deepEqual(cs.filter((x) => x.text.includes('unknown config keys')), []);
-  assert.ok(readFileSync(join(t, '.workflow/bindings.md'), 'utf8').includes('feature branches + pull requests; commit only after the a/b/c checkpoint'));
+  assert.ok(readFileSync(join(t, '.burhan/bindings.md'), 'utf8').includes('feature branches + pull requests; commit only after the a/b/c checkpoint'));
 });
 
 test('shared and custom docs choices', () => {
@@ -78,23 +78,36 @@ test('shared and custom docs choices', () => {
   applySetup(planSetup(s, answers({ docs: { kind: 'shared' }, mode: 'auto' }), home));
   assert.equal(cfgOf(s).values.WF_DOCS_DIR, 'docs/burhan/work');
   assert.equal(cfgOf(s).values.WF_MODE_DEFAULT, 'auto');
-  assert.equal(existsSync(join(s, '.burhan')), false);
+  assert.equal(existsSync(join(s, '.burhan/WORKFLOW.md')), true);
   const c = fresh();
   applySetup(planSetup(c, answers({ docs: { kind: 'custom', path: './notes/work/' } }), home));
   assert.equal(cfgOf(c).values.WF_DOCS_DIR, 'notes/work');
   assert.equal(cfgOf(c).values.WF_DISCOVERY_DIR, 'notes/work-discovery');
-  for (const bad of ['/abs', '../out', 'a/../../b', "it's", '', 'C:\\x', 'a\nb', '.', './', '.git', '.git/hooks', '.workflow', '.workflow/x', 'a/./b'])
+  for (const bad of ['/abs', '../out', 'a/../../b', "it's", '', 'C:\\x', 'a\nb', '.', './', '.git', '.git/hooks', '.burhan', '.burhan/x', 'a/./b'])
     assert.throws(() => planSetup(fresh(), answers({ docs: { kind: 'custom', path: bad } }), home), /work files|path/i, bad);
 });
 
 test('AC-17: a saved docs folder written with a trailing slash still counts as unchanged (review M-1)', () => {
   const t = fresh();
   applySetup(planSetup(t, answers({ docs: { kind: 'custom', path: 'docs' } }), home));
-  const cfgFile = join(t, '.workflow/workflow.config');
+  const cfgFile = join(t, '.burhan/workflow.config');
   writeFileSync(cfgFile, readFileSync(cfgFile, 'utf8').replace("WF_DOCS_DIR='docs'", "WF_DOCS_DIR='docs/'").replace("WF_DISCOVERY_DIR='docs-discovery'", "WF_DISCOVERY_DIR='disc'"));
   applySetup(planSetup(t, answers({ docs: { kind: 'custom', path: 'docs' } }), home));
   assert.equal(cfgOf(t).values.WF_DISCOVERY_DIR, 'disc');
 });
+
+for (const setting of ['', 'WF_DOCS_DIR=""\n']) {
+  test(`an effective private docs default preserves explicit discovery, setting=${JSON.stringify(setting)}`, () => {
+    const target = fresh();
+    applySetup(planSetup(target, answers(), home));
+    writeFileSync(join(target, '.burhan/workflow.config'), `${setting}WF_DISCOVERY_DIR="notes/discoveries"\n`);
+    const current = currentAnswers(target)!;
+    assert.deepEqual(current.docs, { kind: 'private' });
+    applySetup(planSetup(target, current, home));
+    assert.equal(cfgOf(target).values.WF_DOCS_DIR, '.burhan/work');
+    assert.equal(cfgOf(target).values.WF_DISCOVERY_DIR, 'notes/discoveries');
+  });
+}
 
 test('re-running with the same answers changes nothing', () => {
   const t = fresh();
@@ -117,20 +130,20 @@ test('currentAnswers: null when not installed; prefilled when installed', () => 
 
 test('an existing check command is kept, gets no pending, and the verify skill exists after ONE apply (AC-07)', () => {
   const t = fresh();
-  mkdirSync(join(t, '.workflow'));
-  writeFileSync(join(t, '.workflow/workflow.config'), "# mine\nWF_CHECK_CMD='make lint'\nWF_SKILLS='none'\n");
+  mkdirSync(join(t, '.burhan'));
+  writeFileSync(join(t, '.burhan/workflow.config'), "# mine\nWF_CHECK_CMD='make lint'\nWF_SKILLS='none'\n");
   applySetup(planSetup(t, answers(), home));
   const c = cfgOf(t);
   assert.equal(c.values.WF_CHECK_CMD, 'make lint');
   assert.notEqual(c.values.WF_STACK_SETUP, 'pending');
-  assert.ok(readFileSync(join(t, '.workflow/workflow.config'), 'utf8').startsWith('# mine\n'));
-  assert.ok(readFileSync(join(t, '.claude/skills/verify/SKILL.md'), 'utf8').includes('make lint'));
+  assert.ok(readFileSync(join(t, '.burhan/workflow.config'), 'utf8').startsWith('# mine\n'));
+  assert.ok(readFileSync(join(t, '.claude/skills/burhan-verify/SKILL.md'), 'utf8').includes('make lint'));
 });
 
 test('an existing non-empty skills value is kept; a pending marker is not reset to done-less', () => {
   const t = fresh();
-  mkdirSync(join(t, '.workflow'));
-  writeFileSync(join(t, '.workflow/workflow.config'), "WF_SKILLS='other'\nWF_STACK_SETUP='done'\n");
+  mkdirSync(join(t, '.burhan'));
+  writeFileSync(join(t, '.burhan/workflow.config'), "WF_SKILLS='other'\nWF_STACK_SETUP='done'\n");
   applySetup(planSetup(t, answers(), home));
   assert.equal(cfgOf(t).values.WF_SKILLS, 'other');
   assert.equal(cfgOf(t).values.WF_STACK_SETUP, 'done');
@@ -149,6 +162,30 @@ test('R-6: superpowers is detected read-only from the home plugins folder', () =
   assert.equal(cfgOf(t).values.WF_SKILLS, 'superpowers');
 });
 
+for (const present of [false, true]) for (const skills of ['none', 'superpowers']) {
+  test(`optional plugin availability is independent of configured ${skills}, present=${present}`, () => {
+    const target = fresh();
+    const suppliedHome = tmpDir('burhan-optional-home-');
+    if (present) mkdirSync(join(suppliedHome, '.claude/plugins/cache/vendor/superpowers'), { recursive: true });
+    mkdirSync(join(target, '.burhan'));
+    writeFileSync(join(target, '.burhan/workflow.config'), `WF_SKILLS='${skills}'\n`);
+    const beforeHome = tree(suppliedHome);
+    const plan = planSetup(target, answers(), suppliedHome);
+    assert.equal(plan.skills, skills);
+    assert.equal(plan.superpowersAvailable, present);
+    for (const lang of ['en', 'ar'] as const) {
+      const summary = renderSummary(plan, lang);
+      const lines = summary.split('\n').filter((line) => line.includes('/plugin install superpowers@claude-plugins-official'));
+      assert.equal(lines.length, present ? 0 : 1);
+      if (!present) assert.match(lines[0], lang === 'en' ? /optional \(Claude Code\)/ : /اختياري في Claude Code/);
+    }
+    applySetup(plan);
+    assert.equal(cfgOf(target).values.WF_SKILLS, skills);
+    assert.deepEqual(tree(suppliedHome), beforeHome);
+    assert.equal(existsSync(join(target, '.claude/plugins')), false);
+  });
+}
+
 test('summary: Created / Changed / Removed, change and undo lines, no WF_ (en and ar)', () => {
   const t = fresh();
   writeFileSync(join(t, 'CLAUDE.md'), '# mine\n');
@@ -162,7 +199,7 @@ test('summary: Created / Changed / Removed, change and undo lines, no WF_ (en an
   }
   const en = renderSummary(p, 'en');
   assert.match(section(en, 'Changed'), /CLAUDE\.md[^\n]*a short block at the end, your text untouched/);
-  assert.match(section(en, 'Created'), /\.workflow\//);
+  assert.match(section(en, 'Created'), /\.burhan\//);
   assert.match(en, /Nothing is committed/);
   assert.ok(!/AGENTS\.md|codex/i.test(en), 'no codex line without codex');
 });
@@ -188,13 +225,13 @@ test('summary ends by asking for a new agent session in the project (AC-20)', ()
 
 test('A2: a removal is listed under Removed', () => {
   const t = fresh();
-  mkdirSync(join(t, '.workflow'));
-  writeFileSync(join(t, '.workflow/workflow.config'), "WF_CHECK_CMD='make lint'\n");
+  mkdirSync(join(t, '.burhan'));
+  writeFileSync(join(t, '.burhan/workflow.config'), "WF_CHECK_CMD='make lint'\n");
   applySetup(planSetup(t, answers(), home));
-  assert.ok(existsSync(join(t, '.claude/skills/verify/SKILL.md')));
-  writeFileSync(join(t, '.workflow/workflow.config'), "WF_CHECK_CMD=''\n");
+  assert.ok(existsSync(join(t, '.claude/skills/burhan-verify/SKILL.md')));
+  writeFileSync(join(t, '.burhan/workflow.config'), "WF_CHECK_CMD=''\n");
   const p = planSetup(t, answers(), home);
-  const f = p.install.files.find((x) => x.rel === '.claude/skills/verify/SKILL.md');
+  const f = p.install.files.find((x) => x.rel === '.claude/skills/burhan-verify/SKILL.md');
   assert.equal(f?.action, 'remove');
   assert.match(section(renderSummary(p, 'en'), 'Removed'), /verify/);
 });

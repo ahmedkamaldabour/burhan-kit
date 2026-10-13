@@ -7,8 +7,8 @@ You are running the **final QC review** for: **$ARGUMENTS**
 
 Run this **after `burhan:e2e $ARGUMENTS`** (all sub-units ✅, verification recorded). Its job is to
 catch what a real QA pass would catch — first. Be **adversarial**: assume there are defects and hunt
-for them. The authoritative process is `.workflow/WORKFLOW.md`; project values come from `.workflow/bindings.md`
-(§1) and `.workflow/workflow.config`.
+for them. The authoritative process is `.burhan/WORKFLOW.md`; project values come from `.burhan/bindings.md`
+(§1) and `.burhan/workflow.config`.
 
 ## 0) Fresh context — never the one that wrote the code
 
@@ -17,13 +17,13 @@ started as the reviewer — the `burhan-reviewer` subagent, or the other agent r
 you already are that fresh context: skip this step. A delegated
 reviewer cannot ask the human anything, so **first ask the human step 3's question** (who performs
 the adversarial pass) and pass the answer in the prompt. Then pick the **first** option that applies:
-1. **Another agent as reviewer** — read `WF_REVIEWER_AGENT` in `.workflow/workflow.config` (and
-   `.workflow/local/workflow.config`). If it names the *other* agent (`codex` while you are Claude
+1. **Another agent as reviewer** — read `WF_REVIEWER_AGENT` in `.burhan/workflow.config` (and
+   `.burhan/local/workflow.config`). If it names the *other* agent (`codex` while you are Claude
    Code, `claude` while you are Codex) and its CLI is installed, run the QC through it
    non-interactively — from Claude Code `codex exec -s workspace-write '<prompt>' < /dev/null`, from
    Codex `claude -p '<prompt>' --permission-mode acceptEdits < /dev/null`. The prompt says: "You are
    the other-agent reviewer started by burhan:qc step 0 — skip step 0", then gives only the slug, the
-   paths, `.workflow/commands/qc.md` and the human's answer to step 3. Put it in **single quotes** with
+   paths, `.burhan/commands/qc.md` and the human's answer to step 3. Put it in **single quotes** with
    no `'` inside, so the shell expands nothing in it. Close stdin (`< /dev/null`): with stdin open the
    CLI waits for more input and never starts. Run it in the foreground with your longest command
    timeout and wait for it. The call goes through your agent's own permission prompt, and the human
@@ -50,7 +50,7 @@ fix for a defect inside the item's scope — surface anything larger.
 
 ## 2) Convergence matrix — every spec item, not a sample
 
-Apply the **whole** review checklist in `.workflow/phases/review.md` — security first — to the
+Apply the **whole** review checklist in `.burhan/phases/review.md` — security first — to the
 item's full diff; QC never uses the short form.
 
 Every acceptance criterion, business rule and data-dictionary row gets one row:
@@ -98,9 +98,9 @@ commit of those fixes, the commit checkpoint applies (WORKFLOW §4-B: show the f
 behalf). Only after they accept a PASS:
 1. record it on the QC file's `Accepted by` line as `<name> · YYYY-MM-DD` — the human's name, never
    yours (phases/files.md · Fields);
-2. run the knowledge review if the route includes **K** (.workflow/phases/memory.md — propose with evidence; the human
+2. run the knowledge review if the route includes **K** (.burhan/phases/memory.md — propose with evidence; the human
    promotes or rejects; or record "none");
-3. run the close-out (.workflow/phases/close-out.md) with state `QC PASS` — a pull request only if
+3. run the close-out (.burhan/phases/close-out.md) with state `QC PASS` — a pull request only if
    the human asks (`burhan pr-body` builds its description).
 
 On FAIL, the item goes back to build; nothing is closed.
