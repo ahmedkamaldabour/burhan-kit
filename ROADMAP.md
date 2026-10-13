@@ -49,6 +49,7 @@ until you choose.
 ## Planned: 0.3
 
 - Move the hooks to the Node/TypeScript runtime and support Windows without requiring Bash or jq.
+- Add burhan blocking mode for never-run commands.
 
 ## Candidates
 

@@ -1,11 +1,29 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
 import { parseConfig } from '../src/lib/config.js';
 import { BurhanError } from '../src/lib/errors.js';
 import { kitDir } from '../src/lib/kit.js';
+import { runCli } from '../src/main.js';
 import { ereTest } from '../src/hooks/core/ere.mjs';
+import { applySetup, planSetup } from '../src/lib/setup/engine.js';
 import { setConfigKeys, neverRunRegex, sensitiveRegex, assertWritable } from '../src/lib/setup/config-write.js';
+import { capture, tmpDir } from './helpers.js';
+
+const neverRunCases = readFileSync(join(process.cwd(), 'tests/fixtures/never-run-cases.txt'), 'utf8').trim().split('\n').map((line) => {
+  const [expected, list, command] = line.split('\t');
+  assert.ok(expected === 'flag' || expected === 'pass', line);
+  assert.ok(list && command, line);
+  return { expected, list: list.split(';'), command };
+});
+
+function installed(): string {
+  const target = tmpDir('burhan-config-write-');
+  applySetup(planSetup(target, { agents: ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en' }, tmpDir('burhan-config-write-home-')));
+  return target;
+}
 
 test('setConfigKeys replaces the first live line and keeps the rest', () => {
   assert.equal(setConfigKeys('# c\nWF_CHECK_CMD=""\n', { WF_CHECK_CMD: 'make lint' }), "# c\nWF_CHECK_CMD='make lint'\n");
@@ -39,7 +57,7 @@ test('round trip, including the real example config', () => {
 test('neverRunRegex through the hooks engine', () => {
   const re = neverRunRegex(['php artisan migrate:fresh', 'php artisan db:wipe']);
   assert.ok(ereTest(re, 'php  artisan   migrate:fresh --seed'));
-  assert.ok(ereTest(re, 'sail php artisan db:wipe'));
+  assert.ok(!ereTest(re, 'sail php artisan db:wipe'));
   assert.ok(!ereTest(re, 'php artisan migrate'));
   assert.ok(!ereTest(re, 'grep -rn "migrate:fresh" README.md'));
   assert.ok(!ereTest(re, 'echo phpXartisan db:wipe'));
@@ -50,6 +68,36 @@ test('neverRunRegex escapes regex metacharacters', () => {
   const re = neverRunRegex(['rm -rf *.log']);
   assert.ok(ereTest(re, 'rm -rf *.log'));
   assert.ok(!ereTest(re, 'rm -rf a.log'));
+});
+
+test('neverRunRegex flags only the command-start cases in the shared POSIX ERE fixture', () => {
+  for (const { expected, list, command } of neverRunCases) {
+    const result = spawnSync('bash', ['-c', 'grep -E -q -- "$1" <<< "$2"', '--', neverRunRegex(list), command]);
+    assert.equal(result.status === 0, expected === 'flag', command);
+  }
+});
+
+test('setup --set stores a supplied never-run ERE as-is', async () => {
+  const target = installed();
+  const raw = '(^|[;&|][[:space:]]*)(npx jest)([[:space:]]|$)';
+  assert.equal(await runCli(['setup', target, '--set', 'check=true', `never-run-regex=${raw}`], capture(target).io), 0);
+  assert.equal(parseConfig(readFileSync(join(target, '.workflow/workflow.config'), 'utf8')).values.WF_FORBIDDEN_REGEX, raw);
+});
+
+test('setup --set rejects a broken never-run ERE without changing the config', async () => {
+  const target = installed();
+  const config = join(target, '.workflow/workflow.config');
+  const before = readFileSync(config, 'utf8');
+  assert.equal(await runCli(['setup', target, '--set', 'check=true', 'never-run-regex=a('], capture(target).io), 2);
+  assert.equal(readFileSync(config, 'utf8'), before);
+});
+
+test('setup --set rejects never-run and never-run-regex together', async () => {
+  const target = installed();
+  const config = join(target, '.workflow/workflow.config');
+  const before = readFileSync(config, 'utf8');
+  assert.equal(await runCli(['setup', target, '--set', 'check=true', 'never-run=npx jest', 'never-run-regex=^npx'], capture(target).io), 2);
+  assert.equal(readFileSync(config, 'utf8'), before);
 });
 
 test('sensitiveRegex anchors at the start', () => {

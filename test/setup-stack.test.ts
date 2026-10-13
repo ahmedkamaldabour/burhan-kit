@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parseConfig } from '../src/lib/config.js';
@@ -9,13 +8,13 @@ import { BurhanError } from '../src/lib/errors.js';
 import { applySetup, planSetup } from '../src/lib/setup/engine.js';
 import { neverRunRegex, sensitiveRegex } from '../src/lib/setup/config-write.js';
 import { parseSetArgs, setStack, stackInstructions } from '../src/lib/setup/stack.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 import { install } from '../src/lib/install.js';
 import { writeFileSync } from 'node:fs';
 
-const home = mkdtempSync(join(tmpdir(), 'burhan-stack-home-'));
+const home = tmpDir('burhan-stack-home-');
 function installed(): string {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-stack-'));
+  const d = tmpDir('burhan-stack-');
   spawnSync('git', ['init', '-q'], { cwd: d });
   applySetup(planSetup(d, { agents: ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en' }, home));
   return d;
@@ -74,6 +73,17 @@ test('never-run and sensitive lists are written as regexes with a plain-words re
   assert.match(c.WF_FORBIDDEN_REASON, /^the owner chose these at setup: /);
 });
 
+test('sensitive paths save the access-control default note, but keep an existing note (AC-19)', async () => {
+  const t = installed();
+  assert.equal(await setStack(t, v({ sensitive: ['src/auth'] }), { force: false }, capture(t).io), 0);
+  assert.equal(cfgOf(t).WF_SENSITIVE_NOTE, 'Access-control path: re-read authorization and data scoping; test allowed AND denied cases.');
+
+  const config = join(t, '.workflow/workflow.config');
+  writeFileSync(config, cfgText(t).replace(/^WF_SENSITIVE_NOTE=.*$/m, "WF_SENSITIVE_NOTE='Keep this note'"));
+  assert.equal(await setStack(t, v({ sensitive: ['src/admin'] }), { force: false }, capture(t).io), 0);
+  assert.equal(cfgOf(t).WF_SENSITIVE_NOTE, 'Keep this note');
+});
+
 test('a check matching the never-run list is refused without running', async () => {
   const t = installed();
   const marker = join(t, 'ran.marker');
@@ -105,7 +115,7 @@ test('a value with a single quote is refused and nothing is written', async () =
 });
 
 test('not installed -> a clear error', async () => {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-stack-empty-'));
+  const d = tmpDir('burhan-stack-empty-');
   await assert.rejects(setStack(d, v(), { force: false }, capture(d).io), /not installed.*setup/);
 });
 
@@ -130,8 +140,22 @@ test('stackInstructions: the fixed block, never invent, no setting names', () =>
   assert.match(s, /ask/i);
 });
 
+test('stackInstructions permits only the approved workflow.config edit (AC-16)', () => {
+  const en = stackInstructions('en');
+  assert.ok(en.includes('The agent may edit .workflow/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files.'));
+  assert.ok(!en.includes('Do not edit the .workflow/ files yourself.'));
+  const ar = stackInstructions('ar');
+  assert.match(ar, /\.workflow\/workflow\.config/);
+  assert.match(ar, /diff|الفرق/i);
+  assert.match(ar, /موافق|موافقة/);
+  assert.match(ar, /مشترك/);
+  assert.match(ar, /review.*pull request|مراجعة.*طلب سحب/i);
+  assert.match(ar, /زي الكود/);
+  assert.match(ar, /ملفات.*kit|بتاعة.*kit/i);
+});
+
 test('setStack keeps a --no-bootstrap project without the bootstrap block (review I-1)', async () => {
-  const t = mkdtempSync(join(tmpdir(), 'burhan-stack-nob-'));
+  const t = tmpDir('burhan-stack-nob-');
   spawnSync('git', ['init', '-q', t]);
   install({ mode: 'init', target: t, agents: ['claude'], apply: true, bootstrap: false }, capture(t).io);
   assert.equal(existsSync(join(t, 'CLAUDE.md')), false);

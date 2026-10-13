@@ -1,7 +1,7 @@
 {
   "name": "burhan-kit",
-  "version": "0.2.0",
-  "description": "No \"done\" without proof — a governance layer for AI coding agents (Claude Code, Codex): a working agreement, hooks that audit every turn, an evidence ledger and independent QC.",
+  "version": "0.2.1",
+  "description": "A working process for AI coding agents (Claude Code, Codex): plan first, build in reviewed steps, prove every done, and finish with independent QC.",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -47,7 +47,7 @@
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json && node -e \"require('fs').copyFileSync('kit/hooks/core/gates.txt',process.argv[1])\" dist/hooks/gates.txt",
     "prepack": "npm run build",
     "build:test": "node -e \"require('fs').rmSync('.test-build',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node -e \"require('fs').copyFileSync('kit/hooks/core/gates.txt',process.argv[1])\" .test-build/src/hooks/gates.txt",
-    "test:node": "npm run build:test && node --test \".test-build/test/**/*.test.js\"",
+    "test:node": "npm run build:test && node scripts/test-node.mjs",
     "test:bash": "npm run build && bash tests/run.sh",
     "test": "npm run test:node && npm run test:bash",
     "lint": "bash tests/lint.sh && tsc -p tsconfig.test.json --noEmit"

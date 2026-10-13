@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { phaseLog, qcIndependence, qcVerdict, readFacts, route } from '../src/lib/facts.js';
 import { kitDir } from '../src/lib/kit.js';
+import { tmpDir } from './helpers.js';
 
 const tpl = (n: string) => readFileSync(join(kitDir(), 'templates', n), 'utf8');
 
@@ -57,7 +57,7 @@ test('phase log: durations in minutes, tokens when numeric; the empty template g
 });
 
 test('readFacts: route, QC, acceptance, reopen and escape fields', () => {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-facts-'));
+  const d = tmpDir('burhan-facts-');
   mkdirSync(join(d, 'fix-x/reviews'), { recursive: true });
   for (const f of ['add-x', 'add-y', 'pay-flow']) mkdirSync(join(d, f)); // escapes name real items only
   writeFileSync(join(d, 'fix-x/fix-x-story.md'), '- **Type / scope:** bug / bounded\n- **Escapes:** add-x\n');
@@ -119,7 +119,7 @@ test('readFacts: route, QC, acceptance, reopen and escape fields', () => {
 });
 
 test('readFacts: the review file\'s provenance and size — the single per-item file, else the old per-sub-unit files', () => {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-facts-rv-'));
+  const d = tmpDir('burhan-facts-rv-');
   mkdirSync(join(d, 'one/reviews'), { recursive: true });
   writeFileSync(join(d, 'one/reviews/one-review.md'), '# Review\n## Sub-unit 1 · short\n- **Date:** x · **Performed by:** claude · sonnet · fresh subagent\n');
   writeFileSync(join(d, 'one/reviews/one-qc.md'), '- **Performed by:** claude · opus · same session\n');
@@ -135,7 +135,7 @@ test('readFacts: the review file\'s provenance and size — the single per-item 
 });
 
 test('review provenance reads every section, and QC re-runs are not reviews', () => {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-facts-rv2-'));
+  const d = tmpDir('burhan-facts-rv2-');
   mkdirSync(join(d, 'two/reviews'), { recursive: true });
   writeFileSync(join(d, 'two/reviews/two-review.md'), '## Sub-unit 1\n- **Performed by:** claude · sonnet · fresh subagent\n## Sub-unit 2\n- **Performed by:** claude · opus · same session\n');
   assert.equal(readFacts(join(d, 'two'), 'two').reviewBy, 'self', 'one same-session section makes the item self-reviewed');

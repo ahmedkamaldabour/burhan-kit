@@ -18,12 +18,11 @@ export function setConfigKeys(text: string, values: Record<string, string>): str
 const ERE_SPECIAL = /[.[\]()*+?{}|^$\\]/g;
 const esc = (s: string): string => s.replace(ERE_SPECIAL, '\\$&');
 
-/** R-3: never-run commands -> one ERE. Plain "escape + join": each command spells out its leading words
- *  (`php artisan migrate:fresh`), so `grep … "migrate:fresh"` and `php artisan migrate` already miss, while a
- *  prefix such as `sail php artisan …` still hits (unanchored on purpose). Runs of spaces tolerate any spacing.
- *  Measured through the hooks' own engine in the tests. Empty list -> '' (the check stays silent). */
+/** AC-15: plain never-run commands start a shell command, not an argument, quote or assignment. The following
+ * character must end the command words rather than extend them (`lint:fix`, `testing`, `jester`). */
 export function neverRunRegex(commands: string[]): string {
-  return commands.map((c) => c.trim()).filter(Boolean).map((c) => esc(c).replace(/ +/g, '[[:space:]]+')).join('|');
+  const choices = commands.map((c) => c.trim()).filter(Boolean).map((c) => esc(c).replace(/ +/g, '[[:space:]]+'));
+  return choices.length ? `(^|[;&|][[:space:]]*)(${choices.join('|')})([^[:alnum:]_:-]|$)` : '';
 }
 
 /** R-3: sensitive paths -> one ERE, anchored at the project root: `^(p1|p2)`. Empty list -> ''. */

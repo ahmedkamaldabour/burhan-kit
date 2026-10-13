@@ -1,16 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { runCli } from '../src/main.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 
 const git = (cwd: string, ...a: string[]) => spawnSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...a], { cwd, encoding: 'utf8' });
 
 function repo(storyLine: (sha: string) => string): { p: string; sha: string } {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-ch-'));
+  const p = tmpDir('burhan-ch-');
   git(p, 'init', '-q');
   mkdirSync(join(p, 'src'), { recursive: true });
   writeFileSync(join(p, 'src/a.js'), 'a\n'); writeFileSync(join(p, 'src/b.js'), 'b\n');
@@ -55,7 +54,7 @@ test('missing or unknown commit -> asks for a full re-check, never guesses', asy
 });
 
 test('a target below the repository root: paths relative to it, nothing outside it, own docs excluded', async () => {
-  const root = mkdtempSync(join(tmpdir(), 'burhan-ch-mono-'));
+  const root = tmpDir('burhan-ch-mono-');
   git(root, 'init', '-q');
   mkdirSync(join(root, 'app/src'), { recursive: true }); mkdirSync(join(root, 'other'), { recursive: true });
   writeFileSync(join(root, 'app/src/a.js'), 'a\n'); writeFileSync(join(root, 'other/o.js'), 'o\n');
@@ -76,7 +75,7 @@ test('--item must be a slug; a non-repository says so', async () => {
   const a = capture();
   assert.equal(await runCli(['changed', p, '--item', '../../etc'], a.io), 2);
   assert.match(a.o.err, /not a work-item slug/);
-  const plain = mkdtempSync(join(tmpdir(), 'burhan-ch-norepo-'));
+  const plain = tmpDir('burhan-ch-norepo-');
   mkdirSync(join(plain, 'AI_SPEC/docs/foo'), { recursive: true });
   writeFileSync(join(plain, 'AI_SPEC/docs/foo/foo-story.md'), `- **Verified at commit:** ${sha}\n`);
   const b = capture();

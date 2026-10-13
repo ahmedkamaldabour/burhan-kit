@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isWritable, putFile, replaceDir } from '../src/lib/fs-safe.js';
+import { tmpDir } from './helpers.js';
 
-const tmp = () => mkdtempSync(join(tmpdir(), 'burhan-fs-'));
+const tmp = () => tmpDir('burhan-fs-');
 
 test('putFile creates parents', () => {
   const d = tmp(); putFile(join(d, 'a/b/c.txt'), 'x');

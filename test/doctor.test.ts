@@ -1,20 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { chmodSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runChecks, type Check, type Probe } from '../src/lib/doctor.js';
 import { install } from '../src/lib/install.js';
 import { readVersion } from '../src/lib/kit.js';
 import { runCli } from '../src/main.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 
-const home = mkdtempSync(join(tmpdir(), 'burhan-doctor-home-'));
+const home = tmpDir('burhan-doctor-home-');
 const good: Probe = { bashMajor: () => 5, has: () => true, jqVersion: () => 'jq-1.8.1', claudeVersion: () => '2.1.296', home: () => home };
 const probe = (o: Partial<Probe> = {}): Probe => ({ ...good, ...o });
 
 function project(agents: ('claude' | 'codex')[] = ['claude']): string {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-doctor-'));
+  const p = tmpDir('burhan-doctor-');
   install({ mode: 'init', target: p, agents, apply: true, bootstrap: false }, capture(p).io);
   return p;
 }
@@ -59,7 +58,7 @@ test('runtime: jq below the minimum the hooks are tested on fails; an unreadable
 });
 
 test('install: not installed fails; an older kit stamp says run upgrade', () => {
-  const empty = mkdtempSync(join(tmpdir(), 'burhan-doctor-empty-'));
+  const empty = tmpDir('burhan-doctor-empty-');
   assert.ok(find(runChecks(empty, probe()), 'fail', 'burhan init'));
   const p = project();
   writeFileSync(join(p, '.workflow/VERSION'), '0.0.9\n');
@@ -98,6 +97,13 @@ test('config: missing keys (vs the shipped example), unknown keys, unreadable li
   mkdirSync(join(l, '.workflow/local'), { recursive: true });
   writeFileSync(join(l, '.workflow/local/workflow.config'), 'WF_EVIDENCE_DIR="rel"\n');
   assert.ok(find(runChecks(l, probe()), 'warn', 'WF_EVIDENCE_DIR'), 'the local override is read too');
+});
+
+test('config: a sensitive regex without its note warns (AC-19)', () => {
+  const p = project();
+  edit(cfg(p), (s) => s.replace(/^WF_SENSITIVE_REGEX=.*$/m, "WF_SENSITIVE_REGEX='^src/auth(/|$)'").replace(/^WF_SENSITIVE_NOTE=.*$/m, "WF_SENSITIVE_NOTE=''"));
+  const warning = find(runChecks(p, probe()), 'warn', 'WF_SENSITIVE_NOTE');
+  assert.ok(warning && warning.text.includes('WF_SENSITIVE_REGEX'), warning?.text);
 });
 
 test('claude: an unwired hook fails; missing commands or reviewer fail; an old claude warns only with the verify skill', () => {
@@ -141,7 +147,7 @@ test('codex: wiring checked; hook trust is read only, and an unreadable config i
   assert.ok(find(runChecks(p, probe()), 'fail', 'PreToolUse (pre-commit-check)'));
   install({ mode: 'upgrade', target: p, agents: null, apply: true, bootstrap: false }, capture(p).io);
   assert.ok(find(runChecks(p, probe()), 'skip', 'trust'), 'no ~/.codex/config.toml → skip');
-  const h = mkdtempSync(join(tmpdir(), 'burhan-doctor-h-'));
+  const h = tmpDir('burhan-doctor-h-');
   mkdirSync(join(h, '.codex'));
   writeFileSync(join(h, '.codex/config.toml'), '[hooks.state."elsewhere/.codex/hooks.json:stop:0:0"]\ntrusted_hash = "x"\n');
   assert.ok(find(runChecks(p, probe({ home: () => h })), 'warn', 'trust'));
@@ -157,11 +163,11 @@ test('codex: wiring checked; hook trust is read only, and an unreadable config i
 
 test('codex trust: the key is matched under the project path as given and as resolved (a symlinked dir; macOS /var → /private/var)', () => {
   const real = project(['codex']);
-  const parent = mkdtempSync(join(tmpdir(), 'burhan-doctor-l-'));
+  const parent = tmpDir('burhan-doctor-l-');
   const link = join(parent, 'proj');
   symlinkSync(real, link);
   const resolved = realpathSync(real);
-  const h = mkdtempSync(join(tmpdir(), 'burhan-doctor-h-'));
+  const h = tmpDir('burhan-doctor-h-');
   mkdirSync(join(h, '.codex'));
   const events = ['session_start', 'user_prompt_submit', 'pre_tool_use', 'post_tool_use', 'stop'];
   const entries = (dir: string) => events.map((e) => `[hooks.state."${dir}/.codex/hooks.json:${e}:0:0"]\ntrusted_hash = "x"\n`).join('');
@@ -210,7 +216,7 @@ test('CLI: doctor never writes, prints one line per check, exit 1 only on fail',
   assert.deepEqual(snap(p), before, 'nothing written');
   assert.match(o.out, /^ok +/m);
   assert.equal(rc, /^fail /m.test(o.out) ? 1 : 0, 'exit 1 exactly when a check fails');
-  const empty = mkdtempSync(join(tmpdir(), 'burhan-doctor-empty-'));
+  const empty = tmpDir('burhan-doctor-empty-');
   const e = capture(empty);
   assert.equal(await runCli(['doctor', empty], e.io), 1);
   assert.match(e.o.out, /^fail +/m);

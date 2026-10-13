@@ -1,14 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadHookConfig } from '../../src/hooks/core/config.mjs';
 import { parseConfig as cliParse } from '../../src/lib/config.js';
 import { parseConfig as hookParse } from '../../src/hooks/core/config.mjs';
+import { tmpDir } from '../helpers.js';
 
 function proj(team: string[] | null, local: string[] | null = null): string {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-hcfg-'));
+  const p = tmpDir('burhan-hcfg-');
   mkdirSync(join(p, '.workflow/local'), { recursive: true });
   if (team) writeFileSync(join(p, '.workflow/workflow.config'), team.join('\n') + '\n');
   if (local) writeFileSync(join(p, '.workflow/local/workflow.config'), local.join('\n') + '\n');

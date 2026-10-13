@@ -2,7 +2,9 @@
 
 # burhan
 
-## No "done" without proof.
+## A working process for AI coding agents: plan first, build in reviewed steps, prove every 'done'.
+
+### No "done" without proof.
 
 A governance layer for AI coding agents (Claude Code, Codex): a working agreement, plus hooks
 that check the agent against it at every turn (each agent reply).
@@ -102,6 +104,9 @@ npx burhan-kit doctor                                       # read-only health c
 - `.workflow/SETUP.md` points the agent at `setup --agent`; it has the agent read your build, test and lint setup without changing
   anything.
 - It proposes each config value with its file:line evidence and asks you only business questions.
+- If it finds existing hooks in the project, it lists them and asks whether to keep both or remove
+  yours. burhan never edits them.
+- With **Shared in git**, work files live in `docs/burhan/`.
 - After you approve the diff, it writes the config, runs your check once and runs `burhan doctor`.
 - By hand: set at least `WF_CODE_REGEX` and `WF_EVIDENCE_REGEX` in `.workflow/workflow.config`
   ([configuration](docs/configuration.md)).
@@ -159,6 +164,20 @@ commit later, or you commit.
 - Want only the plan? Say so: the item stops after the plan is approved and closes at `Plan ready`.
 
 </details>
+
+## How a work item runs
+
+This extends [The flow](#the-flow). Each item has a folder with its story, plan and reviews. The
+plan splits the item into sub-units (plainly: parts). For example, a setup feature can have one
+sub-unit for the wizard, one for uninstall, and one for the Arabic text.
+
+For every sub-unit: write a failing test first, then write the code, then a separate reviewer agent
+reviews it in a fresh context. Its status moves through: ⬜ Draft → 🟡 Approved → 🔵 In progress →
+🟢 Implemented → ✅ Reviewed.
+
+Follow progress in the plan file, `.workflow/local/PROGRESS.md`, or `burhan status`. For routes that
+include the Q gate, a fresh agent does QC after verification. Every route stops at the commit
+checkpoint before a commit.
 
 ## What you get
 

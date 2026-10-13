@@ -15,6 +15,20 @@ import { runWizard } from './lib/setup/wizard.js';
 import { agentInstructions, runAnswers } from './lib/setup/agent.js';
 import { messages } from './lib/setup/messages.js';
 import { parseSetArgs, setStack, stackInstructions } from './lib/setup/stack.js';
+import type { SetupFilesystem } from './lib/setup/engine.js';
+
+const FORBIDDEN_SETUP_FLAG_PAIRS = [
+  ['agent', 'answers'],
+  ['agent', 'apply'],
+  ['agent', 'set'],
+  ['agent', 'stack'],
+  ['stack', 'set'],
+  ['stack', 'answers'],
+] as const;
+
+const SETUP_FLAG_NAMES = {
+  agent: '--agent', answers: '--answers', apply: '--apply', set: '--set', stack: '--stack',
+} as const;
 
 export interface Io { stdout(s: string): void; stderr(s: string): void; cwd: string; /** stdin and stdout are both terminals: only then may a prompt be shown. */ interactive?: boolean }
 
@@ -41,7 +55,7 @@ export const USAGE = `usage: burhan <command> [options]
   setup [dir] --answers <file> [--apply]
                        show (or, with --apply, write) the setup for the answers in a JSON file
   setup [dir] --stack  print the first-use instructions for an AI agent
-  setup [dir] --set check=<cmd|none> [never-run=<a;b>] [sensitive=<p;q>] [--force]
+  setup [dir] --set check=<cmd|none> [never-run=<a;b> | never-run-regex=<ERE>] [sensitive=<p;q>] [--force]
                        save the project's check command (runs it once first)
   uninstall [dir] [--apply] [--all]
                        remove burhan from a project; keeps workflow.config, bindings.md, local/ and your work files unless --all
@@ -51,7 +65,7 @@ export const USAGE = `usage: burhan <command> [options]
 Without --apply, init, upgrade and uninstall are a dry run: they print what they would do and change nothing.
 `;
 
-export async function runCli(argv: string[], io: Io): Promise<number> {
+export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFilesystem): Promise<number> {
   const [cmd, ...rest] = argv;
   try {
     switch (cmd) {
@@ -128,13 +142,25 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
         });
         const lang = values.lang ?? 'en';
         if (lang !== 'en' && lang !== 'ar') throw new BurhanError(`--lang must be en or ar, not "${lang}"`);
+        const setupFlags = {
+          agent: values.agent === true,
+          answers: values.answers !== undefined,
+          apply: values.apply === true,
+          set: values.set === true,
+          stack: values.stack === true,
+        };
+        for (const [first, second] of FORBIDDEN_SETUP_FLAG_PAIRS) {
+          if (setupFlags[first] && setupFlags[second]) {
+            throw new BurhanError(messages(lang).agent.conflictingFlags(SETUP_FLAG_NAMES[first], SETUP_FLAG_NAMES[second]));
+          }
+        }
         // With --set the KEY=VALUE pairs are the positionals that contain "="; a quoted `check=npm test` stays one argument.
         const pairs = values.set ? positionals.filter((x) => x.includes('=')) : [];
         const dirs = positionals.filter((x) => !pairs.includes(x));
         if (dirs.length > 1) throw new BurhanError(`unexpected argument: ${dirs[1]}`);
         const target = dirs[0] ?? io.cwd;
         if (values.agent) { io.stdout(agentInstructions(target, lang, homedir())); return 0; }
-        if (values.answers !== undefined) return runAnswers(target, values.answers, values.apply === true, io, lang, homedir());
+        if (values.answers !== undefined) return runAnswers(target, values.answers, values.apply === true, io, lang, homedir(), setupFilesystem);
         if (values.apply) throw new BurhanError('--apply needs --answers <file>');
         if (values.stack) { io.stdout(stackInstructions(lang) + '\n'); return 0; }
         if (values.set) return await setStack(target, parseSetArgs(pairs), { force: values.force === true }, io);

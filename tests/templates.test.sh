@@ -41,6 +41,9 @@ for k in $KEYS; do
   check "$k defined (uncommented)" "$(printf "%s\n" "$cfg" | grep -E "^$k=")" has "$k="
 done
 check "config example is valid shell" "$(bash -n workflow.config.example 2>&1 && echo OK)" has "OK"
+header="$(sed -n '4p' workflow.config.example)"
+config_grammar='Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote.'
+check "config header states the real single-quote grammar" "$header" has "$config_grammar"
 echo "team layout"
 check "state file default is per developer" "$(grep -E '^WF_STATE_FILE=' workflow.config.example)" has ".workflow/local/PROGRESS.md"
 check "memory IDs are slugs, not sequential" "$(cat templates/context-area.md)" lacks "<AREA>-01"

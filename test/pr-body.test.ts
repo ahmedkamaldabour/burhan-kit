@@ -1,14 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, symlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { cpSync, mkdirSync, readdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { kitDir } from '../src/lib/kit.js';
 import { runCli } from '../src/main.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 
 function item(files: Record<string, string>): string {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-pr-'));
+  const p = tmpDir('burhan-pr-');
   for (const [f, t] of Object.entries(files)) {
     mkdirSync(join(p, 'AI_SPEC/docs/foo', f, '..'), { recursive: true });
     writeFileSync(join(p, 'AI_SPEC/docs/foo', f), t);
@@ -115,7 +114,7 @@ test('the latest QC round is used', async () => {
 });
 
 test('template placeholders are never printed as facts', async () => {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-pr-tpl-'));
+  const p = tmpDir('burhan-pr-tpl-');
   const d = join(p, 'AI_SPEC/docs/foo');
   mkdirSync(join(d, 'reviews'), { recursive: true });
   const t = join(kitDir(), 'templates');
@@ -131,7 +130,7 @@ test('template placeholders are never printed as facts', async () => {
 
 test('an item folder that is a symlink out of the project is refused', async () => {
   const p = item({ 'foo-story.md': STORY });
-  const outside = mkdtempSync(join(tmpdir(), 'burhan-pr-out-'));
+  const outside = tmpDir('burhan-pr-out-');
   mkdirSync(join(outside, 'x'));
   writeFileSync(join(outside, 'x/x-story.md'), '# secret\n');
   symlinkSync(join(outside, 'x'), join(p, 'AI_SPEC/docs/x'));

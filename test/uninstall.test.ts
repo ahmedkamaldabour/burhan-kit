@@ -1,8 +1,7 @@
-import { test, after } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, symlinkSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { chmodSync, existsSync, mkdirSync, symlinkSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { runCli } from '../src/main.js';
@@ -11,14 +10,12 @@ import { applySetup, planSetup } from '../src/lib/setup/engine.js';
 import type { SetupAnswers } from '../src/lib/setup/answers.js';
 import { applyBlock, removeBlock } from '../src/lib/bootstrap.js';
 import { removeHooks, type Settings } from '../src/lib/hooks-merge.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 
-const home = mkdtempSync(join(tmpdir(), 'burhan-un-home-'));
-after(() => rmSync(home, { recursive: true, force: true }));
+const home = tmpDir('burhan-un-home-');
 
 function fresh(): string {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-un-'));
-  after(() => rmSync(d, { recursive: true, force: true }));
+  const d = tmpDir('burhan-un-');
   spawnSync('git', ['init', '-q'], { cwd: d });
   return d;
 }
@@ -230,7 +227,7 @@ test('removeHooks: nothing else left → null; other keys left → object withou
 });
 
 // ---- review findings (sub-unit 7)
-const outside = (): string => { const d = mkdtempSync(join(tmpdir(), 'burhan-un-out-')); after(() => rmSync(d, { recursive: true, force: true })); return d; };
+const outside = (): string => tmpDir('burhan-un-out-');
 const MARKED = '---\nname: victim\n---\n<!-- managed by burhan — run `burhan upgrade` to update -->\nbody\n';
 
 test('I-1a: .claude symlinked outside the project: the outside files and dir are untouched, the skip is reported', async () => {

@@ -44,6 +44,18 @@ check "allowed command -> silent" "$(a "$(t '[]' '[]' '["tool run-one x"]' '[]' 
 P="$(proj)"
 check "regex empty -> silent" "$(a "$(t '[]' '[]' '["tool run-everything"]' '[]' '')")" lacks "FORBIDDEN COMMAND"
 
+echo "  -- C: generated never-run pattern"
+while IFS=$'\t' read -r expected list command; do
+  pattern="$(node --input-type=module -e 'import { neverRunRegex } from "./dist/lib/setup/config-write.js"; console.log(neverRunRegex(process.argv[1].split(";")))' "$list")"
+  P="$(proj "WF_FORBIDDEN_REGEX='$pattern'")"
+  output="$(a "$(t '[]' '[]' "$(jq -cn --arg command "$command" '[$command]')" '[]' '')")"
+  if [ "$expected" = flag ]; then
+    check "generated never-run flags: $command" "$output" has "FORBIDDEN COMMAND"
+  else
+    check "generated never-run passes: $command" "$output" lacks "FORBIDDEN COMMAND"
+  fi
+done < "$T_ROOT/tests/fixtures/never-run-cases.txt"
+
 echo "  -- D: state file over budget"
 P="$(proj)"; mkdir -p "$P/.workflow/local"
 seq 1 81 > "$P/.workflow/local/PROGRESS.md"

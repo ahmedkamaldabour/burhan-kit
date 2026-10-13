@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpDir } from './helpers.js';
 import { spawnSync } from 'node:child_process';
 import { parseConfig, readProjectConfig } from '../src/lib/config.js';
 import { kitDir } from '../src/lib/kit.js';
@@ -20,12 +20,28 @@ function bashValues(file: string, keys: string[]): Record<string, string> {
 }
 
 test('allowed lines parse to exactly what bash sources', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'burhan-cfg-'));
+  const dir = tmpDir('burhan-cfg-');
   const file = join(dir, 'c'); writeFileSync(file, ALLOWED.join('\n') + '\n');
   const { values, problems } = parseConfig(readFileSync(file, 'utf8'));
   assert.deepEqual(problems, []);
   assert.equal(Object.keys(values).length, ALLOWED.length);
   assert.deepEqual(values, bashValues(file, Object.keys(values)));
+});
+
+test('single-quoted config values keep dollar signs and backslashes literal (AC-17)', () => {
+  const { values, problems } = parseConfig("WF_CODE_REGEX='\\.(ts|tsx)$'\nWF_EVIDENCE_REGEX='\\$HOME\\\\bin'\n");
+  assert.deepEqual(problems, []);
+  assert.equal(values.WF_CODE_REGEX, '\\.(ts|tsx)$');
+  assert.equal(values.WF_EVIDENCE_REGEX, '\\$HOME\\\\bin');
+});
+
+test('single-quoted values keep backticks literal; double-quoted values refuse $ ` \\ (AC-17, header grammar)', () => {
+  const ok = parseConfig("WF_CHECK_CMD='echo `date`'\n");
+  assert.deepEqual(ok.problems, []);
+  assert.equal(ok.values.WF_CHECK_CMD, 'echo `date`');
+  for (const bad of ['WF_CHECK_CMD="echo `date`"', 'WF_CHECK_CMD="a$b"', 'WF_CHECK_CMD="a\\b"']) {
+    assert.equal(parseConfig(bad + '\n').problems.length, 1, bad);
+  }
 });
 
 test('the shipped config example is fully literal and agrees with bash', () => {
@@ -51,7 +67,7 @@ test('CRLF lines are reported (bash would keep the \\r in the value)', () => {
 });
 
 test('local config overrides the team config key by key', () => {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-proj-'));
+  const p = tmpDir('burhan-proj-');
   mkdirSync(join(p, '.workflow/local'), { recursive: true });
   writeFileSync(join(p, '.workflow/workflow.config'), 'WF_CHECK_CMD="team"\nWF_SKILLS=none\n');
   writeFileSync(join(p, '.workflow/local/workflow.config'), 'WF_CHECK_CMD="mine"\n');
@@ -59,6 +75,6 @@ test('local config overrides the team config key by key', () => {
 });
 
 test('missing config files -> empty values, no problems', () => {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-proj-'));
+  const p = tmpDir('burhan-proj-');
   assert.deepEqual(readProjectConfig(p), { values: {}, problems: [] });
 });

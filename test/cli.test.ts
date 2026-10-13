@@ -4,8 +4,8 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { runCli } from '../src/main.js';
 import { packageRoot, kitDir } from '../src/lib/kit.js';
-import { capture } from './helpers.js';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { capture, tmpDir } from './helpers.js';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { parseConfig } from '../src/lib/config.js';
 import { runWizard } from '../src/lib/setup/wizard.js';
@@ -21,6 +21,7 @@ test('--help prints usage and exits 0; no command exits 2', async () => {
   const a = capture();
   assert.equal(await runCli(['--help'], a.io), 0);
   assert.match(a.o.out, /usage: burhan <command>/);
+  assert.match(a.o.out, /never-run-regex=/, 'every --set key is in the usage');
   const b = capture();
   assert.equal(await runCli([], b.io), 2);
   assert.match(b.o.out, /usage: burhan <command>/);
@@ -56,7 +57,7 @@ test('setup --stack prints the first-use block; setup --set saves the check end 
   const a = capture();
   assert.equal(await runCli(['setup', '--stack'], a.io), 0);
   assert.match(a.o.out, /first-use setup/);
-  const t = mkdtempSync(join(tmpdir(), 'burhan-cli-set-'));
+  const t = tmpDir('burhan-cli-set-');
   spawnSync('git', ['init', '-q'], { cwd: t });
   await runWizard(t, capture(t).io, scriptedPrompter(['use', 'apply']), 'en', t);
   const b = capture(t);
@@ -64,10 +65,51 @@ test('setup --stack prints the first-use block; setup --set saves the check end 
   assert.equal(parseConfig(readFileSync(join(t, '.workflow/workflow.config'), 'utf8')).values.WF_CHECK_CMD, 'true');
 });
 
+test('setup allowed flag forms still dispatch normally (AC-05)', async () => {
+  const answersTarget = tmpDir('burhan-cli-answers-');
+  spawnSync('git', ['init', '-q'], { cwd: answersTarget });
+  const answers = join(answersTarget, 'answers.json');
+  writeFileSync(answers, JSON.stringify({ agents: 'claude', mode: 'step', docs: 'private' }));
+  assert.equal(await runCli(['setup', answersTarget, '--answers', answers, '--apply'], capture(answersTarget).io), 0);
+
+  const setTarget = tmpDir('burhan-cli-set-allowed-');
+  spawnSync('git', ['init', '-q'], { cwd: setTarget });
+  await runWizard(setTarget, capture(setTarget).io, scriptedPrompter(['use', 'apply']), 'en', setTarget);
+  assert.equal(await runCli(['setup', setTarget, '--set', 'check=true'], capture(setTarget).io), 0);
+
+  assert.equal(await runCli(['setup', '--stack'], capture().io), 0);
+  assert.equal(await runCli(['setup', '--agent'], capture().io), 0);
+});
+
 test('an error inside an async setup command is a plain "burhan: …" message with exit 2, not a stack trace (review I-1)', async () => {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-cli-noinst-'));
+  const d = tmpDir('burhan-cli-noinst-');
   spawnSync('git', ['init', '-q', d]);
   const { o, io } = capture(d);
   assert.equal(await runCli(['setup', d, '--set', 'check=true'], io), 2);
   assert.match(o.err, /^burhan: burhan is not installed/);
 });
+
+const CLASHING_SETUP_FLAGS: [string, string, string[]][] = [
+  ['--agent', '--answers', ['--agent', '--answers', 'answers.json']],
+  ['--agent', '--apply', ['--agent', '--apply']],
+  ['--agent', '--set', ['--agent', '--set', 'check=true']],
+  ['--agent', '--stack', ['--agent', '--stack']],
+  ['--stack', '--set', ['--stack', '--set', 'check=true']],
+  ['--stack', '--answers', ['--stack', '--answers', 'answers.json']],
+];
+
+for (const lang of ['en', 'ar'] as const) {
+  for (const [first, second, flags] of CLASHING_SETUP_FLAGS) {
+    test(`setup rejects ${first} with ${second} in ${lang} before writing (AC-05, AC-06)`, async () => {
+      const target = tmpDir('burhan-cli-clash-');
+      const before = readdirSync(target);
+      const { o, io } = capture(target);
+
+      assert.equal(await runCli(['setup', target, '--lang', lang, ...flags], io), 2);
+      assert.match(o.err, new RegExp(first.replace('-', '\\-')));
+      assert.match(o.err, new RegExp(second.replace('-', '\\-')));
+      if (lang === 'ar') assert.match(o.err, /[\u0600-\u06ff]/);
+      assert.deepEqual(readdirSync(target), before);
+    });
+  }
+}

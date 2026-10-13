@@ -1,0 +1,14 @@
+flag	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	npx jest
+flag	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	npx jest --coverage
+flag	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	cd x && npx jest
+flag	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	a; npm test
+flag	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	npm test -- --watch
+flag	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	npm run lint
+flag	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	x | npx eslint .
+pass	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	NODE_OPTIONS=--max-old-space-size=3072 npx jest src/a.spec.ts --runInBand
+pass	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	NODE_OPTIONS=--max-old-space-size=3072 npx eslint "src/**/*.ts"
+pass	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	printf 'npx jest' | grep x
+pass	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	echo "npm test"
+pass	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	npm run lint:fix
+pass	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	npm testing
+pass	npx jest;npm test;npm run test:cov;npx eslint;npm run lint	npx jester

@@ -28,7 +28,7 @@ async function ask(p: Prompter, a: SetupAnswers, lang: Lang): Promise<SetupAnswe
     if (path === CANCEL) return CANCEL;
     docs = { kind: 'custom', path };
   } else docs = { kind: kind === 'shared' ? 'shared' : 'private' };
-  return { ...a, agents: (ag === 'both' ? ['claude', 'codex'] : [ag]) as Agent[], mode: mode as 'step' | 'auto', docs, lang };
+  return { ...a, agents: (ag === 'both' ? ['claude', 'codex'] : [ag]) as Agent[], mode: mode as 'step' | 'auto', docs, lang, existingHooks: undefined };
 }
 
 /** AC-01–03, 04, 06: what you get → recommended or choose → summary → apply / change / cancel. Cancel anywhere writes nothing and exits 0. */
@@ -54,8 +54,25 @@ export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' 
       if (r === CANCEL) return cancelled();
       a = r;
     }
+    if (a.legacyShared && a.docs.kind === 'shared' && a.moveDocs === undefined) {
+      const moveDocs = await p.select(w.moveDocs.ask, [
+        { value: 'keep', label: w.moveDocs.keep },
+        { value: 'move', label: w.moveDocs.move },
+      ], 'keep');
+      if (moveDocs === CANCEL) return cancelled();
+      a = { ...a, moveDocs: moveDocs as 'keep' | 'move' };
+    }
     const plan = planSetup(target, a, home);
     p.note(renderSummary(plan, lang));
+    if (plan.existingHooks.length) {
+      const choice = await p.select(w.existingHooks.ask, [
+        { value: 'keep', label: w.existingHooks.keep },
+        { value: 'remove-mine', label: w.existingHooks.removeMine },
+      ], a.existingHooks ?? 'keep');
+      if (choice === CANCEL) return cancelled();
+      a = { ...a, existingHooks: choice as 'keep' | 'remove-mine' };
+      if (choice === 'remove-mine') p.note(m.existingHooks(plan.existingHooks, choice).join('\n'));
+    }
     const next = await p.select(w.applyOrChange, [{ value: 'apply', label: w.apply }, { value: 'change', label: w.change }, { value: 'cancel', label: w.cancel }], 'apply');
     if (next === CANCEL || next === 'cancel') return cancelled();
     if (next === 'change') { asking = true; continue; }

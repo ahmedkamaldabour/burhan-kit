@@ -1,13 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runCli } from '../src/main.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 
 function project(): string {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-st-'));
+  const p = tmpDir('burhan-st-');
   mkdirSync(join(p, '.workflow'), { recursive: true });
   writeFileSync(join(p, '.workflow/workflow.config'), 'WF_DOCS_DIR="work"\n');
   mkdirSync(join(p, 'work/foo'), { recursive: true });
@@ -42,7 +41,7 @@ test('a hand-written index is never overwritten without --force (and --force kee
 });
 
 test('no docs directory -> says so, exit 0', async () => {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-st-')); const { o, io } = capture(p);
+  const p = tmpDir('burhan-st-'); const { o, io } = capture(p);
   assert.equal(await runCli(['status', '--write'], io), 0);
   assert.match(o.out, /no work items/);
 });

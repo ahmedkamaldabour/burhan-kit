@@ -1,23 +1,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { runCli } from '../src/main.js';
 import { scriptedPrompter } from '../src/lib/setup/prompter.js';
 import { runWizard } from '../src/lib/setup/wizard.js';
 import { currentAnswers, recommended, type SetupAnswers } from '../src/lib/setup/engine.js';
-import { QUESTIONS } from '../src/lib/setup/messages.js';
-import { capture } from './helpers.js';
+import { messages, QUESTIONS } from '../src/lib/setup/messages.js';
+import { capture, tmpDir } from './helpers.js';
 
-const home = mkdtempSync(join(tmpdir(), 'burhan-agent-home-'));
+const home = tmpDir('burhan-agent-home-');
 process.env.HOME = home;
-const work = mkdtempSync(join(tmpdir(), 'burhan-agent-work-'));
+const work = tmpDir('burhan-agent-work-');
 
 const repo = (): string => {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-agent-'));
+  const d = tmpDir('burhan-agent-');
   spawnSync('git', ['init', '-q'], { cwd: d });
   writeFileSync(join(d, 'CLAUDE.md'), '# My project\n\nUser text that must survive.\n');
   writeFileSync(join(d, 'README.md'), 'hello\n');
@@ -88,6 +87,77 @@ for (const s of SETS) {
   });
 }
 
+const printableAnswers = (lang: 'en' | 'ar'): Record<'agents' | 'mode' | 'docs', string>[] => {
+  const printedChoices = Object.fromEntries(QUESTIONS[lang].map((q) => [q.id, q.options.map((o) => o.value)])) as Record<'agents' | 'mode' | 'docs', string[]>;
+  return printedChoices.agents.flatMap((agents) =>
+    printedChoices.mode.flatMap((mode) =>
+      printedChoices.docs.filter((docs) => docs !== 'custom').map((docs) => ({ agents, mode, docs }))));
+};
+
+for (const lang of ['en', 'ar'] as const) {
+  for (const choice of printableAnswers(lang)) {
+    test(`${lang} printed choices are accepted and match the wizard: ${choice.agents}/${choice.mode}/${choice.docs} (AC-11)`, async () => {
+      const A = repo(); const B = repo();
+      const { io: wizardIo } = capture(A);
+      assert.equal(await runWizard(A, wizardIo, scriptedPrompter(['choose', ...QUESTIONS[lang].map((q) => choice[q.id]), 'apply']), lang, home), 0);
+      const { o, io } = capture(B);
+      assert.equal(await runCli(['setup', B, '--lang', lang, '--answers', answersFile(choice), '--apply'], io), 0, o.err);
+      assert.deepEqual(currentAnswers(B), currentAnswers(A));
+    });
+  }
+}
+
+test('a bare printed docs custom value asks for the custom object shape (AC-11)', async () => {
+  const t = repo(); const before = hash(t); const { o, io } = capture(t);
+  assert.equal(await runCli(['setup', t, '--answers', answersFile({ agents: 'claude', mode: 'step', docs: 'custom' }), '--apply'], io), 2);
+  assert.match(o.err, /\{"kind":"custom","path":/);
+  assert.equal(hash(t), before);
+});
+
+for (const lang of ['en', 'ar'] as const) {
+  test(`${lang} answers validation messages name every accepted scalar form (review I-2)`, () => {
+    assert.match(messages(lang).agent.badAgents, /"claude".*"codex".*"both"/);
+    assert.match(messages(lang).agent.badDocs, /"private".*"shared"/);
+    assert.match(messages(lang).agent.badDocs, /\{"kind":"custom","path":/);
+  });
+}
+
+test('the existing arrays and docs-kind answers shape remains accepted (AC-11)', async () => {
+  const A = repo(); const B = repo();
+  const answers = { agents: ['codex'], mode: 'auto', docs: { kind: 'custom', path: 'notes/work' } };
+  const { io: wizardIo } = capture(A);
+  assert.equal(await runWizard(A, wizardIo, scriptedPrompter(['choose', 'codex', 'auto', 'custom', 'notes/work', 'apply']), 'en', home), 0);
+  const { o, io } = capture(B);
+  assert.equal(await runCli(['setup', B, '--answers', answersFile(answers), '--apply'], io), 0, o.err);
+  assert.deepEqual(currentAnswers(B), currentAnswers(A));
+});
+
+test('an agents list containing the printed "both" value is accepted as claude and codex (AC-14)', async () => {
+  const t = repo(); const { o, io } = capture(t);
+  const answer = { agents: ['both'], mode: 'step', docs: 'private' };
+  assert.equal(await runCli(['setup', t, '--answers', answersFile(answer), '--apply'], io), 0, o.err);
+  assert.deepEqual(currentAnswers(t)?.agents, ['claude', 'codex']);
+});
+
+for (const lang of ['en', 'ar'] as const) {
+  for (const [where, field, answers] of [
+    ['top level', 'extra', { ...SETS[0].a, extra: true }],
+    ['docs', 'extra', { ...SETS[0].a, docs: { kind: 'private', extra: true } }],
+    ['top level', '__proto__', '{"agents":"claude","mode":"step","docs":"private","__proto__":true}'],
+    ['docs', '__proto__', '{"agents":"claude","mode":"step","docs":{"kind":"private","__proto__":true}}'],
+    ['top level', 'constructor', '{"agents":"claude","mode":"step","docs":"private","constructor":true}'],
+    ['docs', 'constructor', '{"agents":"claude","mode":"step","docs":{"kind":"private","constructor":true}}'],
+  ] as const) {
+    test(`unknown ${where} ${field} field is rejected in ${lang} before writing (AC-04, AC-06)`, async () => {
+      const t = repo(); const before = hash(t); const { o, io } = capture(t);
+      assert.equal(await runCli(['setup', t, '--lang', lang, '--answers', answersFile(answers), '--apply'], io), 2);
+      assert.match(o.err, new RegExp(field));
+      if (lang === 'ar') assert.match(o.err, /[\u0600-\u06ff]/);
+      assert.equal(hash(t), before);
+    });
+  }
+}
+
 test('--answers without --apply writes nothing and prints the summary (AC-09)', async () => {
   const t = repo(); const before = hash(t); const { o, io } = capture(t);
   assert.equal(await runCli(['setup', t, '--answers', answersFile(SETS[0].a)], io), 0, o.err);
@@ -133,7 +203,7 @@ test('installed project: "recommended" is the current answers (AC-17)', async ()
 });
 
 test('--answers reads only a regular file of at most 1 MB: no device, no huge file (review M-1: /dev/zero ran the machine out of memory)', async () => {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-agent-size-'));
+  const d = tmpDir('burhan-agent-size-');
   spawnSync('git', ['init', '-q', d]);
   const big = join(d, 'big.json'); writeFileSync(big, ' '.repeat(2 * 1024 * 1024) + '{}');
   for (const [file, re] of [['/dev/null', /regular file/], [big, /too large|1 MB/]] as [string, RegExp][]) {

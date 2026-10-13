@@ -43,7 +43,7 @@
 | `burhan setup [dir] --agent [--lang en\|ar]` | Prints the questions and rules for an AI agent to ask, with the recommended answers |
 | `burhan setup [dir] --answers <file> [--apply]` | Shows, or with `--apply` writes, the setup for the answers in a JSON file |
 | `burhan setup [dir] --stack` | Prints the first-use instructions for an AI agent  |
-| `burhan setup [dir] --set check=<cmd\|none> [never-run=<a;b>] [sensitive=<p;q>] [--force]` | Sets the check, the never-run commands and the sensitive paths directly |
+| `burhan setup [dir] --set check=<cmd\|none> [never-run=<a;b> \| never-run-regex='<ERE>'] [sensitive=<p;q>] [--force]` | Sets the check, the never-run commands and the sensitive paths directly. `never-run` takes plain commands and matches them only at a command start; `never-run-regex` stores your own POSIX ERE after checking it compiles (not both at once) |
 | `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.workflow/local/` and the work files in `.burhan/`; `--all` removes them too (a work-files folder outside `.burhan/` is always kept). Validates everything before the first change, never follows a symlink out of the project, and touches only files carrying burhan's mark |
 | `burhan upgrade [--apply]` | Refresh kit-owned files; agents default to the installed ones; idempotent. Never rewrites `workflow.config` — `doctor` lists keys a newer version added |
 | `burhan doctor` | Read-only: bash ≥ 4, `jq` ≥ 1.6 (an older jq cannot compile the hooks' filters), a sha256 tool, `timeout`; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust (read from `~/.codex/config.toml`, never written); the state file's size. `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
@@ -56,7 +56,7 @@
 ## `workflow.config`
 
 `.workflow/workflow.config` holds literal `KEY=value` lines (`KEY=word`, `KEY='text'`, or `KEY="text"`
-without `$` `` ` `` `\`); `init`/`upgrade` and `doctor` report any other line. Regexes are POSIX
+without `$` `` ` `` `\`). Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote. `init`/`upgrade` and `doctor` report any other line. Regexes are POSIX
 extended (`grep -E`). Every check whose key is empty stays silent. `.workflow/local/workflow.config`
 holds personal overrides, read after the team file, key by key.
 
@@ -80,6 +80,15 @@ holds personal overrides, read after the team file, key by key.
 
 [`kit/workflow.config.example`](../kit/workflow.config.example) documents each key with examples for
 several stacks.
+
+## New sessions and never-run commands
+
+After setup, start a new agent session in the project directory. Do the same after switching to a
+worktree or when setup changes hooks during a session, so the new session reads the project hooks.
+
+To block a never-run command today, use your agent's own deny rules: Claude Code permissions deny
+rules, or Codex execpolicy deny rules. Configure the command pattern there; burhan only reports
+never-run commands. Its own blocking mode is planned for 0.3.
 
 ## Hooks
 

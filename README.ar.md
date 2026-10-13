@@ -4,7 +4,9 @@
 
 # برهان (burhan)
 
-## مفيش "خلصت" من غير دليل.
+## طريقة شغل للـ AI coding agents: plan الأول، وbuild على خطوات متراجعة، ودليل على كل "خلصت".
+
+### مفيش "خلصت" من غير دليل.
 
 طبقة حوكمة لوكلاء البرمجة بالذكاء الاصطناعي (Claude Code و Codex): اتفاق شغل، ومعاه hooks بتراجع
 الـ agent عليه في كل رد (turn).
@@ -114,6 +116,8 @@ npx burhan-kit doctor                                       # read-only health c
 
 - الـ agent بيقرا إعدادات الـ build والـ test والـ lint عندك من غير ما يغيّر حاجة.
 - بيقترح كل قيمة ومعاها دليلها (file:line)، ومش بيسألك غير أسئلة البيزنس.
+- لو لقى الـ hooks الموجودة في المشروع، بيعرضهم و هتتسأل: نخلي الاتنين ولا تشيل بتوعك. burhan عمره ما بيعدّلهم.
+- مع **Shared in git**، ملفات الشغل بتكون في `docs/burhan/`.
 - بعد ما توافق على الـ diff: بيكتب الإعدادات، ويشغّل الـ check مرة، ويشغّل `burhan doctor`.
 - لو بإيدك: أقل حاجة `WF_CODE_REGEX` و `WF_EVIDENCE_REGEX` في `.workflow/workflow.config`.
 
@@ -178,6 +182,18 @@ flowchart LR
 - عايز الخطة بس؟ قول كده: الشغلانة بتقف بعد موافقتك على الـ plan، وتتقفل على `Plan ready`.
 
 </details>
+
+## الشغلانة بتمشي إزاي؟
+
+ده بيكمّل [مسار الشغل](#مسار-الشغل). كل شغلانة ليها فولدر فيه الـ story والـ plan والـ reviews.
+الـ plan بيقسّمها لـ sub-units (يعني parts). مثلاً feature في الـ setup ممكن تتقسم: الـ wizard،
+الـ uninstall، والنصوص العربي.
+
+كل sub-unit: test بيفشل الأول → code → reviewer agent منفصل يراجعها في fresh context. الحالة بتمشي:
+⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed.
+
+تابع التقدم من ملف الـ plan، أو `.workflow/local/PROGRESS.md`، أو `burhan status`. لو المسار فيه بوابة Q،
+agent جديد بيعمل QC بعد الـ verification. وكل المسارات بتقف عند commit checkpoint قبل أي commit.
 
 ## هتاخد إيه
 

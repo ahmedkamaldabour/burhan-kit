@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.2.1
+
+### Setup
+- `setup` now rejects unknown answer-file fields and incompatible option combinations before writing,
+  and accepts the choices it presents, including the combined-agent choice.
+- Existing project hooks are listed before approval and can be kept alongside burhan's hooks; burhan
+  never removes them. Setup also identifies settings files that resolve outside the project.
+- New shared installs put work and discovery files in `docs/burhan/`. Existing shared installs are
+  asked first whether to keep their current folder or move to `docs/burhan/`; nothing moves automatically.
+- Setup and `doctor` warn when expected committed files are ignored, and setup supplies an access-control
+  reminder when a sensitive-path rule has no note.
+- Setup guidance now limits agent edits to the project configuration after showing a diff and receiving
+  approval, and preserves literal `$` and `\\` characters in quoted configuration values.
+- After setup, the summary reminds you to start a new agent session in the project directory.
+
+### Never-run commands
+- Never-run command matching now recognises whole commands only at a shell-command start, and custom
+  patterns are checked before they are saved.
+- Never-run commands are still reported, not blocked. Use your agent's deny rules to block them today;
+  burhan blocking is planned for 0.3.
+
+### Docs
+- The English and Arabic READMEs now explain the work-item flow: story, plan, reviewed sub-units,
+  progress states, progress tracking and final QC.
+- Configuration guidance covers new sessions, worktrees and how to block a never-run command with an
+  agent's own deny rules.
+
+### Tests (development)
+- Node test temporary folders are cleaned up on success and failure.
+- Node tests now choose a RAM-aware parallelism level, print it, and allow an explicit override.
+
 ## 0.2.0
 
 ### Package and CLI

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpDir } from '../helpers.js';
 import { parseEvent, relPath, stateNow, itemNow, itemBlock, itemField, itemRoute } from '../../src/hooks/core/lib.mjs';
 
 // The Node side of tests/core/lib.test.sh (bash-internal), plus what the port adds (Windows paths).
@@ -50,7 +50,7 @@ test('relPath on Windows: backslashes and drive-letter case (W3)', () => {
 });
 
 function project(state: string | null, file = '.workflow/local/PROGRESS.md'): string {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-lib-'));
+  const p = tmpDir('burhan-lib-');
   mkdirSync(join(p, '.workflow/local'), { recursive: true });
   if (state !== null) { mkdirSync(join(p, file, '..'), { recursive: true }); writeFileSync(join(p, file), state); }
   return p;

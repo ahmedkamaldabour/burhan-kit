@@ -1,7 +1,9 @@
 import type { PlannedFile } from '../install.js';
+import { lstatSync, realpathSync } from 'node:fs';
+import { join, sep } from 'node:path';
 import { parseConfig } from '../config.js';
 import { messages, type Messages } from './messages.js';
-import type { SetupPlan } from './engine.js';
+import { ignoredCommittedSetupFiles, type SetupPlan } from './engine.js';
 
 const AGENT_OF: Record<string, string> = { 'CLAUDE.md': 'claude', 'AGENTS.md': 'codex', '.claude/settings.json': 'claude', '.codex/hooks.json': 'codex' };
 
@@ -31,6 +33,22 @@ function collapse(files: PlannedFile[]): PlannedFile[] {
   return out;
 }
 
+/** AC-21: disclose a settings symlink only when its resolved file escapes the project. */
+function outsideSettings(target: string): { rel: string; real: string }[] {
+  let root: string;
+  try { root = realpathSync(target); } catch { return []; }
+  const out: { rel: string; real: string }[] = [];
+  for (const rel of ['.claude/settings.json', '.codex/hooks.json']) {
+    const file = join(root, rel);
+    try {
+      if (!lstatSync(file).isSymbolicLink()) continue;
+      const real = realpathSync(file);
+      if (real !== root && !real.startsWith(root + sep)) out.push({ rel, real });
+    } catch { /* absent or dangling links are handled by the normal install validation */ }
+  }
+  return out;
+}
+
 /** AC-06 / AC-03a / AC-05 / AC-18: what will change, the editable defaults, how to change or undo. Prints no setting names. */
 export function renderSummary(p: SetupPlan, lang: 'en' | 'ar'): string {
   const m = messages(lang);
@@ -54,8 +72,14 @@ export function renderSummary(p: SetupPlan, lang: 'en' | 'ar'): string {
     `  ${m.models}`,
     `  ${m.skills(p.skills)}`,
     `  ${m.branches}`,
-    `  ${m.check(cfg.WF_STACK_SETUP === 'pending', cfg.WF_CHECK_CMD || 'none')}`,
-    '', m.changeUndo, m.nothingCommitted);
+    `  ${m.check(cfg.WF_STACK_SETUP === 'pending', cfg.WF_CHECK_CMD || 'none')}`);
+  if (p.existingHooks.length) out.push('', ...m.existingHooks(p.existingHooks, p.answers.existingHooks ?? 'keep'));
+  const ignored = ignoredCommittedSetupFiles(p.install.target, p.files);
+  if (ignored.length) out.push('', ...m.ignoredCommittedFiles(ignored));
+  const outside = outsideSettings(p.install.target);
+  if (outside.length) out.push('', ...m.outsideSettings(outside));
+  out.push('', m.changeUndo, m.nothingCommitted);
   if (p.answers.agents.includes('codex')) out.push('', m.codexTrust);
+  out.push('', m.newAgentSession(p.install.target));
   return out.join('\n') + '\n';
 }

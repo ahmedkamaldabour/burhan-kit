@@ -1,15 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ereToJs, evidenceRoot, projectKey, readLedger, summarizeLedger } from '../src/lib/evidence.js';
 import { kitDir } from '../src/lib/kit.js';
 import { runCli } from '../src/main.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 
-const tmp = (p: string) => mkdtempSync(join(tmpdir(), p));
+const tmp = (p: string) => tmpDir(p);
 
 /** Run the real bash turn-audit hook on a turn, so the CLI is tested against what the hook writes. */
 function audit(project: string, evdir: string, session: string, turn: string, steps: unknown[]): void {

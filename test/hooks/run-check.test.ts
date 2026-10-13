@@ -1,12 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpDir } from '../helpers.js';
 import { runCheck, checkShell } from '../../src/hooks/core/run-check.mjs';
 
 const posix = process.platform !== 'win32';
-const dir = () => mkdtempSync(join(tmpdir(), 'burhan-run-'));
+const dir = () => tmpDir('burhan-run-');
 const secs = (t0: bigint) => Number(process.hrtime.bigint() - t0) / 1e9;
 
 test('pass: exit 0', async () => {

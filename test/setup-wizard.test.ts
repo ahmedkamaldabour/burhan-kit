@@ -1,8 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { PassThrough } from 'node:stream';
@@ -10,10 +9,10 @@ import { parseConfig } from '../src/lib/config.js';
 import { CANCEL, numberedPrompter, scriptedPrompter, withFallback, type Prompter } from '../src/lib/setup/prompter.js';
 import { runWizard } from '../src/lib/setup/wizard.js';
 import { docsPathError } from '../src/lib/setup/engine.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 
-const home = mkdtempSync(join(tmpdir(), 'burhan-wiz-home-'));
-const fresh = (): string => { const d = mkdtempSync(join(tmpdir(), 'burhan-wiz-')); spawnSync('git', ['init', '-q'], { cwd: d }); return d; };
+const home = tmpDir('burhan-wiz-home-');
+const fresh = (): string => { const d = tmpDir('burhan-wiz-'); spawnSync('git', ['init', '-q'], { cwd: d }); return d; };
 function tree(dir: string, base = dir, out: Record<string, string> = {}): Record<string, string> {
   for (const e of readdirSync(dir)) {
     if (e === '.git') continue;
@@ -51,7 +50,7 @@ test('choose myself asks exactly three questions, then the summary choice (AC-04
   assert.equal(await runWizard(t, io, p, 'en', home), 0);
   assert.equal(p.asked.length, 5); // use/choose + 3 questions + apply
   assert.equal(cfg(t).WF_MODE_DEFAULT, 'auto');
-  assert.equal(cfg(t).WF_DOCS_DIR, 'AI_SPEC/docs');
+  assert.equal(cfg(t).WF_DOCS_DIR, 'docs/burhan/work');
 });
 
 test('"change something" goes back to the questions, prefilled', async () => {
@@ -122,6 +121,6 @@ test('an installed project opens prefilled (AC-17)', async () => {
   const p = scriptedPrompter(['use', 'apply']);
   await runWizard(t, io, p, 'en', home);
   assert.match(p.shown.join('\n'), /Current settings of this project/);
-  assert.match(p.shown.join('\n'), /AI_SPEC\/docs/);
+  assert.match(p.shown.join('\n'), /docs\/burhan\/work/);
   assert.equal(cfg(t).WF_MODE_DEFAULT, 'auto'); // "use these" kept the installed values
 });

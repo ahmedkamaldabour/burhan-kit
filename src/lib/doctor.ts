@@ -7,6 +7,7 @@ import { isManagedCommand } from './commands.js';
 import { LOCAL_CONFIG, parseConfig, TEAM_CONFIG, type ParsedConfig } from './config.js';
 import { realTarget } from './fs-safe.js';
 import { kitDir, readVersion } from './kit.js';
+import { ignoredCommittedSetupFiles } from './setup/engine.js';
 
 /** `burhan doctor`: read-only health checks of an install. It never writes — not the project, not the
  *  agents' settings, not the user's global files (Codex hook trust is only read). */
@@ -160,6 +161,7 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
   }
   const ev = cfg.values.WF_EVIDENCE_DIR;
   if (ev && !isAbsolute(ev)) add('warn', `WF_EVIDENCE_DIR "${ev}" is not an absolute literal path — it is ignored and the default ledger is used`);
+  if (cfg.values.WF_SENSITIVE_REGEX && !cfg.values.WF_SENSITIVE_NOTE) add('warn', 'WF_SENSITIVE_REGEX is set but WF_SENSITIVE_NOTE is empty — add the access-control reminder');
 
   // ---- per agent (only adapters init installed)
   for (const agent of ['claude', 'codex'] as const) {
@@ -208,6 +210,9 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
       }
     }
   }
+
+  const ignoredCommitted = ignoredCommittedSetupFiles(target);
+  if (ignoredCommitted.length) add('warn', `git ignores setup files. Add these exact lines to .gitignore; burhan did not edit it:\n${ignoredCommitted.join('\n')}`);
 
   // ---- state
   const gi = join(W, '.gitignore');

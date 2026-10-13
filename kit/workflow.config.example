@@ -1,7 +1,7 @@
 # workflow.config — the machine-readable twin of .workflow/bindings.md (WORKFLOW.md §1).
 # TEAM file: committed, changed through review. Personal overrides go in
 # .workflow/local/workflow.config (git-ignored) — same format, read after this file, key by key.
-# Literal `KEY=value` lines only: KEY=word, KEY='text' or KEY="text" (no $ ` \ inside).
+# Literal `KEY=value` lines only: KEY=word, KEY='text' or KEY="text" (no $ ` \ inside double quotes). Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote.
 # Every check whose key is left empty stays silent.
 # Lines marked "e.g." are examples for different stacks — pick or write your own.
 

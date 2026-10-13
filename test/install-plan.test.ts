@@ -1,14 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { install, planInstall, applyPlan } from '../src/lib/install.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 
 function freshRepo(): string {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-plan-'));
+  const d = tmpDir('burhan-plan-');
   spawnSync('git', ['init', '-q'], { cwd: d });
   return d;
 }
@@ -59,7 +58,7 @@ test('applyPlan(planInstall) produces the same tree as install --apply', () => {
 });
 
 test('keepProjectFiles: the plan never creates workflow.config or bindings.md (setup writes them itself)', () => {
-  const t = mkdtempSync(join(tmpdir(), 'burhan-keep-'));
+  const t = tmpDir('burhan-keep-');
   spawnSync('git', ['init', '-q', t]);
   const p = planInstall({ mode: 'init', target: t, agents: ['claude'], apply: true, bootstrap: true, keepProjectFiles: true });
   applyPlan(p);

@@ -1,8 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parseConfig } from '../src/lib/config.js';
@@ -11,12 +10,13 @@ import { applySetup, planSetup, recommended, currentAnswers } from '../src/lib/s
 import type { SetupAnswers } from '../src/lib/setup/answers.js';
 import { renderSummary } from '../src/lib/setup/summary.js';
 import { QUESTIONS, messages } from '../src/lib/setup/messages.js';
+import { tmpDir } from './helpers.js';
 
-const home = mkdtempSync(join(tmpdir(), 'burhan-setup-home-'));
+const home = tmpDir('burhan-setup-home-');
 const good: Probe = { bashMajor: () => 5, has: () => true, jqVersion: () => 'jq-1.8.1', claudeVersion: () => '2.1.296', home: () => home };
 
 function fresh(): string {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-setup-'));
+  const d = tmpDir('burhan-setup-');
   spawnSync('git', ['init', '-q'], { cwd: d });
   return d;
 }
@@ -76,7 +76,7 @@ test('applySetup: config, private folder ignore file, healthy doctor', () => {
 test('shared and custom docs choices', () => {
   const s = fresh();
   applySetup(planSetup(s, answers({ docs: { kind: 'shared' }, mode: 'auto' }), home));
-  assert.equal(cfgOf(s).values.WF_DOCS_DIR, 'AI_SPEC/docs');
+  assert.equal(cfgOf(s).values.WF_DOCS_DIR, 'docs/burhan/work');
   assert.equal(cfgOf(s).values.WF_MODE_DEFAULT, 'auto');
   assert.equal(existsSync(join(s, '.burhan')), false);
   const c = fresh();
@@ -137,7 +137,7 @@ test('an existing non-empty skills value is kept; a pending marker is not reset 
 });
 
 test('R-6: superpowers is detected read-only from the home plugins folder', () => {
-  const h = mkdtempSync(join(tmpdir(), 'burhan-home-'));
+  const h = tmpDir('burhan-home-');
   const t = fresh();
   assert.equal(planSetup(t, answers(), h).skills, 'none');
   mkdirSync(join(h, '.claude/plugins/cache/x/superpowers/1.0'), { recursive: true });
@@ -172,6 +172,17 @@ test('summary: codex adds the trust line (AC-18)', () => {
   const p = planSetup(t, answers({ agents: ['claude', 'codex'] }), home);
   assert.match(renderSummary(p, 'en'), /Codex[^\n]*trust/);
   assert.ok(/Codex|كودكس/.test(renderSummary(p, 'ar')));
+});
+
+test('summary ends by asking for a new agent session in the project (AC-20)', () => {
+  const t = fresh();
+  const p = planSetup(t, answers(), home);
+  const en = renderSummary(p, 'en').trimEnd().split('\n').at(-1);
+  assert.equal(en, `Start a new agent session in ${t} for burhan's hooks to take effect.`);
+  const ar = renderSummary(p, 'ar').trimEnd().split('\n').at(-1) ?? '';
+  assert.match(ar, new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(ar, /session.*agent.*hooks|agent.*session.*hooks/i);
+  assert.match(ar, /[\u0600-\u06ff]/);
 });
 
 test('A2: a removal is listed under Removed', () => {

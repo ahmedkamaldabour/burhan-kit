@@ -1,12 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { computeStats, renderStats } from '../src/lib/stats.js';
 import type { ItemFacts } from '../src/lib/facts.js';
 import { runCli } from '../src/main.js';
-import { capture } from './helpers.js';
+import { capture, tmpDir } from './helpers.js';
 
 const f = (o: Partial<ItemFacts> & { slug: string }): ItemFacts =>
   ({ route: 'unknown', qc: null, qcAccepted: false, qcBy: null, reopenedAfterPass: false, escapes: [], phases: [], reviewBy: null, words: { story: null, plan: null, qc: null, verification: null, review: null }, ...o });
@@ -35,7 +34,7 @@ test('renderStats is plain text with every section', () => {
 });
 
 test('CLI: stats --docs on a project without burhan config, and --json', async () => {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-stats-'));
+  const p = tmpDir('burhan-stats-');
   mkdirSync(join(p, 'AI/items/x/reviews'), { recursive: true });
   writeFileSync(join(p, 'AI/items/x/x-story.md'), '- **Type / scope:** change / bounded\n');
   writeFileSync(join(p, 'AI/items/x/reviews/x-qc.md'), '- **Reviewed:** by the implementing agent\n\n**PASS**\n');
@@ -49,7 +48,7 @@ test('CLI: stats --docs on a project without burhan config, and --json', async (
 });
 
 test('CLI: --docs may be absolute inside the project, never outside it', async () => {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-stats-'));
+  const p = tmpDir('burhan-stats-');
   mkdirSync(join(p, 'items/x'), { recursive: true });
   const a = capture();
   assert.equal(await runCli(['stats', p, '--docs', join(p, 'items')], a.io), 0);
@@ -63,7 +62,7 @@ test('CLI: --docs may be absolute inside the project, never outside it', async (
   const e = capture();
   assert.equal(await runCli(['stats', p, '--docs', 'a-file'], e.io), 2, 'a file, not a folder: clear error, no stack trace');
   assert.match(e.o.err, /not a directory/);
-  const outside = mkdtempSync(join(tmpdir(), 'burhan-outside-'));
+  const outside = tmpDir('burhan-outside-');
   symlinkSync(outside, join(p, 'linked'));
   const g = capture();
   assert.equal(await runCli(['status', p, '--docs', 'linked', '--write'], g.io), 2, 'a symlink out of the project is refused');
@@ -71,7 +70,7 @@ test('CLI: --docs may be absolute inside the project, never outside it', async (
 });
 
 test('CLI: no docs directory -> says so, exit 0', async () => {
-  const p = mkdtempSync(join(tmpdir(), 'burhan-stats-'));
+  const p = tmpDir('burhan-stats-');
   const { o, io } = capture(p);
   assert.equal(await runCli(['stats'], io), 0);
   assert.match(o.out, /no work items/);

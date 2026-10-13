@@ -1,16 +1,16 @@
 import { test } from 'node:test';
 import { readFacts } from '../src/lib/facts.js';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { field, listItems, readItem, renderIndex } from '../src/lib/items.js';
 import { kitDir } from '../src/lib/kit.js';
+import { tmpDir } from './helpers.js';
 
 const tpl = (n: string) => readFileSync(join(kitDir(), 'templates', n), 'utf8');
 
 function item(files: Record<string, string>): string {
-  const docs = mkdtempSync(join(tmpdir(), 'burhan-docs-'));
+  const docs = tmpDir('burhan-docs-');
   mkdirSync(join(docs, 'foo/reviews'), { recursive: true });
   for (const [n, t] of Object.entries(files)) writeFileSync(join(docs, 'foo', n), t);
   return docs;
@@ -67,7 +67,7 @@ test('type/scope, parent, depends on come from the story', () => {
 });
 
 test('listItems: directories only, sorted, dot-dirs skipped', () => {
-  const d = mkdtempSync(join(tmpdir(), 'burhan-docs-'));
+  const d = tmpDir('burhan-docs-');
   for (const n of ['b', 'a', '.hidden']) mkdirSync(join(d, n));
   writeFileSync(join(d, 'README.md'), 'x');
   assert.deepEqual(listItems(d, d).map((i) => i.slug), ['a', 'b']);

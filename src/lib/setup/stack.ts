@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { applyPlan, planInstall } from '../install.js';
 import { BurhanError } from '../errors.js';
@@ -10,34 +11,47 @@ import type { Io } from '../../main.js';
 import { assertWritable, neverRunRegex, sensitiveRegex, setConfigKeys } from './config-write.js';
 import { messages, type Lang } from './messages.js';
 
+const DEFAULT_SENSITIVE_NOTE = 'Access-control path: re-read authorization and data scoping; test allowed AND denied cases.';
+
 /** The agent's first-use instructions (AC-13, AC-15): read the project; propose a check, never-run commands, sensitive paths;
  *  show the user ONLY the fixed block; save with `npx burhan-kit setup --set …`; if no check fits, say so and ask (never invent). */
 export function stackInstructions(lang: 'en' | 'ar'): string {
   return messages(lang as Lang).stack.instructions;
 }
 
-export interface StackValues { check: string; neverRun: string[]; sensitive: string[] }
+export interface StackValues { check: string; neverRun: string[]; neverRunRegex?: string; sensitive: string[] }
 
 const list = (s: string): string[] => s.split(';').map((x) => x.trim()).filter(Boolean);
 
 /** R-2: parse `check=<cmd|none> never-run=<a;b> sensitive=<p;q>` args (each arg is KEY=VALUE). */
 export function parseSetArgs(args: string[]): StackValues {
   const out: StackValues = { check: '', neverRun: [], sensitive: [] };
+  let hasNeverRun = false;
+  let hasNeverRunRegex = false;
   for (const a of args) {
     const i = a.indexOf('=');
     if (i <= 0) throw new BurhanError(`"${a}" is not KEY=VALUE — use check=<command|none> never-run=<a;b> sensitive=<p;q>`);
     const key = a.slice(0, i);
     const val = a.slice(i + 1);
     if (key === 'check') out.check = val.trim();
-    else if (key === 'never-run') out.neverRun = list(val);
+    else if (key === 'never-run') { hasNeverRun = true; out.neverRun = list(val); }
+    else if (key === 'never-run-regex') { hasNeverRunRegex = true; out.neverRunRegex = val; }
     else if (key === 'sensitive') out.sensitive = list(val);
-    else throw new BurhanError(`unknown setting "${key}" — the choices are check, never-run and sensitive`);
+    else throw new BurhanError(`unknown setting "${key}" — the choices are check, never-run, never-run-regex and sensitive`);
   }
   if (out.check === '') throw new BurhanError('check=<command|none> is required — say which command checks the work before a commit, or none');
+  if (hasNeverRun && hasNeverRunRegex) throw new BurhanError('never-run cannot be used with never-run-regex');
   return out;
 }
 
 const safeMatch = (re: string, text: string): boolean => { try { return re !== '' && ereTest(re, text); } catch { return false; } };
+
+/** The hooks use grep -E, so test a supplied raw pattern with the same POSIX ERE compiler before writing it. */
+function assertEreCompiles(re: string): void {
+  // Explicit empty input keeps grep from inheriting the caller's stdin (notably a Node test pipe).
+  const result = spawnSync('bash', ['-c', 'grep -E -q -e "$1" <<< ""', '--', re], { encoding: 'utf8' });
+  if (result.status !== 0 && result.status !== 1) throw new BurhanError('never-run-regex is not a valid POSIX ERE');
+}
 
 /** R-8, AC-14: run the check once (unless 'none'), show it, save only when it passes (or --force), mark first-use done,
  *  then regenerate the files that depend on the check. Returns the exit code. */
@@ -52,12 +66,15 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
   const none = v.check === 'none';
   const check = none ? '' : v.check;
   const neverRun = v.neverRun.map((c) => c.trim()).filter(Boolean);
+  const rawNeverRun = v.neverRunRegex;
   const sensitive = v.sensitive.map((c) => c.trim()).filter(Boolean);
   // R-4: every value that reaches the config is checked before anything runs or is written.
   assertWritable('the check command', check);
   neverRun.forEach((c) => assertWritable('a never-run command', c));
   sensitive.forEach((c) => assertWritable('a sensitive path', c));
-  const forbidden = neverRunRegex(neverRun);
+  if (rawNeverRun !== undefined) assertWritable('the never-run regex', rawNeverRun);
+  if (rawNeverRun !== undefined) assertEreCompiles(rawNeverRun);
+  const forbidden = rawNeverRun ?? neverRunRegex(neverRun);
   const sens = sensitiveRegex(sensitive);
   const reason = neverRun.length ? m.reason(neverRun) : '';
   assertWritable('the never-run list', forbidden);
@@ -82,8 +99,14 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
 
   const values: Record<string, string> = { WF_CHECK_CMD: check, WF_STACK_SETUP: 'done' };
   // An empty list keeps what the project already has: "nothing" must not erase the owner's own rules.
-  if (neverRun.length) { values.WF_FORBIDDEN_REGEX = forbidden; values.WF_FORBIDDEN_REASON = reason; }
-  if (sensitive.length) values.WF_SENSITIVE_REGEX = sens;
+  if (neverRun.length || rawNeverRun !== undefined) {
+    values.WF_FORBIDDEN_REGEX = forbidden;
+    if (neverRun.length) values.WF_FORBIDDEN_REASON = reason;
+  }
+  if (sensitive.length) {
+    values.WF_SENSITIVE_REGEX = sens;
+    if ((have.WF_SENSITIVE_NOTE ?? '') === '') values.WF_SENSITIVE_NOTE = DEFAULT_SENSITIVE_NOTE;
+  }
   putFile(configPath, setConfigKeys(text, values));
   // The verify skill carries the check command: regenerate it (and anything else that depends on the config).
   // The bootstrap block only where the project already has it: a --no-bootstrap install stays without one.
