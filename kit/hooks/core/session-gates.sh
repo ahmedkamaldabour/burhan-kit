@@ -7,6 +7,43 @@ wf_init
 
 STATE_LINES_MAX=30
 
+# Resolve Now once: the display, mode and external snapshot must describe the same item without
+# repeatedly reparsing the state file.  Failure remains fail-open, as in the shared lib helpers.
+now="$(wf_state_now | cut -c1-300)"
+slugs="$(printf '%s\n' "$now" | sed -n 's/^###[[:space:]]\{1,\}\([^[:space:]#<][^[:space:]]*\).*/\1/p')"
+slug_count="$(printf '%s\n' "$slugs" | sed '/^$/d' | wc -l | tr -d ' ')"
+linked=""
+link_file="$(wf_link_file 2>/dev/null)" || link_file=""
+if [ -n "$link_file" ] && [ -f "$link_file" ]; then linked="$(sed -n '1p' "$link_file" 2>/dev/null)"; fi
+item=""
+if wf_safe_id "$linked" && printf '%s\n' "$slugs" | grep -qxF -- "$linked"; then
+  item="$linked"
+elif [ "$slug_count" = 1 ]; then
+  item="$slugs"
+fi
+if [ -n "$item" ]; then
+  block="$(printf '%s\n' "$now" | awk -v want="$item" '
+    /^###[[:space:]]/ { if ($0 ~ /^###[[:space:]]+[^<[:space:]#]/) { h=$0; sub(/^###[[:space:]]+/, "", h); split(h, a, /[[:space:]]/); on = (a[1] == want) } else on = 0 }
+    on')"
+elif [ -n "$slugs" ]; then
+  block=""
+else
+  block="$now"
+fi
+item_field() {
+  printf '%s\n' "$block" | awk -v L="**$1:**" '
+    { line = $0; sub(/^[[:space:]]*[-*][[:space:]]+/, "", line)
+      n = split(line, part, / · /)
+      for (i = 1; i <= n; i++) { p = part[i]; sub(/^[[:space:]]+/, "", p)
+        if (index(p, L) == 1) { v = substr(p, length(L) + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+          if (substr(v, 1, 1) != "<") print v; exit } } }'
+}
+item_route() {
+  local r; r="$(item_field Route)"; [ -n "$r" ] || r="$(item_field 'Type / scope')"
+  printf '%s\n' "$r" | grep -xE -- "$WF_ROUTE_RE"
+}
+wf_state_snapshot "$slugs"
+
 fill() {
   local line val key name
   while IFS= read -r line; do
@@ -28,11 +65,11 @@ fill() {
 # reader turn-audit uses). The first value SET decides: the item's **Mode:**, else
 # WF_MODE_<TYPE>_<SCOPE> for its **Route:**, else WF_MODE_DEFAULT, else step. It must be exactly
 # step | auto; any other value is step — never a looser fallback below it.
-route="$(wf_item_route)"; route_key=""; route_mode=""
+route="$(item_route)"; route_key=""; route_mode=""
 if [ -n "$route" ]; then
   route_key="WF_MODE_$(printf '%s' "$route" | sed 's| / |_|' | tr '[:lower:]' '[:upper:]')"; route_mode="${!route_key:-}"
 fi
-mode_val="$(wf_item_field Mode)"
+mode_val="$(item_field Mode)"
 if [ -n "$mode_val" ]; then WF_MODE="$mode_val"
 elif [ -n "$route_mode" ]; then WF_MODE="$route_mode"
 elif [ -n "${WF_MODE_DEFAULT:-}" ]; then WF_MODE="$WF_MODE_DEFAULT"
@@ -51,8 +88,14 @@ wf_say "$(fill)"
 [ "${WF_STACK_SETUP:-}" = "pending" ] && wf_say "⚑ FIRST USE: burhan's project checks are not set up yet. Before other work, run \`burhan setup --stack\` and follow it."
 [ -n "$old_plan_only" ] && wf_say "$old_plan_only"
 
-now="$(wf_state_now | cut -c1-300)"
-if [ -n "$now" ]; then
+if [ "$slug_count" -gt 1 ] 2>/dev/null && [ -z "$item" ]; then
+    listed="$(printf '%s\n' "$slugs" | paste -sd ',' - | sed 's/,/, /g')"
+    wf_say "⚑ ITEMS IN FLIGHT: $listed — this session isn't linked to one yet — say which, or run /burhan:e2e <slug>."
+elif [ "$slug_count" -gt 1 ] 2>/dev/null; then
+    shown="$(printf '%s\n' "$block" | cut -c1-300)"
+    other="$(printf '%s\n' "$slugs" | grep -vxF -- "$item" | paste -sd ',' - | sed 's/,/, /g')"
+    wf_say "⚑ CURRENT STATE ($WF_STATE_FILE · Now · linked: $item):"$'\n'"$shown"$'\n'"⚑ OTHER ITEMS: $other"
+elif [ -n "$now" ]; then
     total="$(printf '%s\n' "$now" | wc -l | tr -d ' ')"
     shown="$(printf '%s\n' "$now" | head -n "$STATE_LINES_MAX")"
     [ "$total" -gt "$STATE_LINES_MAX" ] && shown="$shown"$'\n'"… truncated ($total lines) — read $WF_STATE_FILE"

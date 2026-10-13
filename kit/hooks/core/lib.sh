@@ -161,8 +161,69 @@ wf_project_key() {
 # wf_safe_id <id> -> success if the id can be a path component (no separators, never . or ..)
 wf_safe_id() { case "$1" in ''|.|..) return 1 ;; esac; printf '%s' "$1" | grep -qE '^[A-Za-z0-9._-]+$'; }
 
-# wf_item_now -> slug of the first "### <slug>" block under "## Now" (empty if none, or a template "<slug>")
-wf_item_now() { wf_state_now | sed -n 's/^###[[:space:]]\{1,\}\([^[:space:]#<][^[:space:]]*\).*/\1/p' | head -n 1; }
+# wf_item_slugs -> every real item heading in Now, in order.
+wf_item_slugs() { wf_state_now | sed -n 's/^###[[:space:]]\{1,\}\([^[:space:]#<][^[:space:]]*\).*/\1/p'; }
+
+# wf_item_has <slug> -> success only while this slug still has a block in Now.
+wf_item_has() { wf_item_slugs | grep -qxF -- "$1"; }
+
+# wf_link_file -> external per-session link file, beside the evidence ledger. An absent/unsafe session
+# deliberately has no link; hooks never write under the project.
+wf_link_file() {
+  local session="$(wf_get .session)" key
+  wf_safe_id "$session" || return 1
+  key="$(wf_project_key)"; [ "${#key}" -eq 16 ] || return 1
+  printf '%s/%s/%s/item' "$(wf_evidence_root)" "$key" "$session"
+}
+
+wf_linked_item() {
+  local f item
+  f="$(wf_link_file)" || return 0
+  [ -f "$f" ] || return 0
+  item="$(sed -n '1p' "$f" 2>/dev/null)"
+  wf_safe_id "$item" && wf_item_has "$item" && printf '%s\n' "$item"
+}
+
+wf_link_item() {
+  local item="$1" f d tmp
+  wf_safe_id "$item" && wf_item_has "$item" || return 0
+  f="$(wf_link_file)" || return 0; d="${f%/item}"
+  ( umask 077 && mkdir -p "$d" ) 2>/dev/null || return 0
+  tmp="$(mktemp "$d/.item.XXXXXX" 2>/dev/null)" || return 0
+  printf '%s\n' "$item" > "$tmp" 2>/dev/null && mv -f "$tmp" "$f" 2>/dev/null
+  rm -f "$tmp" 2>/dev/null
+}
+
+# wf_state_snapshot records this session's Now slugs outside the project.  The turn audit compares
+# it only when the state file was edited, so another session's state is never inferred or restored.
+wf_state_snapshot_file() {
+  local session="$(wf_get .session)" key
+  wf_safe_id "$session" || return 1
+  key="$(wf_project_key)"; [ "${#key}" -eq 16 ] || return 1
+  printf '%s/%s/%s/now-slugs' "$(wf_evidence_root)" "$key" "$session"
+}
+
+wf_state_snapshot() {
+  local f d tmp slugs="${1:-}" supplied="$#"
+  f="$(wf_state_snapshot_file)" || return 0; d="${f%/now-slugs}"
+  ( umask 077 && mkdir -p "$d" ) 2>/dev/null || return 0
+  tmp="$(mktemp "$d/.now.XXXXXX" 2>/dev/null)" || return 0
+  if [ "$supplied" -gt 0 ]; then printf '%s\n' "$slugs" > "$tmp"; else wf_item_slugs > "$tmp" 2>/dev/null; fi
+  mv -f "$tmp" "$f" 2>/dev/null
+  rm -f "$tmp" 2>/dev/null
+}
+
+wf_mtime_epoch() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null; }
+
+
+# wf_item_now -> the item that applies to this session: its live external link, else the only block.
+# With several blocks and no live link there is intentionally no item (never "the first one").
+wf_item_now() {
+  local linked count only
+  linked="$(wf_linked_item)"; [ -n "$linked" ] && { printf '%s\n' "$linked"; return; }
+  count="$(wf_item_slugs | wc -l | tr -d ' ')"
+  [ "$count" = 1 ] && { only="$(wf_item_slugs)"; printf '%s\n' "$only"; }
+}
 
 # The fields gates read have ONE fixed form, read exactly — no word lists, no guessing (phases/files.md
 # · "Fields the hooks and stats read"). session-gates and turn-audit read them only through these functions.
@@ -170,7 +231,11 @@ wf_item_now() { wf_state_now | sed -n 's/^###[[:space:]]\{1,\}\([^[:space:]#<][^
 # wf_item_block -> the item in flight: the first "### <slug>" block of Now (a template "### <…>" is no
 # item); with no slug heading, the whole Now.
 wf_item_block() {
-  if [ -n "$(wf_item_now)" ]; then wf_state_now | awk '/^###[[:space:]]+[^<[:space:]#]/ { n++ } /^###([[:space:]]|$)/ && n >= 1 && !/^###[[:space:]]+[^<[:space:]#]/ { n = 2 } n == 1'
+  local item; item="$(wf_item_now)"
+  if [ -n "$item" ]; then wf_state_now | awk -v want="$item" '
+    /^###[[:space:]]/ { if ($0 ~ /^###[[:space:]]+[^<[:space:]#]/) { h=$0; sub(/^###[[:space:]]+/, "", h); split(h, a, /[[:space:]]/); on = (a[1] == want) } else on = 0 }
+    on'
+  elif [ -n "$(wf_item_slugs)" ]; then return 0
   else wf_state_now; fi
 }
 

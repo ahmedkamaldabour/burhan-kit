@@ -1,7 +1,9 @@
 /** Shared library for the core checks — the Node port of kit/hooks/core/lib.sh.
  *  Contract (tests/CONFORMANCE.md): stdin is a normalized event; stdout is {"message":"…"} or nothing.
  *  Fail open: a check returns its findings; the entry prints them only at the very end, exit 0 always. */
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { HookConfig } from './config.mjs';
 
@@ -85,23 +87,52 @@ export function stateNow(project: string, cfg: HookConfig): string {
 const SP = '\\t\\n\\v\\f\\r \\u1680\\u2000-\\u2006\\u2008-\\u200a\\u2028\\u2029\\u205f\\u3000';
 const SLUG_HEADING = new RegExp(`^###[${SP}]+[^<${SP}#]`, 'u');
 
-/** wf_item_now: the slug of the first "### <slug>" heading of Now ('' if none, or a template "<…>"). */
-export function itemNow(now: string): string {
+/** Every real item heading in Now, in order. */
+export function itemSlugs(now: string): string[] {
+  const out: string[] = [];
   for (const l of now.split('\n')) {
     const m = new RegExp(`^###[${SP}]+([^${SP}#<][^${SP}]*)`, 'u').exec(l);
-    if (m) return m[1];
+    if (m) out.push(m[1]);
   }
-  return '';
+  return out;
+}
+
+/** Select a live per-session link, else the only item; multi-item unlinked sessions have no item. */
+export function itemResolved(now: string, linked: string): string {
+  const slugs = itemSlugs(now);
+  if (slugs.includes(linked)) return linked;
+  return slugs.length === 1 ? slugs[0] : '';
+}
+
+/** External link path shared with the Bash hooks: <evidence-root>/<project-key>/<session>/item. */
+export function linkedItem(project: string, session: string, cfg: HookConfig): string {
+  if (!/^[A-Za-z0-9._-]+$/.test(session) || session === '.' || session === '..') return '';
+  let physical: string;
+  try { physical = realpathSync(project); } catch { physical = project; }
+  const key = createHash('sha256').update(physical).digest('hex').slice(0, 16);
+  const root = (cfg.WF_EVIDENCE_DIR ?? '').startsWith('/') ? cfg.WF_EVIDENCE_DIR! : join(process.env.XDG_STATE_HOME ?? join(homedir(), '.local/state'), 'burhan/evidence');
+  try {
+    const item = readFileSync(join(root, key, session, 'item'), 'utf8').split(/\r?\n/, 1)[0];
+    return /^[A-Za-z0-9._-]+$/.test(item) && item !== '.' && item !== '..' ? item : '';
+  } catch { return ''; }
+}
+
+/** wf_item_now without a session link: retained for callers that inspect a bare Now block. */
+export function itemNow(now: string): string {
+  return itemResolved(now, '');
 }
 
 /** wf_item_block: the item in flight — its heading up to the next item or template heading ("####" stays
  *  inside); with no slug heading, the whole Now. */
-export function itemBlock(now: string): string {
-  if (itemNow(now) === '') return now;
+export function itemBlock(now: string, selected = itemNow(now)): string {
+  if (selected === '') return itemSlugs(now).length === 0 ? now : '';
   let n = 0;
   const out: string[] = [];
   for (const l of now.split('\n')) {
-    if (SLUG_HEADING.test(l)) n++;
+    if (SLUG_HEADING.test(l)) {
+      const slug = new RegExp(`^###[${SP}]+([^${SP}#<][^${SP}]*)`, 'u').exec(l)?.[1] ?? '';
+      n = slug === selected ? 1 : 2;
+    }
     else if (new RegExp(`^###([${SP}]|$)`, 'u').test(l) && n >= 1) n = 2;
     if (n === 1) out.push(l);
   }

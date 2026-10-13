@@ -9,6 +9,7 @@ import { prBody } from './lib/pr-body.js';
 import { evidence } from './lib/evidence.js';
 import { stats } from './lib/stats.js';
 import { status } from './lib/status.js';
+import { useItem } from './lib/use.js';
 import { homedir } from 'node:os';
 import { clackPrompter, numberedPrompter, withFallback } from './lib/setup/prompter.js';
 import { runWizard } from './lib/setup/wizard.js';
@@ -60,6 +61,7 @@ export const USAGE = `usage: burhan <command> [options]
   uninstall [dir] [--apply] [--all]
                        remove burhan from a project; keeps workflow.config, bindings.md, local/ and your work files unless --all
   doctor [dir]         read-only health check: runtime, install, config, hook wiring, state (exit 1 on a fail)
+  use <slug>           validate an in-Now item; the turn-end hook links this session
   --version | --help
 
 Without --apply, init, upgrade and uninstall are a dry run: they print what they would do and change nothing.
@@ -134,6 +136,10 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         const { positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: {} });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         return doctor({ target: positionals[0] ?? io.cwd }, io);
+      }
+      case 'use': {
+        if (rest.length !== 1) throw new BurhanError('use needs exactly one item slug');
+        return useItem(io.cwd, rest[0], io);
       }
       case 'setup': {
         const { values, positionals } = parseArgs({

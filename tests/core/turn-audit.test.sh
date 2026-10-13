@@ -252,6 +252,63 @@ check "fail then pass after the edit -> silent" "$(a "$(st "[$E1,{\"kind\":\"cmd
 check "no claim -> silent even with failed evidence" "$(a "$(st "[$E1,{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":3,\"status\":\"failed\",\"seq\":2}]" 'still working')")" lacks "VERIFICATION GATE"
 
 echo "  -- evidence ledger store"
+P="$(proj "${BASE[@]}")"; mkdir -p "$P/.burhan/local"
+printf '%s\n' '## Now' '### alpha' '- **Read-only:** no' '### beta' '- **Read-only:** yes' > "$P/.burhan/local/PROGRESS.md"
+EVD="$(t_tmp)/session-link"; export WF_EVIDENCE_DIR="$EVD"
+KEY="$(cd "$P" && pwd -P | tr -d '\n' | t_sha | cut -c1-16)"
+out="$(a "$(jq -cn --arg p "$P" '{event:"turn_end",agent:"claude",project_dir:$p,session:"linker",turn_id:"T-link",turn:{files_created:[],files_edited:[".burhan/work/beta/beta-story.md"],shell_commands:[],skills_used:[],assistant_text:"",steps:[]}}')")"
+t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "editing an item's work folder links this session externally" "$(cat "$EVD/$KEY/linker/item" 2>/dev/null)" has beta
+out="$(a "$(jq -cn --arg p "$P" '{event:"turn_end",agent:"claude",project_dir:$p,session:"linker",turn_id:"T-order",turn:{files_created:[],files_edited:[".burhan/work/beta/beta-story.md",".burhan/work/alpha/alpha-story.md"],shell_commands:[],skills_used:[],assistant_text:"",steps:[{seq:1,kind:"edit",file:".burhan/work/beta/beta-story.md"},{seq:2,kind:"edit",file:".burhan/work/alpha/alpha-story.md"}]}}')")"
+t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "the most recent qualifying item edit wins" "$(cat "$EVD/$KEY/linker/item" 2>/dev/null)" has alpha
+printf '%s\n' beta > "$EVD/$KEY/linker/item"
+out="$(a "$(jq -cn --arg p "$P" '{event:"turn_end",agent:"claude",project_dir:$p,session:"linker",turn_id:"T-explicit",turn:{files_created:[],files_edited:["a.src"],shell_commands:["burhan use alpha"],skills_used:[],assistant_text:"",steps:[]}}')")"
+t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "burhan use links its valid explicit slug" "$(cat "$EVD/$KEY/linker/item" 2>/dev/null)" has alpha
+t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "a linked read-only item controls the audit" "$out" lacks "READ-ONLY GATE"
+out="$(a "$(jq -cn --arg p "$P" '{event:"turn_end",agent:"claude",project_dir:$p,session:"linker",turn_id:"T-read-only",turn:{files_created:[],files_edited:["a.src"],shell_commands:[],skills_used:[],assistant_text:"",steps:[{seq:1,kind:"edit",file:"a.src"}]}}')")"
+t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "a resolved read-only link fires the audit" "$out" lacks "READ-ONLY GATE"
+t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "the resolved item, not the first block, tags the ledger" "$(cat "$EVD/$KEY/linker/T-read-only.jsonl" 2>/dev/null)" has '"item":"alpha"'
+P="$(proj "${BASE[@]}")"; mkdir -p "$P/.burhan/local"
+printf '%s\n' '## Now' '### alpha' '- **Read-only:** no' '### beta' '- **Read-only:** yes' > "$P/.burhan/local/PROGRESS.md"
+EVD="$(t_tmp)/session-link-read-only"; export WF_EVIDENCE_DIR="$EVD"
+KEY="$(cd "$P" && pwd -P | tr -d '\n' | t_sha | cut -c1-16)"; mkdir -p "$EVD/$KEY/linker"; printf '%s\n' beta > "$EVD/$KEY/linker/item"
+out="$(a "$(jq -cn --arg p "$P" '{event:"turn_end",agent:"claude",project_dir:$p,session:"linker",turn_id:"T-read-only",turn:{files_created:[],files_edited:["a.src"],shell_commands:[],skills_used:[],assistant_text:"",steps:[{seq:1,kind:"edit",file:"a.src"}]}}')")"
+t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "a resolved read-only link fires the audit" "$out" has "READ-ONLY GATE"
+t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "the resolved item, not the first block, tags the ledger" "$(cat "$EVD/$KEY/linker/T-read-only.jsonl" 2>/dev/null)" has '"item":"beta"'
+for command in 'burhan use alpha' 'burhan-kit use alpha' 'npx burhan-kit use alpha' 'node ./kit/cli.js use alpha' 'ASSIGN=value burhan use alpha' 'echo nope && burhan use alpha' 'false || burhan use alpha' 'true; burhan use alpha' 'printf x | burhan use alpha' '( burhan use alpha'; do
+  printf '%s\n' beta > "$EVD/$KEY/linker/item"
+  a "$(jq -cn --arg p "$P" --arg c "$command" '{event:"turn_end",agent:"claude",project_dir:$p,session:"linker",turn_id:"T-command",turn:{files_created:[],files_edited:[],shell_commands:[$c],skills_used:[],assistant_text:"",steps:[]}}')" >/dev/null
+  t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "real command shape links: $command" "$(cat "$EVD/$KEY/linker/item" 2>/dev/null)" has alpha
+done
+for command in "echo 'burhan use alpha'" 'grep "burhan use alpha" README.md' 'echo burhan use alpha' 'burhan use' 'burhan use alpha extra' 'npx other use alpha' 'node ./kit/not-cli.js use alpha'; do
+  printf '%s\n' beta > "$EVD/$KEY/linker/item"
+  a "$(jq -cn --arg p "$P" --arg c "$command" '{event:"turn_end",agent:"claude",project_dir:$p,session:"linker",turn_id:"T-forged",turn:{files_created:[],files_edited:[],shell_commands:[$c],skills_used:[],assistant_text:"",steps:[]}}')" >/dev/null
+  t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "non-command text does not link: $command" "$(cat "$EVD/$KEY/linker/item" 2>/dev/null)" has beta
+done
+P="$(proj "${BASE[@]}")"; mkdir -p "$P/.burhan/local"
+printf '%s\n' '## Now' '### alpha' '### beta' > "$P/.burhan/local/PROGRESS.md"
+EVD="$(t_tmp)/session-link-removed"; export WF_EVIDENCE_DIR="$EVD"
+KEY="$(cd "$P" && pwd -P | tr -d '\n' | t_sha | cut -c1-16)"; mkdir -p "$EVD/$KEY/other"; printf '%s\n' beta > "$EVD/$KEY/other/item"; : > "$EVD/$KEY/other/recent.jsonl"
+core session-gates "$(ev '{"event":"session_start","session":"remover"}')" >/dev/null
+printf '%s\n' '## Now' '### alpha' > "$P/.burhan/local/PROGRESS.md"
+out="$(a "$(jq -cn --arg p "$P" '{event:"turn_end",agent:"claude",project_dir:$p,session:"remover",turn_id:"T-removed",turn:{files_created:[],files_edited:[".burhan/local/PROGRESS.md"],shell_commands:[],skills_used:[],assistant_text:"",steps:[]}}')")"
+t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "removing a recently active foreign linked block warns" "$out" has 'You removed the `beta` block — another session (active'
+# Removed blocks only warn for a different session with a recent, safe ledger and a changed slug.
+for silence in own stale unchanged unsafe; do
+  P="$(proj "${BASE[@]}")"; mkdir -p "$P/.burhan/local"
+  printf '%s\n' '## Now' '### alpha' '### beta' > "$P/.burhan/local/PROGRESS.md"
+  EVD="$(t_tmp)/session-link-removed-$silence"; export WF_EVIDENCE_DIR="$EVD"
+  KEY="$(cd "$P" && pwd -P | tr -d '\n' | t_sha | cut -c1-16)"
+  other=other; [ "$silence" = own ] && other=remover; [ "$silence" = unsafe ] && other='../unsafe'
+  mkdir -p "$EVD/$KEY/$other" 2>/dev/null || true
+  printf '%s\n' beta > "$EVD/$KEY/$other/item" 2>/dev/null || true
+  : > "$EVD/$KEY/$other/recent.jsonl" 2>/dev/null || true
+  [ "$silence" = stale ] && t_age 2 "$EVD/$KEY/$other/recent.jsonl"
+  core session-gates "$(ev '{"event":"session_start","session":"remover"}')" >/dev/null
+  [ "$silence" = unchanged ] || printf '%s\n' '## Now' '### alpha' > "$P/.burhan/local/PROGRESS.md"
+  out="$(a "$(jq -cn --arg p "$P" '{event:"turn_end",agent:"claude",project_dir:$p,session:"remover",turn_id:"T-removed",turn:{files_created:[],files_edited:[".burhan/local/PROGRESS.md"],shell_commands:[],skills_used:[],assistant_text:"",steps:[]}}')")"
+  t_bash_only WF_IMPL_CORE "turn-audit is Bash-only until P2" && check "removed-block warning is silent for $silence fixture" "$out" lacks 'You removed the `beta` block'
+done
+unset WF_EVIDENCE_DIR
 EVD="$(t_tmp)/ev"; export WF_EVIDENCE_DIR="$EVD"
 P="$(proj "${BASE[@]}")"; mkdir -p "$P/.burhan/local"; printf '%s\n' '## Now' '### add-export' '- **Next action:** x' > "$P/.burhan/local/PROGRESS.md"
 KEY="$(cd "$P" && pwd -P | tr -d '\n' | t_sha | cut -c1-16)"
@@ -326,7 +383,11 @@ rm -f "$P/.burhan/local/PROGRESS.md"
 P="$(proj "${BASE[@]}" 'WF_SKILLS=superpowers' "WF_SENSITIVE_REGEX='auth'")"
 P="$(proj "${BASE[@]}" 'WF_SKILLS=superpowers')"; mkdir -p "$P/.burhan/local"
 printf '%s\n' '## Now' '### big-item' '- **Type / scope:** feature / architectural' '### other' '- **Route:** patch' > "$P/.burhan/local/PROGRESS.md"
-check "Route: patch on ANOTHER item does not exempt the item in flight" "$(a "$(t '[]' '["a.src"]' '["verify-it a"]' '[]' 'patch — typo. Done.')")" has "SKILL GATE (code)"
+# Two items are in Now: link the session to big-item (an unlinked session has no item, by design).
+EVD="$(t_tmp)/ev9"; export WF_EVIDENCE_DIR="$EVD"
+KEY="$(cd "$P" && pwd -P | tr -d '\n' | t_sha | cut -c1-16)"; mkdir -p "$EVD/$KEY/S9"; printf '%s\n' big-item > "$EVD/$KEY/S9/item"
+check "Route: patch on ANOTHER item does not exempt the item in flight" "$(a "$(jq -c '. + {session:"S9", turn_id:"T9"}' <<<"$(t '[]' '["a.src"]' '["verify-it a"]' '[]' 'patch — typo. Done.')")")" has "SKILL GATE (code)"
+unset WF_EVIDENCE_DIR
 printf '%s\n' '## Now' '### fix-typo' '- **Type / scope:** change / patch' > "$P/.burhan/local/PROGRESS.md"
 check "Type / scope: change / patch counts as a patch route" "$(a "$(t '[]' '["a.src"]' '["verify-it a"]' '[]' 'patch — typo. Done.')")" lacks "SKILL GATE (code)"
 rm -f "$P/.burhan/local/PROGRESS.md"

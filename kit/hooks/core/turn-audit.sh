@@ -32,6 +32,54 @@ code_written=0
 used() { printf '%s\n' "$skills_used" | grep -qE -- "$1"; }
 docs_re="^$(wf_re_escape "$WF_DOCS_DIR")/[^/]+/"
 
+# Link before the controls and ledger below. An explicit `burhan use <slug>` wins; otherwise a work-item
+# file written this turn selects that slug. wf_link_item writes only beside the evidence ledger.
+# One pass over the whole stream (a turn can have thousands of steps): only an actual command at a
+# command position qualifies, and the last qualifying command wins.  Quoted shell text is stripped
+# before tokenizing, so `echo 'burhan use x'` is never an invocation.
+link="$(printf '%s\n' "$cmds" | awk '
+  function unquoted(s,    i,c,q,out,sq) {
+    sq = sprintf("%c", 39)
+    for (i = 1; i <= length(s); i++) {
+      c = substr(s, i, 1)
+      if (q != "") {
+        if (c == "\\" && q == "\"") { i++; continue }
+        if (c == q) q = ""
+        continue
+      }
+      if (c == "\"" || c == sq || c == "`") { q = c; out = out " "; continue }
+      out = out c
+    }
+    return q == "" ? out : ""
+  }
+  {
+    line = unquoted($0); if (line == "") next
+    gsub(/&&/, " \\&\\& ", line); gsub(/\|\|/, " __WF_OR__ ", line)
+    gsub(/;/, " ; ", line); gsub(/\|/, " | ", line); gsub(/\(/, " ( ", line); gsub(/__WF_OR__/, " || ", line)
+    sub(/^[[:space:]]+/, "", line); sub(/[[:space:]]+$/, "", line)
+    n = split(line, a, /[[:space:]]+/)
+    for (i = 1; i <= n; i++) {
+      if (i != 1 && a[i - 1] !~ /^(&&|\|\||;|\||\()$/) continue
+      j = i
+      while (a[j] ~ /^[A-Za-z_][A-Za-z0-9_]*=[^[:space:];|&()]*$/) j++
+      cmd = a[j]; slug = ""; end = j
+      if ((cmd == "burhan" || cmd == "burhan-kit") && a[j + 1] == "use") { slug = a[j + 2]; end = j + 2 }
+      else if (cmd == "npx" && a[j + 1] == "burhan-kit" && a[j + 2] == "use") { slug = a[j + 3]; end = j + 3 }  # e.g. the launcher form
+      else if (cmd == "node" && a[j + 1] ~ /\/cli\.js$/ && a[j + 2] == "use") { slug = a[j + 3]; end = j + 3 }
+      if (slug ~ /^[A-Za-z0-9._-]+$/ && (end == n || a[end + 1] ~ /^(&&|\|\||;|\||\()$/)) found = slug
+    }
+  }
+  END { if (found != "") print found }')"
+if [ -z "$link" ]; then
+  # Ordered adapter steps are authoritative when available.  `written` is deliberately de-duplicated
+  # and sorted for the other audits, so using it here would lose the most-recent-edit rule.
+  link_files="$(printf '%s' "$WF_EVENT" | jq -r '(.turn.steps // [])[] | select(.kind == "edit") | .file // empty' 2>/dev/null | wf_rel_stream)"
+  [ -n "$link_files" ] || link_files="$written"
+  link="$(printf '%s\n' "$link_files" | sed -n "s#^$(wf_re_escape "$WF_DOCS_DIR")/\\([^/]*\\)/.*#\\1#p" | tail -n 1)"
+fi
+[ -n "$link" ] && wf_link_item "$link"
+
+
 # ---- A ---------------------------------------------------------------------------------------
 CLAIM='(^|[^[:alnum:]_])(done|fixed|passing|passes|complete|completed|works now)([^[:alnum:]_]|$)|✅|(^|[[:space:][:punct:]])(خلص|خلصت|اتصلح)([[:space:][:punct:]]|$)'
 # Negated claims ("not done yet", "isn't passing", "مش خلص") are not claims.
@@ -179,6 +227,37 @@ if [ "$code_in_turn" = 1 ]; then
 fi
 if [ "$read_only" = 1 ]; then
   wf_say "🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3)."
+fi
+
+# ---- I ---------------------------------------------------------------------------------------
+# A session-start snapshot lets us warn about removing an item another active session still owns.
+# The snapshot, links and ledgers all live under the external evidence root; failure stays silent.
+if printf '%s\n' "$written" | grep -qxF -- "$WF_STATE_FILE"; then
+  snap="$(wf_state_snapshot_file)"
+  if [ -n "$snap" ] && [ -f "$snap" ]; then
+    now_epoch="$(date +%s 2>/dev/null)"
+    while IFS= read -r removed; do
+      [ -n "$removed" ] || continue
+      wf_item_has "$removed" && continue
+      key="$(wf_project_key)"; root="$(wf_evidence_root)"; mine="$(wf_get .session)"
+      [ "${#key}" -eq 16 ] || continue
+      for d in "$root/$key"/*; do
+        [ -d "$d" ] || continue
+        other="${d##*/}"; [ "$other" = "$mine" ] && continue
+        wf_safe_id "$other" || continue
+        [ "$(sed -n '1p' "$d/item" 2>/dev/null)" = "$removed" ] || continue
+        for recent in "$d"/*.jsonl; do
+          [ -f "$recent" ] || continue
+          then_epoch="$(wf_mtime_epoch "$recent")"; [ -n "$then_epoch" ] || continue
+          age=$((now_epoch - then_epoch)); [ "$age" -lt 0 ] && age=0
+          [ "$age" -lt 86400 ] || continue
+          if [ "$age" -lt 60 ]; then ago="${age}s ago"; elif [ "$age" -lt 3600 ]; then ago="$((age / 60))m ago"; else ago="$((age / 3600))h ago"; fi
+          wf_say "⚠ You removed the \`$removed\` block — another session (active $ago) is working on it. Put it back."
+          break 2
+        done
+      done
+    done < "$snap"
+  fi
 fi
 
 # ---- H ---------------------------------------------------------------------------------------

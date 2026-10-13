@@ -111,7 +111,8 @@ interrupted turn loses the state.
 `Waiting on you`, `Commit instructions`, `Standing facts` (≤ 10); a transition **edits the existing
 line**; **pointer-only** — link files, never copy findings or output.
 
-**Team use.** The state file is never committed or shared; one owner per item folder, others read it; shared files
+**Team use.** Several items may be in flight, one per session. Edit only your own block; never rewrite the file.
+The state file is never committed or shared; one owner per item folder, others read it; shared files
 (`bindings.md`, `workflow.config`, `.burhan/PROJECT.md`, `.burhan/context/`) change only through review (a pull
 request), like code; personal overrides in `.burhan/local/workflow.config` apply key by key.
 

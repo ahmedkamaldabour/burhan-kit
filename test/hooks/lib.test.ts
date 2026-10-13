@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpDir } from '../helpers.js';
-import { parseEvent, relPath, stateNow, itemNow, itemBlock, itemField, itemRoute } from '../../src/hooks/core/lib.mjs';
+import { parseEvent, relPath, stateNow, itemNow, itemBlock, itemField, itemRoute, itemSlugs, itemResolved, linkedItem } from '../../src/hooks/core/lib.mjs';
 
 // The Node side of tests/core/lib.test.sh (bash-internal), plus what the port adds (Windows paths).
 const ev = (o: unknown) => parseEvent(JSON.stringify(o))!;
@@ -67,7 +68,7 @@ test('stateNow: only the "## Now" section; empty when absent', () => {
 });
 
 test('itemNow / itemBlock / itemField / itemRoute', () => {
-  const now = '- **Branch:** main\n### fix-x\n- **Route:** bug / bounded · **Read-only:** no · **Mode:** auto\n#### notes\n- **Plan:** p.md\n### <slug>\n- **Mode:** step\n### other\n- **Mode:** step';
+  const now = '- **Branch:** main\n### fix-x\n- **Route:** bug / bounded · **Read-only:** no · **Mode:** auto\n#### notes\n- **Plan:** p.md\n### <slug>\n- **Mode:** step';
   assert.equal(itemNow(now), 'fix-x');
   assert.equal(itemBlock(now), '### fix-x\n- **Route:** bug / bounded · **Read-only:** no · **Mode:** auto\n#### notes\n- **Plan:** p.md');
   assert.equal(itemField(now, 'Mode'), 'auto');
@@ -85,4 +86,29 @@ test('itemNow / itemBlock / itemField / itemRoute', () => {
   assert.equal(itemRoute('### a\n- **Type / scope:** feature / architectural'), 'feature / architectural', 'legacy label');
   assert.equal(itemRoute('### a\n- **Route:** feature / huge'), '');
   assert.equal(itemRoute('### a\n- **Route:** Feature / bounded'), '');
+});
+
+test('itemResolved: an unlinked multi-item session has no active item', () => {
+  const now = '### alpha\n- **Mode:** step\n### beta\n- **Mode:** auto';
+  assert.deepEqual(itemSlugs(now), ['alpha', 'beta']);
+  assert.equal(itemResolved(now, ''), '', 'never silently use the first block');
+  assert.equal(itemResolved(now, 'beta'), 'beta');
+  assert.equal(itemResolved(now, 'closed'), '', 'a stale link has no fallback with several items');
+});
+
+test('linkedItem reads only a safe session link from the external evidence store', () => {
+  const p = project('## Now\n### alpha\n');
+  const root = tmpDir('burhan-links-');
+  const key = createHash('sha256').update(p).digest('hex').slice(0, 16);
+  mkdirSync(join(root, key, 'S1'), { recursive: true });
+  writeFileSync(join(root, key, 'S1', 'item'), 'alpha\nignored\n');
+  const cfg = { WF_EVIDENCE_DIR: root };
+  assert.equal(linkedItem(p, 'S1', cfg), 'alpha');
+  assert.equal(linkedItem(p, '../S1', cfg), '');
+  assert.equal(linkedItem(p, 'missing', cfg), '');
+  // Bash rejects a stored value that is not a safe id (wf_safe_id); Node must too.
+  for (const bad of ['é-item', 'a b', '..', 'a/b']) {
+    writeFileSync(join(root, key, 'S1', 'item'), bad + '\n');
+    assert.equal(linkedItem(p, 'S1', cfg), '', `unsafe stored link: ${bad}`);
+  }
 });

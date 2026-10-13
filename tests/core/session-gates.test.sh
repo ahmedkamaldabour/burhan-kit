@@ -33,6 +33,38 @@ check "state block present (R14)" "$out" has "CURRENT STATE"
 check "Now section content shown" "$out" has "Primary objective:** ship AC-03"
 check "only the Now section is shown" "$out" lacks "secret-ish detail"
 
+# Session links: with more than one in-flight item an unlinked session must not silently inherit the
+# first block. This is shared black-box coverage: tests/node-port.test.sh runs it through WF_IMPL_CORE.
+P="$(proj 'WF_MODE_DEFAULT=auto')"; mkdir -p "$P/.burhan/local"
+printf '%s\n' '## Now' '### alpha' '- **Mode:** step' '### beta' '- **Mode:** auto' > "$P/.burhan/local/PROGRESS.md"
+out="$(core $S "$(ev '{"event":"session_start","session":"S-unlinked"}')" | jq -r .message)"
+check "several items with no link ask which item" "$out" has "this session isn't linked to one yet — say which, or run /burhan:e2e <slug>."
+check "several items with no link do not apply alpha's mode" "$out" has "MODE: auto"
+check_eq "shared exact unlinked item list uses Node-style separators" \
+  "$(printf '%s\n' "$out" | awk '/⚑ ITEMS IN FLIGHT:/{print; exit}')" \
+  "⚑ ITEMS IN FLIGHT: alpha, beta — this session isn't linked to one yet — say which, or run /burhan:e2e <slug>."
+
+# External links are the shared contract for Bash and the Node port.  Cover linked, stale, and
+# single-item fallback through the same black-box suite.
+EVD="$(t_tmp)/session-links"; export WF_EVIDENCE_DIR="$EVD"
+KEY="$(cd "$P" && pwd -P | tr -d '\n' | t_sha | cut -c1-16)"
+mkdir -p "$EVD/$KEY/S-linked"; printf '%s\n' beta > "$EVD/$KEY/S-linked/item"
+out="$(core $S "$(ev '{"event":"session_start","session":"S-linked"}')" | jq -r .message)"
+check_eq "shared linked session shows selected block and exactly joined others" \
+  "$(printf '%s\n' "$out" | awk '/⚑ CURRENT STATE .*linked: beta\):/{on=1} on{print} /⚑ OTHER ITEMS:/{exit}')" \
+  $'⚑ CURRENT STATE (.burhan/local/PROGRESS.md · Now · linked: beta):\n### beta\n- **Mode:** auto\n⚑ OTHER ITEMS: alpha'
+mkdir -p "$EVD/$KEY/S-stale"; printf '%s\n' closed > "$EVD/$KEY/S-stale/item"
+out="$(core $S "$(ev '{"event":"session_start","session":"S-stale"}')" | jq -r .message)"
+check_eq "shared stale link falls back to the unlinked multi-item message" \
+  "$(printf '%s\n' "$out" | awk '/⚑ ITEMS IN FLIGHT:/{print; exit}')" \
+  "⚑ ITEMS IN FLIGHT: alpha, beta — this session isn't linked to one yet — say which, or run /burhan:e2e <slug>."
+printf '%s\n' '## Now' '### alpha' '- **Mode:** step' > "$P/.burhan/local/PROGRESS.md"
+out="$(core $S "$(ev '{"event":"session_start","session":"S-stale"}')" | jq -r .message)"
+check_eq "shared stale link uses the sole live item" \
+  "$(printf '%s\n' "$out" | awk '/⚑ CURRENT STATE/{print; exit}')" \
+  "⚑ CURRENT STATE (.burhan/local/PROGRESS.md · Now):"
+unset WF_EVIDENCE_DIR
+
 { echo "## Now"; seq 1 50 | sed 's/^/- line /'; echo "## Standing facts"; } > "$P/.burhan/local/PROGRESS.md"
 out="$(core $S "$(ev '{"event":"session_start"}')" | jq -r .message)"
 check "long Now section truncated" "$out" has "truncated"

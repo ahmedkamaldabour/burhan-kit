@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Changed
+- Sessions can link to one in-flight work item for item-specific gates and evidence; `burhan use <slug>`
+  queues the link through the turn-end hook, and concurrent state blocks are protected by a warning.
 - Unified installs under `.burhan/`, with private work/discovery defaults, scoped ignore rules,
   namespaced `burhan-verify` and project memory.
 - Bootstrap blocks use exact `<!-- burhan:start -->` / `<!-- burhan:end -->` delimiters;

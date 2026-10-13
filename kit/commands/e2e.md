@@ -11,6 +11,9 @@ Project values (docs location, state file, check and test commands) come from
 
 If `$ARGUMENTS` is empty, ask which item to work on and stop.
 
+Run `burhan use <slug>` first, before assessing or editing the item. It validates the selected
+in-flight block; the turn-end hook writes this session's external link.
+
 ## 1) Assess where we are — report before doing anything
 
 - Read the state file first. A hook's finding in the context is explained in

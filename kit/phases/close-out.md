@@ -7,7 +7,8 @@ if the agent reports them); `burhan stats` averages them.
 **A snapshot, not a journal:**
 - A line budget (`WF_STATE_BUDGET`, default 80) — it is read in full at every session start.
 - Exactly four sections: `Now`, `Waiting on you`, `Commit instructions`, `Standing facts` (≤ 10).
-- `Now` holds one block per item **in flight** — normally one — with its type/scope, plan link,
+- `Now` holds one block per item **in flight** — several may be in flight, one per session. Edit only
+  your own block; never rewrite the file. Each block carries its type/scope, plan link,
   sub-unit status, `Read-only:` marker, **Primary objective** (why it is still open: a reopen reason,
   a blocker, the next deliverable) and **Next action**.
 - A transition **edits the existing line**; it never appends a paragraph.

@@ -2,7 +2,7 @@
  *  state file's "Now" section (port of session-gates.sh). */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { itemField, itemRoute, stateNow, type Check } from './lib.mjs';
+import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, linkedItem, stateNow, type Check } from './lib.mjs';
 
 const STATE_LINES_MAX = 30;
 const STATE_LINE_CHARS = 300;
@@ -31,15 +31,18 @@ function fill(v: Record<string, string>, skillsOn: boolean): string {
 
 const isPlanOnly = (s: string): boolean => /^[ \t\n\v\f\r]*plan[-_ ]?only[ \t\n\v\f\r]*$/i.test(s.replace(/[`*]/g, ''));
 
-export const sessionGates: Check = ({ cfg, project }) => {
+export const sessionGates: Check = ({ cfg, project, ev }) => {
   const out: string[] = [];
   const now = stateNow(project, cfg);
+  const slugs = itemSlugs(now);
+  const item = itemResolved(now, linkedItem(project, ev.get('.session'), cfg));
+  const active = item ? itemBlock(now, item) : now;
   // Autonomy mode: the item's **Mode:**, else WF_MODE_<TYPE>_<SCOPE> for its route, else WF_MODE_DEFAULT,
   // else step — exactly step | auto, anything else is step.
-  const route = itemRoute(now);
+  const route = itemRoute(active);
   const routeKey = route ? 'WF_MODE_' + route.replace(' / ', '_').toUpperCase() : '';
   const routeMode = routeKey ? cfg[routeKey] ?? '' : '';
-  const modeVal = itemField(now, 'Mode');
+  const modeVal = itemField(active, 'Mode');
   const dflt = cfg.WF_MODE_DEFAULT ?? '';
   let mode = modeVal || routeMode || dflt || 'step';
   if (mode !== 'step' && mode !== 'auto') mode = 'step';
@@ -55,7 +58,12 @@ export const sessionGates: Check = ({ cfg, project }) => {
   if (cfg.WF_STACK_SETUP === 'pending') out.push("⚑ FIRST USE: burhan's project checks are not set up yet. Before other work, run `burhan setup --stack` and follow it.");
   if (oldPlanOnly) out.push(oldPlanOnly);
 
-  if (now !== '') {
+  if (slugs.length > 1 && item === '') {
+    out.push(`⚑ ITEMS IN FLIGHT: ${slugs.join(', ')} — this session isn't linked to one yet — say which, or run /burhan:e2e <slug>.`);
+  } else if (slugs.length > 1) {
+    const shown = itemBlock(now, item).split('\n').map((l) => Array.from(l).slice(0, STATE_LINE_CHARS).join('')).join('\n');
+    out.push(`⚑ CURRENT STATE (${cfg.WF_STATE_FILE} · Now · linked: ${item}):\n${shown}\n⚑ OTHER ITEMS: ${slugs.filter((s) => s !== item).join(', ')}`);
+  } else if (now !== '') {
     const lines = now.split('\n').map((l) => Array.from(l).slice(0, STATE_LINE_CHARS).join(''));
     let shown = lines.slice(0, STATE_LINES_MAX).join('\n');
     if (lines.length > STATE_LINES_MAX) shown += `\n… truncated (${lines.length} lines) — read ${cfg.WF_STATE_FILE}`;
