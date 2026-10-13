@@ -6,7 +6,6 @@
 #
 #   A  unverified completion   code written + completion claimed + no evidence command
 #   B  state not recorded      a work-item file written, the state file not
-#   C  forbidden command       a command matching WF_FORBIDDEN_REGEX ran
 #   D  state over budget       the state file is longer than WF_STATE_BUDGET lines
 #   E  contradictory status    a written item file says pending (status Draft/Planned) and done
 #                              (✅ Reviewed/Completed, a ✅ sub-unit heading, or a Completed/Resolved/QC PASS status)
@@ -42,7 +41,7 @@ claim_text="$(printf '%s' "$text" | tr '[:upper:]' '[:lower:]' \
 # (wf_rel_stream) and both patterns through the SAME matcher (grep -E) as every other check, so this
 # check and "code was written" can never disagree. Adapters that cannot order the turn
 # send no steps — then only "did an evidence command run at all" can be checked.
-sub_cmds=""; sub_written=""
+sub_written=""
 stmp="$(mktemp -d 2>/dev/null)"
 if [ -n "$stmp" ]; then
   printf '%s' "$WF_EVENT" | jq -r '(.turn.steps // [])[]
@@ -52,11 +51,7 @@ if [ -n "$stmp" ]; then
   awk -F'\t' '$2 == "edit" { print $5 }' "$stmp/steps" | wf_rel_stream > "$stmp/efile"
   awk -F'\t' '$2 == "cmd"' "$stmp/steps" > "$stmp/cmds"
   cut -f6 "$stmp/cmds" > "$stmp/ccmd"
-  # What subagents did this turn (steps with "by"): their edited files for B and H, their commands for
-  # C — one line per command line, newlines kept, like the main agent's.
   sub_written="$(awk -F'\t' '$2 == "edit" && $7 != "" { print $5 }' "$stmp/steps" | wf_rel_stream)"
-  sub_cmds="$(printf '%s' "$WF_EVENT" | jq -r '(.turn.steps // [])[] | select(.kind == "cmd" and (.by // "") != "")
-    | .by as $b | (.cmd // "" | split("\n")[]) | [$b, .] | map(gsub("[\t\r]"; " ")) | join("\t")' 2>/dev/null)"
 fi
 # Code edited by a subagent this turn (a delegated build) is in the steps, not in "written". It counts
 # for A and G — "done" after a delegated build still needs evidence after that edit, and read-only work
@@ -121,25 +116,6 @@ fi
 if { any "$docs_re" "$written" || { [ -n "$sub_written" ] && any "$docs_re" "$sub_written"; }; } \
    && ! printf '%s\n%s\n' "$written" "$sub_written" | grep -qxF -- "$WF_STATE_FILE"; then
   wf_say "⚠ STATE-TRANSITION GATE: a work-item file changed this turn but \`$WF_STATE_FILE\` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file)."
-fi
-
-# ---- C ---------------------------------------------------------------------------------------
-if [ -n "$WF_FORBIDDEN_REGEX" ]; then
-  # The main agent's commands, then a subagent's (a delegated build runs most commands).
-  hit="$(printf '%s\n' "$cmds" | grep -E -- "$WF_FORBIDDEN_REGEX" | head -n 1)"; who=""
-  if [ -z "$hit" ] && [ -n "$sub_cmds" ]; then
-    # One grep over every subagent command line, then the subagent of the first hit (for speed).
-    n="$(printf '%s\n' "$sub_cmds" | cut -f2- | grep -nE -- "$WF_FORBIDDEN_REGEX" | head -n 1 | cut -d: -f1)"
-    if [ -n "$n" ]; then
-      line="$(printf '%s\n' "$sub_cmds" | sed -n "${n}p")"
-      who=" (run by the \`${line%%$'\t'*}\` subagent)"; hit="${line#*$'\t'}"
-    fi
-  fi
-  if [ -n "$hit" ]; then
-    reason="$WF_FORBIDDEN_REASON"
-    [ -n "$reason" ] || reason="It is on the project forbidden list (WORKFLOW §1)."
-    wf_say "🛑 FORBIDDEN COMMAND: \`$(printf '%s' "$hit" | cut -c1-160)\` ran this turn$who. $reason Say so plainly and do not run it again."
-  fi
 fi
 
 # ---- D ---------------------------------------------------------------------------------------

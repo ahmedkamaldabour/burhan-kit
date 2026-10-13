@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Removed
+- Removed never-run configuration and setup options, the NEVER RUN gate and turn-audit check C;
+  audit labels D–H remain unchanged.
+- Removed RAM/resource rules and `WF_SINGLE_TEST_HINT`, including its reminders and setup guidance.
+
+### Compatibility
+- Legacy configuration keys are silently ignored, including personal overrides; `doctor` does not
+  warn about them and upgrades preserve the user's configuration.
+- Removed setup options exit 2 with a short removal error and leave configuration unchanged.
+
 ## 0.2.1
 
 ### Setup

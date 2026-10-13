@@ -48,7 +48,6 @@ const BLOCK = [
   '',
   'Recommended for this project (<stack>):',
   '  Check before commit   <command or "none found, tell me which to use">',
-  '  Never run             <commands, or "nothing">',
   '  Sensitive             <paths, or "nothing">',
   '',
   '● Use these   ○ Change something',
@@ -104,13 +103,11 @@ export interface Messages {
   stack: {
     instructions: string;
     notInstalled: string;
-    refused(cmd: string, hit: string): string;
     running(cmd: string, secs: number): string;
     none: string;
     result(code: number | null, timedOut: boolean): string;
     failed(cmd: string): string;
     saved(check: string): string;
-    reason(list: string[]): string;
   };
   what: {
     kit(created: boolean): string;
@@ -197,26 +194,24 @@ const en: Messages = {
     instructions: [
       'burhan first-use setup. Do this now, before other work:',
       '',
-      '1. Read this project (its manifests, scripts and CI files) and decide three things: the one command that checks the work before a commit; the commands that must never be run here (anything that destroys data); and the paths where a mistake costs the most (security, permissions, money, migrations).',
+      '1. Read this project (its manifests, scripts and CI files) and decide two things: the one command that checks the work before a commit; and the paths where a mistake costs the most (security, permissions, money, migrations).',
       '2. Show the person ONLY this block, filled in, and nothing else (no tables, no setting names, no patterns):',
       '',
       ...BLOCK,
       '',
       '3. If no check command fits, say so and ask which one to use. Never invent one.',
       "4. When the person picks 'Use these' (or changes something and agrees), save it with:",
-      "   npx burhan-kit setup --set check='<command or none>' never-run='<a;b>' sensitive='<p;q>'",
+      "   npx burhan-kit setup --set check='<command or none>' sensitive='<p;q>'",
       "   Separate list items with ';'. Leave a list out when it is empty. A value cannot contain a single quote (') or a line break: put the command in a small script instead.",
       '5. The command runs the check once and shows its output. If it fails, show the person the output and ask; do not retry with a different command on your own. Add --force only if they confirm a slow but valid check.',
       '6. The agent may edit .workflow/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files.',
     ].join('\n'),
     notInstalled: 'burhan is not installed in this project — run npx burhan-kit setup first',
-    refused: (c, h) => `Refused: the check "${c}" matches a command you chose to never run (${h}). Nothing was run and nothing was saved. Pick another check.`,
     running: (c, n) => `Running the check once: ${c}  (stops after ${n}s)`,
     none: 'No check chosen: burhan will not run one before commits.',
     result: (code, t) => t ? `The check timed out. exit ${code ?? 'none'}` : `exit ${code ?? 'none'}`,
     failed: (c) => `The check did not pass, so nothing was saved. Fix it and run again, or pick another command. If "${c}" is right but slow, run the same command again with --force to save it anyway.`,
     saved: (c) => c === '' ? 'Saved: no check before commit. First-use setup is done.' : `Saved: check before commit is ${c}. First-use setup is done.`,
-    reason: (l) => `the owner chose these at setup: ${l.join(', ')}`,
   },
   what: {
     kit: (c) => c ? "burhan's workflow text, hooks and commands" : "burhan's own files, refreshed to this version",
@@ -303,26 +298,24 @@ const ar: Messages = {
     instructions: [
       'إعداد burhan لأول استخدام. اعمله دلوقتي قبل أي شغل تاني:',
       '',
-      '1. اقرا المشروع ده (ملفات الإعدادات والـ scripts وملفات الـ CI) وطلّع 3 حاجات: الأمر الواحد اللي بيشيّك على الشغل قبل الـ commit؛ والأوامر اللي عمرها ما تتشغّل هنا (أي حاجة بتبوّظ الداتا)؛ والأماكن اللي الغلط فيها مكلّف أكتر (الأمان والصلاحيات والفلوس والـ migrations).',
+      '1. اقرا المشروع ده (ملفات الإعدادات والـ scripts وملفات الـ CI) وطلّع حاجتين: الأمر الواحد اللي بيشيّك على الشغل قبل الـ commit؛ والأماكن اللي الغلط فيها مكلّف أكتر (الأمان والصلاحيات والفلوس والـ migrations).',
       '2. وري المستخدم الـ block ده بس، بعد ما تملاه، ومفيش أي حاجة غيره (من غير جداول ولا أسماء إعدادات ولا patterns):',
       '',
       ...BLOCK,
       '',
       '3. لو مفيش أمر فحص مناسب للمشروع، قول كده واسأل يستخدم أنهي أمر. وعمرك ما تألّف أمر (never invent).',
       "4. لما المستخدم يختار 'Use these' (أو يعدّل ويوافق)، احفظ بالأمر ده:",
-      "   npx burhan-kit setup --set check='<الأمر أو none>' never-run='<a;b>' sensitive='<p;q>'",
+      "   npx burhan-kit setup --set check='<الأمر أو none>' sensitive='<p;q>'",
       "   افصل عناصر القوايم بـ ';'. ولو القايمة فاضية شيلها. القيمة مينفعش يبقى فيها علامة تنصيص مفردة (') ولا سطر جديد: حط الأمر في script صغير واستخدمه.",
       '5. الأمر ده بيشغّل الفحص مرة واحدة ويطبع النتيجة. لو فشل، وري النتيجة للمستخدم واسأله؛ ومتجرّبش أمر تاني من دماغك. ضيف --force بس لو هو أكّد إن الفحص صح بس بطيء.',
       '6. الـ agent يقدر يعدّل .workflow/workflow.config بس، بعد ما يورّي الـ diff وياخد موافقة؛ ده ملف مشترك، فالتغيير يوصل للفريق من خلال review (pull request) زي الكود؛ عمره ما يعدّل ملفات الـ kit.',
     ].join('\n'),
     notInstalled: 'burhan مش متسطّب في المشروع ده — شغّل npx burhan-kit setup الأول',
-    refused: (c, h) => `مرفوض: أمر الفحص "${c}" بيطابق أمر إنت اخترت إنه عمره ما يتشغّل (${h}). مفيش حاجة اشتغلت ولا اتحفظت. اختار فحص تاني.`,
     running: (c, n) => `بشغّل الفحص مرة واحدة: ${c}  (هيقف بعد ${n} ثانية)`,
     none: 'مفيش فحص متختار: burhan مش هيشغّل فحص قبل الـ commit.',
     result: (code, t) => t ? `الفحص خد وقت أكتر من المسموح. exit ${code ?? 'none'}` : `exit ${code ?? 'none'}`,
     failed: (c) => `الفحص منجحش، فمفيش حاجة اتحفظت. صلّحه وشغّله تاني، أو اختار أمر تاني. ولو "${c}" صح بس بطيء، شغّل نفس الأمر بـ --force عشان يتحفظ.`,
     saved: (c) => c === '' ? 'اتحفظ: من غير فحص قبل الـ commit. إعداد أول استخدام خلص.' : `اتحفظ: الفحص قبل الـ commit هو ${c}. إعداد أول استخدام خلص.`,
-    reason: (l) => `صاحب المشروع اختار دول وقت الإعداد: ${l.join('، ')}`,
   },
   what: {
     kit: (c) => c ? 'نص طريقة الشغل والـ hooks والأوامر بتاعة burhan' : 'ملفات burhan نفسها، متحدّثة للنسخة دي',

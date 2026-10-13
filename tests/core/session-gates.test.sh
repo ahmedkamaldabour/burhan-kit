@@ -19,7 +19,9 @@ check "no state block when state file missing" "$out" lacks "CURRENT STATE"
 P="$(proj 'WF_CHECK_CMD="make check"' 'WF_FORBIDDEN_REASON="it melts the laptop"' 'WF_SKILLS=superpowers')"
 out="$(core $S "$(ev '{"event":"session_start"}')" | jq -r .message)"
 check "check line shows the command" "$out" has "make check"
-check "forbidden line shows the reason" "$out" has "it melts the laptop"
+check "legacy reason is ignored" "$out" lacks "it melts the laptop"
+check "legacy reason emits no NEVER RUN gate" "$out" lacks "NEVER RUN"
+check "legacy reason emits no FORBIDDEN text" "$out" lacks "FORBIDDEN"
 check "skills line when enabled" "$out" has "superpowers:using-superpowers"
 
 # R14 — the state file's Now section is surfaced
@@ -121,5 +123,11 @@ check "...and the notice states the real mode, never a false 'step'" "$(sg)" has
 printf '%s\n' '## Now' '### a' '- **Mode:** Plan Only' > "$P/.workflow/local/PROGRESS.md"
 check "a plan-only written another way is step, with the notice" "$(sg)" has "plan-only is no longer a mode"
 P="$(proj 'WF_FORBIDDEN_REGEX="rm -rf"')"
-check "a forbidden regex with no reason still states the NEVER RUN gate" "$(sg)" has "NEVER RUN:"
+check "legacy regex emits no NEVER RUN gate" "$(sg)" lacks "NEVER RUN"
+check "legacy regex emits no FORBIDDEN text" "$(sg)" lacks "FORBIDDEN"
+mkdir -p "$P/.workflow/local"
+printf '%s\n' 'WF_FORBIDDEN_REASON="legacy local reason"' 'WF_SINGLE_TEST_HINT="legacy local runner {{FILE}}"' > "$P/.workflow/local/workflow.config"
+out="$(sg)"
+check "legacy local reason is ignored" "$out" lacks "legacy local reason"
+check "legacy local hint is ignored" "$out" lacks "legacy local runner"
 t_summary

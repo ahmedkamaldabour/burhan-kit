@@ -13,7 +13,7 @@ fill() {
     case "$line" in
       "[skills]"*) wf_skills_on || continue; line="${line#\[skills\]}" ;;
     esac
-    for key in DOCS_DIR STATE_FILE CHECK_CMD FORBIDDEN_REASON MODE; do
+    for key in DOCS_DIR STATE_FILE CHECK_CMD MODE; do
       case "$line" in *"{{$key}}"*)
         name="WF_$key"; val="${!name}"
         [ -z "$val" ] && continue 2
@@ -47,9 +47,6 @@ for v in "the item's Mode=$mode_val" "$route_key=$route_mode" "WF_MODE_DEFAULT=$
     break
   fi
 done
-# A forbidden pattern with no reason still gets its gate line.
-[ -n "${WF_FORBIDDEN_REGEX:-}" ] && [ -z "${WF_FORBIDDEN_REASON:-}" ] && WF_FORBIDDEN_REASON="commands matching WF_FORBIDDEN_REGEX in .workflow/workflow.config."
-
 wf_say "$(fill)"
 [ "${WF_STACK_SETUP:-}" = "pending" ] && wf_say "⚑ FIRST USE: burhan's project checks are not set up yet. Before other work, run \`burhan setup --stack\` and follow it."
 [ -n "$old_plan_only" ] && wf_say "$old_plan_only"

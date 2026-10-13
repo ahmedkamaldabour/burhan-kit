@@ -11,7 +11,7 @@ names **when you reach that moment**. A binding left as `—` means "not applica
 ## 1 · Project bindings
 
 `.workflow/bindings.md` (from `templates/bindings.md`; never overwritten on upgrade) holds the project's values
-(locations, commands, what counts as code and evidence, the forbidden list). `.workflow/workflow.config` is its machine-readable twin — keep
+(locations, commands, what counts as code and evidence). `.workflow/workflow.config` is its machine-readable twin — keep
 them consistent. Every "§1" means that file.
 
 **Detect, don't assume.** If a binding is blank, infer it from the repo and **state the inference before relying on it**. Never invent a command.
@@ -134,15 +134,8 @@ request), like code; personal overrides in `.workflow/local/workflow.config` app
 
 ## 7 · Automation safety
 
-- Hooks **never run tests** and **never mutate project files** — the only command a hook executes is
+- Hooks **do not run tests** and **never mutate project files** — the only command a hook executes is
   the fast check, with a timeout. Every hook **fails open**.
-- The agent runs tests **one file at a time** (the single-file command in §1) and **never runs
-  anything matching the forbidden list** (`WF_FORBIDDEN_REGEX`) — not even when asked to "run
-  everything"; it says why instead.
-- Heavy commands run **one at a time**, never in parallel or backgrounded, when §1 lists a
-  resource constraint.
-- **Blocking belongs to the agent's own permission layer** (e.g. Claude Code deny rules, Codex
-  execpolicy); burhan audits and reports, never re-implements it.
 
 ---
 

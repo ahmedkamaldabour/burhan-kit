@@ -29,6 +29,29 @@ test('a fresh init is healthy: no fail, no warn', () => {
   assert.ok(find(cs, 'skip', 'codex'), 'an agent init did not install is skipped');
 });
 
+test('legacy config keys are silently ignored in team and local config; upgrade preserves both verbatim', () => {
+  const target = project();
+  const legacy = "WF_FORBIDDEN_REGEX='^true'\nWF_FORBIDDEN_REASON='legacy reason'\nWF_SINGLE_TEST_HINT='legacy runner {{FILE}}'\n";
+  edit(cfg(target), (text) => text + '# legacy settings stay untouched\n' + legacy);
+  const local = join(target, '.workflow/local/workflow.config');
+  mkdirSync(join(target, '.workflow/local'), { recursive: true });
+  writeFileSync(local, '# personal settings\n' + legacy.replace('legacy reason', 'local reason'));
+  const before = readFileSync(cfg(target), 'utf8');
+  const localBefore = readFileSync(local, 'utf8');
+  assert.deepEqual(bad(runChecks(target, probe())), []);
+  assert.equal(readFileSync(cfg(target), 'utf8'), before);
+  assert.equal(readFileSync(local, 'utf8'), localBefore);
+  install({ mode: 'upgrade', target, agents: null, apply: true, bootstrap: false }, capture(target).io);
+  assert.equal(readFileSync(cfg(target), 'utf8'), before);
+  assert.equal(readFileSync(local, 'utf8'), localBefore);
+  assert.deepEqual(bad(runChecks(target, probe())), []);
+  writeFileSync(local, localBefore + 'WF_FORBIDDEN_REGX=typo\nWF_SINGLE_TEST_HNT=typo\n');
+  const warning = find(runChecks(target, probe()), 'warn', 'unknown config keys');
+  assert.ok(warning?.text.includes('WF_FORBIDDEN_REGX'));
+  assert.ok(warning?.text.includes('WF_SINGLE_TEST_HNT'));
+  for (const key of ['WF_FORBIDDEN_REGEX', 'WF_FORBIDDEN_REASON', 'WF_SINGLE_TEST_HINT']) assert.ok(!warning?.text.includes(key), key);
+});
+
 test('runtime: bash 3 and a missing jq or sha256 tool fail, with the fix', () => {
   const p = project();
   assert.ok(find(runChecks(p, probe({ bashMajor: () => 3 })), 'fail', 'brew install bash'));

@@ -17,7 +17,7 @@ import { messages } from './lib/setup/messages.js';
 import { parseSetArgs, setStack, stackInstructions } from './lib/setup/stack.js';
 import type { SetupFilesystem } from './lib/setup/engine.js';
 
-const FORBIDDEN_SETUP_FLAG_PAIRS = [
+const CONFLICTING_SETUP_FLAG_PAIRS = [
   ['agent', 'answers'],
   ['agent', 'apply'],
   ['agent', 'set'],
@@ -55,7 +55,7 @@ export const USAGE = `usage: burhan <command> [options]
   setup [dir] --answers <file> [--apply]
                        show (or, with --apply, write) the setup for the answers in a JSON file
   setup [dir] --stack  print the first-use instructions for an AI agent
-  setup [dir] --set check=<cmd|none> [never-run=<a;b> | never-run-regex=<ERE>] [sensitive=<p;q>] [--force]
+  setup [dir] --set check=<cmd|none> [sensitive=<p;q>] [--force]
                        save the project's check command (runs it once first)
   uninstall [dir] [--apply] [--all]
                        remove burhan from a project; keeps workflow.config, bindings.md, local/ and your work files unless --all
@@ -149,7 +149,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
           set: values.set === true,
           stack: values.stack === true,
         };
-        for (const [first, second] of FORBIDDEN_SETUP_FLAG_PAIRS) {
+        for (const [first, second] of CONFLICTING_SETUP_FLAG_PAIRS) {
           if (setupFlags[first] && setupFlags[second]) {
             throw new BurhanError(messages(lang).agent.conflictingFlags(SETUP_FLAG_NAMES[first], SETUP_FLAG_NAMES[second]));
           }

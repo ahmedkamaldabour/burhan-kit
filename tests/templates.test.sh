@@ -6,9 +6,19 @@ cd "$T_KIT" || exit 1
 EXPECTED="bindings story plan findings discovery progress review qc verification docs-index project context-area"
 KEYS="WF_DOCS_DIR WF_DISCOVERY_DIR WF_STATE_FILE WF_STATE_BUDGET WF_CHECK_CMD WF_CHECK_TIMEOUT
 WF_EVIDENCE_REGEX WF_CODE_REGEX WF_TEST_REGEX WF_SENSITIVE_REGEX WF_SENSITIVE_NOTE
-WF_FORBIDDEN_REGEX WF_FORBIDDEN_REASON WF_SINGLE_TEST_HINT WF_SKILLS WF_MODEL_CLAUDE_REVIEWER WF_EVIDENCE_LEDGER WF_EVIDENCE_DIR WF_MODE_DEFAULT WF_REVIEWER_AGENT WF_MODEL_CLAUDE_PLANNER WF_MODEL_CLAUDE_BUILDER WF_MODEL_CLAUDE_EXPLORER WF_STACK_SETUP"
+WF_SKILLS WF_MODEL_CLAUDE_REVIEWER WF_EVIDENCE_LEDGER WF_EVIDENCE_DIR WF_MODE_DEFAULT WF_REVIEWER_AGENT WF_MODEL_CLAUDE_PLANNER WF_MODEL_CLAUDE_BUILDER WF_MODEL_CLAUDE_EXPLORER WF_STACK_SETUP"
 
 wf="$(cat WORKFLOW.md phases/*.md 2>/dev/null)"   # the agreement = the core + the phase files
+
+echo "shipped guidance — removed settings and resource rules are absent"
+removed='WF_FORBIDDEN|never-run|neverRun|NEVER RUN|FORBIDDEN|SINGLE_TEST_HINT|one file at a time|one at a time|resource constraint|single-file test hint|single test files only|full test suite.*memory|blocking mode|أوامر ممنوعة'
+hits="$(grep -n -i -E "$removed" "$T_ROOT"/README*.md "$T_ROOT/ROADMAP.md" workflow.config.example; find "$T_ROOT/docs" . -type f -name '*.md' -exec grep -n -i -E "$removed" {} +)"
+check_eq "no removed feature in any shipped guide, template or public doc" "$hits" ""
+for key in WF_FORBIDDEN_REGEX WF_FORBIDDEN_REASON WF_SINGLE_TEST_HINT; do
+  check "config example omits $key" "$(cat workflow.config.example)" lacks "$key"
+done
+check "no replacement permission/resource boundary in WORKFLOW" "$wf" lacks "Blocking belongs"
+check "no replacement permission boundary in configuration docs" "$(cat "$T_ROOT/docs/configuration.md")" lacks "Codex execpolicy"
 
 echo "templates — every expected template exists and is referenced by the agreement (core + phases)"
 for t in $EXPECTED; do
@@ -71,7 +81,7 @@ check "state file records the mode" "$(cat templates/progress.md)" has "**Mode:*
 echo "agent-guided setup (kit/SETUP.md)"
 setup="$(cat SETUP.md 2>/dev/null)"
 check "SETUP: confirms the agents (.claude/ and .codex/) with the user" "$setup" has "Confirm the agents"
-for k in WF_CHECK_CMD WF_CODE_REGEX WF_TEST_REGEX WF_EVIDENCE_REGEX WF_SINGLE_TEST_HINT WF_SENSITIVE_REGEX WF_SENSITIVE_NOTE WF_FORBIDDEN_REGEX WF_FORBIDDEN_REASON WF_DOCS_DIR; do
+for k in WF_CHECK_CMD WF_CODE_REGEX WF_TEST_REGEX WF_EVIDENCE_REGEX WF_SENSITIVE_REGEX WF_SENSITIVE_NOTE WF_DOCS_DIR; do
   check "SETUP proposes $k" "$setup" has "$k"
 done
 check "SETUP: regexes go in single quotes (double quotes cannot hold \\ or \$)" "$setup" has "in single quotes"
@@ -79,7 +89,6 @@ check "SETUP: a sandbox-blocked install goes to the human with the exact command
 check "SETUP: discovery changes nothing" "$setup" has "change nothing"
 check "SETUP: the reminder needs WF_SENSITIVE_NOTE with the regex" "$setup" has "no reminder without the note"
 check "SETUP: regexes are extended (grep -E), no PCRE shorthands" "$setup" has "extended regular expressions"
-check "SETUP: the single-test hint uses {{FILE}}" "$setup" has "{{FILE}}"
 check "SETUP: WF_CHECK_TIMEOUT also needs upgrade" "$setup" has "WF_CHECK_TIMEOUT"
 check "SETUP: every proposed value cites file:line" "$setup" has "file:line"
 check "SETUP: only business questions" "$setup" has "Ask only business questions"

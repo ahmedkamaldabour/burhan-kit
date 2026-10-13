@@ -84,8 +84,8 @@ test('ere: the budget never cuts a real match short — a long heredoc command, 
   const cmd = "cat > big.txt <<'EOF'\n" + 'line of generated text, quite ordinary\n'.repeat(8000) + 'EOF\nnpm run lint';
   assert.ok(cmd.length > 300_000);
   assert.equal(ereTest(evidence, cmd), true);
-  const forbidden = '(^|[;&|][[:space:]]*)(npm publish|git push|git remote)([[:space:]]|$)';
-  assert.equal(ereTest(forbidden, cmd + ' && git push'), true);
+  const commandPattern = '(^|[;&|][[:space:]]*)(npm publish|git push|git remote)([[:space:]]|$)';
+  assert.equal(ereTest(commandPattern, cmd + ' && git push'), true);
   const huge = "cat > big.txt <<'EOF'\n" + 'line of generated text, quite ordinary\n'.repeat(32_000) + 'EOF\nnpm run lint';
   assert.ok(huge.length > 1_200_000);
   assert.equal(ereTest(evidence, huge), true, 'the budget grows with the text');

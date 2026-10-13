@@ -79,8 +79,7 @@ Record what you exercised and the exact observed result.
 
 ## 4) Regression scan
 
-Run only the item's relevant test files, one at a time — never anything on the forbidden list. Tell
-pre-existing failures apart from new ones by comparing against a clean baseline (stash the change).
+Tell pre-existing failures apart from new ones by comparing against a clean baseline (stash the change).
 
 ## 5) Report and proposed verdict
 

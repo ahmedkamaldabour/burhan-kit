@@ -73,13 +73,6 @@ fi
 if m "${W}(merge|branch)${WE}|pull request|دمج|فرع|ميرج"; then
   add "• Finishing a branch → merge / PR / cleanup is the human's decision." "superpowers:finishing-a-development-branch"
 fi
-if m "${W}(tests?|testing|spec file)${WE}|تست|اختبار"; then
-  t="• Tests → run ONE file at a time, sequentially."
-  [ -n "$WF_SINGLE_TEST_HINT" ] && t="$t How: ${WF_SINGLE_TEST_HINT//\{\{FILE\}\}/<file>}."
-  [ -n "$WF_FORBIDDEN_REASON" ] && t="$t Never: $WF_FORBIDDEN_REASON"
-  add "$t" ""
-fi
-
 if [ -z "$out" ]; then
   [ "$skills" = 1 ] && out="• No phase keyword matched — run superpowers:using-superpowers before acting."
 fi

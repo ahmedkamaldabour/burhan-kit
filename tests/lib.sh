@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared helpers for the test files. Source it; never run it directly.
+# Shared helpers for the test files. Source it; do not execute it directly.
 #   check <name> <output> has|lacks <needle>
 #   t_tmp            -> prints a fresh temp dir (removed on exit)
 #   t_summary        -> prints the tally; returns non-zero if anything failed

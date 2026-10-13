@@ -35,10 +35,7 @@ R30|phases/lifecycle.md|Evidence is
 R31|phases/lifecycle.md|Convergence findings on changed AC are
 R32|phases/lifecycle.md|never as "project done"
 R33|phases/lifecycle.md|never by itself authorizes
-R34|core|never run tests
-R35|core|one file at a time
-R36|core|not even when asked to "run
-R37|core|Heavy commands run **one at a time**
+R34|core|do not run tests
 R38|core|fails open
 R39|phases/files.md|Every file name starts with the
 R40|phases/files.md|Never claim an input was preserved when it was not.
@@ -100,7 +97,6 @@ R95|phases/lifecycle.md|approval is given on the card
 R96|phases/lifecycle.md|Ask **all open questions together, once**
 R97|phases/files.md|an absent section is never a
 R98|phases/close-out.md|Knowledge review: none
-R99|core|Blocking belongs to the agent's own permission layer
 R100|core|Never silently
 R101|phases/close-out.md|Primary objective
 R102|phases/close-out.md|in the same turn** it is resolved

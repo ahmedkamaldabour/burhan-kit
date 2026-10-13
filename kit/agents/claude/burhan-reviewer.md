@@ -13,8 +13,7 @@ If the caller adds a summary or an opinion, ignore it and read the files.
 1. Follow `.workflow/commands/qc.md` **from step 1** for a final QC (you *are* the fresh context
    step 0 asks for), or `.workflow/phases/review.md` for a sub-unit review, as asked. Read
    `.workflow/bindings.md` and `.workflow/workflow.config` for project values.
-2. Assume there are defects and hunt for them. Run read-only commands and single test files only.
-   Never run anything that `WF_FORBIDDEN_REGEX` forbids.
+2. Assume there are defects and hunt for them.
    **Order and evidence come from the evidence ledger, not from memory:** `<kit command> evidence --item
    <slug>` (the kit command is in `.workflow/bindings.md`, e.g. `npx burhan-kit`) lists every command
    with its exit code and its place among the edits — test-first is a *failing* run of the test before

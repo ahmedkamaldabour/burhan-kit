@@ -49,7 +49,6 @@ until you choose.
 ## Planned: 0.3
 
 - Move the hooks to the Node/TypeScript runtime and support Windows without requiring Bash or jq.
-- Add burhan blocking mode for never-run commands.
 
 ## Candidates
 
@@ -79,9 +78,6 @@ These are by design, and listed so nobody mistakes them for guarantees:
   or misfire on some wordings. It only suggests. The mode the hooks act on is the exact `Mode` field.
 - **`Accepted by`.** The field checks its form (`<name> · YYYY-MM-DD`), not who the name belongs to.
   The working agreement forbids the agent from writing it.
-- **The forbidden-command check.** It reads command text, so a command that only mentions the
-  forbidden words (an `echo`, or a heredoc) fires it. Anchor `WF_FORBIDDEN_REGEX` at the start of a
-  command to narrow it.
 - **Codex trust in `burhan doctor`.** The doctor looks for the project's hooks in `~/.codex/config.toml`
   under a key format inferred from plugin hooks; a project hook's key has not been observed yet. It
   can warn after you trusted every hook — the `Trusted` line in Codex's `/hooks` is what counts.

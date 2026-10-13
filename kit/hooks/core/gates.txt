@@ -5,7 +5,6 @@
 • READ-ONLY: investigations (and bug + spike) never modify application code.
 • TEST FIRST: failing test before the implementation; one sub-unit at a time; pause between sub-units in step mode.
 • FAST CHECK before every commit: {{CHECK_CMD}}
-• NEVER RUN: {{FORBIDDEN_REASON}}
 [skills]• SKILL FIRST: invoke the matching process skill before acting (phases/skills.md). Unsure which? superpowers:using-superpowers.
 • PHASE DETAIL: the core (WORKFLOW.md) is always loaded; open the .workflow/phases/ file its §9 names when you reach that moment.
 • NO UNVERIFIED CLAIMS: never say done / fixed / passing without running the command and showing its output.

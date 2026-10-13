@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseConfig } from '../src/lib/config.js';
 import { BurhanError } from '../src/lib/errors.js';
@@ -9,15 +8,8 @@ import { kitDir } from '../src/lib/kit.js';
 import { runCli } from '../src/main.js';
 import { ereTest } from '../src/hooks/core/ere.mjs';
 import { applySetup, planSetup } from '../src/lib/setup/engine.js';
-import { setConfigKeys, neverRunRegex, sensitiveRegex, assertWritable } from '../src/lib/setup/config-write.js';
+import { setConfigKeys, sensitiveRegex, assertWritable } from '../src/lib/setup/config-write.js';
 import { capture, tmpDir } from './helpers.js';
-
-const neverRunCases = readFileSync(join(process.cwd(), 'tests/fixtures/never-run-cases.txt'), 'utf8').trim().split('\n').map((line) => {
-  const [expected, list, command] = line.split('\t');
-  assert.ok(expected === 'flag' || expected === 'pass', line);
-  assert.ok(list && command, line);
-  return { expected, list: list.split(';'), command };
-});
 
 function installed(): string {
   const target = tmpDir('burhan-config-write-');
@@ -46,7 +38,7 @@ test('only the first live line of a key is replaced', () => {
 });
 
 test('round trip, including the real example config', () => {
-  const v = { WF_CHECK_CMD: 'make lint && make test', WF_FORBIDDEN_REGEX: neverRunRegex(['php artisan db:wipe']), WF_SENSITIVE_REGEX: sensitiveRegex(['app/Policies/']), WF_NEW_KEY: 'n' };
+  const v = { WF_CHECK_CMD: 'make lint && make test', WF_SENSITIVE_REGEX: sensitiveRegex(['app/Policies/']), WF_NEW_KEY: 'n' };
   for (const t of ['# c\nWF_CHECK_CMD=""\n', readFileSync(kitDir() + '/workflow.config.example', 'utf8')]) {
     const r = parseConfig(setConfigKeys(t, v));
     assert.deepEqual(r.problems, []);
@@ -54,51 +46,27 @@ test('round trip, including the real example config', () => {
   }
 });
 
-test('neverRunRegex through the hooks engine', () => {
-  const re = neverRunRegex(['php artisan migrate:fresh', 'php artisan db:wipe']);
-  assert.ok(ereTest(re, 'php  artisan   migrate:fresh --seed'));
-  assert.ok(!ereTest(re, 'sail php artisan db:wipe'));
-  assert.ok(!ereTest(re, 'php artisan migrate'));
-  assert.ok(!ereTest(re, 'grep -rn "migrate:fresh" README.md'));
-  assert.ok(!ereTest(re, 'echo phpXartisan db:wipe'));
-  assert.equal(neverRunRegex([]), '');
-});
-
-test('neverRunRegex escapes regex metacharacters', () => {
-  const re = neverRunRegex(['rm -rf *.log']);
-  assert.ok(ereTest(re, 'rm -rf *.log'));
-  assert.ok(!ereTest(re, 'rm -rf a.log'));
-});
-
-test('neverRunRegex flags only the command-start cases in the shared POSIX ERE fixture', () => {
-  for (const { expected, list, command } of neverRunCases) {
-    const result = spawnSync('bash', ['-c', 'grep -E -q -- "$1" <<< "$2"', '--', neverRunRegex(list), command]);
-    assert.equal(result.status === 0, expected === 'flag', command);
-  }
-});
-
-test('setup --set stores a supplied never-run ERE as-is', async () => {
-  const target = installed();
-  const raw = '(^|[;&|][[:space:]]*)(npx jest)([[:space:]]|$)';
-  assert.equal(await runCli(['setup', target, '--set', 'check=true', `never-run-regex=${raw}`], capture(target).io), 0);
-  assert.equal(parseConfig(readFileSync(join(target, '.workflow/workflow.config'), 'utf8')).values.WF_FORBIDDEN_REGEX, raw);
-});
-
-test('setup --set rejects a broken never-run ERE without changing the config', async () => {
-  const target = installed();
-  const config = join(target, '.workflow/workflow.config');
-  const before = readFileSync(config, 'utf8');
-  assert.equal(await runCli(['setup', target, '--set', 'check=true', 'never-run-regex=a('], capture(target).io), 2);
-  assert.equal(readFileSync(config, 'utf8'), before);
-});
-
-test('setup --set rejects never-run and never-run-regex together', async () => {
-  const target = installed();
-  const config = join(target, '.workflow/workflow.config');
-  const before = readFileSync(config, 'utf8');
-  assert.equal(await runCli(['setup', target, '--set', 'check=true', 'never-run=npx jest', 'never-run-regex=^npx'], capture(target).io), 2);
-  assert.equal(readFileSync(config, 'utf8'), before);
-});
+for (const setting of ['never-run=touch marker', 'never-run-regex=^touch', 'never-run=', 'never-run-regex=a(']) {
+  test(`setup --set rejects removed ${setting} without changing config or running a check`, async () => {
+    const target = installed();
+    const config = join(target, '.workflow/workflow.config');
+    const local = join(target, '.workflow/local/workflow.config');
+    mkdirSync(join(target, '.workflow/local'), { recursive: true });
+    writeFileSync(config, readFileSync(config, 'utf8') + "WF_FORBIDDEN_REGEX='^touch'\nWF_FORBIDDEN_REASON='legacy'\nWF_SINGLE_TEST_HINT='legacy runner'\n");
+    writeFileSync(local, "WF_FORBIDDEN_REGEX='^echo'\nWF_FORBIDDEN_REASON='local legacy'\nWF_SINGLE_TEST_HINT='local runner'\n");
+    const before = readFileSync(config, 'utf8');
+    const localBefore = readFileSync(local, 'utf8');
+    for (const pairs of [[setting], ['check=true', setting], [setting, 'check=true']]) {
+      const { o, io } = capture(target);
+      assert.equal(await runCli(['setup', target, '--set', ...pairs, '--force'], io), 2);
+      assert.match(o.err, /removed/i);
+      assert.ok(o.err.includes(setting.split('=')[0]));
+      assert.equal(o.out, '');
+      assert.equal(readFileSync(config, 'utf8'), before);
+      assert.equal(readFileSync(local, 'utf8'), localBefore);
+    }
+  });
+}
 
 test('sensitiveRegex anchors at the start', () => {
   const re = sensitiveRegex(['./app/Policies/', 'routes/admin.php']);
@@ -110,7 +78,7 @@ test('sensitiveRegex anchors at the start', () => {
 });
 
 test('assertWritable refuses a line break, CR or NUL: a value is one literal line (review I-1)', () => {
-  for (const v of ['a\nb', 'a\rb', 'a\0b', 'x\nWF_FORBIDDEN_REGEX=']) {
+  for (const v of ['a\nb', 'a\rb', 'a\0b', 'x\nWF_CHECK_CMD=']) {
     assert.throws(() => assertWritable('WF_CHECK_CMD', v), (e: unknown) => e instanceof BurhanError && /one line/.test(e.message), JSON.stringify(v));
   }
 });

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Before a shell `git commit`: RUN the project's fast check and report the measured result,
 # instead of asking the agent to remember to. "A hook that reports a fact cannot be forgotten;
-# one that asks nicely can." Never blocks; never runs tests or anything that mutates files —
+# one that asks nicely can." Never blocks; does not run tests or anything that mutates files —
 # only WF_CHECK_CMD, under a timeout.
 . "$(dirname "$0")/lib.sh"
 wf_init

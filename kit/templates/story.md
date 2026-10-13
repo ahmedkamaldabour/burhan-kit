@@ -35,7 +35,7 @@ Originals kept under `./sources/` (never edited). Inputs that could not be captu
 showed, and why they could not be kept.
 
 ## Open questions — one round
-Ask them **all together, once**, numbered (Q-1, Q-2 …) — never one at a time across turns. A question
+Ask them **all together, once**, numbered (Q-1, Q-2 …) — not spread across turns. A question
 marked **material** blocks plan approval.
 
 | ID | Category (business / architecture) | Material (yes / no) | Question | Answer |

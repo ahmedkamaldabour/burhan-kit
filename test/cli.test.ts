@@ -21,7 +21,8 @@ test('--help prints usage and exits 0; no command exits 2', async () => {
   const a = capture();
   assert.equal(await runCli(['--help'], a.io), 0);
   assert.match(a.o.out, /usage: burhan <command>/);
-  assert.match(a.o.out, /never-run-regex=/, 'every --set key is in the usage');
+  assert.match(a.o.out, /--set check=<cmd\|none> \[sensitive=<p;q>\]/);
+  assert.doesNotMatch(a.o.out, /never-run|neverRun|WF_FORBIDDEN|WF_SINGLE_TEST_HINT/i);
   const b = capture();
   assert.equal(await runCli([], b.io), 2);
   assert.match(b.o.out, /usage: burhan <command>/);

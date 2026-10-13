@@ -12,7 +12,7 @@ import { CANCEL, type Prompter } from './prompter.js';
 
 const agentValue = (a: SetupAnswers): string => (a.agents.length > 1 ? 'both' : a.agents[0]);
 
-/** AC-04: exactly the three questions, one at a time, each starting on the current answer (the recommended one on a fresh project). */
+/** AC-04: exactly the three questions, sequentially, each starting on the current answer (the recommended one on a fresh project). */
 async function ask(p: Prompter, a: SetupAnswers, lang: Lang): Promise<SetupAnswers | typeof CANCEL> {
   const [qa, qm, qd] = QUESTIONS[lang];
   const choices = (q: typeof qa) => q.options.map((o) => ({ value: o.value, label: o.label, hint: o.hint }));

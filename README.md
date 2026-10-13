@@ -197,7 +197,7 @@ Nothing assumes a language, framework, test runner or tracker: stack specifics l
 | Strength | Rules |
 |---|---|
 | **Measured** — burhan runs it | Your fast check, before every `git commit` |
-| **Detected** — before the turn ends | "Done" without passing evidence after the last edit; state file not updated; forbidden commands; code written in read-only work; QC provenance |
+| **Detected** — before the turn ends | "Done" without passing evidence after the last edit; state file not updated; code written in read-only work; QC provenance |
 | **Commitment** — repeated every session | Spec and plan approval, test-first, who verifies, the commit checkpoint |
 | **Blocked** | Nothing. Every hook reports and fails open (a hook that errors lets the agent carry on). On Codex, an end-of-turn finding continues the turn once, so the agent can answer it. |
 

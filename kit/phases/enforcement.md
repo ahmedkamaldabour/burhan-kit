@@ -9,8 +9,8 @@ every supported agent, from one shared core. They are configured only through `w
 | `session-gates` | session start (incl. after compaction) | Re-injects the gates; prints the state file's `Now` section |
 | `prompt-router` | user prompt | Suggests the phase/skill for the request (max 2 lines; matches English and Arabic keywords) |
 | `pre-commit-check` | before `git commit` | **Runs** the fast check and reports the measured result + the a/b/c checkpoint |
-| `post-edit-reminder` | after a file edit | Test-first reminder; single-file test hint; sensitive-path note |
-| `turn-audit` | end of turn | Flags: unverified "done" (no passing evidence command after the last code edit), state file not updated, forbidden command run, state file over budget, contradictory status in an item file, phase skill not used, code written during read-only work, a QC report without **Performed by** or written in the same turn as code |
+| `post-edit-reminder` | after a file edit | Test-first reminder; sensitive-path note |
+| `turn-audit` | end of turn | Flags: unverified "done" (no passing evidence command after the last code edit), state file not updated, state file over budget, contradictory status in an item file, phase skill not used, code written during read-only work, a QC report without **Performed by** or written in the same turn as code |
 
 **Evidence ledger.** At the end of every turn, `turn-audit` writes the turn's steps — each edit and
 each command with its exit code, in order, tagged with the item in flight — to
@@ -36,7 +36,7 @@ command **lines** — never output — so a secret typed on a command line would
 |---|---|---|
 | **Blocked** | Technically prevented | none by default — every hook fails open and reports (on agents whose end-of-turn hook can only reach the model by continuing the turn, a finding continues the turn **once**; it never blocks an action) |
 | **Measured** | The check is run; the real result is reported | fast check before commit |
-| **Detected** | Caught and challenged before the turn ends | unverified claims (no passing evidence after the last edit), state not written, forbidden commands, read-only violations, QC without provenance |
+| **Detected** | Caught and challenged before the turn ends | unverified claims (no passing evidence after the last edit), state not written, read-only violations, QC without provenance |
 | **Commitment** | Behavioural rule, reinforced at session start | spec approval, test-first, asking who verifies |
 
 Only what is *blocked* and what the tooling *does itself* is guaranteed. Everything else is a strong

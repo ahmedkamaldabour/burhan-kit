@@ -44,10 +44,6 @@ WF_EVIDENCE_REGEX=""
 #   e.g. WF_EVIDENCE_REGEX='tsc --noEmit|eslint|npx jest [^ ]+'
 #   e.g. WF_EVIDENCE_REGEX='phpunit|php artisan test --filter'
 #   e.g. WF_EVIDENCE_REGEX='pytest [^ ]+|go test ./'
-# How to run ONE test file — shown in reminders. {{FILE}} is replaced by the edited file.
-WF_SINGLE_TEST_HINT=""
-#   e.g. WF_SINGLE_TEST_HINT='npx jest {{FILE}} --runInBand'
-#   e.g. WF_SINGLE_TEST_HINT='vendor/bin/phpunit {{FILE}}'
 
 # ---- Access control -------------------------------------------------------------------------
 # Paths whose changes affect authorization / visibility, and the reminder shown after editing one.
@@ -55,13 +51,6 @@ WF_SENSITIVE_REGEX=""
 #   e.g. WF_SENSITIVE_REGEX='(guard|polic(y|ies)|permission|role|auth|scope)'
 WF_SENSITIVE_NOTE=""
 #   e.g. WF_SENSITIVE_NOTE='Access-control path: re-read authorization and record-level visibility; test allowed AND denied.'
-
-# ---- Resource / safety constraints ----------------------------------------------------------
-# Commands automation must never run; the end-of-turn audit flags any that appear.
-WF_FORBIDDEN_REGEX=""
-#   e.g. WF_FORBIDDEN_REGEX='(^|[;&| ])(npx jest|npm (run )?test)[[:space:]]*($|[;&|])'
-WF_FORBIDDEN_REASON=""
-#   e.g. WF_FORBIDDEN_REASON='The full test suite has exhausted memory on this machine; run one file at a time.'
 
 # ---- Process skills (phases/skills.md) -------------------------------------------------------
 # "superpowers" enables skill routing and the skill-usage audit; "none" turns both off.

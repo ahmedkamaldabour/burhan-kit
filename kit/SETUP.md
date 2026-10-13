@@ -15,10 +15,10 @@ If `.workflow/WORKFLOW.md` exists, use `upgrade` (dry run, then `--apply` once a
 ## 2. Confirm the agents
 Look for `.claude/` and `.codex/` / `AGENTS.md`; Confirm the agents the human uses. Add a missing one with `--agents` (dry run first).
 ## 3. Discover — change nothing
-Read the build, test, lint and CI files; run nothing that writes, installs or calls the network. Propose each key with its evidence as file:line (or "not found"): `WF_CHECK_CMD` (fast check, seconds), `WF_CODE_REGEX`, `WF_TEST_REGEX`, `WF_EVIDENCE_REGEX`, `WF_SINGLE_TEST_HINT` (`{{FILE}}` where the file goes, e.g. `node --test {{FILE}}`), `WF_SENSITIVE_REGEX` + `WF_SENSITIVE_NOTE` (no reminder without the note), `WF_FORBIDDEN_REGEX` + `WF_FORBIDDEN_REASON` (commands never run here), `WF_DOCS_DIR`.
+Read the build, test, lint and CI files; run nothing that writes, installs or calls the network. Propose each key with its evidence as file:line (or "not found"): `WF_CHECK_CMD` (fast check, seconds), `WF_CODE_REGEX`, `WF_TEST_REGEX`, `WF_EVIDENCE_REGEX`, `WF_SENSITIVE_REGEX` + `WF_SENSITIVE_NOTE` (no reminder without the note), `WF_DOCS_DIR`.
 Regexes are POSIX extended regular expressions (`grep -E`): no `\d`, `\w` or lookarounds. Put every regex in single quotes (`WF_CODE_REGEX='^src/.*$'`); keep its anchors.
 ## 4. Ask only business questions
-All together, once: the branch rule, the commands that must never run here and why, the sensitive paths.
+All together, once: the branch rule, the sensitive paths.
 ## 5. Write the config — after approval
 The agent may edit .workflow/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files. Show the change as a diff; Write it only after the human approves. If `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` or a `WF_MODEL_*` key changed, run `upgrade` (dry run, then `--apply`).
 ## 6. Prove it works

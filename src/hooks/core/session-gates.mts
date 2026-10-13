@@ -17,7 +17,7 @@ function fill(v: Record<string, string>, skillsOn: boolean): string {
   const out: string[] = [];
   next: for (let line of lines) {
     if (line.startsWith('[skills]')) { if (!skillsOn) continue; line = line.slice('[skills]'.length); }
-    for (const key of ['DOCS_DIR', 'STATE_FILE', 'CHECK_CMD', 'FORBIDDEN_REASON', 'MODE']) {
+    for (const key of ['DOCS_DIR', 'STATE_FILE', 'CHECK_CMD', 'MODE']) {
       if (line.includes(`{{${key}}}`)) {
         const val = v[key] ?? '';
         if (val === '') continue next;
@@ -50,10 +50,7 @@ export const sessionGates: Check = ({ cfg, project }) => {
       break;
     }
   }
-  let reason = cfg.WF_FORBIDDEN_REASON ?? '';
-  if ((cfg.WF_FORBIDDEN_REGEX ?? '') !== '' && reason === '') reason = 'commands matching WF_FORBIDDEN_REGEX in .workflow/workflow.config.';
-
-  out.push(fill({ DOCS_DIR: cfg.WF_DOCS_DIR ?? '', STATE_FILE: cfg.WF_STATE_FILE ?? '', CHECK_CMD: cfg.WF_CHECK_CMD ?? '', FORBIDDEN_REASON: reason, MODE: mode },
+  out.push(fill({ DOCS_DIR: cfg.WF_DOCS_DIR ?? '', STATE_FILE: cfg.WF_STATE_FILE ?? '', CHECK_CMD: cfg.WF_CHECK_CMD ?? '', MODE: mode },
     cfg.WF_SKILLS === 'superpowers'));
   if (cfg.WF_STACK_SETUP === 'pending') out.push("⚑ FIRST USE: burhan's project checks are not set up yet. Before other work, run `burhan setup --stack` and follow it.");
   if (oldPlanOnly) out.push(oldPlanOnly);

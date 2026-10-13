@@ -129,7 +129,7 @@ while IFS= read -r f; do
   p="$(printf '%s' "$progs" | jq_problems)"
   [ -n "$p" ] && all="${all}${f#"$T_ROOT"/}: ${p}"$'\n'
 done < <(find "$T_KIT/hooks" -name '*.sh' -type f | sort)
-check "read the hooks' jq programs ($total) — never a pass on an empty list" "$([ "$total" -ge 50 ] && echo yes)" has yes
+check "read the hooks' jq programs ($total) — never a pass on an empty list" "$([ "$total" -ge 49 ] && echo yes)" has yes
 # The large programs must be among them (they follow --slurpfile, --arg or a line continuation).
 for marker in 'def results:' 'def prompt_like:' '{ts: $ts, agent: $a' 'patch_exit: (if' 'def patch_files:' '($subs | from_entries)' '.turn += $t[0]' '{files_created:$c[0]'; do
   check "the program with '$marker' is read" "$allprogs" has "$marker"

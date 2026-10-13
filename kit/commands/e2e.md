@@ -6,7 +6,7 @@ argument-hint: <slug>, or a short title if the item does not exist yet
 You are running the **per-item end-to-end** workflow for: **$ARGUMENTS**
 
 The authoritative process is `.workflow/WORKFLOW.md` — follow it; this command only sequences it.
-Project values (docs location, state file, check and test commands, forbidden commands) come from
+Project values (docs location, state file, check and test commands) come from
 `.workflow/bindings.md` (WORKFLOW §1) and `.workflow/workflow.config`. **Never invent a command.**
 
 If `$ARGUMENTS` is empty, ask which item to work on and stop.
@@ -78,7 +78,6 @@ For the next unimplemented sub-unit only:
 - **Scope discipline:** build exactly what the item asks; anything extra is surfaced, not baked in.
 - **Test first:** write the failing test, run it, see it fail for the right reason → smallest change
   → green → the fast check.
-- Run **only this sub-unit's test file(s)**, one at a time. Never anything on the forbidden list.
 - A failure you didn't expect: before calling it a regression, stash the change and re-run the same
   check on a clean baseline.
 - Update the sub-unit status (🔵 → 🟢) in the plan and the state file — every transition, as it
@@ -94,7 +93,7 @@ For the next unimplemented sub-unit only:
   checklist when it touches nothing sensitive and no scope escalator, the **full** review otherwise
   (`.workflow/phases/review.md` · Sized by risk).
 - Fix in-scope findings; carry the rest forward (`.workflow/phases/discoveries.md` for anything out of scope).
-- Re-run the affected single-file tests and the fast check after fixes. Show the output.
+- Re-run the affected tests and the fast check after fixes. Show the output.
 
 ## 5) Between sub-units
 

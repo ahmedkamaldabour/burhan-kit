@@ -35,26 +35,22 @@ check "state only MENTIONED -> still fires (measured bug)" \
   "$(a "$(t '[]' '["AI_SPEC/docs/foo/foo-story.md"]' '[]' '[]' 'I updated .workflow/local/PROGRESS.md')")" has "STATE-TRANSITION GATE"
 check "docs index written -> silent" "$(a "$(t '[]' '["AI_SPEC/docs/README.md"]' '[]' '[]' '')")" lacks "STATE-TRANSITION GATE"
 
-echo "  -- C: forbidden command"
+echo "  -- legacy settings are inert"
 P="$(proj "WF_FORBIDDEN_REGEX='run-everything'" "WF_FORBIDDEN_REASON='it melts the laptop'")"
 out="$(a "$(t '[]' '[]' '["tool run-everything --all"]' '[]' '')")"
-check "forbidden command -> fires" "$out" has "FORBIDDEN COMMAND"
-check "reason shown" "$out" has "it melts the laptop"
-check "allowed command -> silent" "$(a "$(t '[]' '[]' '["tool run-one x"]' '[]' '')")" lacks "FORBIDDEN COMMAND"
+check "legacy WF_FORBIDDEN_REGEX emits no audit finding" "$out" lacks "FORBIDDEN"
+check "legacy reason is ignored" "$out" lacks "it melts the laptop"
 P="$(proj)"
-check "regex empty -> silent" "$(a "$(t '[]' '[]' '["tool run-everything"]' '[]' '')")" lacks "FORBIDDEN COMMAND"
 
-echo "  -- C: generated never-run pattern"
-while IFS=$'\t' read -r expected list command; do
-  pattern="$(node --input-type=module -e 'import { neverRunRegex } from "./dist/lib/setup/config-write.js"; console.log(neverRunRegex(process.argv[1].split(";")))' "$list")"
-  P="$(proj "WF_FORBIDDEN_REGEX='$pattern'")"
-  output="$(a "$(t '[]' '[]' "$(jq -cn --arg command "$command" '[$command]')" '[]' '')")"
-  if [ "$expected" = flag ]; then
-    check "generated never-run flags: $command" "$output" has "FORBIDDEN COMMAND"
-  else
-    check "generated never-run passes: $command" "$output" lacks "FORBIDDEN COMMAND"
-  fi
-done < "$T_ROOT/tests/fixtures/never-run-cases.txt"
+mkdir -p "$P/.workflow/local"
+printf '%s\n' "WF_FORBIDDEN_REGEX='run-everything'" "WF_FORBIDDEN_REASON='legacy local reason'" "WF_SINGLE_TEST_HINT='legacy local runner'" > "$P/.workflow/local/workflow.config"
+out="$(a "$(t '[]' '[]' '["tool run-everything"]' '[]' '')")"
+check_eq "legacy local settings emit no audit finding" "$out" ""
+header="$(sed -n '1,16p' "$CORE/turn-audit.sh")"
+check "audit header has no C label" "$header" lacks "#   C "
+for label in D E F G H; do
+  check "audit header retains label $label" "$header" has "#   $label "
+done
 
 echo "  -- D: state file over budget"
 P="$(proj)"; mkdir -p "$P/.workflow/local"
@@ -204,11 +200,10 @@ printf '%s\n' '- **Status:** Draft' '- Result: ✅ Reviewed → reviews/x.md' > 
 check "E: a result line with one arrow is not a ladder" "$(a "$(t '[]' '["AI_SPEC/docs/foo/foo-story.md",".workflow/local/PROGRESS.md"]' '[]' '[]' '')")" has "STALE-STATUS GATE"
 
 echo "  -- combined"
-P="$(proj "${BASE[@]}" "WF_FORBIDDEN_REGEX='run-everything'")"
+P="$(proj "${BASE[@]}")"
 out="$(a "$(t '[]' '["a.src","AI_SPEC/docs/foo/foo-plan.md"]' '["run-everything"]' '[]' 'done')")"
 check "several checks -> one message (A)" "$out" has "VERIFICATION GATE"
 check "several checks -> one message (B)" "$out" has "STATE-TRANSITION GATE"
-check "several checks -> one message (C)" "$out" has "FORBIDDEN COMMAND"
 echo "  -- H: QC provenance / independence"
 P="$(proj "${BASE[@]}")"; mkdir -p "$P/AI_SPEC/docs/foo/reviews"
 Q="AI_SPEC/docs/foo/reviews/foo-qc.md"
@@ -394,7 +389,7 @@ unset WF_EVIDENCE_DIR
 echo "  -- subagent steps"
 # sst: like st, but only the MAIN agent's steps (no "by") appear in files_edited / shell_commands.
 sst() { jq -cn --argjson s "$1" --arg x "${2:-All done ✅}" '{turn:{files_created:[], files_edited:[ $s[] | select(.kind=="edit" and (has("by")|not)) | .file ], shell_commands:[ $s[] | select(.kind=="cmd" and (has("by")|not)) | .cmd ], skills_used:[], assistant_text:$x, steps:$s}}'; }
-P="$(proj "${BASE[@]}" "WF_FORBIDDEN_REGEX='^git push'")"
+P="$(proj "${BASE[@]}")"
 out="$(a "$(sst '[{"kind":"edit","file":"a.src","seq":1},{"kind":"cmd","cmd":"verify-it a","exit":0,"status":"ok","seq":2},{"kind":"cmd","cmd":"verify-it a; echo $?","exit":null,"status":"blocked","seq":3,"by":"burhan-reviewer"}]')")"
 check "a subagent's refused probe after a passing run proves nothing either way -> silent" "$out" lacks "VERIFICATION GATE"
 out="$(a "$(sst '[{"kind":"edit","file":"a.src","seq":1},{"kind":"cmd","cmd":"verify-it a","exit":0,"status":"ok","seq":2},{"kind":"cmd","cmd":"verify-it a","exit":null,"status":"blocked","seq":3}]')")"
@@ -417,15 +412,9 @@ out="$(a "$(sst '[{"kind":"edit","file":"a.src","seq":1},{"kind":"cmd","cmd":"ve
 check "main agent: a blocked evidence command is NOT hidden by another one that passed" "$out" has 'last run of `verify-it test` was blocked'
 out="$(a "$(sst '[{"kind":"edit","file":"a.src","seq":1},{"kind":"cmd","cmd":"verify-it test","exit":null,"status":"background","seq":2},{"kind":"cmd","cmd":"verify-it lint","exit":0,"status":"ok","seq":3}]')")"
 check "...nor a background one" "$out" has 'last run of `verify-it test` was in the background'
-P="$(proj "${BASE[@]}" "WF_FORBIDDEN_REGEX='^git push'")"
-out="$(a "$(sst '[{"kind":"cmd","cmd":"cd x\ngit push --force","exit":0,"status":"ok","seq":1,"by":"burhan-builder"}]' 'ok')")"
-check "C: a forbidden command on line 2 of a subagent's command" "$out" has "FORBIDDEN COMMAND"
-P="$(proj "${BASE[@]}" "WF_FORBIDDEN_REGEX='^git push'")"
+P="$(proj "${BASE[@]}")"
 out="$(a "$(sst '[{"kind":"edit","file":"AI_SPEC/docs/foo/reviews/foo-qc.md","seq":1,"by":"burhan-reviewer"},{"kind":"edit","file":".workflow/local/PROGRESS.md","seq":2,"by":"burhan-reviewer"}]' 'qc written')")"
 check "B: the state file written by the subagent counts" "$out" lacks "STATE-TRANSITION GATE"
-out="$(a "$(sst '[{"kind":"cmd","cmd":"git push --force origin main","exit":0,"status":"ok","seq":1,"by":"burhan-builder"}]' 'ok')")"
-check "C sees a subagent's command and names the subagent" "$out" has "FORBIDDEN COMMAND"
-check "...naming it" "$out" has "burhan-builder"
 P="$(proj "${BASE[@]}")"
 out="$(a "$(sst '[{"kind":"edit","file":"AI_SPEC/docs/foo/foo-story.md","seq":1,"by":"burhan-planner"}]' 'story drafted')")"
 check "B: a story written by a planner subagent with no state update -> fires" "$out" has "STATE-TRANSITION GATE"

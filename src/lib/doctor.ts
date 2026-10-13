@@ -151,11 +151,12 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     add('warn', `${f}: CRLF line endings (${cfg.problems.filter((p) => p.file === f && p.reason.startsWith('CRLF')).length} lines) — save it with LF endings; the hooks cannot read those lines`);
   for (const p of cfg.problems.filter((q) => !q.reason.startsWith('CRLF'))) add('warn', `${p.file}:${p.line}: ${p.reason} — the hooks ignore this line`);
   const example = Object.keys(parseConfig(readFileSync(join(kitDir(), 'workflow.config.example'), 'utf8')).values);
+  const legacy = ['WF_FORBIDDEN_REGEX', 'WF_FORBIDDEN_REASON', 'WF_SINGLE_TEST_HINT'];
   if (team === null) { if (!unreadable(join(target, TEAM_CONFIG))) add('warn', `${TEAM_CONFIG} missing — run burhan upgrade --apply to create it from the example`); }
   else {
     const missing = example.filter((k) => !(k in team));
     if (missing.length) add('warn', `${TEAM_CONFIG}: keys missing compared with this version's example (defaults apply; copy them from workflow.config.example to set them): ${missing.join(', ')}`);
-    const unknown = Object.keys(cfg.values).filter((k) => !example.includes(k));
+    const unknown = Object.keys(cfg.values).filter((k) => !example.includes(k) && !legacy.includes(k));
     if (unknown.length) add('warn', `unknown config keys (a typo?): ${unknown.join(', ')}`);
     if (!missing.length && !unknown.length && !cfg.problems.length) add('ok', 'workflow.config: every key known, none missing');
   }

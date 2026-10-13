@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { parseConfig } from '../src/lib/config.js';
 import { BurhanError } from '../src/lib/errors.js';
 import { applySetup, planSetup } from '../src/lib/setup/engine.js';
-import { neverRunRegex, sensitiveRegex } from '../src/lib/setup/config-write.js';
+import { sensitiveRegex } from '../src/lib/setup/config-write.js';
 import { parseSetArgs, setStack, stackInstructions } from '../src/lib/setup/stack.js';
 import { capture, tmpDir } from './helpers.js';
 import { install } from '../src/lib/install.js';
@@ -21,7 +21,7 @@ function installed(): string {
 }
 const cfgText = (t: string): string => readFileSync(join(t, '.workflow/workflow.config'), 'utf8');
 const cfgOf = (t: string) => parseConfig(cfgText(t)).values;
-const v = (o: Partial<{ check: string; neverRun: string[]; sensitive: string[] }> = {}) => ({ check: 'true', neverRun: [], sensitive: [], ...o });
+const v = (o: Partial<{ check: string; sensitive: string[] }> = {}) => ({ check: 'true', sensitive: [], ...o });
 
 test('setStack with a passing check saves it, marks done and writes the verify skill', async () => {
   const t = installed();
@@ -61,16 +61,13 @@ test('check=none saves an empty check and done', async () => {
   assert.equal(cfgOf(t).WF_STACK_SETUP, 'done');
 });
 
-test('never-run and sensitive lists are written as regexes with a plain-words reason', async () => {
+test('sensitive lists are written as regexes without removed keys', async () => {
   const t = installed();
-  const list = ['php artisan migrate:fresh', 'php artisan db:wipe'];
   const { io } = capture(t);
-  assert.equal(await setStack(t, v({ neverRun: list, sensitive: ['app/Policies/'] }), { force: false }, io), 0);
+  assert.equal(await setStack(t, v({ sensitive: ['app/Policies/'] }), { force: false }, io), 0);
   const c = cfgOf(t);
-  assert.equal(c.WF_FORBIDDEN_REGEX, neverRunRegex(list));
   assert.equal(c.WF_SENSITIVE_REGEX, sensitiveRegex(['app/Policies/']));
-  assert.ok(c.WF_FORBIDDEN_REASON.includes('php artisan migrate:fresh') && c.WF_FORBIDDEN_REASON.includes('php artisan db:wipe'));
-  assert.match(c.WF_FORBIDDEN_REASON, /^the owner chose these at setup: /);
+  for (const key of ['WF_FORBIDDEN_REGEX', 'WF_FORBIDDEN_REASON', 'WF_SINGLE_TEST_HINT']) assert.ok(!(key in c), key);
 });
 
 test('sensitive paths save the access-control default note, but keep an existing note (AC-19)', async () => {
@@ -84,32 +81,22 @@ test('sensitive paths save the access-control default note, but keep an existing
   assert.equal(cfgOf(t).WF_SENSITIVE_NOTE, 'Keep this note');
 });
 
-test('a check matching the never-run list is refused without running', async () => {
+test('legacy config settings do not refuse a check and their lines are preserved', async () => {
   const t = installed();
-  const marker = join(t, 'ran.marker');
-  const before = cfgText(t);
-  const { o, io } = capture(t);
-  const code = await setStack(t, v({ check: `touch ${marker}`, neverRun: ['touch'] }), { force: false }, io);
-  assert.notEqual(code, 0);
-  assert.ok(!existsSync(marker));
-  assert.equal(cfgText(t), before);
-  assert.match(o.out + o.err, /never[- ]run|refus/i);
-});
-
-test('a check matching the existing never-run list is refused too', async () => {
-  const t = installed();
-  const { io } = capture(t);
-  await setStack(t, v({ neverRun: ['touch'] }), { force: false }, io);
+  const legacy = "WF_FORBIDDEN_REGEX='^touch'\nWF_FORBIDDEN_REASON='legacy reason'\nWF_SINGLE_TEST_HINT='legacy runner'\n";
+  writeFileSync(join(t, '.workflow/workflow.config'), cfgText(t) + legacy);
   const marker = join(t, 'ran2.marker');
-  assert.notEqual(await setStack(t, v({ check: `touch ${marker}` }), { force: true }, capture(t).io), 0);
-  assert.ok(!existsSync(marker));
+  const { o, io } = capture(t);
+  assert.equal(await setStack(t, v({ check: `touch ${marker}` }), { force: false }, io), 0);
+  assert.ok(existsSync(marker));
+  assert.ok(cfgText(t).endsWith(legacy));
+  assert.doesNotMatch(o.out + o.err, /FORBIDDEN|NEVER RUN|legacy reason|legacy runner/);
 });
 
 test('a value with a single quote is refused and nothing is written', async () => {
   const t = installed();
   const before = cfgText(t);
   await assert.rejects(setStack(t, v({ check: "echo 'x'" }), { force: false }, capture(t).io), BurhanError);
-  await assert.rejects(setStack(t, v({ neverRun: ["a'b"] }), { force: false }, capture(t).io), BurhanError);
   await assert.rejects(setStack(t, v({ sensitive: ["a'b"] }), { force: false }, capture(t).io), BurhanError);
   assert.equal(cfgText(t), before);
 });
@@ -120,10 +107,13 @@ test('not installed -> a clear error', async () => {
 });
 
 test('parseSetArgs', () => {
-  assert.deepEqual(parseSetArgs(['check=make lint', 'never-run= a ; b;;', 'sensitive=p;q ']), { check: 'make lint', neverRun: ['a', 'b'], sensitive: ['p', 'q'] });
-  assert.deepEqual(parseSetArgs(['check=none']), { check: 'none', neverRun: [], sensitive: [] });
+  assert.deepEqual(parseSetArgs(['check=make lint', 'sensitive=p;q ']), { check: 'make lint', sensitive: ['p', 'q'] });
+  assert.deepEqual(parseSetArgs(['check=none']), { check: 'none', sensitive: [] });
   assert.throws(() => parseSetArgs(['check=x', 'bogus=1']), BurhanError);
-  assert.throws(() => parseSetArgs(['never-run=a']), BurhanError);
+  for (const key of ['never-run', 'never-run-regex']) {
+    assert.throws(() => parseSetArgs([`${key}=a`]), /removed/i);
+    assert.throws(() => parseSetArgs(['check=x', `${key}=`]), /removed/i);
+  }
   assert.throws(() => parseSetArgs(['check=']), BurhanError);
   assert.throws(() => parseSetArgs(['check=x', 'nokeyvalue']), BurhanError);
 });
@@ -133,9 +123,10 @@ test('stackInstructions: the fixed block, never invent, no setting names', () =>
     const s = stackInstructions(lang);
     assert.ok(!s.includes('WF_'));
     assert.ok(s.includes('npx burhan-kit setup --set'));
+    assert.doesNotMatch(s, /never[- ]run|forbidden|SINGLE_TEST_HINT|ممنوع|متتشغّلش/i);
   }
   const s = stackInstructions('en');
-  for (const l of ['burhan needs one thing before it can check your work:', 'Recommended for this project (<stack>):', '  Check before commit   <command or "none found, tell me which to use">', '  Never run             <commands, or "nothing">', '  Sensitive             <paths, or "nothing">', '● Use these   ○ Change something']) assert.ok(s.includes(l), l);
+  for (const l of ['burhan needs one thing before it can check your work:', 'Recommended for this project (<stack>):', '  Check before commit   <command or "none found, tell me which to use">', '  Sensitive             <paths, or "nothing">', '● Use these   ○ Change something']) assert.ok(s.includes(l), l);
   assert.match(s, /never invent/i);
   assert.match(s, /ask/i);
 });

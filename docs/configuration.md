@@ -43,7 +43,7 @@
 | `burhan setup [dir] --agent [--lang en\|ar]` | Prints the questions and rules for an AI agent to ask, with the recommended answers |
 | `burhan setup [dir] --answers <file> [--apply]` | Shows, or with `--apply` writes, the setup for the answers in a JSON file |
 | `burhan setup [dir] --stack` | Prints the first-use instructions for an AI agent  |
-| `burhan setup [dir] --set check=<cmd\|none> [never-run=<a;b> \| never-run-regex='<ERE>'] [sensitive=<p;q>] [--force]` | Sets the check, the never-run commands and the sensitive paths directly. `never-run` takes plain commands and matches them only at a command start; `never-run-regex` stores your own POSIX ERE after checking it compiles (not both at once) |
+| `burhan setup [dir] --set check=<cmd\|none> [sensitive=<p;q>] [--force]` | Sets the check and the sensitive paths directly |
 | `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.workflow/local/` and the work files in `.burhan/`; `--all` removes them too (a work-files folder outside `.burhan/` is always kept). Validates everything before the first change, never follows a symlink out of the project, and touches only files carrying burhan's mark |
 | `burhan upgrade [--apply]` | Refresh kit-owned files; agents default to the installed ones; idempotent. Never rewrites `workflow.config` — `doctor` lists keys a newer version added |
 | `burhan doctor` | Read-only: bash ≥ 4, `jq` ≥ 1.6 (an older jq cannot compile the hooks' filters), a sha256 tool, `timeout`; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust (read from `~/.codex/config.toml`, never written); the state file's size. `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
@@ -66,9 +66,7 @@ holds personal overrides, read after the team file, key by key.
 | `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` | the fast, non-mutating check run before every commit |
 | `WF_CODE_REGEX`, `WF_TEST_REGEX` | which paths are code / tests |
 | `WF_EVIDENCE_REGEX` | which commands count as verification evidence |
-| `WF_SINGLE_TEST_HINT` | how to run one test file (`{{FILE}}` placeholder) |
 | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` | access-control paths and the reminder after editing one |
-| `WF_FORBIDDEN_REGEX`, `WF_FORBIDDEN_REASON` | commands automation must never run, and why |
 | `WF_STACK_SETUP` | `pending` = the agent sets up the project checks on first use (`setup --stack`); empty or `done` = nothing to do |
 | `WF_SKILLS` | `superpowers` to bind the process-skill mapping, or `none` (see below) |
 | `WF_MODE_DEFAULT`, `WF_MODE_<TYPE>_<SCOPE>` | the mode when an item does not set one: `step` (default) or `auto`; any other value = `step`. E.g. `WF_MODE_BUG_BOUNDED=auto` |
@@ -81,14 +79,10 @@ holds personal overrides, read after the team file, key by key.
 [`kit/workflow.config.example`](../kit/workflow.config.example) documents each key with examples for
 several stacks.
 
-## New sessions and never-run commands
+## New sessions
 
 After setup, start a new agent session in the project directory. Do the same after switching to a
 worktree or when setup changes hooks during a session, so the new session reads the project hooks.
-
-To block a never-run command today, use your agent's own deny rules: Claude Code permissions deny
-rules, or Codex execpolicy deny rules. Configure the command pattern there; burhan only reports
-never-run commands. Its own blocking mode is planned for 0.3.
 
 ## Hooks
 
@@ -97,8 +91,8 @@ never-run commands. Its own blocking mode is planned for 0.3.
 | `session-gates` | session start | Re-injects the gates; shows the state file's `Now` section and the item's mode |
 | `prompt-router` | your prompt | Suggests the phase for the request (English and Arabic phrases, max 2 lines) — a suggestion only |
 | `pre-commit-check` | before `git commit` | **Runs** your fast check and reports the measured result, plus the commit checkpoint |
-| `post-edit-reminder` | after an edit | Test-first nudge, single-file test hint, sensitive-path note |
-| `turn-audit` | end of turn | Flags unverified "done" (no passing evidence after the last code edit), state not updated, forbidden commands, state file over budget, contradictory status, skipped process skills, code written during read-only work, QC provenance |
+| `post-edit-reminder` | after an edit | Test-first nudge, sensitive-path note |
+| `turn-audit` | end of turn | Flags unverified "done" (no passing evidence after the last code edit), state not updated, state file over budget, contradictory status, skipped process skills, code written during read-only work, QC provenance |
 
 Every hook **fails open** and **reports** — none blocks. "The turn" means the current turn — from
 your last real message (compaction summaries, tool results and skill expansions don't count) — never
@@ -112,7 +106,7 @@ The end-of-turn audit reads the agent's tool calls, not the disk:
 - on Claude Code, a subagent's edit and command calls are read from its own transcript and placed in
   the turn's order (a background agent by timestamp). They count for the "done" check (a failure
   from any agent counts; a subagent's blocked or background run is dropped, since it never ran), for
-  the forbidden-command, state-file, read-only and QC-provenance checks, and in the ledger tagged
+  the state-file, read-only and QC-provenance checks, and in the ledger tagged
   with the subagent's name. A subagent's shell redirections are not seen;
 - failed edit calls are not counted, and the final message is taken from the Stop payload.
 
@@ -126,7 +120,7 @@ and QC reports to cite.
 
 ## Independent QC and model per phase
 
-QC never runs in the context that wrote the code: in Claude Code `/burhan:qc` delegates to the
+QC uses a fresh context: in Claude Code `/burhan:qc` delegates to the
 generated `burhan-reviewer` subagent, which reads only the files; other agents run it in a new
 session. Every QC and review records **Performed by** (`<agent> · <model> · <context>`); same-session
 work is written down as a limitation and counted as self-review. With Claude Code ≥ 2.1.286, the

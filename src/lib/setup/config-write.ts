@@ -18,13 +18,6 @@ export function setConfigKeys(text: string, values: Record<string, string>): str
 const ERE_SPECIAL = /[.[\]()*+?{}|^$\\]/g;
 const esc = (s: string): string => s.replace(ERE_SPECIAL, '\\$&');
 
-/** AC-15: plain never-run commands start a shell command, not an argument, quote or assignment. The following
- * character must end the command words rather than extend them (`lint:fix`, `testing`, `jester`). */
-export function neverRunRegex(commands: string[]): string {
-  const choices = commands.map((c) => c.trim()).filter(Boolean).map((c) => esc(c).replace(/ +/g, '[[:space:]]+'));
-  return choices.length ? `(^|[;&|][[:space:]]*)(${choices.join('|')})([^[:alnum:]_:-]|$)` : '';
-}
-
 /** R-3: sensitive paths -> one ERE, anchored at the project root: `^(p1|p2)`. Empty list -> ''. */
 export function sensitiveRegex(paths: string[]): string {
   const ps = paths.map((p) => p.trim().replace(/^(\.\/)+/, '').replace(/\/$/, '')).filter(Boolean);

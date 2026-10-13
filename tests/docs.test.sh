@@ -78,13 +78,14 @@ check "SETUP.md drops the old blanket .workflow edit ban" "$SETUP" lacks "Do not
 config_grammar='Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote.'
 check "configuration docs state the single-quote grammar" "$(cat docs/configuration.md)" has "$config_grammar"
 
-echo "no unmeasured claims (AC-20) and honest wording about never-run commands"
-# Claim words: faster, lighter, tokens, token cost (lines about credentials, e.g. R148's "tokens, passwords", are exempt). Wording rule: a line that talks about
-# never-run commands (never run / must never / forbidden) must not say block/blocks/blocked.
+echo "no unmeasured claims (AC-20)"
+# Claim words: faster, lighter, tokens, token cost (lines about credentials, e.g. R148's "tokens, passwords", are exempt).
 for f in README.md README.ar.md kit/SETUP.md; do
   check "$f has no speed / weight / token claim" "$(grep -n -i -E 'faster|lighter|tokens|token cost' "$f" | grep -v -i credentials)" lacks ":"
-  check "$f never says 'blocked' about never-run commands" "$(grep -n -i -E 'never run|must never|forbidden' "$f" | grep -i -E 'block')" lacks ":"
 done
+removed='WF_FORBIDDEN|never-run|neverRun|NEVER RUN|FORBIDDEN|SINGLE_TEST_HINT|one file at a time|one at a time|resource constraint|single-file test hint|blocking mode|أوامر ممنوعة'
+hits="$(grep -n -i -E "$removed" README*.md ROADMAP.md; find docs kit -type f -name '*.md' -exec grep -n -i -E "$removed" {} +)"
+check_eq "shipped docs omit removed settings and resource guidance" "$hits" ""
 
 echo "uninstall --all is described in full (review I-1: it also removes the config, bindings and local/)"
 for f in README.md README.ar.md docs/configuration.md; do
@@ -98,19 +99,19 @@ echo "USAGE lists the new commands"
 usage="$(node dist/cli.js --help 2>&1)"
 check "--help lists setup" "$usage" has "setup"
 check "--help lists uninstall" "$usage" has "uninstall"
+check "--help omits removed setup options" "$usage" lacks "never-run"
+check "--help retains sensitive paths" "$usage" has "[sensitive=<p;q>]"
 
 echo "configuration.md (pending owner) — drop this group if the owner declines"
 CFG="$(cat docs/configuration.md)"
 check "Commands table has burhan setup" "$(grep -E '^\| `burhan setup' docs/configuration.md)" has "burhan setup"
 check "Commands table has burhan uninstall" "$(grep -E '^\| `burhan uninstall' docs/configuration.md)" has "burhan uninstall"
 check "WF_STACK_SETUP is documented" "$CFG" has "WF_STACK_SETUP"
-check "setup --set never-run-regex is documented" "$(grep -E '^\| `burhan setup' docs/configuration.md)" has "never-run-regex="
+check "setup --set lists only the supported settings" "$(grep -E '^\| `burhan setup' docs/configuration.md)" has "--set check=<cmd\\|none> [sensitive=<p;q>]"
 check ".burhan/ is mentioned" "$CFG" has ".burhan/"
 check "configuration.md tells worktree users to start a new agent session" "$CFG" has "worktree"
 check "configuration.md tells mid-session users to start a new agent session" "$CFG" has "new agent session"
-check "configuration.md names Claude Code permissions deny rules" "$CFG" has "Claude Code permissions"
-check "configuration.md names Codex execpolicy deny rules" "$CFG" has "Codex execpolicy"
-check "ROADMAP plans burhan blocking mode for 0.3" "$(cat ROADMAP.md)" has "blocking mode"
-check "ROADMAP puts burhan blocking mode in 0.3" "$(sed -n '/^## Planned: 0.3/,/^## /p' ROADMAP.md)" has "blocking mode"
+check "configuration.md has no replacement permission sentence" "$CFG" lacks "Codex execpolicy"
+check "ROADMAP omits the removed blocking proposal" "$(cat ROADMAP.md)" lacks "blocking mode"
 
 t_summary

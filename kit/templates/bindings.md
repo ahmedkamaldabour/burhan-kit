@@ -15,13 +15,12 @@ The project-specific half of the working agreement (`.workflow/WORKFLOW.md` §1)
 | **Discovery index** | *(default `<discovery>/README.md` — one line per discovery)* | — |
 | **Project memory location** | *(PROJECT.md + context/ — phases/memory.md)* | — |
 | **Fast check command** | *(non-mutating, seconds — run before every commit)* | `WF_CHECK_CMD` |
-| **Test command** (single file / full) | | `WF_SINGLE_TEST_HINT` |
+| **Test command** | | — |
 | **Run / preview command** | | — |
 | **Verification identity** | *(which user, role or environment proves the change works — or `—`)* | — |
 | **What counts as code / tests** | *(file patterns)* | `WF_CODE_REGEX`, `WF_TEST_REGEX` |
 | **Verification evidence** | *(commands whose output proves a change)* | `WF_EVIDENCE_REGEX` |
 | **Sensitive paths** | *(files that affect access control or visibility)* | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` |
-| **Resource / safety constraints** | *(commands automation must never run, and why)* | `WF_FORBIDDEN_REGEX`, `WF_FORBIDDEN_REASON` |
 | **Process skills** | *(a skills plugin, or `none` — phases/skills.md)* | `WF_SKILLS` |
 | **Docs / content language** | | — |
 | **Branching rule** | *(e.g. never commit to the default branch; branch first)* | — |
