@@ -46,6 +46,10 @@ until you choose.
   - A new `Tier` field: `strong|standard|cheap|explicit`.
   - `stats` reports findings and escaped defects per tier and per model.
 
+## Planned: 0.3
+
+- Move the hooks to the Node/TypeScript runtime and support Windows without requiring Bash or jq.
+
 ## Candidates
 
 - **Codex exit codes.** Codex reports a finished command with no exit code, so the main agent's

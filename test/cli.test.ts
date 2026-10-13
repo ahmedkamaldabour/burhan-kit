@@ -14,7 +14,7 @@ import { scriptedPrompter } from '../src/lib/setup/prompter.js';
 test('--version prints the package.json version', async () => {
   const { o, io } = capture();
   assert.equal(await runCli(['--version'], io), 0);
-  assert.match(o.out, /^0\.1\.0\n$/);
+  assert.equal(o.out, JSON.parse(readFileSync(join(packageRoot(), 'package.json'), 'utf8')).version + '\n');
 });
 
 test('--help prints usage and exits 0; no command exits 2', async () => {
@@ -40,7 +40,7 @@ test('the kit is found from the compiled module', () => {
 test('the compiled entry point runs as a program', () => {
   const r = spawnSync(process.execPath, [join(packageRoot(), '.test-build/src/cli.js'), '--version'], { encoding: 'utf8' });
   assert.equal(r.status, 0);
-  assert.equal(r.stdout, '0.1.0\n');
+  assert.equal(r.stdout, JSON.parse(readFileSync(join(packageRoot(), 'package.json'), 'utf8')).version + '\n');
 });
 
 test('bare command without a terminal prints usage and exits 2; setup without one points to a terminal', async () => {

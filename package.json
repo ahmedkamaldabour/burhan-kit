@@ -1,6 +1,6 @@
 {
   "name": "burhan-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "No \"done\" without proof — a governance layer for AI coding agents (Claude Code, Codex): a working agreement, hooks that audit every turn, an evidence ledger and independent QC.",
   "license": "MIT",
   "type": "module",

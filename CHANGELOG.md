@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0
+
+### Package and CLI
+- `burhan setup`: a guided wizard, plus `--agent` for an AI agent and `--answers [--apply]` for
+  answer files.
+- First use can guide an agent through project checks with `burhan setup --stack` and save those
+  settings with `burhan setup --set`.
+- `burhan uninstall [--apply] [--all]`: preview removal by default, then remove burhan-managed
+  files while keeping your settings and work files unless `--all` is chosen.
+- Running `npx burhan-kit` in a terminal opens the setup wizard.
+- Adds the first runtime dependency, `@clack/prompts`, and uses `@types/node` `^22` for development.
+
+### Hooks
+- Issue #1 fixed: the story and plan are one approval gate even though they are two files.
+- Groundwork for a future Node hook runtime is included, but it is not used yet.
+
 ## 0.1.0
 
 The first release of **burhan-kit**: a technology-neutral working agreement and hook kit for AI coding
