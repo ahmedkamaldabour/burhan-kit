@@ -42,9 +42,10 @@ done
 
 echo "uninstall --all is described in full (review I-1: it also removes the config, bindings and local/)"
 for f in README.md README.ar.md docs/configuration.md; do
+  # The first "uninstall" plus 400 characters. awk, not grep '.{0,400}': BSD regex caps a repeat bound at 255 (RE_DUP_MAX).
   t="$(tr -s '[:space:]' ' ' < "$f")"
   for w in workflow.config bindings.md local/ .burhan/; do
-    check "$f: the uninstall text names $w" "$(printf '%s' "$t" | grep -o -E 'uninstall.{0,400}' | head -n 1)" has "$w"
+    check "$f: the uninstall text names $w" "$(printf '%s' "$t" | awk '{ i = index($0, "uninstall"); if (i) print substr($0, i, 409) }')" has "$w"
   done
 done
 echo "USAGE lists the new commands"
