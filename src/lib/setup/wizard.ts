@@ -7,7 +7,7 @@ import { realTarget } from '../fs-safe.js';
 import { runCheck } from '../../hooks/core/run-check.mjs';
 import { applySetup, currentAnswers, docsPathError, planSetup, recommended, renderSummary, type SetupAnswers } from './engine.js';
 import { PRIVATE_DOCS, SHARED_DOCS } from './answers.js';
-import { messages, QUESTIONS, type Lang } from './messages.js';
+import { messages, QUESTIONS, REVIEWER_QUESTION, type Lang } from './messages.js';
 import { CANCEL, type Prompter } from './prompter.js';
 
 const agentValue = (a: SetupAnswers): string => (a.agents.length > 1 ? 'both' : a.agents[0]);
@@ -28,7 +28,15 @@ async function ask(p: Prompter, a: SetupAnswers, lang: Lang): Promise<SetupAnswe
     if (path === CANCEL) return CANCEL;
     docs = { kind: 'custom', path };
   } else docs = { kind: kind === 'shared' ? 'shared' : 'private' };
-  return { ...a, agents: (ag === 'both' ? ['claude', 'codex'] : [ag]) as Agent[], mode: mode as 'step' | 'auto', docs, lang };
+  const agents = (ag === 'both' ? ['claude', 'codex'] : [ag]) as Agent[];
+  let reviewer: SetupAnswers['reviewer'] = 'same';
+  if (agents.length > 1) {
+    const qr = REVIEWER_QUESTION[lang];
+    const selected = await p.select(qr.ask, qr.options.map((o) => ({ value: o.value, label: o.label, hint: o.hint })), a.reviewer === 'same' ? 'same' : 'other');
+    if (selected === CANCEL) return CANCEL;
+    reviewer = selected as SetupAnswers['reviewer'];
+  }
+  return { ...a, agents, mode: mode as 'step' | 'auto', docs, reviewer, lang };
 }
 
 /** AC-01–03, 04, 06: what you get → recommended or choose → summary → apply / change / cancel. Cancel anywhere writes nothing and exits 0. */

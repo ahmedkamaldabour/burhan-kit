@@ -34,6 +34,36 @@ check "state written too -> silent" "$(a "$(t '[]' '[".burhan/work/foo/foo-story
 check "state only MENTIONED -> still fires (measured bug)" \
   "$(a "$(t '[]' '[".burhan/work/foo/foo-story.md"]' '[]' '[]' 'I updated .burhan/local/PROGRESS.md')")" has "STATE-TRANSITION GATE"
 check "docs index written -> silent" "$(a "$(t '[]' '[".burhan/work/README.md"]' '[]' '[]' '')")" lacks "STATE-TRANSITION GATE"
+P="$(proj "${BASE[@]}")"; mkdir -p "$P/.burhan/local"
+printf '%s\n' '## Now' 'before' > "$P/.burhan/local/PROGRESS.md"
+core session-gates "$(ev '{"event":"session_start","session":"state-fingerprint"}')" >/dev/null
+t_sedi 's/before/after/' "$P/.burhan/local/PROGRESS.md"
+check "state changed on disk after snapshot -> silent even when the event names only the item" \
+  "$(a "$(jq -cn --arg p "$P" '{event:"turn_end",project_dir:$p,session:"state-fingerprint",turn:{files_edited:[".burhan/work/foo/foo-story.md"]}}')")" lacks "STATE-TRANSITION GATE"
+printf '%s\n' '## Now' 'first turn edit' > "$P/.burhan/local/PROGRESS.md"
+check "a silent B advances its fingerprint baseline" \
+  "$(a "$(jq -cn --arg p "$P" '{event:"turn_end",project_dir:$p,session:"state-fingerprint",turn:{files_edited:[]}}')")" lacks "STATE-TRANSITION GATE"
+check "an earlier unseen state edit does not suppress B on the next work-item turn" \
+  "$(a "$(jq -cn --arg p "$P" '{event:"turn_end",project_dir:$p,session:"state-fingerprint",turn:{files_edited:[".burhan/work/foo/foo-plan.md"]}}')")" has "STATE-TRANSITION GATE"
+printf '%s\n' '## Now' 'same' > "$P/.burhan/local/PROGRESS.md"
+core session-gates "$(ev '{"event":"session_start","session":"state-unchanged"}')" >/dev/null
+check "unchanged state after snapshot -> still warns" \
+  "$(a "$(jq -cn --arg p "$P" '{event:"turn_end",project_dir:$p,session:"state-unchanged",turn:{files_edited:[".burhan/work/foo/foo-story.md"]}}')")" has "STATE-TRANSITION GATE"
+rm -f "$P/.burhan/local/PROGRESS.md"
+core session-gates "$(ev '{"event":"session_start","session":"state-missing"}')" >/dev/null
+check "missing state snapshot -> still warns" \
+  "$(a "$(jq -cn --arg p "$P" '{event:"turn_end",project_dir:$p,session:"state-missing",turn:{files_edited:[".burhan/work/foo/foo-story.md"]}}')")" has "STATE-TRANSITION GATE"
+P="$(proj "${BASE[@]}")"; mkdir -p "$P/.burhan/local"
+printf '%s\n' '## Now' 'portable' > "$P/.burhan/local/PROGRESS.md"
+tools="$(t_tmp)/no-sha-bin"; mkdir -p "$tools"
+for tool in bash jq awk cat cksum cut sed mkdir mktemp mv rm grep sort tail tr wc dirname pwd; do ln -s "$(command -v "$tool")" "$tools/$tool"; done
+core_without_sha() { PATH="$tools" /usr/bin/bash "$T_ROOT/tests/impl.sh" core "$S"; }
+printf '%s' "$(ev '{"event":"session_start","session":"cksum-fingerprint"}')" | core_without_sha session-gates >/dev/null
+snapshot="$(find "$XDG_STATE_HOME" -path '*/cksum-fingerprint/state-fingerprint' -type f -print -quit)"
+check "cksum fallback stores a fingerprint when SHA tools are unavailable" "$(test -n "$snapshot" && sed -n '1p' "$snapshot")" has "file:"
+printf '%s\n' '## Now' 'portable changed' > "$P/.burhan/local/PROGRESS.md"
+out="$(printf '%s' "$(ev '{"event":"turn_end","session":"cksum-fingerprint","turn":{"files_edited":[".burhan/work/foo/foo-story.md"]}}')" | core_without_sha turn-audit | jq -r '.message // empty')"
+check "cksum fingerprint lets B see a disk state update" "$out" lacks "STATE-TRANSITION GATE"
 
 echo "  -- legacy settings are inert"
 P="$(proj "WF_FORBIDDEN_REGEX='run-everything'" "WF_FORBIDDEN_REASON='it melts the laptop'")"

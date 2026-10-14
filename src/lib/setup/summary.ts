@@ -73,6 +73,7 @@ export function renderSummary(p: SetupPlan, lang: 'en' | 'ar'): string {
     `  ${m.agents(p.answers.agents)}`,
     `  ${m.mode(p.answers.mode)}`,
     `  ${m.docs(docsLabel)}`,
+    ...(p.answers.agents.length > 1 ? [`  ${m.reviewer(p.answers.reviewer ?? 'same')}`] : []),
     `  ${m.models}`,
     `  ${m.branches}`,
     `  ${m.check(cfg.WF_STACK_SETUP === 'pending', cfg.WF_CHECK_CMD || 'none')}`);

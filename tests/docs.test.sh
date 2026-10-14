@@ -74,10 +74,10 @@ for f in README.md README.ar.md; do
   check_eq "$f quick start has one fenced command block" "$(printf '%s\n' "$quick" | grep -c "^$fence$fence$fence")" '2'
   check "$f quick start tells the reader how to check setup" "$quick" has 'doctor'
 done
-for phrase in 'Which coding agents' 'When should the agent come back' "Where should burhan save each task's story, plan and reviews" 'In git, for the team — docs/burhan/work/' 'npx burhan-kit setup --agent' 'Project checks are proposed by the agent on first use' 'docs/burhan/work/' '.burhan/' 'burhan use <slug>' 'Superpowers is optional' 'existing hooks'; do
+for phrase in 'three (four when you use both agents)' 'Which coding agents' 'When should the agent come back' "Where should burhan save each task's story, plan and reviews" 'In git, for the team — docs/burhan/work/' 'npx burhan-kit setup --agent' 'Project checks are proposed by the agent on first use' 'docs/burhan/work/' '.burhan/' 'burhan use <slug>' 'Superpowers is optional' 'existing hooks'; do
   check "README.md states: $phrase" "$(cat README.md)" has "$phrase"
 done
-for phrase in 'أنهي أدوات AI' 'الـ agent يرجعلك إمتى' 'الـ story والخطة والـ reviews بتاعة كل مهمة' 'في git للفريق — docs/burhan/work/' 'npx burhan-kit setup --agent' 'الـ project checks بيقترحها الـ agent أول استخدام' 'docs/burhan/work/' '.burhan/' 'burhan use <slug>' 'Superpowers اختياري' 'الـ hooks الموجودة'; do
+for phrase in 'أربعة لو بتستخدم الـ agents الاتنين' 'أنهي أدوات AI' 'الـ agent يرجعلك إمتى' 'الـ story والخطة والـ reviews بتاعة كل مهمة' 'الـ agent التاني' 'لو لقيت دليل في المشروع' 'npx burhan-kit setup --agent' 'في git للفريق — docs/burhan/work/' 'الـ project checks بيقترحها الـ agent أول استخدام' 'docs/burhan/work/' '.burhan/' 'burhan use <slug>' 'Superpowers اختياري' 'الـ hooks الموجودة'; do
   check "README.ar.md states: $phrase" "$(cat README.ar.md)" has "$phrase"
 done
 

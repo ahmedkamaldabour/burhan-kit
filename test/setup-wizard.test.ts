@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { PassThrough } from 'node:stream';
 import { parseConfig } from '../src/lib/config.js';
-import { CANCEL, numberedPrompter, scriptedPrompter, withFallback, type Prompter } from '../src/lib/setup/prompter.js';
+import { CANCEL, numberedPrompter, scriptedPrompter, withFallback, type Choice, type Prompter } from '../src/lib/setup/prompter.js';
 import { runWizard } from '../src/lib/setup/wizard.js';
 import { docsPathError } from '../src/lib/setup/engine.js';
 import { capture, tmpDir } from './helpers.js';
@@ -84,12 +84,30 @@ test('fast path: two answers, files written (AC-03)', async () => {
   assert.match(o.out, /change burhan settings/);
 });
 
-test('choose myself asks exactly three questions, then the summary choice (AC-04)', async () => {
-  const t = fresh(); const p = scriptedPrompter(['choose', 'both', 'auto', 'shared', 'apply']); const { io } = capture(t);
+test('choose myself asks four questions with both agents, then the summary choice', async () => {
+  const t = fresh(); const p = scriptedPrompter(['choose', 'both', 'auto', 'shared', 'other', 'apply']); const { io } = capture(t);
   assert.equal(await runWizard(t, io, p, 'en', home), 0);
-  assert.equal(p.asked.length, 5); // use/choose + 3 questions + apply
+  assert.equal(p.asked.length, 6); // use/choose + 4 questions + apply
   assert.equal(cfg(t).WF_MODE_DEFAULT, 'auto');
   assert.equal(cfg(t).WF_DOCS_DIR, 'docs/burhan/work');
+  assert.equal(cfg(t).WF_REVIEWER_AGENT, 'other');
+});
+
+test('a legacy reviewer preselects other while Q4 offers only other and same', async () => {
+  const t = fresh();
+  const initial = scriptedPrompter(['choose', 'both', 'step', 'private', 'other', 'apply']);
+  assert.equal(await runWizard(t, capture(t).io, initial, 'en', home), 0);
+  writeFileSync(join(t, '.burhan/workflow.config'), "WF_REVIEWER_AGENT='claude'\n");
+  const scripted = scriptedPrompter(['use', 'change', 'both', 'step', 'private', 'other', 'apply']);
+  let reviewerChoices: string[] = []; let reviewerInitial = '';
+  const p = { ...scripted, select: async <T>(message: string, choices: Choice<T>[], initial: T) => {
+    if (/review.*QC/i.test(message)) { reviewerChoices = choices.map((choice) => String(choice.value)); reviewerInitial = String(initial); }
+    return scripted.select(message, choices, initial);
+  } };
+  const { io } = capture(t);
+  assert.equal(await runWizard(t, io, p, 'en', home), 0);
+  assert.deepEqual(reviewerChoices, ['other', 'same']);
+  assert.equal(reviewerInitial, 'other');
 });
 
 test('"change something" goes back to the questions, prefilled', async () => {

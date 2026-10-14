@@ -161,8 +161,11 @@ fi
 
 # ---- B ---------------------------------------------------------------------------------------
 # A story or plan written by a subagent (a planner) counts too; the state file is the main agent's job.
+fingerprint_changed=0
+wf_state_fingerprint_refresh && fingerprint_changed=1
 if { any "$docs_re" "$written" || { [ -n "$sub_written" ] && any "$docs_re" "$sub_written"; }; } \
-   && ! printf '%s\n%s\n' "$written" "$sub_written" | grep -qxF -- "$WF_STATE_FILE"; then
+   && ! { printf '%s\n%s\n' "$written" "$sub_written" | grep -qxF -- "$WF_STATE_FILE"; } \
+   && [ "$fingerprint_changed" = 0 ]; then
   wf_say "⚠ STATE-TRANSITION GATE: a work-item file changed this turn but \`$WF_STATE_FILE\` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file)."
 fi
 

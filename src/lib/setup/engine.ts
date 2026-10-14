@@ -163,6 +163,7 @@ export function planSetup(target: string, a: SetupAnswers, home: string): SetupP
   const base = existingConfig ?? readFileSync(join(kit, 'workflow.config.example'), 'utf8');
   const values: Record<string, string> = {
     WF_MODE_DEFAULT: a.mode,
+    WF_REVIEWER_AGENT: a.agents.length > 1 ? (a.reviewer ?? have.WF_REVIEWER_AGENT ?? 'same') : 'same',
   };
   values.WF_DOCS_DIR = docs;
   values.WF_DISCOVERY_DIR = cfgPath(have.WF_DOCS_DIR || PRIVATE_DOCS) === docs && (have.WF_DISCOVERY_DIR ?? '') !== '' ? have.WF_DISCOVERY_DIR : discovery;

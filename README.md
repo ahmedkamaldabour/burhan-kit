@@ -24,20 +24,21 @@ No “done” without proof: agree on the work first, build in reviewed steps, a
 npx burhan-kit
 ```
 
-3. Answer the three questions:
+3. Answer the three (four when you use both agents) questions:
    - Which coding agents do you use?
    - When should the agent come back to you?
    - Where should burhan save each task's story, plan and reviews? The recommended answer is “In git, for the team — docs/burhan/work/”.
+   - When you use both agents: who should review and QC independently? The recommended answer is the other agent.
 4. Review the proposed changes and confirm them; nothing is written before confirmation.
 5. Check it worked: the setup summary lists the managed `.burhan/` files; then run `npx burhan-kit doctor`. Project checks are proposed by the agent on first use, then approved by you.
 
-For an agent-led setup, ask it to run `npx burhan-kit setup --agent` and follow the printed guidance.
+For an agent-led setup, ask it to run `npx burhan-kit setup --agent` and follow the printed guidance. If project evidence already names a stories/specs folder, it can offer that folder without guessing or selecting it.
 
 ## What happens in your first task
 
 Setup puts burhan’s managed working agreement, configuration, and hooks in `.burhan/`. It keeps existing hooks: they run alongside burhan’s hooks, so reminders can repeat.
 
-Start an item with your agent. Each task has a story, plan, and reviews in the location you chose. Run `burhan use <slug>` to link the current session to that item—especially useful when more than one task is active. Superpowers is optional; burhan never installs it for you.
+Start an item with your agent. Each task has a story, plan, and reviews in the location you chose. Run `burhan use <slug>` to link the current session to that item—especially useful when more than one task is active. Superpowers is optional (Claude Code: `/plugin install superpowers@claude-plugins-official`); burhan never installs it for you.
 
 **A real first task:** an agent edited `src/add.js`, ran no check, and replied “Done.”
 

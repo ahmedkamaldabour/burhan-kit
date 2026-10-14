@@ -80,7 +80,7 @@ holds personal overrides, read after the team file, key by key.
 | `WF_MODE_DEFAULT`, `WF_MODE_<TYPE>_<SCOPE>` | the mode when an item does not set one: `step` (default) or `auto`; any other value = `step`. E.g. `WF_MODE_BUG_BOUNDED=auto` |
 | `WF_MODEL_CLAUDE_REVIEWER` | model for the generated `burhan-reviewer` subagent (team-only); empty = the session's model |
 | `WF_MODEL_CLAUDE_PLANNER`, `…_BUILDER`, `…_EXPLORER` | generate the `burhan-planner` / `-builder` / `-explorer` subagent on that model (team-only); empty = not generated |
-| `WF_REVIEWER_AGENT` | `same` (default), or `codex` / `claude`: `/burhan:qc` runs the QC through the **other** agent's CLI |
+| `WF_REVIEWER_AGENT` | `same` (default), `other` (resolve the other CLI when QC runs), or `codex` / `claude` (legacy explicit choices) |
 | `WF_EVIDENCE_LEDGER` | `on` (default) or `off` |
 | `WF_EVIDENCE_DIR` | where the ledger lives: an **absolute literal** path (no `$HOME`, no `~`); empty or relative = `${XDG_STATE_HOME:-~/.local/state}/burhan/evidence` |
 

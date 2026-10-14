@@ -3,7 +3,7 @@ import type { ExistingHook } from '../hooks-merge.js';
 
 export type Lang = 'en' | 'ar';
 export interface Option { value: string; label: string; hint?: string }
-export interface Question { id: 'agents' | 'mode' | 'docs'; ask: string; options: Option[] }
+export interface Question<I extends string = 'agents' | 'mode' | 'docs'> { id: I; ask: string; options: Option[] }
 
 /** The three install questions (AC-04). Plain words only: no setting names, patterns or internal terms. */
 export const QUESTIONS: Record<Lang, Question[]> = {
@@ -41,6 +41,11 @@ export const QUESTIONS: Record<Lang, Question[]> = {
   ],
 };
 
+export const REVIEWER_QUESTION: Record<Lang, Question<'reviewer'>> = {
+  en: { id: 'reviewer', ask: 'Who should review and QC the work independently?', options: [{ value: 'other', label: 'The other agent — if Claude built it, Codex reviews, and the reverse', hint: 'recommended' }, { value: 'same', label: 'The same agent, in a fresh context' }] },
+  ar: { id: 'reviewer', ask: 'مين يراجع الشغل ويعمل الـ QC بشكل مستقل؟', options: [{ value: 'other', label: 'الـ agent التاني — لو Claude بنى، Codex يراجع، والعكس', hint: 'مقترح' }, { value: 'same', label: 'نفس الـ agent، في context جديد' }] },
+};
+
 /** The block the agent shows the person, verbatim in both languages (AC-13). */
 const BLOCK = [
   'burhan needs one thing before it can check your work:',
@@ -59,6 +64,7 @@ export interface Messages {
   agents(list: Agent[]): string;
   mode(m: 'step' | 'auto'): string;
   docs(label: string): string;
+  reviewer(value: 'other' | 'same' | 'claude' | 'codex'): string;
   docsPrivate: string; docsShared: string; docsCustom: string;
   models: string;
   superpowers(available: boolean, disabled: boolean): string;
@@ -92,6 +98,7 @@ export interface Messages {
     badMode: string;
     badDocs: string;
     badLang: string;
+    badReviewer: string;
   };
   stack: {
     instructions: string;
@@ -135,6 +142,7 @@ const en: Messages = {
   agents: (l) => `Agents: ${l.join(', ')}`,
   mode: (m) => m === 'step' ? 'Pauses: show the plan, then pause after each part' : "Pauses: show the plan once, then continue until it's ready to commit",
   docs: (l) => `Work files: ${l}`,
+  reviewer: (v) => v === 'other' ? 'Review and QC: the other agent' : v === 'claude' || v === 'codex' ? `Review and QC: ${v === 'claude' ? 'Claude' : 'Codex'} (kept from your existing settings)` : 'Review and QC: the same agent in a fresh context',
   docsPrivate: 'private, not in git', docsShared: 'shared in git', docsCustom: 'your folder',
   models: 'Models: same as your session',
   superpowers: (available, disabled) => !available
@@ -164,6 +172,8 @@ const en: Messages = {
       '- Put the answers in a JSON file shaped like "recommended" below, then run: npx burhan-kit setup --answers <file>',
       '- Show its summary to the person. Run it again with --apply only after the user says yes.',
       '- Relay the Superpowers line below exactly as it appears. Do not paraphrase or omit it.',
+      '- Under Q3, if CLAUDE.md, AGENTS.md, or project commands name a stories/specs folder, offer: A folder I choose — <path> (already used by this project). Never guess or select that folder.',
+      "- End with a closing report in the user's writing language: at most six short lines; say what changed, what remains open, and how to undo. No table and no setting names.",
     ],
     readFailed: (f, w) => `cannot read the answers file ${f}: ${w}`,
     notRegular: (f) => `the answers file ${f} is not a regular file`,
@@ -176,6 +186,7 @@ const en: Messages = {
     badMode: 'mode must be "step" or "auto"',
     badDocs: 'docs must be "private" or "shared", {"kind":"private"} or {"kind":"shared"}, or {"kind":"custom","path":"<folder inside the project>"}',
     badLang: 'lang must be "en" or "ar"',
+    badReviewer: 'reviewer must be "other" or "same", and is allowed only when both agents are selected',
   },
   stack: {
     instructions: [
@@ -233,6 +244,7 @@ const ar: Messages = {
   agents: (l) => `الـ agents: ${l.join('، ')}`,
   mode: (m) => m === 'step' ? 'الوقفات: يوريك الخطة، وبعدين يستنّى بعد كل جزء' : 'الوقفات: يوريك الخطة مرة واحدة، وبعدين يكمّل لحد ما الشغل يبقى جاهز للـ commit',
   docs: (l) => `ملفات الشغل: ${l}`,
+  reviewer: (v) => v === 'other' ? 'المراجعة والـ QC: الـ agent التاني' : v === 'claude' || v === 'codex' ? `المراجعة والـ QC: ${v === 'claude' ? 'Claude' : 'Codex'} (متسابة زي ما هي من إعداداتك)` : 'المراجعة والـ QC: نفس الـ agent في context جديد',
   docsPrivate: 'خاصة بيك، بره git', docsShared: 'مشتركة في git', docsCustom: 'الفولدر بتاعك',
   models: 'الموديلات: نفس موديل الـ session بتاعتك',
   superpowers: (available, disabled) => !available
@@ -262,6 +274,8 @@ const ar: Messages = {
       '- حط الإجابات في ملف JSON بنفس شكل "recommended" اللي تحت، وبعدين شغّل: npx burhan-kit setup --answers <file>',
       '- وري الشخص الملخص. ومتشغّلوش بـ --apply غير لما المستخدم يقول أيوه.',
       '- وصّل سطر Superpowers اللي تحت زي ما هو بالظبط. متعيدش صياغته ومتسيبهوش.',
+      '- تحت السؤال التالت، لو CLAUDE.md أو AGENTS.md أو أوامر المشروع مسمّيين فولدر stories/specs، اعرض: فولدر أختاره — <path> (المشروع ده بيستخدمه بالفعل). متخمنش أو تختار الفولدر ده.',
+      '- اختم بتقرير بلغة كتابة المستخدم: ستة سطور قصيرة بالكتير؛ قول إيه اتغيّر، وإيه لسه مفتوح، وإزاي يرجع. من غير جدول ولا أسماء إعدادات.',
     ],
     readFailed: (f, w) => `مقدرتش أقرا ملف الإجابات ${f}: ${w}`,
     notRegular: (f) => `ملف الإجابات ${f} مش ملف عادي`,
@@ -274,6 +288,7 @@ const ar: Messages = {
     badMode: 'mode لازم يبقى "step" أو "auto"',
     badDocs: 'docs لازم يبقى "private" أو "shared"، أو {"kind":"private"} أو {"kind":"shared"}، أو {"kind":"custom","path":"<فولدر جوّه المشروع>"}',
     badLang: 'lang لازم يبقى "en" أو "ar"',
+    badReviewer: 'reviewer لازم يبقى "other" أو "same"، ومسموح بيه بس لما تختار الـ agents الاتنين',
   },
   stack: {
     instructions: [

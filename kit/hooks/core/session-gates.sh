@@ -43,6 +43,7 @@ item_route() {
   printf '%s\n' "$r" | grep -xE -- "$WF_ROUTE_RE"
 }
 wf_state_snapshot "$slugs"
+wf_state_fingerprint_snapshot
 
 fill() {
   local line val key name

@@ -20,6 +20,7 @@ Regexes are POSIX extended regular expressions (`grep -E`): no `\d`, `\w` or loo
 ## 4. Ask only business questions
 All together, once: the branch rule, the sensitive paths. For the setup work-files question, name each task's story,
 plan and reviews; fresh projects recommend shared `docs/burhan/work/`, while existing saved choices stay unchanged.
+When project evidence (`CLAUDE.md`, `AGENTS.md`, or project commands) names a stories/specs folder, offer it as a folder the person chooses; never guess or select it. There are three questions, or four when both agents are used.
 ## 5. Write the config — after approval
 The agent may edit .burhan/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files. Show the change as a diff; Write it only after the human approves. If `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` or a `WF_MODEL_*` key changed, run `upgrade` (dry run, then `--apply`).
 ## 6. Prove it works
@@ -30,5 +31,4 @@ Codex skips untrusted project hooks silently, so burhan does nothing there until
 2. For each of SessionStart, UserPromptSubmit, PreToolUse, PostToolUse and Stop: select it, move to the hook whose Source is `Project config - <this project>/.codex/hooks.json`, press `t`, then Esc. **Trust all and continue** trusts every listed hook.
 3. Each burhan hook's Trust line must read `Trusted`; re-run `doctor`; if its trust check still warns, the Trust line in Codex is what counts. Trust again when Codex shows `Modified since last trusted`.
 ## 8. Close
-Summarise: agents, each value with its evidence, the check, the doctor, the applicable Superpowers line exactly as setup
-prints it, and what is still open. Then offer a read-only baseline ("understand this project"); Start it only if the human says yes; never start it on your own.
+Close in the user's writing language in at most six short lines: what changed, what remains open, and how to undo. No table or setting names. Then offer a read-only baseline ("understand this project"); Start it only if the human says yes; never start it on your own.

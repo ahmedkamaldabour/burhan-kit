@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Setup now asks a fourth reviewer/QC question only when both agents are selected, stores `other` or `same`, and improves agent-led folder and closing-report guidance.
 - Rewrote the English and Egyptian-Arabic READMEs around a concise, verified first-use path for
   GitHub and npm.
 - Sessions can link to one in-flight work item for item-specific gates and evidence; `burhan use <slug>`

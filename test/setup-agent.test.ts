@@ -102,6 +102,18 @@ test('--agent prints rules and one json block: same questions as the wizard, rec
   assert.deepEqual(j.recommended, recommended(t, home));
 });
 
+test('--agent includes Q4 only when both agents are selected, with other as its default', () => {
+  const one = agentJson(agentInstructions(repo(), 'en', home));
+  assert.deepEqual(one.questions.map((q) => q.id), QUESTIONS.en.map((q) => q.id));
+  const bothTarget = repo();
+  mkdirSync(join(bothTarget, '.claude'));
+  mkdirSync(join(bothTarget, '.codex'));
+  const both = agentJson(agentInstructions(bothTarget, 'en', home));
+  assert.deepEqual(both.questions.map((q) => q.id), [...QUESTIONS.en.map((q) => q.id), 'reviewer']);
+  assert.deepEqual(both.questions.at(-1)?.choices.map((choice) => choice.value), ['other', 'same']);
+  assert.equal(both.recommended.reviewer, 'other');
+});
+
 test('--agent rules: never edit .burhan/, apply only after the user says yes, one question per message', async () => {
   const t = repo(); const { o, io } = capture(t);
   assert.equal(await runCli(['setup', t, '--agent'], io), 0);
@@ -109,6 +121,23 @@ test('--agent rules: never edit .burhan/, apply only after the user says yes, on
   assert.match(o.out, /only after the user says yes/i);
   assert.match(o.out, /one question per message/i);
   assert.match(o.out, /setup --answers/);
+});
+
+for (const lang of ['en', 'ar'] as const) test(`${lang}: agent protocol requires a short closing report and evidence-based custom-folder offer`, () => {
+  const protocol = agentInstructions(repo(), lang, home);
+  if (lang === 'en') {
+    assert.match(protocol, /closing report in the user's writing language/i);
+    assert.match(protocol, /at most six short lines/i);
+    assert.match(protocol, /what changed, what remains open, and how to undo/i);
+    assert.match(protocol, /CLAUDE\.md, AGENTS\.md, or project commands/i);
+    assert.match(protocol, /never guess or select that folder/i);
+  } else {
+    assert.match(protocol, /لغة كتابة المستخدم/);
+    assert.match(protocol, /ستة سطور قصيرة/);
+    assert.match(protocol, /متخمنش أو تختار الفولدر ده/);
+  }
+  assert.doesNotMatch(protocol, /<table/i);
+  assert.doesNotMatch(protocol, /WF_[A-Z_]+/);
 });
 
 test('--agent --lang ar uses the Arabic question texts', async () => {
@@ -119,7 +148,7 @@ test('--agent --lang ar uses the Arabic question texts', async () => {
 
 const SETS: { name: string; a: SetupAnswers; script: string[] }[] = [
   { name: 'private/step/claude', a: { agents: ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en' }, script: ['choose', 'claude', 'step', 'private', 'apply'] },
-  { name: 'shared/auto/claude+codex', a: { agents: ['claude', 'codex'], mode: 'auto', docs: { kind: 'shared' }, lang: 'en' }, script: ['choose', 'both', 'auto', 'shared', 'apply'] },
+  { name: 'shared/auto/claude+codex', a: { agents: ['claude', 'codex'], mode: 'auto', docs: { kind: 'shared' }, lang: 'en', reviewer: 'same' }, script: ['choose', 'both', 'auto', 'shared', 'same', 'apply'] },
 ];
 for (const s of SETS) {
   test(`parity: wizard and --answers --apply write identical trees, ${s.name} (AC-10)`, async () => {
@@ -147,9 +176,9 @@ for (const lang of ['en', 'ar'] as const) {
     test(`${lang} printed choices are accepted and match the wizard: ${choice.agents}/${choice.mode}/${choice.docs} (AC-11)`, async () => {
       const A = repo(); const B = repo();
       const { io: wizardIo } = capture(A);
-      assert.equal(await runWizard(A, wizardIo, scriptedPrompter(['choose', ...QUESTIONS[lang].map((q) => choice[q.id]), 'apply']), lang, home), 0);
+      assert.equal(await runWizard(A, wizardIo, scriptedPrompter(['choose', ...QUESTIONS[lang].map((q) => choice[q.id]), ...(choice.agents === 'both' ? ['other'] : []), 'apply']), lang, home), 0);
       const { o, io } = capture(B);
-      assert.equal(await runCli(['setup', B, '--lang', lang, '--answers', answersFile(choice), '--apply'], io), 0, o.err);
+      assert.equal(await runCli(['setup', B, '--lang', lang, '--answers', answersFile(choice.agents === 'both' ? { ...choice, reviewer: 'other' } : choice), '--apply'], io), 0, o.err);
       assert.deepEqual(currentAnswers(B), currentAnswers(A));
     });
   }
@@ -159,6 +188,13 @@ test('a bare printed docs custom value asks for the custom object shape (AC-11)'
   const t = repo(); const before = hash(t); const { o, io } = capture(t);
   assert.equal(await runCli(['setup', t, '--answers', answersFile({ agents: 'claude', mode: 'step', docs: 'custom' }), '--apply'], io), 2);
   assert.match(o.err, /\{"kind":"custom","path":/);
+  assert.equal(hash(t), before);
+});
+
+test('a reviewer with one agent is rejected before any write', async () => {
+  const t = repo(); const before = hash(t); const { o, io } = capture(t);
+  assert.equal(await runCli(['setup', t, '--answers', answersFile({ agents: 'claude', mode: 'step', docs: 'private', reviewer: 'same' }), '--apply'], io), 2);
+  assert.match(o.err, /reviewer/i);
   assert.equal(hash(t), before);
 });
 
@@ -241,13 +277,22 @@ test('bad input: a missing file exits 2 with "burhan: ..."', async () => {
 
 test('installed project: "recommended" is the current answers (AC-17)', async () => {
   const t = repo(); const { io: wio } = capture(t);
-  assert.equal(await runWizard(t, wio, scriptedPrompter(['choose', 'both', 'auto', 'shared', 'apply']), 'en', home), 0);
+  assert.equal(await runWizard(t, wio, scriptedPrompter(['choose', 'both', 'auto', 'shared', 'same', 'apply']), 'en', home), 0);
   const cur = currentAnswers(t);
   assert.ok(cur);
   const { o, io } = capture(t);
   assert.equal(await runCli(['setup', t, '--agent'], io), 0);
   assert.deepEqual(agentJson(o.out).recommended, cur);
   assert.equal(cur.mode, 'auto');
+});
+
+test('a normal re-apply preserves a legacy literal reviewer value', async () => {
+  const t = repo();
+  mkdirSync(join(t, '.burhan'));
+  writeFileSync(join(t, '.burhan/workflow.config'), "WF_REVIEWER_AGENT='claude'\n");
+  const { o, io } = capture(t);
+  assert.equal(await runCli(['setup', t, '--answers', answersFile({ agents: 'both', mode: 'step', docs: 'private' }), '--apply'], io), 0, o.err);
+  assert.equal(currentAnswers(t)?.reviewer, 'claude');
 });
 
 test('--answers reads only a regular file of at most 1 MB: no device, no huge file (review M-1: /dev/zero ran the machine out of memory)', async () => {

@@ -71,7 +71,8 @@ WF_MODEL_CLAUDE_REVIEWER=""
 WF_MODEL_CLAUDE_PLANNER=""
 WF_MODEL_CLAUDE_BUILDER=""
 WF_MODEL_CLAUDE_EXPLORER=""
-# Who runs QC: same (a fresh subagent of the same agent) | claude | codex (the OTHER agent's CLI, run
+# Who runs QC: same (a fresh subagent of the same agent) | other (resolve the other agent at QC time) |
+# claude | codex (the OTHER agent's CLI, run
 # non-interactively through your agent's own permission prompt). Codex model routing uses Codex profiles
 # in your own ~/.codex/config.toml — burhan never edits it.
 WF_REVIEWER_AGENT="same"

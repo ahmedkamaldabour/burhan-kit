@@ -18,8 +18,8 @@ you already are that fresh context: skip this step. A delegated
 reviewer cannot ask the human anything, so **first ask the human step 3's question** (who performs
 the adversarial pass) and pass the answer in the prompt. Then pick the **first** option that applies:
 1. **Another agent as reviewer** — read `WF_REVIEWER_AGENT` in `.burhan/workflow.config` (and
-   `.burhan/local/workflow.config`). If it names the *other* agent (`codex` while you are Claude
-   Code, `claude` while you are Codex) and its CLI is installed, run the QC through it
+   `.burhan/local/workflow.config`). `other` resolves now to the other agent (`codex` while you are Claude
+   Code, `claude` while you are Codex); the existing literal `codex` and `claude` values still work. If the resolved value names the other agent and its CLI is installed, run the QC through it
    non-interactively — from Claude Code `codex exec -s workspace-write '<prompt>' < /dev/null`, from
    Codex `claude -p '<prompt>' --permission-mode acceptEdits < /dev/null`. The prompt says: "You are
    the other-agent reviewer started by burhan:qc step 0 — skip step 0", then gives only the slug, the
@@ -29,7 +29,7 @@ the adversarial pass) and pass the answer in the prompt. Then pick the **first**
    timeout and wait for it. The call goes through your agent's own permission prompt, and the human
    should know what it grants: the reviewer may edit files in the project without further prompts.
    It must write only its report; any other change it made is a finding. **Performed by** then reads
-   `<agent> · <model> · other agent`. CLI missing → fall through to 2, and say so.
+   `<agent> · <model> · other agent`. CLI missing → fall through to 2 (same-agent fresh context), and say so.
 2. **Claude Code:** delegate the whole QC to the `burhan-reviewer` subagent. Give it only the slug,
    the work-item folder and the diff range; no summary of your own. Wait for its report (foreground)
    before presenting anything. **Other agents:** run this command in a new session that starts from

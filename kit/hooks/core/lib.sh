@@ -154,8 +154,11 @@ wf_sha256() { { sha256sum 2>/dev/null || shasum -a 256 2>/dev/null; } | cut -d' 
 
 # wf_project_key -> 16 hex chars identifying the project by its physical path (shared with the CLI)
 wf_project_key() {
-  local p; p="$(cd "$WF_PROJECT" 2>/dev/null && pwd -P)" || p="$WF_PROJECT"
-  printf '%s' "$p" | wf_sha256 | cut -c1-16
+  local p hash
+  p="$(cd "$WF_PROJECT" 2>/dev/null && pwd -P)" || p="$WF_PROJECT"
+  hash="$(printf '%s' "$p" | wf_sha256)"
+  if [ -n "$hash" ]; then printf '%s\n' "$hash" | cut -c1-16
+  else printf '%s' "$p" | cksum 2>/dev/null | awk '{printf "%08x%08x\n", $1, $2}'; fi
 }
 
 # wf_safe_id <id> -> success if the id can be a path component (no separators, never . or ..)
@@ -211,6 +214,61 @@ wf_state_snapshot() {
   if [ "$supplied" -gt 0 ]; then printf '%s\n' "$slugs" > "$tmp"; else wf_item_slugs > "$tmp" 2>/dev/null; fi
   mv -f "$tmp" "$f" 2>/dev/null
   rm -f "$tmp" 2>/dev/null
+}
+
+# A state-file fingerprint supplements event-path detection: in-place shell edits and scripts do not
+# reliably name their target in an agent event. It is deliberately stored beside the private
+# evidence ledger, never in the project. The cksum fallback is portable when SHA-256 tools are absent.
+wf_state_fingerprint_file() {
+  local session="$(wf_get .session)" key
+  case "${WF_EVIDENCE_LEDGER:-on}" in off|no|false|0) return 1 ;; esac
+  wf_safe_id "$session" || return 1
+  key="$(wf_project_key)"; [ "${#key}" -eq 16 ] || return 1
+  printf '%s/%s/%s/state-fingerprint' "$(wf_evidence_root)" "$key" "$session"
+}
+
+wf_state_fingerprint() {
+  local f="$WF_PROJECT/$WF_STATE_FILE" hash
+  [ -f "$f" ] || { printf '%s\n' missing; return 0; }
+  if command -v sha256sum >/dev/null 2>&1; then hash="$(sha256sum "$f" 2>/dev/null | cut -d' ' -f1)"
+  elif command -v shasum >/dev/null 2>&1; then hash="$(shasum -a 256 "$f" 2>/dev/null | cut -d' ' -f1)"
+  else hash="$(cksum "$f" 2>/dev/null | awk '{print $1 ":" $2}')"; fi
+  [ -n "$hash" ] && printf 'file:%s\n' "$hash"
+}
+
+wf_state_fingerprint_snapshot() {
+  local f d tmp value
+  f="$(wf_state_fingerprint_file)" || return 0; d="${f%/state-fingerprint}"
+  value="$(wf_state_fingerprint)"; [ -n "$value" ] || return 0
+  [ -d "$d" ] || { ( umask 077 && mkdir -p "$d" ) 2>/dev/null || return 0; }
+  tmp="$(mktemp "$d/.state.XXXXXX" 2>/dev/null)" || return 0
+  printf '%s\n' "$value" > "$tmp" 2>/dev/null && mv -f "$tmp" "$f" 2>/dev/null
+  rm -f "$tmp" 2>/dev/null
+}
+
+# Success means the configured state file changed since session start. Missing/unreadable snapshots
+# deliberately fail closed (non-zero), so B retains its current warning.
+wf_state_fingerprint_changed() {
+  local f before now
+  f="$(wf_state_fingerprint_file)" || return 1
+  [ -f "$f" ] || return 1
+  before="$(sed -n '1p' "$f" 2>/dev/null)"; now="$(wf_state_fingerprint)"
+  [ -n "$before" ] && [ -n "$now" ] && [ "$before" != "$now" ]
+}
+
+# Turn end: hash the state file once, tell whether it changed since the stored baseline (success = changed),
+# and move the baseline forward only when it differs. A missing baseline or an off ledger fails closed.
+wf_state_fingerprint_refresh() {
+  local f d tmp before="" now
+  f="$(wf_state_fingerprint_file)" || return 1
+  now="$(wf_state_fingerprint)"; [ -n "$now" ] || return 1
+  [ -f "$f" ] && before="$(sed -n '1p' "$f" 2>/dev/null)"
+  if [ "$before" != "$now" ]; then
+    d="${f%/state-fingerprint}"
+    [ -d "$d" ] || { ( umask 077 && mkdir -p "$d" ) 2>/dev/null; }
+    tmp="$(mktemp "$d/.state.XXXXXX" 2>/dev/null)" && { printf '%s\n' "$now" > "$tmp" 2>/dev/null && mv -f "$tmp" "$f" 2>/dev/null; rm -f "$tmp" 2>/dev/null; }
+  fi
+  [ -n "$before" ] && [ "$before" != "$now" ]
 }
 
 wf_mtime_epoch() { stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null; }
