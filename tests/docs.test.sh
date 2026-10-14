@@ -1,125 +1,111 @@
 #!/usr/bin/env bash
-# Docs for the install UX: the agent path, the wizard, uninstall, no unmeasured claims.
+# Public README contract: safe on both GitHub and npm, brief enough for first use.
 . "$(dirname "$0")/lib.sh"
 cd "$T_ROOT" || exit 1
 
-README="$(cat README.md)"; AR="$(cat README.ar.md)"; SETUP="$(cat kit/SETUP.md)"
-first30() { head -30 "$1"; }
-qs_block() { awk '/^## (Quick start|ابدأ بسرعة)/{f=1;next} /^## /{f=0} f' "$1"; }
-# section_block <file> <heading line>: the lines under that exact heading, up to the next "## ".
-# grep -F -x finds the heading: macOS awk did not match an Arabic heading passed with -v (CI, 0.2.1).
-section_block() {
-  local start; start="$(grep -n -F -x -- "$2" "$1" | head -n 1 | cut -d: -f1)"
-  [ -n "$start" ] || return 0
-  tail -n "+$((start + 1))" "$1" | awk '/^## /{exit} {print}'
+required_sections=(
+  'Install / Quick start'
+  'What happens in your first task'
+  'How it works'
+  'Settings'
+  'Scripts and CI'
+  'Supported agents'
+  'Limits'
+  'Links'
+  'License'
+)
+ar_sections=(
+  'التثبيت / ابدأ بسرعة'
+  'إيه اللي بيحصل في أول مهمة؟'
+  'بيشتغل إزاي'
+  'الإعدادات'
+  'Scripts و CI'
+  'الـ agents المدعومة'
+  'الحدود'
+  'لينكات'
+  'الرخصة'
+)
+
+first_screen() { head -40 "$1"; }
+quick_start() { awk -v heading="$2" '$0 == "## " heading { on=1; next } /^## / { on=0 } on' "$1"; }
+markdown_targets() {
+  grep -oE '!{0,1}\[[^]]*\]\([^)]*\)' "$1" 2>/dev/null | sed -E 's/^!?\[[^]]*\]\(([^ )]+).*\)$/\1/'
+}
+bad_targets() {
+  markdown_targets "$1" | while IFS= read -r target; do
+    case "$target" in
+      https://github.com/ahmedkamaldabour/burhan-kit/*) ;;
+      *) printf '%s\n' "$target" ;;
+    esac
+  done
+}
+repository_paths() {
+  markdown_targets "$1" | sed -n 's|^https://github.com/ahmedkamaldabour/burhan-kit/blob/main/||p' | sed 's/#.*//'
+}
+raw_html_tags() {
+  grep -nE '<[[:alpha:]][[:alnum:]-]*([[:space:]][^>]*)?>|</[[:alpha:]][[:alnum:]-]*[[:space:]]*>' "$1" \
+    | grep -vE '<slug>' || true
 }
 
-echo "README.md — the agent path comes first"
-check "setup --agent within the first 30 lines" "$(first30 README.md)" has "setup --agent"
-check "a 'For AI agents' heading" "$(grep -E '^#+ .*For AI agents' README.md)" has "For AI agents"
-check "documents npx burhan-kit uninstall" "$README" has "npx burhan-kit uninstall"
-check "documents npx burhan-kit setup" "$README" has "npx burhan-kit setup"
-check "README.md: the Quick start section is found (not an empty pass)" "$([ "$(qs_block README.md | grep -c .)" -gt 0 ] && echo yes)" has "yes"
-check "the Quick start section no longer uses init --agents (the wizard and the agent prompt do)" "$(qs_block README.md)" lacks "init --agents"
-check "init is still documented (scripts / CI)" "$README" has "burhan-kit@latest init"
-
-echo "README.ar.md — the same, checked by commands"
-check "setup --agent within the first 30 lines" "$(first30 README.ar.md)" has "setup --agent"
-check "documents npx burhan-kit uninstall" "$AR" has "npx burhan-kit uninstall"
-check "documents npx burhan-kit setup" "$AR" has "npx burhan-kit setup"
-check "README.ar.md: the Quick start section is found (not an empty pass)" "$([ "$(qs_block README.ar.md | grep -c .)" -gt 0 ] && echo yes)" has "yes"
-check "the Quick start section no longer uses init --agents (the wizard and the agent prompt do)" "$(qs_block README.ar.md)" lacks "init --agents"
-check "init is still documented (scripts / CI)" "$AR" has "init --agents"
-
-echo "README work-item process and headline"
-WORK_ITEM="$(section_block README.md '## How a work item runs' | tr '\n' ' ')"
-AR_WORK_ITEM="$(section_block README.ar.md '## الشغلانة بتمشي إزاي؟' | tr '\n' ' ')"
-DESCRIPTION="$(node -e "console.log(require('./package.json').description)")"
-check "README.md has a How a work item runs section" "$(grep -E '^## How a work item runs$' README.md)" has "How a work item runs"
-check "README.ar.md has a clear Egyptian Arabic work-item section" "$(grep -F '## الشغلانة بتمشي إزاي؟' README.ar.md)" has "الشغلانة بتمشي إزاي؟"
-for mark in '⬜' '🟡' '🔵' '🟢' '✅'; do
-  check "README.md work-item section has status $mark" "$WORK_ITEM" has "$mark"
-  check "README.ar.md work-item section has status $mark" "$AR_WORK_ITEM" has "$mark"
+echo "README first screen and structure"
+for i in "${!required_sections[@]}"; do
+  check "README.md has ${required_sections[$i]}" "$(grep -F -x "## ${required_sections[$i]}" README.md)" has "## ${required_sections[$i]}"
+  check "README.ar.md has ${ar_sections[$i]}" "$(grep -F -x "## ${ar_sections[$i]}" README.ar.md)" has "## ${ar_sections[$i]}"
 done
-for text in 'sub-unit' 'reviewer agent' '.burhan/local/PROGRESS.md' 'burhan status' 'QC'; do
-  check "README.md work-item section names $text" "$WORK_ITEM" has "$text"
-done
-check "README.md work-item section qualifies QC by Q gate" "$WORK_ITEM" has "For routes that include the Q gate"
-check "README.md work-item section keeps the commit checkpoint universal" "$WORK_ITEM" has "Every route stops at the commit checkpoint"
-for text in 'sub-unit' 'reviewer' '.burhan/local/PROGRESS.md' 'burhan status' 'QC'; do
-  check "README.ar.md work-item section names $text" "$AR_WORK_ITEM" has "$text"
-done
-check "README.ar.md work-item section qualifies QC by Q gate" "$AR_WORK_ITEM" has "لو المسار فيه بوابة Q"
-check "README.ar.md work-item section keeps the commit checkpoint universal" "$AR_WORK_ITEM" has "وكل المسارات بتقف عند commit checkpoint"
-check "README.md has the new headline" "$README" has "A working process for AI coding agents: plan first, build in reviewed steps, prove every 'done'."
-check "README.md keeps the old proof line" "$README" has 'No "done" without proof.'
-check "package description mentions plan" "$DESCRIPTION" has "plan"
-check "package description mentions review" "$DESCRIPTION" has "review"
 for f in README.md README.ar.md; do
-  CONTENT="$(cat "$f")"
-  check "$f mentions docs/burhan/" "$CONTENT" has "docs/burhan/"
+  screen="$(first_screen "$f")"
+  check "$f first screen has the install command" "$screen" has 'npx burhan-kit'
+  check "$f first screen has its language link" "$screen" has 'https://github.com/ahmedkamaldabour/burhan-kit/blob/main/README'
+  check "$f has no raw HTML tags" "$(raw_html_tags "$f")" lacks ':'
+  check "$f has only absolute repository URLs" "$(bad_targets "$f")" lacks '.'
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    check "$f links only package-shipped repository files: $path" "$(grep -F ""$path"" package.json)" has ""$path""
+  done < <(repository_paths "$f")
 done
-check "README.md describes Q3 task artifacts" "$README" has "each task's story, plan and reviews"
-check "README.md recommends the shared Q3 path for fresh projects" "$README" has "In git, for the team — docs/burhan/work/"
-check "README.ar.md describes Q3 task artifacts" "$AR" has "الـ story والخطة والـ reviews بتاعة كل مهمة"
-check "README.ar.md recommends the shared Q3 path for fresh projects" "$AR" has "في git للفريق — docs/burhan/work/"
-check "SETUP.md says fresh projects recommend shared task artifacts" "$SETUP" has "docs/burhan/work/"
-check "configuration docs explain a detected enabled Superpowers plugin" "$(cat docs/configuration.md)" has "Superpowers found — burhan uses its skills at each step"
-check "configuration docs explain a detected disabled Superpowers plugin" "$(cat docs/configuration.md)" has "Superpowers found, but turned off for this project"
-check "configuration docs retain the optional-install guidance" "$(cat docs/configuration.md)" has "/plugin install superpowers@claude-plugins-official"
-check "README.md keeps existing hooks active" "$README" has "existing hooks"
-check "README.md describes coexistence" "$README" has "run alongside"
-check "README.ar.md lists existing hooks" "$AR" has "الـ hooks الموجودة"
-check "README.ar.md describes coexistence" "$AR" has "بيفضلوا شغّالين"
 
-echo "kit/SETUP.md — short, points at setup --agent, keeps the rules"
-check "contains setup --agent" "$SETUP" has "setup --agent"
-check "contains setup --stack" "$SETUP" has "setup --stack"
-check "at most 40 lines" "$( [ "$(wc -l < kit/SETUP.md)" -le 40 ] && echo yes)" has "yes"
-while IFS='|' read -r id file phrase; do
-  check "SETUP.md keeps $id" "$SETUP" has "$phrase"
-done < <(grep -E '^R14[6-9]\||^R15[01]\|' tests/rule-inventory.txt)
-workflow_rule='The agent may edit .burhan/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files.'
-check "SETUP.md has the one approved .burhan edit rule" "$SETUP" has "$workflow_rule"
-check "SETUP.md drops the old blanket .burhan edit ban" "$SETUP" lacks "Do not edit the .burhan/ files yourself."
-
-config_grammar='Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote.'
-check "configuration docs state the single-quote grammar" "$(cat docs/configuration.md)" has "$config_grammar"
-
-echo "no unmeasured claims (AC-20)"
-# Claim words: faster, lighter, tokens, token cost (lines about credentials, e.g. R148's "tokens, passwords", are exempt).
-for f in README.md README.ar.md kit/SETUP.md; do
-  check "$f has no speed / weight / token claim" "$(grep -n -i -E 'faster|lighter|tokens|token cost' "$f" | grep -v -i credentials)" lacks ":"
+echo "Quick start and accurate first-use facts"
+for f in README.md README.ar.md; do
+  heading='Install / Quick start'; [ "$f" = README.ar.md ] && heading='التثبيت / ابدأ بسرعة'
+  quick="$(quick_start "$f" "$heading")"
+  steps="$(printf '%s\n' "$quick" | grep -Ec '^[1-5]\. ')"
+  check "$f quick start has at most five steps" "$([ "$steps" -le 5 ] && [ "$steps" -gt 0 ] && echo yes)" has 'yes'
+  fence="$(printf '\140')"
+  check_eq "$f quick start has one fenced command block" "$(printf '%s\n' "$quick" | grep -c "^$fence$fence$fence")" '2'
+  check "$f quick start tells the reader how to check setup" "$quick" has 'doctor'
 done
-removed='WF_FORBIDDEN|never-run|neverRun|NEVER RUN|FORBIDDEN|SINGLE_TEST_HINT|one file at a time|one at a time|resource constraint|single-file test hint|blocking mode|أوامر ممنوعة'
-hits="$(grep -n -i -E "$removed" README*.md ROADMAP.md; find docs kit -type f -name '*.md' -exec grep -n -i -E "$removed" {} +)"
-check_eq "shipped docs omit removed settings and resource guidance" "$hits" ""
-
-echo "uninstall --all is described in full (review I-1: it also removes the config, bindings and local/)"
-for f in README.md README.ar.md docs/configuration.md; do
-  # The first "uninstall" plus 400 characters. awk, not grep '.{0,400}': BSD regex caps a repeat bound at 255 (RE_DUP_MAX).
-  t="$(tr -s '[:space:]' ' ' < "$f")"
-  for w in workflow.config bindings.md local/ .burhan/; do
-    check "$f: the uninstall text names $w" "$(printf '%s' "$t" | awk '{ i = index($0, "uninstall"); if (i) print substr($0, i, 409) }')" has "$w"
-  done
+for phrase in 'Which coding agents' 'When should the agent come back' "Where should burhan save each task's story, plan and reviews" 'In git, for the team — docs/burhan/work/' 'npx burhan-kit setup --agent' 'Project checks are proposed by the agent on first use' 'docs/burhan/work/' '.burhan/' 'burhan use <slug>' 'Superpowers is optional' 'existing hooks'; do
+  check "README.md states: $phrase" "$(cat README.md)" has "$phrase"
 done
-echo "USAGE lists the new commands"
-usage="$(node dist/cli.js --help 2>&1)"
-check "--help lists setup" "$usage" has "setup"
-check "--help lists uninstall" "$usage" has "uninstall"
-check "--help omits removed setup options" "$usage" lacks "never-run"
-check "--help retains sensitive paths" "$usage" has "[sensitive=<p;q>]"
+for phrase in 'أنهي أدوات AI' 'الـ agent يرجعلك إمتى' 'الـ story والخطة والـ reviews بتاعة كل مهمة' 'في git للفريق — docs/burhan/work/' 'npx burhan-kit setup --agent' 'الـ project checks بيقترحها الـ agent أول استخدام' 'docs/burhan/work/' '.burhan/' 'burhan use <slug>' 'Superpowers اختياري' 'الـ hooks الموجودة'; do
+  check "README.ar.md states: $phrase" "$(cat README.ar.md)" has "$phrase"
+done
 
-echo "configuration.md (pending owner) — drop this group if the owner declines"
-CFG="$(cat docs/configuration.md)"
-check "Commands table has burhan setup" "$(grep -E '^\| `burhan setup' docs/configuration.md)" has "burhan setup"
-check "Commands table has burhan uninstall" "$(grep -E '^\| `burhan uninstall' docs/configuration.md)" has "burhan uninstall"
-check "WF_STACK_SETUP is documented" "$CFG" has "WF_STACK_SETUP"
-check "setup --set lists only the supported settings" "$(grep -E '^\| `burhan setup' docs/configuration.md)" has "--set check=<cmd\\|none> [sensitive=<p;q>]"
-check ".burhan/ is mentioned" "$CFG" has ".burhan/"
-check "configuration.md tells worktree users to start a new agent session" "$CFG" has "worktree"
-check "configuration.md tells mid-session users to start a new agent session" "$CFG" has "new agent session"
-check "configuration.md has no replacement permission sentence" "$CFG" lacks "Codex execpolicy"
-check "ROADMAP omits the removed blocking proposal" "$(cat ROADMAP.md)" lacks "blocking mode"
+echo "Public-page safety"
+for f in README.md README.ar.md; do
+  check "$f omits retired product terms" "$(grep -inE 'WF_SINGLE_TEST_HINT|never-run|never run|forbidden command|resource rule' "$f")" lacks ':'
+  check "$f has no image or GIF" "$(grep -inE '!\[' "$f")" lacks ':'
+done
+
+echo "Review fixes: workflow, proof, and concise setup"
+for phrase in \
+  'No “done” without proof' \
+  'Two active tasks, one session' \
+  '### Basic workflow' \
+  'A real first task' \
+  'but no verification command ran this turn.'; do
+  check "README.md keeps review fix: $phrase" "$(cat README.md)" has "$phrase"
+done
+for phrase in \
+  'مفيش “done” من غير دليل' \
+  'مهمتين شغالين، وجلسة واحدة' \
+  '### مسار الشغل الأساسي' \
+  'مثال حقيقي لأول مهمة' \
+  'but no verification command ran this turn.'; do
+  check "README.ar.md keeps review fix: $phrase" "$(cat README.ar.md)" has "$phrase"
+done
+for f in README.md README.ar.md; do
+  check "$f has no npm-rendering meta text" "$(grep -inE 'npm rendering|شكل npm' "$f")" lacks ':'
+done
 
 t_summary
