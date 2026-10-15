@@ -17,7 +17,7 @@ is checked. Every call goes through `tests/impl.sh`, so a port is verified by th
   implementation and fail against a silent one.
 - Switch the generated hook commands from bash to the port only when it passes every suite.
 - `tests/node-port.test.sh` runs the suites already ported to Node (`post-edit-reminder`, `pre-commit-check`,
-  `session-gates`, `prompt-router`, `turn-audit`, and the `claude` adapter) inside `npm test`.
+  `session-gates`, `prompt-router`, `turn-audit`, and the `claude` and `codex` adapters) inside `npm test`.
 - Config fixtures in the suites are literal lines (`KEY='text'`, `KEY="text"` without `$` `` ` `` `\`,
   `KEY=word`): the Node hooks read only those, as the CLI does; the bash kit also sources other lines.
 - Regexes: the Node hooks read POSIX ERE as GNU grep -E does (measured, `test/hooks/ere.test.ts`), on an
@@ -35,3 +35,4 @@ this list short; every entry needs a reason.
 | Suite | Case | Why bash-only |
 |---|---|---|
 | `core/pre-commit-check` | no timeout utility (`WF_TIMEOUT_BIN=none`) | the bash kit relies on `timeout(1)`; a port has its own timeout, so the case cannot arise |
+| `adapters/codex` | the minimal-record fallback when `jq` cannot run the record filter (4 checks) | the fallback exists only for a `jq` that fails; the Node port has no `jq` |

@@ -43,7 +43,7 @@ export function evidencePrune(root: string, now = new Date()): void {
       for (const session of readdirSync(projectDir, { withFileTypes: true })) {
         if (!session.isDirectory() || !safeId(session.name)) continue;
         const dir = join(projectDir, session.name);
-        if (now.getTime() - statSync(dir).mtimeMs <= 30 * DAY || !ledgerFilesOnly(dir)) continue;
+        if (Math.floor((now.getTime() - statSync(dir).mtimeMs) / DAY) <= 30 || !ledgerFilesOnly(dir)) continue; // find -mtime +30: whole days, rounded down
         try { unlinkTree(dir); } catch { /* fail open */ }
       }
     }

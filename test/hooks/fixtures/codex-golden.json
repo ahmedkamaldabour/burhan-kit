@@ -1,0 +1,2229 @@
+{
+ "generated_by": "kit/hooks/adapters/codex/{normalize,emit,hook record}.sh + jq 2026-10-15; WF_CODEX_LEDGER_DIR = a temp dir; @DIR/@ROLLOUT substituted",
+ "cases": [
+  {
+   "name": "normalize p-post-bash-probe.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"pwd && test -e notes.txt && ls -l notes.txt || true\"}, \"tool_response\": \"/proj\\n\", \"tool_use_id\": \"exec-3fcb7ddf-024f-4251-8fd1-4ef90614aa09\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "record p-post-bash-probe.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"pwd && test -e notes.txt && ls -l notes.txt || true\"}, \"tool_response\": \"/proj\\n\", \"tool_use_id\": \"exec-3fcb7ddf-024f-4251-8fd1-4ef90614aa09\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"pwd && test -e notes.txt && ls -l notes.txt || true\"},\"tool_use_id\":\"exec-3fcb7ddf-024f-4251-8fd1-4ef90614aa09\",\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "normalize p-post-bash-skill.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"sed -n 1,200p /tmp/project/.codex/plugins/cache/x/superpowers/6.3.0/skills/test-driven-development/SKILL.md\"}, \"tool_response\": \"...\", \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "record p-post-bash-skill.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"sed -n 1,200p /tmp/project/.codex/plugins/cache/x/superpowers/6.3.0/skills/test-driven-development/SKILL.md\"}, \"tool_response\": \"...\", \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"sed -n 1,200p /tmp/project/.codex/plugins/cache/x/superpowers/6.3.0/skills/test-driven-development/SKILL.md\"},\"tool_use_id\":\"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\",\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "normalize p-post-bash.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"echo capture-done\"}, \"tool_response\": \"capture-done\\n\", \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "record p-post-bash.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"echo capture-done\"}, \"tool_response\": \"capture-done\\n\", \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"echo capture-done\"},\"tool_use_id\":\"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\",\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "normalize p-post-patch-add.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /proj/notes.txt\\n+first.\\n*** End Patch\"}, \"tool_response\": \"Exit code: 0\\nWall time: 0.3 seconds\\nOutput:\\nSuccess. Updated the following files:\\nA /proj/notes.txt\\n\", \"tool_use_id\": \"exec-537fe526-9f63-4fa5-8301-337bc26aed78\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/proj/notes.txt\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "record p-post-patch-add.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /proj/notes.txt\\n+first.\\n*** End Patch\"}, \"tool_response\": \"Exit code: 0\\nWall time: 0.3 seconds\\nOutput:\\nSuccess. Updated the following files:\\nA /proj/notes.txt\\n\", \"tool_use_id\": \"exec-537fe526-9f63-4fa5-8301-337bc26aed78\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /proj/notes.txt\\n+first.\\n*** End Patch\"},\"tool_use_id\":\"exec-537fe526-9f63-4fa5-8301-337bc26aed78\",\"patch_exit\":0}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "normalize p-post-patch-multi.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /proj/src/new.src\\n+x\\n*** Update File: /proj/src/old.src\\n@@\\n-a\\n+b\\n*** Delete File: /proj/src/gone.src\\n*** Update File: /proj/src/from.src\\n*** Move to: /proj/src/to.src\\n*** End Patch\"}, \"tool_response\": \"Exit code: 0\\nWall time: 0.2 seconds\\nOutput:\\nSuccess. Updated the following files:\\nM /proj/notes.txt\\n\", \"tool_use_id\": \"exec-0e0b8081-d5c7-42a8-91bf-531e22e747ce\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/proj/src/new.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/proj/src/old.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/proj/src/to.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "record p-post-patch-multi.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /proj/src/new.src\\n+x\\n*** Update File: /proj/src/old.src\\n@@\\n-a\\n+b\\n*** Delete File: /proj/src/gone.src\\n*** Update File: /proj/src/from.src\\n*** Move to: /proj/src/to.src\\n*** End Patch\"}, \"tool_response\": \"Exit code: 0\\nWall time: 0.2 seconds\\nOutput:\\nSuccess. Updated the following files:\\nM /proj/notes.txt\\n\", \"tool_use_id\": \"exec-0e0b8081-d5c7-42a8-91bf-531e22e747ce\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /proj/src/new.src\\n+x\\n*** Update File: /proj/src/old.src\\n@@\\n-a\\n+b\\n*** Delete File: /proj/src/gone.src\\n*** Update File: /proj/src/from.src\\n*** Move to: /proj/src/to.src\\n*** End Patch\"},\"tool_use_id\":\"exec-0e0b8081-d5c7-42a8-91bf-531e22e747ce\",\"patch_exit\":0}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "normalize p-post-patch-update.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /proj/notes.txt\\n@@\\n-first.\\n+second.\\n*** End Patch\"}, \"tool_response\": \"Exit code: 0\\nWall time: 0.2 seconds\\nOutput:\\nSuccess. Updated the following files:\\nM /proj/notes.txt\\n\", \"tool_use_id\": \"exec-0e0b8081-d5c7-42a8-91bf-531e22e747ce\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/proj/notes.txt\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "record p-post-patch-update.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /proj/notes.txt\\n@@\\n-first.\\n+second.\\n*** End Patch\"}, \"tool_response\": \"Exit code: 0\\nWall time: 0.2 seconds\\nOutput:\\nSuccess. Updated the following files:\\nM /proj/notes.txt\\n\", \"tool_use_id\": \"exec-0e0b8081-d5c7-42a8-91bf-531e22e747ce\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Update File: /proj/notes.txt\\n@@\\n-first.\\n+second.\\n*** End Patch\"},\"tool_use_id\":\"exec-0e0b8081-d5c7-42a8-91bf-531e22e747ce\",\"patch_exit\":0}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "normalize p-pre-bash-probe.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PreToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"pwd && test -e notes.txt && ls -l notes.txt || true\"}, \"tool_use_id\": \"exec-3fcb7ddf-024f-4251-8fd1-4ef90614aa09\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"pre_shell\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"pwd && test -e notes.txt && ls -l notes.txt || true\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "record p-pre-bash-probe.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PreToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"pwd && test -e notes.txt && ls -l notes.txt || true\"}, \"tool_use_id\": \"exec-3fcb7ddf-024f-4251-8fd1-4ef90614aa09\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "normalize p-pre-bash.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PreToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"echo capture-done\"}, \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"pre_shell\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"echo capture-done\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "record p-pre-bash.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PreToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"echo capture-done\"}, \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "normalize p-pre-patch-add.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PreToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /proj/notes.txt\\n+first.\\n*** End Patch\"}, \"tool_use_id\": \"exec-537fe526-9f63-4fa5-8301-337bc26aed78\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "record p-pre-patch-add.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PreToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /proj/notes.txt\\n+first.\\n*** End Patch\"}, \"tool_use_id\": \"exec-537fe526-9f63-4fa5-8301-337bc26aed78\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "normalize p-pre-patch-update.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PreToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /proj/notes.txt\\n@@\\n-first.\\n+second.\\n*** End Patch\"}, \"tool_use_id\": \"exec-0e0b8081-d5c7-42a8-91bf-531e22e747ce\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "record p-pre-patch-update.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PreToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /proj/notes.txt\\n@@\\n-first.\\n+second.\\n*** End Patch\"}, \"tool_use_id\": \"exec-0e0b8081-d5c7-42a8-91bf-531e22e747ce\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "normalize p-prompt.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"UserPromptSubmit\", \"permission_mode\": \"bypassPermissions\", \"prompt\": \"Do exactly these steps: 1) create a file notes.txt containing the line: first. 2) edit notes.txt so the line says: second. 3) run the shell command: echo capture-done. 4) Finally, if any hook or system context gave you a marker string starting with CAPTURE-MARKER, repeat it verbatim; otherwise say NO-MARKER.\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"prompt\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"Do exactly these steps: 1) create a file notes.txt containing the line: first. 2) edit notes.txt so the line says: second. 3) run the shell command: echo capture-done. 4) Finally, if any hook or system context gave you a marker string starting with CAPTURE-MARKER, repeat it verbatim; otherwise say NO-MARKER.\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "record p-prompt.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"UserPromptSubmit\", \"permission_mode\": \"bypassPermissions\", \"prompt\": \"Do exactly these steps: 1) create a file notes.txt containing the line: first. 2) edit notes.txt so the line says: second. 3) run the shell command: echo capture-done. 4) Finally, if any hook or system context gave you a marker string starting with CAPTURE-MARKER, repeat it verbatim; otherwise say NO-MARKER.\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "normalize p-session.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"SessionStart\", \"permission_mode\": \"bypassPermissions\", \"source\": \"startup\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"session_start\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "record p-session.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"SessionStart\", \"permission_mode\": \"bypassPermissions\", \"source\": \"startup\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "normalize p-stop.json",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"Stop\", \"permission_mode\": \"bypassPermissions\", \"stop_hook_active\": false, \"last_assistant_message\": \"CAPTURE-MARKER-7f3a\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"CAPTURE-MARKER-7f3a\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "record p-stop.json",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"Stop\", \"permission_mode\": \"bypassPermissions\", \"stop_hook_active\": false, \"last_assistant_message\": \"CAPTURE-MARKER-7f3a\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "post_edit: add",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/a.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: add",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/a.src\"],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/a.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: update",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/u.src\\n@@\\n-a\\n+b\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/u.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: update",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/u.src\\n@@\\n-a\\n+b\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/p/u.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/u.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: update+move",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/from.src\\n*** Move to: /p/to.src\\n@@\\n-a\\n+b\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/to.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: update+move",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/from.src\\n*** Move to: /p/to.src\\n@@\\n-a\\n+b\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/to.src\"],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/to.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: move without update",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Move to: /p/orphan.src\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/orphan.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: move without update",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Move to: /p/orphan.src\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/orphan.src\"],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/orphan.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: delete",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Delete File: /p/gone.src\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "stop turn: delete",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Delete File: /p/gone.src\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: add+update same",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/s.src\\n+x\\n*** Update File: /p/s.src\\n@@\\n-x\\n+y\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/s.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/s.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: add+update same",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/s.src\\n+x\\n*** Update File: /p/s.src\\n@@\\n-x\\n+y\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/s.src\"],\"files_edited\":[\"/p/s.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/s.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: duplicates",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/d.src\\n+x\\n*** Add File: /p/d.src\\n+x\\n*** Update File: /p/e.src\\n*** Update File: /p/e.src\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/d.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/e.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: duplicates",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/d.src\\n+x\\n*** Add File: /p/d.src\\n+x\\n*** Update File: /p/e.src\\n*** Update File: /p/e.src\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/d.src\"],\"files_edited\":[\"/p/e.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/d.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/p/e.src\",\"seq\":2}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: crlf",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\r\\n*** Add File: /p/a b.src\\r\\n+x\\r\\n*** End Patch\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/a b.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: crlf",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\r\\n*** Add File: /p/a b.src\\r\\n+x\\r\\n*** End Patch\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/a b.src\"],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/a b.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: spaces around",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File:   /p/pad.src   \\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"  /p/pad.src   \",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: spaces around",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File:   /p/pad.src   \\n+x\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"  /p/pad.src   \"],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"  /p/pad.src   \",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: tab in path",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/t\\tab.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/t\\tab.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: tab in path",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/t\\tab.src\\n+x\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/t\\tab.src\"],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/t\\tab.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: indented header (not a header)",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n *** Add File: /p/no.src\\n+*** Add File: /p/no2.src\\n-*** Update File: /p/no3.src\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "stop turn: indented header (not a header)",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n *** Add File: /p/no.src\\n+*** Add File: /p/no2.src\\n-*** Update File: /p/no3.src\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: unknown header flushes pending",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/f.src\\n*** Weird: x\\n*** Move to: /p/g.src\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/f.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/g.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: unknown header flushes pending",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/f.src\\n*** Weird: x\\n*** Move to: /p/g.src\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/g.src\"],\"files_edited\":[\"/p/f.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/f.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/p/g.src\",\"seq\":2}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: no end patch",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/last.src\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/last.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: no end patch",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/last.src\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/p/last.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/last.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: empty path",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: \\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: empty path",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: \\n+x\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: multi",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/n.src\\n+x\\n*** Update File: /p/o.src\\n*** Delete File: /p/d.src\\n*** Update File: /p/m.src\\n*** Move to: /p/m2.src\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/n.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/o.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/m2.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: multi",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/n.src\\n+x\\n*** Update File: /p/o.src\\n*** Delete File: /p/d.src\\n*** Update File: /p/m.src\\n*** Move to: /p/m2.src\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/n.src\",\"/p/m2.src\"],\"files_edited\":[\"/p/o.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/n.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/p/o.src\",\"seq\":2},{\"kind\":\"edit\",\"file\":\"/p/m2.src\",\"seq\":3}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: unicode path",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/\\u0645\\u0644\\u0641.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/p/ملف.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop turn: unicode path",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"done\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/\\u0645\\u0644\\u0641.src\\n+x\\n*** End Patch\\n\"}, \"tool_use_id\": \"t1\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/ملف.src\"],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/ملف.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "post_edit: tool_input string",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": \"x\", \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "post_edit: command numeric",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": 5}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "post_edit: command null",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": null}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "post_edit: other tool",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"Bash\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "record patch exit 0",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"Exit code: 0\\nWall time: 0.1 seconds\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"},\"tool_use_id\":\"t1\",\"patch_exit\":0}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record patch exit 1",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"Exit code: 1\\nx\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"},\"tool_use_id\":\"t1\",\"patch_exit\":1}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record patch exit 12 multi",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"Exit code: 12\\nExit code: 3\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"},\"tool_use_id\":\"t1\",\"patch_exit\":12}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record patch no header",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"done\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"},\"tool_use_id\":\"t1\",\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record patch header not first",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"x\\nExit code: 4\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"},\"tool_use_id\":\"t1\",\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record patch object response",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": {\"a\": 1}}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"},\"tool_use_id\":\"t1\",\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record patch null response",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": null}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"},\"tool_use_id\":\"t1\",\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record patch numeric",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_response\": \"Exit code: 007\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"apply_patch\",\"tool_input\":{\"command\":\"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"},\"tool_use_id\":\"t1\",\"patch_exit\":7}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record bash",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"Bash\", \"tool_use_id\": \"e1\", \"tool_input\": {\"command\": \"echo \\\"\\u00e9\\u007f\\\"\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"echo \\\"é\\u007f\\\"\"},\"tool_use_id\":\"e1\",\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record bash numeric id",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"Bash\", \"tool_use_id\": 7, \"tool_input\": {\"command\": \"ls\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"ls\"},\"tool_use_id\":7,\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record no tool_use_id",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"ls\"}}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"ls\"},\"tool_use_id\":null,\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "record unsafe session",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"../x\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "record unsafe turn",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"a/b\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "record empty ids",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"\", \"turn_id\": \"\", \"cwd\": \"/proj\", \"tool_name\": \"apply_patch\", \"tool_use_id\": \"t1\", \"tool_input\": {\"command\": \"\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {},
+   "mode": {},
+   "expected": ""
+  },
+  {
+   "name": "record other tool (Read)",
+   "sub": "record",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"tool_name\": \"Read\", \"tool_use_id\": \"t1\", \"tool_input\": {\"file_path\": \"/x\"}, \"tool_response\": \"ok\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "files": {
+    "S1/U1.jsonl": "{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/x\"},\"tool_use_id\":\"t1\",\"patch_exit\":null}\n"
+   },
+   "mode": {
+    "S1": "0o700",
+    "S1/U1.jsonl": "0o664"
+   },
+   "expected": ""
+  },
+  {
+   "name": "stop steps with rollout exits",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify b\"}, \"tool_use_id\": \"c2\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify c\"}, \"tool_use_id\": \"c3\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify d\"}, \"tool_use_id\": \"c4\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify e\"}, \"tool_use_id\": \"c5\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify f\"}, \"tool_use_id\": \"c6\", \"patch_exit\": null}",
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_use_id\": \"p1\", \"patch_exit\": 1}",
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/u.src\\n@@\\n-a\\n+b\\n*** End Patch\\n\"}, \"tool_use_id\": \"p2\", \"patch_exit\": 0}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify g\"}, \"tool_use_id\": \"c7\", \"patch_exit\": null}"
+   ],
+   "rollout": [
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c1\", \"status\": \"completed\", \"exit_code\": 0}}}",
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c2\", \"status\": \"failed\", \"exit_code\": 3}}}",
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c4\", \"status\": \"declined\", \"exit_code\": null}}}",
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c5\", \"status\": \"failed\", \"exit_code\": null}}}",
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c6\", \"status\": \"completed\", \"exit_code\": null}}}",
+    "garbage {",
+    "{\"type\": \"other\"}",
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c7\", \"status\": \"completed\", \"exit_code\": \"x\"}}}"
+   ],
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/a.src\"],\"files_edited\":[\"/p/u.src\"],\"shell_commands\":[\"verify a\",\"verify b\",\"verify c\",\"verify d\",\"verify e\",\"verify f\",\"verify g\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"verify a\",\"exit\":0,\"status\":\"ok\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"verify b\",\"exit\":3,\"status\":\"failed\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"verify c\",\"exit\":null,\"status\":\"unknown\",\"seq\":3},{\"kind\":\"cmd\",\"cmd\":\"verify d\",\"exit\":null,\"status\":\"blocked\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"verify e\",\"exit\":null,\"status\":\"failed\",\"seq\":5},{\"kind\":\"cmd\",\"cmd\":\"verify f\",\"exit\":null,\"status\":\"unknown\",\"seq\":6},{\"kind\":\"edit\",\"file\":\"/p/u.src\",\"seq\":7},{\"kind\":\"cmd\",\"cmd\":\"verify g\",\"exit\":\"x\",\"status\":\"failed\",\"seq\":8}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop steps without rollout",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify b\"}, \"tool_use_id\": \"c2\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify c\"}, \"tool_use_id\": \"c3\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify d\"}, \"tool_use_id\": \"c4\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify e\"}, \"tool_use_id\": \"c5\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify f\"}, \"tool_use_id\": \"c6\", \"patch_exit\": null}",
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_use_id\": \"p1\", \"patch_exit\": 1}",
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/u.src\\n@@\\n-a\\n+b\\n*** End Patch\\n\"}, \"tool_use_id\": \"p2\", \"patch_exit\": 0}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"verify g\"}, \"tool_use_id\": \"c7\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/a.src\"],\"files_edited\":[\"/p/u.src\"],\"shell_commands\":[\"verify a\",\"verify b\",\"verify c\",\"verify d\",\"verify e\",\"verify f\",\"verify g\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"verify a\",\"exit\":null,\"status\":\"unknown\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"verify b\",\"exit\":null,\"status\":\"unknown\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"verify c\",\"exit\":null,\"status\":\"unknown\",\"seq\":3},{\"kind\":\"cmd\",\"cmd\":\"verify d\",\"exit\":null,\"status\":\"unknown\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"verify e\",\"exit\":null,\"status\":\"unknown\",\"seq\":5},{\"kind\":\"cmd\",\"cmd\":\"verify f\",\"exit\":null,\"status\":\"unknown\",\"seq\":6},{\"kind\":\"edit\",\"file\":\"/p/u.src\",\"seq\":7},{\"kind\":\"cmd\",\"cmd\":\"verify g\",\"exit\":null,\"status\":\"unknown\",\"seq\":8}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop steps with rejected/denied statuses",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"b\"}, \"tool_use_id\": \"c2\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"c\"}, \"tool_use_id\": \"c3\", \"patch_exit\": null}"
+   ],
+   "rollout": [
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c1\", \"status\": \"rejected\", \"exit_code\": null}}}",
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c2\", \"status\": \"Denied by user\", \"exit_code\": null}}}",
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c3\", \"status\": \"DECLINED\", \"exit_code\": null}}}"
+   ],
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\",\"b\",\"c\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"a\",\"exit\":null,\"status\":\"blocked\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"b\",\"exit\":null,\"status\":\"blocked\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"c\",\"exit\":null,\"status\":\"blocked\",\"seq\":3}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop rollout duplicate ids (later wins)",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}"
+   ],
+   "rollout": [
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c1\", \"status\": \"failed\", \"exit_code\": 2}}}",
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c1\", \"status\": \"completed\", \"exit_code\": 0}}}"
+   ],
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"a\",\"exit\":0,\"status\":\"ok\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop numeric tool_use_id and exit",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": 7, \"patch_exit\": null}"
+   ],
+   "rollout": [
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": 7, \"status\": \"completed\", \"exit_code\": 0}}}"
+   ],
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"a\",\"exit\":0,\"status\":\"ok\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop corrupted ledger line",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}",
+    "{\"tool_name\":\"Ba",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"b\"}, \"tool_use_id\": \"c2\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\",\"b\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"a\",\"exit\":null,\"status\":\"unknown\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"b\",\"exit\":null,\"status\":\"unknown\",\"seq\":2}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop ledger with non-objects",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}",
+    "42",
+    "[1]",
+    "\"s\"",
+    "null",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"b\"}, \"tool_use_id\": \"c2\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\",\"b\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"a\",\"exit\":null,\"status\":\"unknown\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"b\",\"exit\":null,\"status\":\"unknown\",\"seq\":2}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop ledger empty file",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop skills by layout",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/plugins/cache/mkt/superpowers/6.3.0/skills/brainstorming/SKILL.md\"}, \"tool_use_id\": \"k0\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/superpowers/skills/test-driven-development/SKILL.md\"}, \"tool_use_id\": \"k1\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.agents/skills/superpowers/writing-plans/SKILL.md\"}, \"tool_use_id\": \"k2\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/skills/foo/SKILL.md\"}, \"tool_use_id\": \"k3\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /proj/.agents/skills/bar/SKILL.md\"}, \"tool_use_id\": \"k4\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/skills/.system/baz/SKILL.md\"}, \"tool_use_id\": \"k5\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/plugins/cache/m/pl/1/skills/s1/SKILL.md\"}, \"tool_use_id\": \"k6\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat SKILL.md\"}, \"tool_use_id\": \"k7\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat ./skills/rel/SKILL.md\"}, \"tool_use_id\": \"k8\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"cat /h/.codex/plugins/cache/mkt/superpowers/6.3.0/skills/brainstorming/SKILL.md\",\"cat /h/.codex/superpowers/skills/test-driven-development/SKILL.md\",\"cat /h/.agents/skills/superpowers/writing-plans/SKILL.md\",\"cat /h/.codex/skills/foo/SKILL.md\",\"cat /proj/.agents/skills/bar/SKILL.md\",\"cat /h/.codex/skills/.system/baz/SKILL.md\",\"cat /h/.codex/plugins/cache/m/pl/1/skills/s1/SKILL.md\",\"cat SKILL.md\",\"cat ./skills/rel/SKILL.md\"],\"skills_used\":[\"superpowers:brainstorming\",\"superpowers:test-driven-development\",\"superpowers:writing-plans\",\"foo\",\"bar\",\"baz\",\"pl:s1\",\"rel\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/plugins/cache/mkt/superpowers/6.3.0/skills/brainstorming/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/superpowers/skills/test-driven-development/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.agents/skills/superpowers/writing-plans/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":3},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/skills/foo/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"cat /proj/.agents/skills/bar/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":5},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/skills/.system/baz/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":6},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/plugins/cache/m/pl/1/skills/s1/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":7},{\"kind\":\"cmd\",\"cmd\":\"cat SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":8},{\"kind\":\"cmd\",\"cmd\":\"cat ./skills/rel/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":9}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop skills: quotes, several per line, duplicates",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat \\\"/a/skills/q1/SKILL.md\\\" '/b/skills/q2/SKILL.md' /a/skills/q1/SKILL.md; sed -n 1p /c/s3/SKILL.md\"}, \"tool_use_id\": \"k1\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"echo SKILL.md /x/SKILL.md.bak /y/notSKILL.md\"}, \"tool_use_id\": \"k2\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"cat \\\"/a/skills/q1/SKILL.md\\\" '/b/skills/q2/SKILL.md' /a/skills/q1/SKILL.md; sed -n 1p /c/s3/SKILL.md\",\"echo SKILL.md /x/SKILL.md.bak /y/notSKILL.md\"],\"skills_used\":[\"q1\",\"q2\",\"s3\",\"x\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"cat \\\"/a/skills/q1/SKILL.md\\\" '/b/skills/q2/SKILL.md' /a/skills/q1/SKILL.md; sed -n 1p /c/s3/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"echo SKILL.md /x/SKILL.md.bak /y/notSKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":2}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop commands non-string",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": 5}, \"tool_use_id\": \"c1\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": null}, \"tool_use_id\": \"c2\"}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {}, \"tool_use_id\": \"c3\"}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"ok\"}, \"tool_use_id\": \"c4\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[5,\"ok\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":5,\"exit\":null,\"status\":\"unknown\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"\",\"exit\":null,\"status\":\"unknown\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"\",\"exit\":null,\"status\":\"unknown\",\"seq\":3},{\"kind\":\"cmd\",\"cmd\":\"ok\",\"exit\":null,\"status\":\"unknown\",\"seq\":4}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"stop_hook_active\": true, \"last_assistant_message\": \"\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\"],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"a\",\"exit\":null,\"status\":\"unknown\",\"seq\":1}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop stop_hook_active string",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"stop_hook_active\": \"true\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\"],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"a\",\"exit\":null,\"status\":\"unknown\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop last_assistant_message numeric",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"last_assistant_message\": 5}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"5\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop unsafe ids",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"../x\", \"turn_id\": \"..\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"\",\"session\":\"../x\",\"turn_id\":\"..\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop rollout path is a directory",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"@DIR\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\"],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"a\",\"exit\":null,\"status\":\"unknown\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop ledger record with string tool_input (jq aborts for that program)",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": \"str\", \"tool_use_id\": \"c2\"}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"b\"}, \"tool_use_id\": \"c3\", \"patch_exit\": null}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\",\"b\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop apply_patch record with string tool_input",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Add File: /p/a.src\\n+x\\n*** End Patch\\n\"}, \"tool_use_id\": \"p1\", \"patch_exit\": 0}",
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": \"x\", \"tool_use_id\": \"p2\", \"patch_exit\": 0}",
+    "{\"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"*** Begin Patch\\n*** Update File: /p/u.src\\n@@\\n-a\\n+b\\n*** End Patch\\n\"}, \"tool_use_id\": \"p3\", \"patch_exit\": 0}"
+   ],
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/a.src\"],\"files_edited\":[\"/p/u.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop rollout status not a string",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"b\"}, \"tool_use_id\": \"c2\", \"patch_exit\": null}"
+   ],
+   "rollout": [
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c1\", \"status\": \"completed\", \"exit_code\": 0}}}",
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c2\", \"status\": 5, \"exit_code\": null}}}"
+   ],
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\",\"b\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop rollout status null with no exit",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
+   "ledger": [
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"a\"}, \"tool_use_id\": \"c1\", \"patch_exit\": null}"
+   ],
+   "rollout": [
+    "{\"type\": \"event_msg\", \"payload\": {\"type\": \"item_completed\", \"item\": {\"type\": \"CommandExecution\", \"id\": \"c1\", \"status\": null, \"exit_code\": null}}}"
+   ],
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"a\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"a\",\"exit\":null,\"status\":\"failed\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "session id numeric",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"SessionStart\", \"session_id\": 5, \"turn_id\": \"t\\n\", \"cwd\": 9}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"session_start\",\"agent\":\"codex\",\"project_dir\":\"9\",\"session\":\"5\",\"turn_id\":\"t\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "prompt numeric",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"UserPromptSubmit\", \"prompt\": 42, \"cwd\": \"/c\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"prompt\",\"agent\":\"codex\",\"project_dir\":\"/c\",\"session\":\"\",\"turn_id\":\"\",\"turn_scope\":\"since_last_stop\",\"prompt\":42,\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "prompt multiline",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"UserPromptSubmit\", \"prompt\": \"a\\nb\", \"cwd\": \"/c\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"prompt\",\"agent\":\"codex\",\"project_dir\":\"/c\",\"session\":\"\",\"turn_id\":\"\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"a\\nb\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "pre: tool_input string",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"tool_name\": \"Bash\", \"tool_input\": \"x\", \"cwd\": \"/c\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "pre: tool_input null",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"tool_name\": \"Bash\", \"tool_input\": null, \"cwd\": \"/c\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"event\":\"pre_shell\",\"agent\":\"codex\",\"project_dir\":\"/c\",\"session\":\"\",\"turn_id\":\"\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "pre: tool_input array",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"tool_name\": \"Bash\", \"tool_input\": [1], \"cwd\": \"/c\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "pre: apply_patch",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"tool_name\": \"apply_patch\", \"tool_input\": {\"command\": \"x\"}, \"cwd\": \"/c\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "subagent stop",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"SubagentStop\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "garbage",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "nope",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "array payload",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "[1]",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "empty",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit session_start 'hi'",
+   "sub": "emit",
+   "arg": "session_start",
+   "stdin": "{\"message\": \"hi\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"hi\"}}\n"
+  },
+  {
+   "name": "emit session_start 'line1\\nline2'",
+   "sub": "emit",
+   "arg": "session_start",
+   "stdin": "{\"message\": \"line1\\nline2\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"line1\\nline2\"}}\n"
+  },
+  {
+   "name": "emit session_start 'q \" \\\\ b'",
+   "sub": "emit",
+   "arg": "session_start",
+   "stdin": "{\"message\": \"q \\\" \\\\ b\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"q \\\" \\\\ b\"}}\n"
+  },
+  {
+   "name": "emit session_start 'Arabic ⚑ خلص'",
+   "sub": "emit",
+   "arg": "session_start",
+   "stdin": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"Arabic ⚑ خلص ✅\"}}\n"
+  },
+  {
+   "name": "emit session_start 'del \\x7f \\x01 tab\\t'",
+   "sub": "emit",
+   "arg": "session_start",
+   "stdin": "{\"message\": \"del  \\u0001 tab\\t\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"del \\u007f \\u0001 tab\\t\"}}\n"
+  },
+  {
+   "name": "emit session_start ''",
+   "sub": "emit",
+   "arg": "session_start",
+   "stdin": "{\"message\": \"\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit session_start 'abc\\n'",
+   "sub": "emit",
+   "arg": "session_start",
+   "stdin": "{\"message\": \"abc\\n\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"abc\"}}\n"
+  },
+  {
+   "name": "emit session_start '5'",
+   "sub": "emit",
+   "arg": "session_start",
+   "stdin": "{\"message\": \"5\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"5\"}}\n"
+  },
+  {
+   "name": "emit prompt 'hi'",
+   "sub": "emit",
+   "arg": "prompt",
+   "stdin": "{\"message\": \"hi\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"hi\"}}\n"
+  },
+  {
+   "name": "emit prompt 'line1\\nline2'",
+   "sub": "emit",
+   "arg": "prompt",
+   "stdin": "{\"message\": \"line1\\nline2\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"line1\\nline2\"}}\n"
+  },
+  {
+   "name": "emit prompt 'q \" \\\\ b'",
+   "sub": "emit",
+   "arg": "prompt",
+   "stdin": "{\"message\": \"q \\\" \\\\ b\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"q \\\" \\\\ b\"}}\n"
+  },
+  {
+   "name": "emit prompt 'Arabic ⚑ خلص'",
+   "sub": "emit",
+   "arg": "prompt",
+   "stdin": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"Arabic ⚑ خلص ✅\"}}\n"
+  },
+  {
+   "name": "emit prompt 'del \\x7f \\x01 tab\\t'",
+   "sub": "emit",
+   "arg": "prompt",
+   "stdin": "{\"message\": \"del  \\u0001 tab\\t\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"del \\u007f \\u0001 tab\\t\"}}\n"
+  },
+  {
+   "name": "emit prompt ''",
+   "sub": "emit",
+   "arg": "prompt",
+   "stdin": "{\"message\": \"\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit prompt 'abc\\n'",
+   "sub": "emit",
+   "arg": "prompt",
+   "stdin": "{\"message\": \"abc\\n\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"abc\"}}\n"
+  },
+  {
+   "name": "emit prompt '5'",
+   "sub": "emit",
+   "arg": "prompt",
+   "stdin": "{\"message\": \"5\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"5\"}}\n"
+  },
+  {
+   "name": "emit pre_shell 'hi'",
+   "sub": "emit",
+   "arg": "pre_shell",
+   "stdin": "{\"message\": \"hi\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"hi\"}}\n"
+  },
+  {
+   "name": "emit pre_shell 'line1\\nline2'",
+   "sub": "emit",
+   "arg": "pre_shell",
+   "stdin": "{\"message\": \"line1\\nline2\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"line1\\nline2\"}}\n"
+  },
+  {
+   "name": "emit pre_shell 'q \" \\\\ b'",
+   "sub": "emit",
+   "arg": "pre_shell",
+   "stdin": "{\"message\": \"q \\\" \\\\ b\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"q \\\" \\\\ b\"}}\n"
+  },
+  {
+   "name": "emit pre_shell 'Arabic ⚑ خلص'",
+   "sub": "emit",
+   "arg": "pre_shell",
+   "stdin": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Arabic ⚑ خلص ✅\"}}\n"
+  },
+  {
+   "name": "emit pre_shell 'del \\x7f \\x01 tab\\t'",
+   "sub": "emit",
+   "arg": "pre_shell",
+   "stdin": "{\"message\": \"del  \\u0001 tab\\t\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"del \\u007f \\u0001 tab\\t\"}}\n"
+  },
+  {
+   "name": "emit pre_shell ''",
+   "sub": "emit",
+   "arg": "pre_shell",
+   "stdin": "{\"message\": \"\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit pre_shell 'abc\\n'",
+   "sub": "emit",
+   "arg": "pre_shell",
+   "stdin": "{\"message\": \"abc\\n\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"abc\"}}\n"
+  },
+  {
+   "name": "emit pre_shell '5'",
+   "sub": "emit",
+   "arg": "pre_shell",
+   "stdin": "{\"message\": \"5\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"5\"}}\n"
+  },
+  {
+   "name": "emit post_edit 'hi'",
+   "sub": "emit",
+   "arg": "post_edit",
+   "stdin": "{\"message\": \"hi\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"hi\"}}\n"
+  },
+  {
+   "name": "emit post_edit 'line1\\nline2'",
+   "sub": "emit",
+   "arg": "post_edit",
+   "stdin": "{\"message\": \"line1\\nline2\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"line1\\nline2\"}}\n"
+  },
+  {
+   "name": "emit post_edit 'q \" \\\\ b'",
+   "sub": "emit",
+   "arg": "post_edit",
+   "stdin": "{\"message\": \"q \\\" \\\\ b\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"q \\\" \\\\ b\"}}\n"
+  },
+  {
+   "name": "emit post_edit 'Arabic ⚑ خلص'",
+   "sub": "emit",
+   "arg": "post_edit",
+   "stdin": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Arabic ⚑ خلص ✅\"}}\n"
+  },
+  {
+   "name": "emit post_edit 'del \\x7f \\x01 tab\\t'",
+   "sub": "emit",
+   "arg": "post_edit",
+   "stdin": "{\"message\": \"del  \\u0001 tab\\t\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"del \\u007f \\u0001 tab\\t\"}}\n"
+  },
+  {
+   "name": "emit post_edit ''",
+   "sub": "emit",
+   "arg": "post_edit",
+   "stdin": "{\"message\": \"\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit post_edit 'abc\\n'",
+   "sub": "emit",
+   "arg": "post_edit",
+   "stdin": "{\"message\": \"abc\\n\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"abc\"}}\n"
+  },
+  {
+   "name": "emit post_edit '5'",
+   "sub": "emit",
+   "arg": "post_edit",
+   "stdin": "{\"message\": \"5\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"5\"}}\n"
+  },
+  {
+   "name": "emit turn_end 'hi'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\": \"hi\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"decision\":\"block\",\"reason\":\"hi\"}\n"
+  },
+  {
+   "name": "emit turn_end 'line1\\nline2'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\": \"line1\\nline2\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"decision\":\"block\",\"reason\":\"line1\\nline2\"}\n"
+  },
+  {
+   "name": "emit turn_end 'q \" \\\\ b'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\": \"q \\\" \\\\ b\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"decision\":\"block\",\"reason\":\"q \\\" \\\\ b\"}\n"
+  },
+  {
+   "name": "emit turn_end 'Arabic ⚑ خلص'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"decision\":\"block\",\"reason\":\"Arabic ⚑ خلص ✅\"}\n"
+  },
+  {
+   "name": "emit turn_end 'del \\x7f \\x01 tab\\t'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\": \"del  \\u0001 tab\\t\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"decision\":\"block\",\"reason\":\"del \\u007f \\u0001 tab\\t\"}\n"
+  },
+  {
+   "name": "emit turn_end ''",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\": \"\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit turn_end 'abc\\n'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\": \"abc\\n\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"decision\":\"block\",\"reason\":\"abc\"}\n"
+  },
+  {
+   "name": "emit turn_end '5'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\": \"5\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": "{\"decision\":\"block\",\"reason\":\"5\"}\n"
+  },
+  {
+   "name": "emit bogus 'hi'",
+   "sub": "emit",
+   "arg": "bogus",
+   "stdin": "{\"message\": \"hi\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bogus 'line1\\nline2'",
+   "sub": "emit",
+   "arg": "bogus",
+   "stdin": "{\"message\": \"line1\\nline2\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bogus 'q \" \\\\ b'",
+   "sub": "emit",
+   "arg": "bogus",
+   "stdin": "{\"message\": \"q \\\" \\\\ b\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bogus 'Arabic ⚑ خلص'",
+   "sub": "emit",
+   "arg": "bogus",
+   "stdin": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bogus 'del \\x7f \\x01 tab\\t'",
+   "sub": "emit",
+   "arg": "bogus",
+   "stdin": "{\"message\": \"del  \\u0001 tab\\t\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bogus ''",
+   "sub": "emit",
+   "arg": "bogus",
+   "stdin": "{\"message\": \"\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bogus 'abc\\n'",
+   "sub": "emit",
+   "arg": "bogus",
+   "stdin": "{\"message\": \"abc\\n\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bogus '5'",
+   "sub": "emit",
+   "arg": "bogus",
+   "stdin": "{\"message\": \"5\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit  'hi'",
+   "sub": "emit",
+   "arg": "",
+   "stdin": "{\"message\": \"hi\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit  'line1\\nline2'",
+   "sub": "emit",
+   "arg": "",
+   "stdin": "{\"message\": \"line1\\nline2\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit  'q \" \\\\ b'",
+   "sub": "emit",
+   "arg": "",
+   "stdin": "{\"message\": \"q \\\" \\\\ b\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit  'Arabic ⚑ خلص'",
+   "sub": "emit",
+   "arg": "",
+   "stdin": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit  'del \\x7f \\x01 tab\\t'",
+   "sub": "emit",
+   "arg": "",
+   "stdin": "{\"message\": \"del  \\u0001 tab\\t\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit  ''",
+   "sub": "emit",
+   "arg": "",
+   "stdin": "{\"message\": \"\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit  'abc\\n'",
+   "sub": "emit",
+   "arg": "",
+   "stdin": "{\"message\": \"abc\\n\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit  '5'",
+   "sub": "emit",
+   "arg": "",
+   "stdin": "{\"message\": \"5\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit constructor 'hi'",
+   "sub": "emit",
+   "arg": "constructor",
+   "stdin": "{\"message\": \"hi\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit constructor 'line1\\nline2'",
+   "sub": "emit",
+   "arg": "constructor",
+   "stdin": "{\"message\": \"line1\\nline2\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit constructor 'q \" \\\\ b'",
+   "sub": "emit",
+   "arg": "constructor",
+   "stdin": "{\"message\": \"q \\\" \\\\ b\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit constructor 'Arabic ⚑ خلص'",
+   "sub": "emit",
+   "arg": "constructor",
+   "stdin": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit constructor 'del \\x7f \\x01 tab\\t'",
+   "sub": "emit",
+   "arg": "constructor",
+   "stdin": "{\"message\": \"del  \\u0001 tab\\t\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit constructor ''",
+   "sub": "emit",
+   "arg": "constructor",
+   "stdin": "{\"message\": \"\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit constructor 'abc\\n'",
+   "sub": "emit",
+   "arg": "constructor",
+   "stdin": "{\"message\": \"abc\\n\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit constructor '5'",
+   "sub": "emit",
+   "arg": "constructor",
+   "stdin": "{\"message\": \"5\"}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bad input '{}'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bad input '{\"message\":null}'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":null}",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bad input 'not json'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "not json",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bad input ''",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  },
+  {
+   "name": "emit bad input '[1]'",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "[1]",
+   "ledger": null,
+   "rollout": null,
+   "session": "S1",
+   "turn": "U1",
+   "expected": ""
+  }
+ ]
+}

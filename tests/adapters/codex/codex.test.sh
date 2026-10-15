@@ -77,10 +77,10 @@ printf '#!/usr/bin/env bash\ncase "$*" in *patch_exit*) echo "jq: error: syntax 
 L6="$(t_tmp)/codex-ledger-fallback"
 PATH="$SHIM:$PATH" WF_CODEX_LEDGER_DIR="$L6" "${IMPL[@]}" hook record < "$FX/p-post-bash.json"
 rec="$(cat "$L6/S1/U1.jsonl" 2>/dev/null)"
-check "record filter fails -> a minimal record is still written (tool_name + tool_input)" "$(jq -c '{tool_name, c: .tool_input.command}' <<<"$rec" 2>/dev/null)" has '"tool_name":"Bash"'
-check "...marked minimal, so the loss is visible" "$rec" has '"record":"minimal"'
-check "...and keeps tool_use_id, so the exit code can still be found in the rollout" "$rec" has '"tool_use_id":'
-check_eq "...and read back as a step" "$(jq -c '.transcript_path="/nonexistent"' "$FX/p-stop.json" | WF_CODEX_LEDGER_DIR="$L6" "${IMPL[@]}" normalize | jq '.turn.steps | length')" "1"
+t_bash_only WF_IMPL_CODEX "the minimal-record fallback exists for a jq that cannot run the record filter; Node has no jq" && check "record filter fails -> a minimal record is still written (tool_name + tool_input)" "$(jq -c '{tool_name, c: .tool_input.command}' <<<"$rec" 2>/dev/null)" has '"tool_name":"Bash"'
+t_bash_only WF_IMPL_CODEX "the minimal-record fallback exists for a jq that cannot run the record filter; Node has no jq" && check "...marked minimal, so the loss is visible" "$rec" has '"record":"minimal"'
+t_bash_only WF_IMPL_CODEX "the minimal-record fallback exists for a jq that cannot run the record filter; Node has no jq" && check "...and keeps tool_use_id, so the exit code can still be found in the rollout" "$rec" has '"tool_use_id":'
+t_bash_only WF_IMPL_CODEX "the minimal-record fallback exists for a jq that cannot run the record filter; Node has no jq" && check_eq "...and read back as a step" "$(jq -c '.transcript_path="/nonexistent"' "$FX/p-stop.json" | WF_CODEX_LEDGER_DIR="$L6" "${IMPL[@]}" normalize | jq '.turn.steps | length')" "1"
 BIGL="$(t_tmp)/big"; mkdir -p "$BIGL/S9"
 for k in $(seq 1 600); do printf '%s\n' "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"echo $k\"},\"tool_use_id\":\"e$k\"}"; done > "$BIGL/S9/U9.jsonl"
 t0=$(date +%s); n="$(jq -c '.session_id="S9" | .turn_id="U9"' "$FX/p-stop.json" | WF_CODEX_LEDGER_DIR="$BIGL" "${IMPL[@]}" normalize | jq '.turn.steps | length')"; t1=$(date +%s)
