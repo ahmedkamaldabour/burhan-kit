@@ -118,8 +118,10 @@ test('ere: case-insensitive option (grep -i)', () => {
   assert.equal(ereTest('status:', 'STATUS: x'), false);
 });
 
-/** GNU grep under a UTF-8 locale, or null when this machine has none (macOS BSD grep, Windows). */
+/** GNU grep under a UTF-8 locale, or null when this machine has none (macOS BSD grep). Git Bash's grep on Windows is
+ *  GNU grep too, but it runs under MSYS argument and encoding conversion, so it is no reference there: Linux CI is. */
 function gnuGrep(): { bin: string; env: NodeJS.ProcessEnv } | null {
+  if (process.platform === 'win32') return null;
   for (const bin of ['/usr/bin/grep', '/bin/grep', 'grep']) {
     const v = spawnSync(bin, ['--version'], { encoding: 'utf8' });
     if (v.status !== 0 || !/GNU grep/.test(v.stdout)) continue;

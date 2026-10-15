@@ -17,7 +17,7 @@ export function docsLocation(target: string, override?: string): { rel: string; 
   const root = realTarget(target);
   if (real !== root && !real.startsWith(root + sep)) throw new BurhanError(`the docs location must be inside the project: ${override ?? abs}`);
   if (existsSync(abs) && !statSync(abs).isDirectory()) throw new BurhanError(`the docs location is not a directory: ${override ?? abs}`);
-  return { rel: relative(target, abs) || '.', abs };
+  return { rel: relative(target, abs).split(sep).join('/') || '.', abs };
 }
 
 export function status(o: { target: string; write: boolean; force: boolean; docs?: string }, io: Io): number {

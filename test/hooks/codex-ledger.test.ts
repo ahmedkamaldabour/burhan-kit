@@ -17,8 +17,8 @@ test('validId: a safe charset only, never . or ..', () => {
 
 test('ledgerDir: WF_CODEX_LEDGER_DIR, else XDG_STATE_HOME, else ~/.local/state — empty values count as unset', () => {
   assert.equal(ledgerDir({ WF_CODEX_LEDGER_DIR: '/x' }), '/x');
-  assert.equal(ledgerDir({ XDG_STATE_HOME: '/s' }), '/s/burhan/codex');
-  assert.equal(ledgerDir({ WF_CODEX_LEDGER_DIR: '', XDG_STATE_HOME: '', HOME: '/h' }), '/h/.local/state/burhan/codex');
+  assert.equal(ledgerDir({ XDG_STATE_HOME: '/s' }), join('/s', 'burhan', 'codex'));
+  assert.equal(ledgerDir({ WF_CODEX_LEDGER_DIR: '', XDG_STATE_HOME: '', HOME: '/h' }), join('/h', '.local', 'state', 'burhan', 'codex'));
 });
 
 test('prune: only inside a marked root, only old safe session dirs that hold nothing but ledgers', () => {

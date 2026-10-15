@@ -53,7 +53,7 @@ test('store key agrees with the CLI for physical project paths', () => {
 
 test('evidenceRoot accepts only an absolute override', () => {
   assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: '/private/evidence' }), '/private/evidence');
-  assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: 'relative', XDG_STATE_HOME: '/state' }), '/state/burhan/evidence');
+  assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: 'relative', XDG_STATE_HOME: '/state' }), join('/state', 'burhan', 'evidence'));
 });
 
 test('safeId permits only safe path components', () => {

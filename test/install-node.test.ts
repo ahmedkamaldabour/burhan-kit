@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { applyPlan, planInstall, type InstallOptions } from '../src/lib/install.js';
 import { installRoot } from '../src/hooks/install-root.mjs';
@@ -44,7 +44,7 @@ test('the layout is pinned: the entry sits where installRoot finds the project',
   run(opts(d, { agents: ['claude', 'codex'] }));
   const entry = join(d, '.burhan/hooks/node/main.mjs');
   assert.ok(existsSync(entry));
-  assert.equal(installRoot(entry), d.replace(/\/$/u, ''));
+  assert.equal(resolve(installRoot(entry)), resolve(d)); // the hooks report '/' separators; resolve() compares the same directory
   const launcher = commands(d, '.codex/hooks.json')[0].command;
   assert.ok(launcher.includes("'.burhan','hooks','node','main.mjs'"), 'the Codex launcher looks for exactly that path');
 });

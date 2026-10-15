@@ -18,7 +18,7 @@ export function changed(o: { target: string; item?: string; docs?: string; json:
   if (!o.item) throw new BurhanError('changed needs --item <slug>');
   if (!/^[a-z0-9][a-z0-9._-]*$/i.test(o.item) || o.item.includes('..')) throw new BurhanError(`not a work-item slug: ${o.item}`);
   const target = realTarget(o.target);
-  const { abs: docs } = docsLocation(target, o.docs);
+  const { rel: docsRel, abs: docs } = docsLocation(target, o.docs);
   const story = join(docs, o.item, `${o.item}-story.md`);
   if (!existsSync(story)) throw new BurhanError(`no story for ${o.item}: ${relative(target, story)}`);
   const raw = given(field(readFileSync(story, 'utf8'), 'Verified at commit'));
@@ -37,7 +37,6 @@ export function changed(o: { target: string; item?: string; docs?: string; json:
   const diff = git(target, 'diff', '--name-only', '--no-renames', '--relative', commits[0], '--', '.');
   const untracked = git(target, 'ls-files', '--others', '--exclude-standard', '--', '.');
   if (!ok(diff) || !ok(untracked)) return recheck('git could not list the changes');
-  const docsRel = relative(target, docs);
   const files = [...new Set([...diff.stdout.split('\n'), ...untracked.stdout.split('\n')])]
     .filter((f) => f && !(docsRel && (f === docsRel || f.startsWith(docsRel + '/')))).sort();
   if (files.length === 0) return say(`${o.item}: no change since ${sha} — the story's code facts still hold.`, { item: o.item, sha, files });

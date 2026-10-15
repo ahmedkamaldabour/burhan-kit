@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ereToJs, evidenceRoot, projectKey, readLedger, summarizeLedger } from '../src/lib/evidence.js';
 import { kitDir, nodeHooksDir } from '../src/lib/kit.js';
-import { projectKey as hookProjectKey } from '../src/hooks/core/store.mjs';
+import { evidenceRoot as hookEvidenceRoot, projectKey as hookProjectKey } from '../src/hooks/core/store.mjs';
 import { runCli } from '../src/main.js';
 import { capture, tmpDir } from './helpers.js';
 
@@ -39,7 +39,8 @@ test('the project key matches the Node hooks\' own project key (not a re-impleme
 });
 
 const hasBash = spawnSync('bash', ['-c', 'exit 0']).status === 0;
-test('the project key matches the bash hooks\' wf_project_key', { skip: hasBash ? false : 'bash is not available' }, () => {
+// Git Bash computes the key from an MSYS path (/d/a/...), not the Windows path the Node hooks hash: only Unix compares them.
+test('the project key matches the bash hooks\' wf_project_key', { skip: process.platform === 'win32' ? 'bash paths are MSYS paths on Windows' : hasBash ? false : 'bash is not available' }, () => {
   const p = project();
   const r = spawnSync('bash', ['-c', '. "$1/hooks/core/lib.sh"; WF_PROJECT="$2"; wf_project_key', '_', kitDir(), p], { encoding: 'utf8' });
   assert.equal(projectKey(p), r.stdout.trim());
@@ -129,4 +130,13 @@ test('no ledger yet -> says so, exit 0', async () => {
     assert.equal(await runCli(['evidence'], io), 0);
     assert.match(o.out, /no evidence recorded/);
   } finally { delete process.env.WF_EVIDENCE_DIR; }
+});
+
+test('the CLI and the hooks pick the same evidence root for every kind of override (an absolute path on any OS, a relative one, none)', () => {
+  const tmpAbs = tmp('burhan-evroot-'); // absolute in this OS's own form: '/tmp/…' on Unix, 'C:\\…' on Windows
+  for (const override of [tmpAbs, '/private/evidence', 'relative/dir', '', undefined]) {
+    const env = { XDG_STATE_HOME: join(tmpAbs, 'state'), ...(override === undefined ? {} : { WF_EVIDENCE_DIR: override }) };
+    assert.equal(evidenceRoot(env), hookEvidenceRoot(env), `override ${JSON.stringify(override)}`);
+  }
+  assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: tmpAbs }), tmpAbs, 'an absolute override in the OS\'s own form is honoured');
 });

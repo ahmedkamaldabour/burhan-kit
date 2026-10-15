@@ -9,11 +9,16 @@ type Env = NodeJS.ProcessEnv;
 const ledgerOn = (env: Env): boolean => !['off', 'no', 'false', '0'].includes(env.WF_EVIDENCE_LEDGER ?? 'on');
 const isWindows = process.platform === 'win32';
 
+/** An evidence-root override is honoured only when absolute: a leading `/`, or a drive/UNC path on Windows. The hooks and
+ *  the CLI share this one rule, so they always read and write the same ledger. */
+export const isAbsoluteOverride = (path: string): boolean =>
+  path.startsWith('/') || (isWindows && (isAbsolute(path) || win32.isAbsolute(path)));
+
 /** wf_evidence_root: the external evidence root, with an absolute override only. */
 export function evidenceRoot(env: Env = process.env): string {
   try {
     const configured = env.WF_EVIDENCE_DIR ?? '';
-    if (configured.startsWith('/') || (isWindows && (isAbsolute(configured) || win32.isAbsolute(configured)))) return configured;
+    if (isAbsoluteOverride(configured)) return configured;
     return join(env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'burhan', 'evidence');
   } catch { return ''; }
 }

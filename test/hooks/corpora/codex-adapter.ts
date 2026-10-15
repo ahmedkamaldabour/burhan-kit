@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { tmpDir } from '../../helpers.js';
+import { jsonText, slashes, tmpDir } from '../../helpers.js';
 import { type Driver, nodeDriver } from '../drivers.js';
 
 interface Case {
@@ -12,7 +12,7 @@ interface Case {
 const golden = JSON.parse(readFileSync(new URL('../../../../test/hooks/fixtures/codex-golden.json', import.meta.url), 'utf8')) as { cases: Case[] };
 
 const tree = (root: string, dir = root): string[] =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? [relative(root, join(dir, e.name)), ...tree(root, join(dir, e.name))] : [relative(root, join(dir, e.name))]));
+  readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? [slashes(relative(root, join(dir, e.name))), ...tree(root, join(dir, e.name))] : [slashes(relative(root, join(dir, e.name)))]));
 
 export async function runCorpus(driver: Driver): Promise<void> {
   const failures: string[] = [];
@@ -22,7 +22,7 @@ export async function runCorpus(driver: Driver): Promise<void> {
     mkdirSync(ledger, { recursive: true });
     let rollout: string | null = null;
     if (c.rollout !== null) { rollout = join(tmp, 'rollout.jsonl'); writeFileSync(rollout, c.rollout.map((l) => `${l}\n`).join('')); }
-    const stdin = c.stdin.replaceAll('@DIR', tmp).replaceAll('@ROLLOUT', rollout ?? '/nonexistent');
+    const stdin = c.stdin.replaceAll('@DIR', jsonText(tmp)).replaceAll('@ROLLOUT', jsonText(rollout ?? '/nonexistent'));
     if (c.ledger !== null) {
       const file = join(ledger, c.session, `${c.turn}.jsonl`);
       mkdirSync(dirname(file), { recursive: true });

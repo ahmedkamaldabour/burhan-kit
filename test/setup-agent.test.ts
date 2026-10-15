@@ -10,7 +10,7 @@ import { scriptedPrompter } from '../src/lib/setup/prompter.js';
 import { runWizard } from '../src/lib/setup/wizard.js';
 import { currentAnswers, recommended, type SetupAnswers } from '../src/lib/setup/engine.js';
 import { messages, QUESTIONS } from '../src/lib/setup/messages.js';
-import { capture, tmpDir } from './helpers.js';
+import { capture, slashes, tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-agent-home-');
 process.env.HOME = home;
@@ -29,7 +29,7 @@ function tree(dir: string, base = dir, out: Record<string, string> = {}): Record
   for (const e of readdirSync(dir)) {
     if (e === '.git') continue;
     const p = join(dir, e);
-    if (statSync(p).isDirectory()) { out[p.slice(base.length) + '/'] = ''; tree(p, base, out); } else out[p.slice(base.length)] = readFileSync(p, 'utf8');
+    if (statSync(p).isDirectory()) { out[slashes(p.slice(base.length)) + '/'] = ''; tree(p, base, out); } else out[slashes(p.slice(base.length))] = readFileSync(p, 'utf8');
   }
   return out;
 }
@@ -300,6 +300,7 @@ test('--answers reads only a regular file of at most 1 MB: no device, no huge fi
   spawnSync('git', ['init', '-q', d]);
   const big = join(d, 'big.json'); writeFileSync(big, ' '.repeat(2 * 1024 * 1024) + '{}');
   for (const [file, re] of [['/dev/null', /regular file/], [big, /too large|1 MB/]] as [string, RegExp][]) {
+    if (file === '/dev/null' && process.platform === 'win32') continue; // Windows has no /dev/null; the size limit below is still checked
     const { o, io } = capture(d);
     assert.equal(await runCli(['setup', d, '--answers', file], io), 2, file);
     assert.match(o.err, /^burhan: /, file);

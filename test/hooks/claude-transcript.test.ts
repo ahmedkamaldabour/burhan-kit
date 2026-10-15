@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { tmpDir } from '../helpers.js';
 import { readRecords, turnFromRecords, type Step } from '../../src/hooks/adapters/claude/transcript.mjs';
@@ -49,7 +50,7 @@ test('readRecords reads a 25,000-line roughly 30 MB transcript from its tail', (
 
 test('turnFromRecords matches every non-reentrant Stop golden after the splice fallback', () => {
   for (const c of golden.cases.filter((c) => c.transcript !== undefined && c.name.startsWith('stop + '))) {
-    const actual = turnFromRecords(readRecords(new URL(c.transcript!, fixtures).pathname));
+    const actual = turnFromRecords(readRecords(fileURLToPath(new URL(c.transcript!, fixtures))));
     const expected = JSON.parse(c.expected) as { turn: TurnFields; turn_id: string };
     const actualFields: TurnFields = {
       files_created: actual.files_created,

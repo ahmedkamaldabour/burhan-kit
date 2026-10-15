@@ -6,6 +6,7 @@ import type { Io } from '../main.js';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { realTarget } from './fs-safe.js';
+import { isAbsoluteOverride } from '../hooks/core/store.mjs';
 
 /** One step of a turn, as the turn-audit hook records it (kit/hooks/core/turn-audit.sh). */
 export interface LedgerRecord {
@@ -26,7 +27,7 @@ export const projectKey = (target: string): string => createHash('sha256').updat
 export const evidenceRoot = (env: Env = process.env, configured?: string): string => {
   const chosen = configured !== undefined ? configured : env.WF_EVIDENCE_DIR || '';
   // Absolute only — a relative value is ignored, exactly like the hooks' wf_evidence_root.
-  return chosen.startsWith('/') ? chosen : join(env.XDG_STATE_HOME || join(homedir(), '.local/state'), 'burhan/evidence');
+  return isAbsoluteOverride(chosen) ? chosen : join(env.XDG_STATE_HOME || join(homedir(), '.local/state'), 'burhan/evidence');
 };
 
 /** WF_EVIDENCE_REGEX is a POSIX ERE (the hooks use grep -E); translate its bracket classes for JS. */

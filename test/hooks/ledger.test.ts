@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { test } from 'node:test';
-import { tmpDir } from '../helpers.js';
+import { jsonText, slashes, tmpDir } from '../helpers.js';
 import { parseEvent } from '../../src/hooks/core/lib.mjs';
 import { linkItem, projectKey } from '../../src/hooks/core/store.mjs';
 import { evidencePrune, phaseNow } from '../../src/hooks/core/ledger.mjs';
@@ -18,7 +18,7 @@ function jsonlFiles(dir: string): Record<string, string[]> {
     for (const entry of readdirSync(at, { withFileTypes: true })) {
       const path = join(at, entry.name);
       if (entry.isDirectory()) walk(path);
-      else if (entry.name.endsWith('.jsonl')) out[relative(dir, path)] = readFileSync(path, 'utf8').split('\n').filter((line) => line !== '');
+      else if (entry.name.endsWith('.jsonl')) out[slashes(relative(dir, path))] = readFileSync(path, 'utf8').split('\n').filter((line) => line !== '');
     }
   };
   if (existsSync(dir)) walk(dir);
@@ -32,7 +32,7 @@ test('evidenceRecord (called directly) matches the Bash + jq golden ledger', () 
     for (const event of c.events) record(dir, root, event);
     const actual = jsonlFiles(join(root, projectKey(dir)));
     const expected = Object.fromEntries(Object.entries(c.files).filter(([name]) => name.endsWith('.jsonl')));
-    const normalized = Object.fromEntries(Object.entries(actual).map(([name, lines]) => [name, lines.map((line) => line.replace(/"ts":"[^"]+"/, '"ts":"TS"').replaceAll(dir, '@P'))]));
+    const normalized = Object.fromEntries(Object.entries(actual).map(([name, lines]) => [name, lines.map((line) => line.replace(/"ts":"[^"]+"/, '"ts":"TS"').replaceAll(jsonText(dir), '@P').replaceAll(dir, '@P'))]));
     assert.deepEqual(normalized, expected, c.name);
   }
 });

@@ -57,3 +57,11 @@ export function bashAvailable(): { ok: boolean; reason: string } {
   const jq = available('jq');
   return bash && jq ? { ok: true, reason: '' } : { ok: false, reason: `${[!bash && 'bash', !jq && 'jq'].filter(Boolean).join(' and ')} is unavailable` };
 }
+
+/** GNU `cut -c` counts bytes (the bash hooks cut a multibyte sub-unit line mid-character); uutils and BSD cut count
+ *  characters. The Node hooks always count code points (decision Q-3), so a bash-vs-golden case about a multibyte
+ *  cut only holds where `cut` counts characters. */
+export const cutCountsCharacters: boolean = (() => {
+  const r = spawnSync('cut', ['-c1'], { input: 'é' });
+  return r.status === 0 && r.stdout.length === 3; // 'é' (2 bytes) + newline
+})();

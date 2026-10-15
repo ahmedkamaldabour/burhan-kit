@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { projectKey } from '../../../src/hooks/core/store.mjs';
-import { tmpDir } from '../../helpers.js';
+import { jsonText, maskPath, tmpDir } from '../../helpers.js';
 import type { Driver } from '../drivers.js';
 
 type AuditCase = {
@@ -25,7 +25,7 @@ const corpusPaths = [
 ];
 const cases = corpusPaths.flatMap((path) => (JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8')) as { cases: AuditCase[] }).cases);
 
-const replaceProject = <T>(value: T, project: string): T => JSON.parse(JSON.stringify(value).replaceAll('@P', project)) as T;
+const replaceProject = <T>(value: T, project: string): T => JSON.parse(JSON.stringify(value).replaceAll('@P', jsonText(project))) as T;
 
 export async function runCorpus(driver: Driver): Promise<void> {
   const failures: string[] = [];
@@ -65,7 +65,7 @@ export async function runCorpus(driver: Driver): Promise<void> {
       const statePath = join(project, '.burhan/local/PROGRESS.md');
       mkdirSync(dirname(statePath), { recursive: true }); writeFileSync(statePath, c.stateAfter);
     }
-    const actual = (await driver(['core', 'turn-audit'], JSON.stringify(event), { WF_EVIDENCE_DIR: evidence })).replaceAll(project, '@P');
+    const actual = maskPath(await driver(['core', 'turn-audit'], JSON.stringify(event), { WF_EVIDENCE_DIR: evidence }), project, '@P');
     assert.equal(actual, c.expected, c.name);
     const session = typeof event.session === 'string' ? event.session : '';
     const item = session === '' ? '' : join(evidence, projectKey(project), session, 'item');
