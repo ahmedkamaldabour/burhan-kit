@@ -5,32 +5,12 @@ import { test } from 'node:test';
 import { tmpDir } from '../helpers.js';
 import { parseEvent } from '../../src/hooks/core/lib.mjs';
 import { linkItem, projectKey } from '../../src/hooks/core/store.mjs';
-import { evidencePrune, evidenceRecord, phaseNow } from '../../src/hooks/core/ledger.mjs';
+import { evidencePrune, phaseNow } from '../../src/hooks/core/ledger.mjs';
 import { readLedger } from '../../src/lib/evidence.js';
+import { nodeDriver } from './drivers.js';
+import { fixture, project, record, runCorpus } from './corpora/ledger.js';
 
-type GoldenCase = {
-  name: string;
-  state: string | null;
-  events: Record<string, unknown>[];
-  files: Record<string, string[]>;
-};
-
-const fixture = JSON.parse(readFileSync(new URL('../../../test/hooks/fixtures/ledger-golden.json', import.meta.url), 'utf8')) as { cases: GoldenCase[] };
-const cfg = { WF_STATE_FILE: '.burhan/local/PROGRESS.md' };
-
-function project(state: string | null): string {
-  const dir = tmpDir('burhan-ledger-project-');
-  mkdirSync(join(dir, '.burhan/local'), { recursive: true });
-  writeFileSync(join(dir, '.burhan/workflow.config'), '');
-  if (state !== null) writeFileSync(join(dir, '.burhan/local/PROGRESS.md'), state);
-  return dir;
-}
-
-function record(dir: string, root: string, event: Record<string, unknown>, more: NodeJS.ProcessEnv = {}): void {
-  const raw = JSON.parse(JSON.stringify(event).replaceAll('@P', dir)) as Record<string, unknown>;
-  raw.project_dir = dir;
-  evidenceRecord({ ev: parseEvent(JSON.stringify(raw))!, cfg, project: dir, env: { WF_EVIDENCE_DIR: root, ...more } });
-}
+test('turn-audit records the Bash + jq golden ledger (through the core entry)', () => runCorpus(nodeDriver));
 
 function jsonlFiles(dir: string): Record<string, string[]> {
   const out: Record<string, string[]> = {};
@@ -45,17 +25,14 @@ function jsonlFiles(dir: string): Record<string, string[]> {
   return out;
 }
 
-test('evidenceRecord matches the Bash + jq golden ledger', () => {
+test('evidenceRecord (called directly) matches the Bash + jq golden ledger', () => {
   for (const c of fixture.cases) {
     const dir = project(c.state);
     const root = tmpDir('burhan-ledger-root-');
     for (const event of c.events) record(dir, root, event);
     const actual = jsonlFiles(join(root, projectKey(dir)));
-    const expected = Object.fromEntries(Object.entries(c.files)
-      .filter(([name]) => name.endsWith('.jsonl'))
-      .map(([name, lines]) => [name, lines]));
-    const normalized = Object.fromEntries(Object.entries(actual).map(([name, lines]) => [name, lines.map((line) =>
-      line.replace(/"ts":"[^"]+"/, '"ts":"TS"').replaceAll(dir, '@P'))]));
+    const expected = Object.fromEntries(Object.entries(c.files).filter(([name]) => name.endsWith('.jsonl')));
+    const normalized = Object.fromEntries(Object.entries(actual).map(([name, lines]) => [name, lines.map((line) => line.replace(/"ts":"[^"]+"/, '"ts":"TS"').replaceAll(dir, '@P'))]));
     assert.deepEqual(normalized, expected, c.name);
   }
 });

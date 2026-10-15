@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { readRecords, turnFromRecords } from '../../src/hooks/adapters/claude/transcript.mjs';
 import { withSubagentSteps } from '../../src/hooks/adapters/claude/subagents.mjs';
+import { nodeDriver } from './drivers.js';
+import { runCorpus } from './corpora/claude-subagents.js';
 
 type FixtureCase = {
   name: string;
@@ -42,3 +44,4 @@ for (const fixture of manifest.cases) {
   });
 }
 
+test('the Claude normalize output of every subagent case matches the bash golden', () => runCorpus(nodeDriver));
