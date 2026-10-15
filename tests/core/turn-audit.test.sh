@@ -57,7 +57,8 @@ P="$(proj "${BASE[@]}")"; mkdir -p "$P/.burhan/local"
 printf '%s\n' '## Now' 'portable' > "$P/.burhan/local/PROGRESS.md"
 tools="$(t_tmp)/no-sha-bin"; mkdir -p "$tools"
 for tool in bash jq awk cat cksum cut sed mkdir mktemp mv rm grep sort tail tr wc dirname pwd; do ln -s "$(command -v "$tool")" "$tools/$tool"; done
-core_without_sha() { PATH="$tools" /usr/bin/bash "$T_ROOT/tests/impl.sh" core "$S"; }
+bash_bin="$(command -v bash)"
+core_without_sha() { PATH="$tools" "$bash_bin" "$T_ROOT/tests/impl.sh" core "$S"; }
 printf '%s' "$(ev '{"event":"session_start","session":"cksum-fingerprint"}')" | core_without_sha session-gates >/dev/null
 snapshot="$(find "$XDG_STATE_HOME" -path '*/cksum-fingerprint/state-fingerprint' -type f -print -quit)"
 check "cksum fallback stores a fingerprint when SHA tools are unavailable" "$(test -n "$snapshot" && sed -n '1p' "$snapshot")" has "file:"
