@@ -6,7 +6,7 @@ import { runChecks, type Check, type Probe } from '../src/lib/doctor.js';
 import { install } from '../src/lib/install.js';
 import { readVersion } from '../src/lib/kit.js';
 import { runCli } from '../src/main.js';
-import { capture, tmpDir } from './helpers.js';
+import { capture, posixOnly, tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-doctor-home-');
 const good: Probe = { bashMajor: () => 5, has: () => true, jqVersion: () => 'jq-1.8.1', nodeVersion: () => '24.13.0', claudeVersion: () => '2.1.296', home: () => home };
@@ -207,7 +207,7 @@ test('codex trust: the key is matched under the project path as given and as res
   assert.ok(find(runChecks(link, probe({ home: () => h })), 'warn', 'trust'), 'another project\'s entries never count');
 });
 
-test('unreadable files are reported, never a crash', { skip: process.getuid?.() === 0 }, () => {
+test('unreadable files are reported, never a crash', { skip: process.getuid?.() === 0 || posixOnly }, () => {
   for (const f of ['.burhan/workflow.config', '.burhan/VERSION', '.burhan/.gitignore', '.burhan/WORKFLOW.md']) {
     const p = project();
     chmodSync(join(p, f), 0o000);

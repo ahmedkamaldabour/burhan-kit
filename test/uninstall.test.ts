@@ -10,7 +10,7 @@ import { applySetup, planSetup } from '../src/lib/setup/engine.js';
 import type { SetupAnswers } from '../src/lib/setup/answers.js';
 import { applyBlock, removeBlock } from '../src/lib/bootstrap.js';
 import { removeHooks, type Settings } from '../src/lib/hooks-merge.js';
-import { capture, tmpDir } from './helpers.js';
+import { capture, posixOnly, tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-un-home-');
 
@@ -284,7 +284,7 @@ for (const docs of ['.burhan', '.burhan/x', '.claude', '.codex']) {
   });
 }
 
-test('I-3: a read-only .claude/commands/burhan: --apply exits 2 "nothing was changed", tree unchanged; dry run says BLOCKED', async () => {
+test('I-3: a read-only .claude/commands/burhan: --apply exits 2 "nothing was changed", tree unchanged; dry run says BLOCKED', { skip: posixOnly }, async () => {
   const t = fresh();
   setup(t);
   const dir = join(t, '.claude/commands/burhan');

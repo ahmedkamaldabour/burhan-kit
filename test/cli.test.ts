@@ -62,8 +62,8 @@ test('setup --stack prints the first-use block; setup --set saves the check end 
   spawnSync('git', ['init', '-q'], { cwd: t });
   await runWizard(t, capture(t).io, scriptedPrompter(['use', 'apply']), 'en', t);
   const b = capture(t);
-  assert.equal(await runCli(['setup', t, '--set', 'check=true', 'sensitive=a;b'], b.io), 0);
-  assert.equal(parseConfig(readFileSync(join(t, '.burhan/workflow.config'), 'utf8')).values.WF_CHECK_CMD, 'true');
+  assert.equal(await runCli(['setup', t, '--set', 'check=exit 0', 'sensitive=a;b'], b.io), 0);
+  assert.equal(parseConfig(readFileSync(join(t, '.burhan/workflow.config'), 'utf8')).values.WF_CHECK_CMD, 'exit 0');
 });
 
 test('setup allowed flag forms still dispatch normally (AC-05)', async () => {
@@ -76,7 +76,7 @@ test('setup allowed flag forms still dispatch normally (AC-05)', async () => {
   const setTarget = tmpDir('burhan-cli-set-allowed-');
   spawnSync('git', ['init', '-q'], { cwd: setTarget });
   await runWizard(setTarget, capture(setTarget).io, scriptedPrompter(['use', 'apply']), 'en', setTarget);
-  assert.equal(await runCli(['setup', setTarget, '--set', 'check=true'], capture(setTarget).io), 0);
+  assert.equal(await runCli(['setup', setTarget, '--set', 'check=exit 0'], capture(setTarget).io), 0);
 
   // Run against a fresh repository, not the process cwd (this checkout may carry its own install).
   assert.equal(await runCli(['setup', setTarget, '--stack'], capture(setTarget).io), 0);

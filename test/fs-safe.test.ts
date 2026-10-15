@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isWritable, putFile, replaceDir } from '../src/lib/fs-safe.js';
-import { tmpDir } from './helpers.js';
+import { posixOnly, tmpDir } from './helpers.js';
 
 const tmp = () => tmpDir('burhan-fs-');
 
@@ -19,7 +19,7 @@ test('putFile writes through a symlink and keeps it a symlink', () => {
   assert.equal(readFileSync(join(d, 'AGENTS.md'), 'utf8'), 'new');
 });
 
-test('putFile keeps the file mode', () => {
+test('putFile keeps the file mode', { skip: posixOnly }, () => {
   const d = tmp(); const f = join(d, 's.json'); writeFileSync(f, '{}'); chmodSync(f, 0o600);
   putFile(f, '{"a":1}');
   assert.equal(statSync(f).mode & 0o777, 0o600);

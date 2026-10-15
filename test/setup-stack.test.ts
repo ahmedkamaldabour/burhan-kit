@@ -21,25 +21,24 @@ function installed(): string {
 }
 const cfgText = (t: string): string => readFileSync(join(t, '.burhan/workflow.config'), 'utf8');
 const cfgOf = (t: string) => parseConfig(cfgText(t)).values;
-const v = (o: Partial<{ check: string; sensitive: string[] }> = {}) => ({ check: 'true', sensitive: [], ...o });
+const v = (o: Partial<{ check: string; sensitive: string[] }> = {}) => ({ check: 'exit 0', sensitive: [], ...o });
 
 test('setStack with a passing check saves it, marks done and writes the verify skill', async () => {
   const t = installed();
   assert.equal(cfgOf(t).WF_STACK_SETUP, 'pending');
   const { o, io } = capture(t);
   assert.equal(await setStack(t, v(), { force: false }, io), 0);
-  assert.equal(cfgOf(t).WF_CHECK_CMD, 'true');
+  assert.equal(cfgOf(t).WF_CHECK_CMD, 'exit 0');
   assert.equal(cfgOf(t).WF_STACK_SETUP, 'done');
   assert.ok(existsSync(join(t, '.claude/skills/burhan-verify/SKILL.md')));
-  assert.match(o.out, /true/);
-  assert.match(o.out, /exit 0/);
+  assert.match(o.out, /Running the check once: exit 0/);
 });
 
 test('a failing check saves nothing, exits 1 and says how to retry', async () => {
   const t = installed();
   const before = cfgText(t);
   const { o, io } = capture(t);
-  assert.equal(await setStack(t, v({ check: 'false' }), { force: false }, io), 1);
+  assert.equal(await setStack(t, v({ check: 'exit 1' }), { force: false }, io), 1);
   assert.equal(cfgText(t), before);
   assert.match(o.out + o.err, /exit 1/);
   assert.match(o.out + o.err, /--force/);
@@ -48,8 +47,8 @@ test('a failing check saves nothing, exits 1 and says how to retry', async () =>
 test('--force saves a failing check', async () => {
   const t = installed();
   const { io } = capture(t);
-  assert.equal(await setStack(t, v({ check: 'false' }), { force: true }, io), 0);
-  assert.equal(cfgOf(t).WF_CHECK_CMD, 'false');
+  assert.equal(await setStack(t, v({ check: 'exit 1' }), { force: true }, io), 0);
+  assert.equal(cfgOf(t).WF_CHECK_CMD, 'exit 1');
   assert.equal(cfgOf(t).WF_STACK_SETUP, 'done');
 });
 
@@ -85,9 +84,11 @@ test('legacy config settings do not refuse a check and their lines are preserved
   const t = installed();
   const legacy = "WF_FORBIDDEN_REGEX='^touch'\nWF_FORBIDDEN_REASON='legacy reason'\nWF_SINGLE_TEST_HINT='legacy runner'\n";
   writeFileSync(join(t, '.burhan/workflow.config'), cfgText(t) + legacy);
+  // A portable "touch": the check runs in the project directory under bash or cmd.exe, and may not hold a single quote.
+  writeFileSync(join(t, 'touch.js'), 'require("fs").writeFileSync(process.argv[2], "");\n');
   const marker = join(t, 'ran2.marker');
   const { o, io } = capture(t);
-  assert.equal(await setStack(t, v({ check: `touch ${marker}` }), { force: false }, io), 0);
+  assert.equal(await setStack(t, v({ check: 'node touch.js ran2.marker' }), { force: false }, io), 0);
   assert.ok(existsSync(marker));
   assert.ok(cfgText(t).endsWith(legacy));
   assert.doesNotMatch(o.out + o.err, /FORBIDDEN|NEVER RUN|legacy reason|legacy runner/);

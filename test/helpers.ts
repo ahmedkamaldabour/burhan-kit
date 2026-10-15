@@ -21,3 +21,6 @@ export function capture(cwd = process.cwd()): { o: { out: string; err: string };
   const o = { out: '', err: '' };
   return { o, io: { stdout: (s) => { o.out += s; }, stderr: (s) => { o.err += s; }, cwd } };
 }
+
+/** `skip` option for tests whose subject is a POSIX permission bit (chmod, mode): Windows has no such bits, so the test says nothing there. */
+export const posixOnly: string | false = process.platform === 'win32' ? 'POSIX permission bits do not exist on Windows' : false;

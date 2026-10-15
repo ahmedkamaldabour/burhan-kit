@@ -13,13 +13,15 @@ const ALLOWED = [
 ];
 const REJECTED = [`export X=1`, `X=$(cmd)`, `X="$HOME"`, `X=a b`, `if true; then`, `X=~/p`, `X="a\\.b"`, `x=lower`, `X=a\\b`, `X=a\u00a0`, `X='a'\v`];
 
+const bashSkip = spawnSync('bash', ['-c', 'exit 0']).status === 0 ? false : 'bash is not available';
+
 /** What bash gets for each key after sourcing the file. */
 function bashValues(file: string, keys: string[]): Record<string, string> {
   const r = spawnSync('bash', ['-c', '. "$1"; shift; for k; do printf "%s=%s\\0" "$k" "${!k}"; done', '_', file, ...keys], { encoding: 'utf8' });
   return Object.fromEntries(r.stdout.split('\0').filter(Boolean).map((kv) => [kv.slice(0, kv.indexOf('=')), kv.slice(kv.indexOf('=') + 1)]));
 }
 
-test('allowed lines parse to exactly what bash sources', () => {
+test('allowed lines parse to exactly what bash sources', { skip: bashSkip }, () => {
   const dir = tmpDir('burhan-cfg-');
   const file = join(dir, 'c'); writeFileSync(file, ALLOWED.join('\n') + '\n');
   const { values, problems } = parseConfig(readFileSync(file, 'utf8'));
@@ -44,7 +46,7 @@ test('single-quoted values keep backticks literal; double-quoted values refuse $
   }
 });
 
-test('the shipped config example is fully literal and agrees with bash', () => {
+test('the shipped config example is fully literal and agrees with bash', { skip: bashSkip }, () => {
   const file = join(kitDir(), 'workflow.config.example');
   const { values, problems } = parseConfig(readFileSync(file, 'utf8'));
   assert.deepEqual(problems, []);

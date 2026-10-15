@@ -53,3 +53,45 @@ jobs:
       - run: npm test
       - name: package contents
         run: npm pack --dry-run
+
+  # The Node hooks need neither bash nor jq, so Windows is tested twice: "no-bash" removes bash and jq from
+  # PATH (the 0.3 claim, at both ends of `engines`), and a tripwire test fails the job if either is still
+  # reachable; "git-bash" keeps Git for Windows, which is what Claude Code uses there and what the pre-commit
+  # check prefers. Only the Node suite runs here; the bash suites and `npm run lint` stay on Linux and macOS.
+  windows:
+    name: windows (${{ matrix.variant }}, node ${{ matrix.node }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { variant: no-bash, node: 22 }
+          - { variant: no-bash, node: 24 }
+          - { variant: git-bash, node: 24 }
+    env:
+      BURHAN_EXPECT_NO_BASH: ${{ matrix.variant == 'no-bash' && '1' || '' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - name: remove bash and jq from PATH (no-bash)
+        if: matrix.variant == 'no-bash'
+        shell: pwsh
+        run: |
+          # Drop every PATH directory that holds bash.exe, sh.exe or jq.exe, except System32 (cmd.exe lives
+          # there; WSL's bash launcher is ignored by the hooks and by the tripwire).
+          $keep = foreach ($d in ($env:PATH -split ';')) {
+            if (-not $d) { continue }
+            $system = $d -match '\\windows\\system32'
+            $hasTool = (Test-Path -LiteralPath (Join-Path $d 'bash.exe')) -or (Test-Path -LiteralPath (Join-Path $d 'sh.exe')) -or (Test-Path -LiteralPath (Join-Path $d 'jq.exe'))
+            if ($system -or -not $hasTool) { $d }
+          }
+          "PATH=$($keep -join ';')" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: what is on PATH
+        shell: pwsh
+        run: Get-Command node, git, bash, jq -All -ErrorAction SilentlyContinue | Format-Table Name, Source -AutoSize
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:node

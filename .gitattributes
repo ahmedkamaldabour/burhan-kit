@@ -1,0 +1,2 @@
+# Byte-exact goldens and hook sources must read the same on every OS: a Windows checkout must not convert to CRLF.
+* text=auto eol=lf

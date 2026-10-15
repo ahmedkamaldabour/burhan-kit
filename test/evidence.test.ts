@@ -4,18 +4,24 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ereToJs, evidenceRoot, projectKey, readLedger, summarizeLedger } from '../src/lib/evidence.js';
-import { kitDir } from '../src/lib/kit.js';
+import { kitDir, nodeHooksDir } from '../src/lib/kit.js';
+import { projectKey as hookProjectKey } from '../src/hooks/core/store.mjs';
 import { runCli } from '../src/main.js';
 import { capture, tmpDir } from './helpers.js';
 
 const tmp = (p: string) => tmpDir(p);
 
-/** Run the real bash turn-audit hook on a turn, so the CLI is tested against what the hook writes. */
+/** Runs the real Node turn-audit hook on an event (the hooks need no bash; their equality with the bash hooks is the
+ *  differential's job), so the CLI is tested against what the hook writes. */
+function runTurnAudit(event: string, evdir: string): ReturnType<typeof spawnSync> {
+  return spawnSync(process.execPath, [join(nodeHooksDir(), 'main.mjs'), 'core', 'turn-audit'], { input: event, encoding: 'utf8', env: { ...process.env, WF_EVIDENCE_DIR: evdir } });
+}
+
 function audit(project: string, evdir: string, session: string, turn: string, steps: unknown[]): void {
   const ev = JSON.stringify({ event: 'turn_end', agent: 'claude', project_dir: project, session, turn_id: turn, prompt: '', command: '', file: '',
     turn: { files_created: [], files_edited: [], shell_commands: [], skills_used: [], assistant_text: '', steps }, reentrant: false });
-  const r = spawnSync('bash', [join(kitDir(), 'hooks/core/turn-audit.sh')], { input: ev, encoding: 'utf8', env: { ...process.env, WF_EVIDENCE_DIR: evdir } });
-  assert.equal(r.status, 0, r.stderr);
+  const r = runTurnAudit(ev, evdir);
+  assert.equal(r.status, 0, String(r.stderr));
 }
 
 function project(): string {
@@ -26,10 +32,16 @@ function project(): string {
   return p;
 }
 
-test('the project key matches the hooks\' own wf_project_key (not a re-implementation)', () => {
+test('the project key matches the Node hooks\' own project key (not a re-implementation)', () => {
+  const p = project();
+  assert.equal(hookProjectKey(p).length, 16);
+  assert.equal(projectKey(p), hookProjectKey(p));
+});
+
+const hasBash = spawnSync('bash', ['-c', 'exit 0']).status === 0;
+test('the project key matches the bash hooks\' wf_project_key', { skip: hasBash ? false : 'bash is not available' }, () => {
   const p = project();
   const r = spawnSync('bash', ['-c', '. "$1/hooks/core/lib.sh"; WF_PROJECT="$2"; wf_project_key', '_', kitDir(), p], { encoding: 'utf8' });
-  assert.equal(r.stdout.trim().length, 16);
   assert.equal(projectKey(p), r.stdout.trim());
 });
 
@@ -103,7 +115,7 @@ test('Codex parts of one turn read in order', () => {
   const run = (steps: unknown[], reentrant: boolean) => {
     const e = JSON.stringify({ event: 'turn_end', agent: 'codex', project_dir: p, session: 'S1', turn_id: 'T1', turn_scope: 'since_last_stop', reentrant,
       turn: { files_created: [], files_edited: [], shell_commands: [], skills_used: [], assistant_text: '', steps } });
-    spawnSync('bash', [join(kitDir(), 'hooks/core/turn-audit.sh')], { input: e, encoding: 'utf8', env: { ...process.env, WF_EVIDENCE_DIR: ev } });
+    runTurnAudit(e, ev);
   };
   run([{ kind: 'cmd', cmd: 'verify-it a', exit: 1, status: 'failed', seq: 1 }], false);
   run([{ kind: 'cmd', cmd: 'verify-it a', exit: 0, status: 'ok', seq: 1 }], true);

@@ -21,7 +21,7 @@ export function checkShell(platform: string, bashes: string[]): [string, string[
 }
 
 /** Every `bash` on PATH, in PATH order. */
-function bashesOnPath(env: NodeJS.ProcessEnv): string[] {
+export function bashesOnPath(env: NodeJS.ProcessEnv): string[] {
   const names = process.platform === 'win32' ? ['bash.exe'] : ['bash'];
   const out: string[] = [];
   for (const d of (env.PATH ?? env.Path ?? '').split(delimiter)) {
