@@ -1,0 +1,2247 @@
+{
+ "cases": [
+  {
+   "name": "A no evidence pattern configured",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no evidence pattern configured (WF_EVIDENCE_REGEX), so this turn's verification cannot be checked. Show the command output that proves the claim, or retract it.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A no verification command ran",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "ls"
+     ],
+     "skills_used": [],
+     "assistant_text": "All done.",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A ordered evidence before final edit",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "ok",
+       "exit": 0
+      },
+      {
+       "seq": 2,
+       "kind": "edit",
+       "file": "a.src"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: completion was claimed, but the evidence (`verify-it a`) ran before the last code edit (`a.src`), so it does not prove the final code. Re-run it now and show the output.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A ordered failed evidence shows exit",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "fixed",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "failed",
+       "exit": 3
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: completion was claimed, but the last run of `verify-it a` failed (exit 3). Fix it and re-run, then show the passing output — or retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A ordered failed evidence has no exit suffix",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "passing",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "failed",
+       "exit": null
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: completion was claimed, but the last run of `verify-it a` failed. Fix it and re-run, then show the passing output — or retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A blocked last evidence run",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "complete",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "blocked"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: completion was claimed, but the last run of `verify-it a` was blocked and never ran. Run it, show the output — or retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A background last evidence run",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "completed",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "background"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: completion was claimed, but the last run of `verify-it a` was in the background — its result is unknown. Run it in the foreground and show the output.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A later pass of same command supersedes failure",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A8",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "works now",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "failed",
+       "exit": 1
+      },
+      {
+       "seq": 3,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "ok",
+       "exit": 0
+      }
+     ]
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A different passing command does not supersede failure",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A9",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a",
+      "verify-it b"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "failed",
+       "exit": 1
+      },
+      {
+       "seq": 3,
+       "kind": "cmd",
+       "cmd": "verify-it b",
+       "status": "ok",
+       "exit": 0
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: completion was claimed, but the last run of `verify-it a` failed (exit 1). Fix it and re-run, then show the passing output — or retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A subagent blocked evidence is dropped",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A10",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "blocked",
+       "by": "builder"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A subagent background evidence is dropped",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A11",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "background",
+       "by": "builder"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A subagent unknown evidence is dropped",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A12",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "unknown",
+       "by": "builder"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A subagent failure counts",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A13",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src",
+       "by": "builder"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "failed",
+       "exit": 2,
+       "by": "builder"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: completion was claimed, but the last run of `verify-it a` failed (exit 2). Fix it and re-run, then show the passing output — or retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A subagent code edit counts as code in turn",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A14",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src",
+       "by": "builder"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A no steps only checks evidence command presence",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A15",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A no steps no evidence command fires",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "A16",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "ls"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A claim word done with punctuation",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "(done!)",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A claim word fixed with space",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "fixed now",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A claim word passing",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "passing.",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A claim word passes",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "passes!",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A claim word complete",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "complete.",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A claim word completed",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "completed!",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A claim phrase works now",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "works now.",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A check mark is claim",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C8",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "Sub-unit ✅",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A Arabic خلص punctuation bounds",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C9",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "كده، خلص!",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A Arabic خلصت space bounds",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C10",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": " خلصت ",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A Arabic اتصلح punctuation bounds",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C11",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "(اتصلح؟)",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A abandoned is not done",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C12",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "the abandoned path",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A مخلص is not Arabic completion",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "C13",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "مخلص",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation not done",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "not done",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation isnt passing",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "isn't passing",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation no longer complete",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "no longer complete",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation not yet fully done",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "not yet fully done",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation to be done",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "to be done",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation yet to be fixed",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "yet to be fixed",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation once that is done",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "once that is done we merge",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation when it is complete",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N8",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "when it is complete",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation not quite done",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N9",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "not quite done",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation almost fixed",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N10",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "almost fixed",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation is it done",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N11",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "is it done?",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A negation Arabic مش خلص",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "N12",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "مش خلص",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A shell redirection code write counts",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "S1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "cat > a.src <<EOF\nx\nEOF"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A dot path normalizes as code",
+   "config": [
+    "WF_CODE_REGEX='^src/.*\\.ts$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "P1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "./src/a.ts"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A dotdot path normalizes as code",
+   "config": [
+    "WF_CODE_REGEX='^src/.*\\.ts$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "P2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "tmp/../src/a.ts"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A absolute inside project normalizes as code",
+   "config": [
+    "WF_CODE_REGEX='^src/.*\\.ts$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "P3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "@P/src/a.ts"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A absolute outside project is not code",
+   "config": [
+    "WF_CODE_REGEX='^src/.*\\.ts$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "P4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "/outside/src/a.ts"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A empty code regex is silent",
+   "config": [
+    "WF_CODE_REGEX=''",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "R1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A refused code ERE is silent",
+   "config": [
+    "WF_CODE_REGEX='(a)\\1'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "R2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A empty evidence regex has configured message",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX=''"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "R3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no evidence pattern configured (WF_EVIDENCE_REGEX), so this turn's verification cannot be checked. Show the command output that proves the claim, or retract it.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A refused evidence ERE means no run",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='(a)\\1'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "R4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "ok",
+       "exit": 0
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "A reentrant records but does not audit",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "R5",
+    "reentrant": true,
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A unknown exit after code is accepted",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "R6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "unknown",
+       "exit": null
+      }
+     ]
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "A non-code edit after evidence does not invalidate it",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "R7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src",
+      "notes.md"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "cmd",
+       "cmd": "verify-it a",
+       "status": "ok",
+       "exit": 0
+      },
+      {
+       "seq": 3,
+       "kind": "edit",
+       "file": "notes.md"
+      }
+     ]
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "link falls back to work item edit without steps",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {
+    ".burhan/work/beta/beta-story.md": "x"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/beta/beta-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": "beta"
+  },
+  {
+   "name": "link ordered most recent work edit wins",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {
+    ".burhan/work/alpha/a.md": "x",
+    ".burhan/work/beta/b.md": "x"
+   },
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/beta/b.md",
+      ".burhan/work/alpha/a.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": ".burhan/work/beta/b.md"
+      },
+      {
+       "seq": 2,
+       "kind": "edit",
+       "file": ".burhan/work/alpha/a.md"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": "alpha"
+  },
+  {
+   "name": "link explicit burhan use wins",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "burhan use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link command burhan-kit",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "burhan-kit use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link command npx launcher",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "npx burhan-kit use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link command node cli",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "node ./kit/cli.js use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link command assignment position",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "ASSIGN=value burhan use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link command after and",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L8",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "echo nope && burhan use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link command after or",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L9",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "false || burhan use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link command after semicolon",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L10",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "true; burhan use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link command after pipe",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L11",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "printf x | burhan use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link command after open paren",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L12",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "( burhan use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link forged quoted command stays prelinked",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "F1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "echo 'burhan use alpha'"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "beta"
+  },
+  {
+   "name": "link forged grep text stays prelinked",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "F2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "grep \"burhan use alpha\" README.md"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "beta"
+  },
+  {
+   "name": "link forged echo words stays prelinked",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "F3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "echo burhan use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "beta"
+  },
+  {
+   "name": "link forged missing slug stays prelinked",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "F4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "burhan use"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "beta"
+  },
+  {
+   "name": "link forged extra argument stays prelinked",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "F5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "burhan use alpha extra"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "beta"
+  },
+  {
+   "name": "link forged other npx stays prelinked",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "F6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "npx other use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "beta"
+  },
+  {
+   "name": "link forged not cli stays prelinked",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": "beta",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "F7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "node ./kit/not-cli.js use alpha"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "beta"
+  },
+  {
+   "name": "link slug absent from Now does not replace",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": "alpha",
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "linker",
+    "turn_id": "L13",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [
+      "burhan use beta"
+     ],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "link unsafe session writes nothing",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "../unsafe",
+    "turn_id": "L14",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/alpha/a.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "link missing session writes nothing",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "turn_id": "L15",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/alpha/a.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  }
+ ]
+}

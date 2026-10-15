@@ -1,0 +1,475 @@
+{
+ "generated_by": "kit/hooks/core/turn-audit.sh + jq, 2026-10-15; project path is @P, ts is TS",
+ "cases": [
+  {
+   "name": "whole turn with item and phase",
+   "state": "## Now\n### alpha\n- **Route:** change / bounded\n- **Sub-unit:** 2/6 🔵 building\n\n## Waiting on you\n",
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 1,
+        "kind": "edit",
+        "file": "@P/src/a.ts"
+       },
+       {
+        "seq": 2,
+        "kind": "cmd",
+        "cmd": "npm test",
+        "exit": 0,
+        "status": "ok"
+       },
+       {
+        "seq": 3,
+        "kind": "cmd",
+        "cmd": "sleep 9 &",
+        "exit": null,
+        "status": "background"
+       },
+       {
+        "seq": 4,
+        "kind": "edit",
+        "file": "/elsewhere/x.md"
+       },
+       {
+        "seq": 5,
+        "kind": "edit",
+        "file": "@P/docs/r.md",
+        "by": "burhan-reviewer"
+       },
+       {
+        "seq": 6,
+        "kind": "read",
+        "file": "@P/z"
+       },
+       {
+        "seq": 7,
+        "kind": "cmd",
+        "cmd": "echo é\ttab  del \"q\" \\ b",
+        "exit": 2,
+        "status": "failed"
+       }
+      ]
+     }
+    }
+   ],
+   "files": {
+    "S1/T1.jsonl": [
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":1,\"kind\":\"edit\",\"file\":\"src/a.ts\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":2,\"kind\":\"cmd\",\"cmd\":\"npm test\",\"exit\":0,\"status\":\"ok\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":3,\"kind\":\"cmd\",\"cmd\":\"sleep 9 &\",\"exit\":null,\"status\":\"background\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":4,\"kind\":\"edit\",\"file\":\"/elsewhere/x.md\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":5,\"kind\":\"edit\",\"file\":\"docs/r.md\",\"by\":\"burhan-reviewer\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":7,\"kind\":\"cmd\",\"cmd\":\"echo é\\ttab \\u007f del \\\"q\\\" \\\\ b\",\"exit\":2,\"status\":\"failed\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}"
+    ],
+    "S1/state-fingerprint": [
+     "file:a3689b1e5e415f6320006c3f26063f18ef26de654e1957a06656a0b853c1a7d6"
+    ]
+   },
+   "marker": false
+  },
+  {
+   "name": "no state file -> item and phase null",
+   "state": null,
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 1,
+        "kind": "edit",
+        "file": "@P/src/a.ts"
+       },
+       {
+        "seq": 2,
+        "kind": "cmd",
+        "cmd": "npm test",
+        "exit": 0,
+        "status": "ok"
+       }
+      ]
+     }
+    }
+   ],
+   "files": {
+    "S1/T1.jsonl": [
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":1,\"kind\":\"edit\",\"file\":\"src/a.ts\",\"item\":null,\"phase\":null,\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":2,\"kind\":\"cmd\",\"cmd\":\"npm test\",\"exit\":0,\"status\":\"ok\",\"item\":null,\"phase\":null,\"project\":\"@P\"}"
+    ],
+    "S1/state-fingerprint": [
+     "missing"
+    ]
+   },
+   "marker": false
+  },
+  {
+   "name": "since_last_stop numbers its parts",
+   "state": "## Now\n### alpha\n- **Route:** change / bounded\n- **Sub-unit:** 2/6 🔵 building\n\n## Waiting on you\n",
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 1,
+        "kind": "edit",
+        "file": "@P/src/a.ts"
+       },
+       {
+        "seq": 2,
+        "kind": "cmd",
+        "cmd": "npm test",
+        "exit": 0,
+        "status": "ok"
+       }
+      ]
+     },
+     "turn_scope": "since_last_stop"
+    },
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 2,
+        "kind": "cmd",
+        "cmd": "npm test",
+        "exit": 0,
+        "status": "ok"
+       }
+      ]
+     },
+     "turn_scope": "since_last_stop"
+    }
+   ],
+   "files": {
+    "S1/T1.1.jsonl": [
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":1,\"seq\":1,\"kind\":\"edit\",\"file\":\"src/a.ts\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":1,\"seq\":2,\"kind\":\"cmd\",\"cmd\":\"npm test\",\"exit\":0,\"status\":\"ok\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}"
+    ],
+    "S1/T1.2.jsonl": [
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":2,\"seq\":2,\"kind\":\"cmd\",\"cmd\":\"npm test\",\"exit\":0,\"status\":\"ok\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}"
+    ],
+    "S1/state-fingerprint": [
+     "file:a3689b1e5e415f6320006c3f26063f18ef26de654e1957a06656a0b853c1a7d6"
+    ]
+   },
+   "marker": false
+  },
+  {
+   "name": "a re-audit of a whole turn rewrites the file",
+   "state": "## Now\n### alpha\n- **Route:** change / bounded\n- **Sub-unit:** 2/6 🔵 building\n\n## Waiting on you\n",
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 1,
+        "kind": "edit",
+        "file": "@P/src/a.ts"
+       }
+      ]
+     }
+    },
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 1,
+        "kind": "edit",
+        "file": "@P/src/a.ts"
+       },
+       {
+        "seq": 2,
+        "kind": "cmd",
+        "cmd": "npm test",
+        "exit": 0,
+        "status": "ok"
+       }
+      ]
+     }
+    }
+   ],
+   "files": {
+    "S1/T1.jsonl": [
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":1,\"kind\":\"edit\",\"file\":\"src/a.ts\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":2,\"kind\":\"cmd\",\"cmd\":\"npm test\",\"exit\":0,\"status\":\"ok\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}"
+    ],
+    "S1/state-fingerprint": [
+     "file:a3689b1e5e415f6320006c3f26063f18ef26de654e1957a06656a0b853c1a7d6"
+    ]
+   },
+   "marker": false
+  },
+  {
+   "name": "no steps -> nothing",
+   "state": "## Now\n### alpha\n- **Route:** change / bounded\n- **Sub-unit:** 2/6 🔵 building\n\n## Waiting on you\n",
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": []
+     }
+    }
+   ],
+   "files": {
+    "S1/state-fingerprint": [
+     "file:a3689b1e5e415f6320006c3f26063f18ef26de654e1957a06656a0b853c1a7d6"
+    ]
+   },
+   "marker": false
+  },
+  {
+   "name": "only unrecorded kinds -> nothing",
+   "state": "## Now\n### alpha\n- **Route:** change / bounded\n- **Sub-unit:** 2/6 🔵 building\n\n## Waiting on you\n",
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 6,
+        "kind": "read",
+        "file": "@P/z"
+       }
+      ]
+     }
+    }
+   ],
+   "files": {
+    "S1/T1.jsonl": [],
+    "S1/state-fingerprint": [
+     "file:a3689b1e5e415f6320006c3f26063f18ef26de654e1957a06656a0b853c1a7d6"
+    ]
+   },
+   "marker": false
+  },
+  {
+   "name": "unsafe session id -> nothing",
+   "state": "## Now\n### alpha\n- **Route:** change / bounded\n- **Sub-unit:** 2/6 🔵 building\n\n## Waiting on you\n",
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "../x",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 1,
+        "kind": "edit",
+        "file": "@P/src/a.ts"
+       },
+       {
+        "seq": 2,
+        "kind": "cmd",
+        "cmd": "npm test",
+        "exit": 0,
+        "status": "ok"
+       }
+      ]
+     }
+    }
+   ],
+   "files": {},
+   "marker": false
+  },
+  {
+   "name": "unsafe turn id -> nothing",
+   "state": "## Now\n### alpha\n- **Route:** change / bounded\n- **Sub-unit:** 2/6 🔵 building\n\n## Waiting on you\n",
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "a/b",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 1,
+        "kind": "edit",
+        "file": "@P/src/a.ts"
+       },
+       {
+        "seq": 2,
+        "kind": "cmd",
+        "cmd": "npm test",
+        "exit": 0,
+        "status": "ok"
+       }
+      ]
+     }
+    }
+   ],
+   "files": {
+    "S1/state-fingerprint": [
+     "file:a3689b1e5e415f6320006c3f26063f18ef26de654e1957a06656a0b853c1a7d6"
+    ]
+   },
+   "marker": false
+  },
+  {
+   "name": "reentrant stop still records",
+   "state": "## Now\n### alpha\n- **Route:** change / bounded\n- **Sub-unit:** 2/6 🔵 building\n\n## Waiting on you\n",
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 1,
+        "kind": "edit",
+        "file": "@P/src/a.ts"
+       },
+       {
+        "seq": 2,
+        "kind": "cmd",
+        "cmd": "npm test",
+        "exit": 0,
+        "status": "ok"
+       }
+      ]
+     },
+     "reentrant": true
+    }
+   ],
+   "files": {
+    "S1/T1.jsonl": [
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":1,\"kind\":\"edit\",\"file\":\"src/a.ts\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":2,\"kind\":\"cmd\",\"cmd\":\"npm test\",\"exit\":0,\"status\":\"ok\",\"item\":\"alpha\",\"phase\":\"2/6 🔵 building\",\"project\":\"@P\"}"
+    ]
+   },
+   "marker": true
+  },
+  {
+   "name": "long sub-unit line is cut to 80 characters",
+   "state": "## Now\n### alpha\n- **Sub-unit:** éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé\n",
+   "events": [
+    {
+     "event": "turn_end",
+     "agent": "claude",
+     "session": "S1",
+     "turn_id": "T1",
+     "turn": {
+      "files_created": [],
+      "files_edited": [],
+      "shell_commands": [],
+      "skills_used": [],
+      "assistant_text": "",
+      "steps": [
+       {
+        "seq": 1,
+        "kind": "edit",
+        "file": "@P/src/a.ts"
+       },
+       {
+        "seq": 2,
+        "kind": "cmd",
+        "cmd": "npm test",
+        "exit": 0,
+        "status": "ok"
+       }
+      ]
+     }
+    }
+   ],
+   "files": {
+    "S1/T1.jsonl": [
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":1,\"kind\":\"edit\",\"file\":\"src/a.ts\",\"item\":\"alpha\",\"phase\":\"éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé\",\"project\":\"@P\"}",
+     "{\"ts\":\"TS\",\"agent\":\"claude\",\"session\":\"S1\",\"turn\":\"T1\",\"part\":0,\"seq\":2,\"kind\":\"cmd\",\"cmd\":\"npm test\",\"exit\":0,\"status\":\"ok\",\"item\":\"alpha\",\"phase\":\"éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé\",\"project\":\"@P\"}"
+    ],
+    "S1/state-fingerprint": [
+     "file:f66e07dba3a12cd7c2d945d9278037865ef0c82c386ff9f2fd01d559a827971b"
+    ]
+   },
+   "marker": false
+  }
+ ]
+}

@@ -1,0 +1,166 @@
+/** Private, fail-open session state shared with the Bash hooks (ports lib.sh:155-272). */
+import { createHash, randomBytes } from 'node:crypto';
+import { chmodSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { isAbsolute, join, win32 } from 'node:path';
+
+type Env = NodeJS.ProcessEnv;
+
+const ledgerOn = (env: Env): boolean => !['off', 'no', 'false', '0'].includes(env.WF_EVIDENCE_LEDGER ?? 'on');
+const isWindows = process.platform === 'win32';
+
+/** wf_evidence_root: the external evidence root, with an absolute override only. */
+export function evidenceRoot(env: Env = process.env): string {
+  try {
+    const configured = env.WF_EVIDENCE_DIR ?? '';
+    if (configured.startsWith('/') || (isWindows && (isAbsolute(configured) || win32.isAbsolute(configured)))) return configured;
+    return join(env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'burhan', 'evidence');
+  } catch { return ''; }
+}
+
+/** wf_project_key: the first 16 hex characters of the physical project's SHA-256. */
+export function projectKey(project: string): string {
+  try {
+    let physical = project;
+    try { physical = realpathSync(project); } catch { /* Bash falls back to the supplied path. */ }
+    return createHash('sha256').update(physical).digest('hex').slice(0, 16);
+  } catch { return ''; }
+}
+
+/** wf_safe_id: whether an id can safely be used as one path component. */
+export function safeId(id: string): boolean {
+  try { return id !== '' && id !== '.' && id !== '..' && /^[A-Za-z0-9._-]+$/.test(id); } catch { return false; }
+}
+
+const sessionDir = (project: string, session: string, env: Env, fingerprint = false): string => {
+  if (!safeId(session) || (fingerprint && !ledgerOn(env))) return '';
+  const root = evidenceRoot(env);
+  const key = projectKey(project);
+  return root !== '' && key.length === 16 ? join(root, key, session) : '';
+};
+
+/** wf_link_file: path to this session's selected-item link, or no path for an unsafe session. */
+export function linkFile(project: string, session: string, env: Env = process.env): string {
+  try {
+    const dir = sessionDir(project, session, env);
+    return dir ? join(dir, 'item') : '';
+  } catch { return ''; }
+}
+
+/** wf_state_snapshot_file: this session's saved Now-slug list. */
+export const stateSnapshotFile = (project: string, session: string, env: Env = process.env): string => {
+  const dir = sessionDir(project, session, env);
+  return dir ? join(dir, 'now-slugs') : '';
+};
+
+const fingerprintFile = (project: string, session: string, env: Env): string => {
+  const dir = sessionDir(project, session, env, true);
+  return dir ? join(dir, 'state-fingerprint') : '';
+};
+
+const privateDir = (dir: string): boolean => {
+  try {
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    if (!isWindows) chmodSync(dir, 0o700);
+    return true;
+  } catch { return false; }
+};
+
+const tempPath = (dir: string, prefix: string): string =>
+  join(dir, `.${prefix}.${randomBytes(3).toString('hex')}`);
+
+/** Atomic private write used by wf_link_item, wf_state_snapshot, and wf_state_fingerprint_snapshot. */
+export function atomicPrivateWrite(file: string, prefix: string, value: string): boolean {
+  let tmp = '';
+  try {
+    const dir = file.slice(0, Math.max(file.lastIndexOf('/'), file.lastIndexOf('\\')));
+    if (!dir || !privateDir(dir)) return false;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      tmp = tempPath(dir, prefix);
+      try {
+        writeFileSync(tmp, value, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+        if (!isWindows) chmodSync(tmp, 0o600);
+        renameSync(tmp, file);
+        tmp = '';
+        if (!isWindows) chmodSync(file, 0o600);
+        return true;
+      } catch {
+        try { if (tmp) unlinkSync(tmp); } catch { /* fail open */ }
+        tmp = '';
+      }
+    }
+  } catch { /* fail open */ }
+  finally { try { if (tmp) unlinkSync(tmp); } catch { /* fail open */ } }
+  return false;
+}
+
+/** wf_linked_item: read a live, safe session link; closed Now slugs are deliberately ignored. */
+export function linkedItem(project: string, session: string, nowSlugs: string[], env: Env = process.env): string {
+  try {
+    const file = linkFile(project, session, env);
+    if (!file) return '';
+    const item = readFileSync(file, 'utf8').split(/\r?\n/, 1)[0] ?? '';
+    return safeId(item) && nowSlugs.includes(item) ? item : '';
+  } catch { return ''; }
+}
+
+/** wf_link_item: atomically store a link only for a safe, currently live item. */
+export function linkItem(project: string, session: string, item: string, nowSlugs: string[], env: Env = process.env): void {
+  try {
+    if (!safeId(item) || !nowSlugs.includes(item)) return;
+    const file = linkFile(project, session, env);
+    if (file) atomicPrivateWrite(file, 'item', `${item}\n`);
+  } catch { /* fail open */ }
+}
+
+/** wf_state_snapshot: atomically save this session's Now slug list. */
+export function stateSnapshot(project: string, session: string, nowSlugs: string[], env: Env = process.env): void {
+  try {
+    const file = stateSnapshotFile(project, session, env);
+    if (file) atomicPrivateWrite(file, 'now', `${nowSlugs.join('\n')}\n`);
+  } catch { /* fail open */ }
+}
+
+/** wf_state_fingerprint: hash the configured state file, or report it missing/unreadable. */
+export function stateFingerprint(project: string, stateFile: string): string {
+  try {
+    return `file:${createHash('sha256').update(readFileSync(join(project, stateFile))).digest('hex')}`;
+  } catch { return 'missing'; }
+}
+
+/** wf_state_fingerprint_snapshot: atomically save the current state-file fingerprint. */
+export function fingerprintSnapshot(project: string, session: string, stateFile: string, env: Env = process.env): void {
+  try {
+    const file = fingerprintFile(project, session, env);
+    if (file) atomicPrivateWrite(file, 'state', `${stateFingerprint(project, stateFile)}\n`);
+  } catch { /* fail open */ }
+}
+
+/** wf_state_fingerprint_changed: whether a stored fingerprint differs; no baseline fails closed. */
+export function fingerprintChanged(project: string, session: string, stateFile: string, env: Env = process.env): boolean {
+  try {
+    const file = fingerprintFile(project, session, env);
+    if (!file) return false;
+    const before = readFileSync(file, 'utf8').split(/\r?\n/, 1)[0] ?? '';
+    const now = stateFingerprint(project, stateFile);
+    return before !== '' && before !== now;
+  } catch { return false; }
+}
+
+/** wf_state_fingerprint_refresh: advance a changed baseline and report whether it had a prior value. */
+export function fingerprintRefresh(project: string, session: string, stateFile: string, env: Env = process.env): boolean {
+  try {
+    const file = fingerprintFile(project, session, env);
+    if (!file) return false;
+    let before = '';
+    try { before = readFileSync(file, 'utf8').split(/\r?\n/, 1)[0] ?? ''; } catch { /* missing baseline */ }
+    const now = stateFingerprint(project, stateFile);
+    if (before !== now) atomicPrivateWrite(file, 'state', `${now}\n`);
+    return before !== '' && before !== now;
+  } catch { return false; }
+}
+
+/** wf_mtime: whole epoch seconds for a readable path. */
+export function mtime(path: string): number | null {
+  try { return Math.floor(statSync(path).mtimeMs / 1000); } catch { return null; }
+}

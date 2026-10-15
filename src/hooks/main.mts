@@ -8,10 +8,12 @@ import { emit, parseEvent, type Check } from './core/lib.mjs';
 import { postEditReminder } from './core/post-edit-reminder.mjs';
 import { preCommitCheck } from './core/pre-commit-check.mjs';
 import { sessionGates } from './core/session-gates.mjs';
+import { promptRouter } from './core/prompt-router.mjs';
+import { turnAudit } from './core/turn-audit.mjs';
 
 export type Registry = Record<string, Record<string, Check>>;
 export const REGISTRY: Registry = {
-  core: { 'post-edit-reminder': postEditReminder, 'pre-commit-check': preCommitCheck, 'session-gates': sessionGates },
+  core: { 'post-edit-reminder': postEditReminder, 'pre-commit-check': preCommitCheck, 'session-gates': sessionGates, 'prompt-router': promptRouter, 'turn-audit': turnAudit },
 };
 
 export interface RunResult { stdout: string; debug: string }

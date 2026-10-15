@@ -2,7 +2,8 @@
  *  state file's "Now" section (port of session-gates.sh). */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, linkedItem, stateNow, type Check } from './lib.mjs';
+import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, stateNow, type Check } from './lib.mjs';
+import { fingerprintSnapshot, linkedItem, stateSnapshot } from './store.mjs';
 
 const STATE_LINES_MAX = 30;
 const STATE_LINE_CHARS = 300;
@@ -31,11 +32,14 @@ function fill(v: Record<string, string>, skillsOn: boolean): string {
 
 const isPlanOnly = (s: string): boolean => /^[ \t\n\v\f\r]*plan[-_ ]?only[ \t\n\v\f\r]*$/i.test(s.replace(/[`*]/g, ''));
 
-export const sessionGates: Check = ({ cfg, project, ev }) => {
+export const sessionGates: Check = ({ cfg, project, ev, env }) => {
   const out: string[] = [];
-  const now = stateNow(project, cfg);
+  const now = stateNow(project, cfg).split('\n').map((line) => Array.from(line).slice(0, STATE_LINE_CHARS).join('')).join('\n');
   const slugs = itemSlugs(now);
-  const item = itemResolved(now, linkedItem(project, ev.get('.session'), cfg));
+  const storeEnv = { ...env, ...cfg };
+  const item = itemResolved(now, linkedItem(project, ev.get('.session'), slugs, storeEnv));
+  stateSnapshot(project, ev.get('.session'), slugs, storeEnv);
+  fingerprintSnapshot(project, ev.get('.session'), cfg.WF_STATE_FILE ?? '', storeEnv);
   const active = item ? itemBlock(now, item) : now;
   // Autonomy mode: the item's **Mode:**, else WF_MODE_<TYPE>_<SCOPE> for its route, else WF_MODE_DEFAULT,
   // else step — exactly step | auto, anything else is step.

@@ -1,9 +1,7 @@
 /** Shared library for the core checks — the Node port of kit/hooks/core/lib.sh.
  *  Contract (tests/CONFORMANCE.md): stdin is a normalized event; stdout is {"message":"…"} or nothing.
  *  Fail open: a check returns its findings; the entry prints them only at the very end, exit 0 always. */
-import { readFileSync, realpathSync } from 'node:fs';
-import { createHash } from 'node:crypto';
-import { homedir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { HookConfig } from './config.mjs';
 
@@ -102,19 +100,6 @@ export function itemResolved(now: string, linked: string): string {
   const slugs = itemSlugs(now);
   if (slugs.includes(linked)) return linked;
   return slugs.length === 1 ? slugs[0] : '';
-}
-
-/** External link path shared with the Bash hooks: <evidence-root>/<project-key>/<session>/item. */
-export function linkedItem(project: string, session: string, cfg: HookConfig): string {
-  if (!/^[A-Za-z0-9._-]+$/.test(session) || session === '.' || session === '..') return '';
-  let physical: string;
-  try { physical = realpathSync(project); } catch { physical = project; }
-  const key = createHash('sha256').update(physical).digest('hex').slice(0, 16);
-  const root = (cfg.WF_EVIDENCE_DIR ?? '').startsWith('/') ? cfg.WF_EVIDENCE_DIR! : join(process.env.XDG_STATE_HOME ?? join(homedir(), '.local/state'), 'burhan/evidence');
-  try {
-    const item = readFileSync(join(root, key, session, 'item'), 'utf8').split(/\r?\n/, 1)[0];
-    return /^[A-Za-z0-9._-]+$/.test(item) && item !== '.' && item !== '..' ? item : '';
-  } catch { return ''; }
 }
 
 /** wf_item_now without a session link: retained for callers that inspect a bare Now block. */

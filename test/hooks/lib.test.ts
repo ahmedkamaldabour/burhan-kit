@@ -4,7 +4,8 @@ import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpDir } from '../helpers.js';
-import { parseEvent, relPath, stateNow, itemNow, itemBlock, itemField, itemRoute, itemSlugs, itemResolved, linkedItem } from '../../src/hooks/core/lib.mjs';
+import { parseEvent, relPath, stateNow, itemNow, itemBlock, itemField, itemRoute, itemSlugs, itemResolved } from '../../src/hooks/core/lib.mjs';
+import { linkedItem } from '../../src/hooks/core/store.mjs';
 
 // The Node side of tests/core/lib.test.sh (bash-internal), plus what the port adds (Windows paths).
 const ev = (o: unknown) => parseEvent(JSON.stringify(o))!;
@@ -104,15 +105,16 @@ test('linkedItem reads only a safe session link from the external evidence store
   mkdirSync(join(root, key, 'S1'), { recursive: true });
   writeFileSync(join(root, key, 'S1', 'item'), 'alpha\nignored\n');
   const cfg = { WF_EVIDENCE_DIR: root };
-  assert.equal(linkedItem(p, 'S1', cfg), 'alpha');
+  const slugs = ['alpha', 'é-item', 'a b', '..', 'a/b'];
+  assert.equal(linkedItem(p, 'S1', slugs, cfg), 'alpha');
   const viaLink = join(tmpDir('burhan-links-via-'), 'project-link');
   symlinkSync(p, viaLink);
-  assert.equal(linkedItem(viaLink, 'S1', cfg), 'alpha', 'a symlinked project path resolves to the same key');
-  assert.equal(linkedItem(p, '../S1', cfg), '');
-  assert.equal(linkedItem(p, 'missing', cfg), '');
+  assert.equal(linkedItem(viaLink, 'S1', slugs, cfg), 'alpha', 'a symlinked project path resolves to the same key');
+  assert.equal(linkedItem(p, '../S1', slugs, cfg), '');
+  assert.equal(linkedItem(p, 'missing', slugs, cfg), '');
   // Bash rejects a stored value that is not a safe id (wf_safe_id); Node must too.
   for (const bad of ['é-item', 'a b', '..', 'a/b']) {
     writeFileSync(join(root, key, 'S1', 'item'), bad + '\n');
-    assert.equal(linkedItem(p, 'S1', cfg), '', `unsafe stored link: ${bad}`);
+    assert.equal(linkedItem(p, 'S1', slugs, cfg), '', `unsafe stored link: ${bad}`);
   }
 });

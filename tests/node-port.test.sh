@@ -3,7 +3,7 @@
 # PORTED grows phase by phase; a suite joins it only when it passes in full. Needs a build (npm run build).
 . "$(dirname "$0")/lib.sh"
 ENTRY="$T_ROOT/dist/hooks/main.mjs"
-PORTED_CORE="post-edit-reminder pre-commit-check session-gates"
+PORTED_CORE="post-edit-reminder pre-commit-check session-gates prompt-router turn-audit"
 
 echo "node port — the entry is built and answers"
 check "dist/hooks/main.mjs exists (npm run build)" "$([ -f "$ENTRY" ] && echo yes)" has "yes"

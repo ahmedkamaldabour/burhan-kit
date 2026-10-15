@@ -1,0 +1,1841 @@
+{
+ "cases": [
+  {
+   "name": "B work item edited without state warns",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {
+    ".burhan/work/alpha/alpha-story.md": "x\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "B1",
+    "turn_id": "B1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/alpha/alpha-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": "alpha"
+  },
+  {
+   "name": "B state edited with work item is silent",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {
+    ".burhan/work/alpha/alpha-story.md": "x\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "B2",
+    "turn_id": "B2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/alpha/alpha-story.md",
+      ".burhan/local/PROGRESS.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "B changed state since session snapshot is silent",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "stateAfter": "## Now\n### alpha\nchanged\n",
+   "files": {
+    ".burhan/work/alpha/alpha-story.md": "x\n"
+   },
+   "preLink": null,
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "B3",
+    "turn_id": "B3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/alpha/alpha-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "B unchanged state after session snapshot warns",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {
+    ".burhan/work/alpha/alpha-story.md": "x\n"
+   },
+   "preLink": null,
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "B4",
+    "turn_id": "B4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/alpha/alpha-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": "alpha"
+  },
+  {
+   "name": "B missing snapshot warns",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {
+    ".burhan/work/alpha/alpha-story.md": "x\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "B5",
+    "turn_id": "B5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/alpha/alpha-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": "alpha"
+  },
+  {
+   "name": "B fingerprint baseline advances after a silent disk change",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "stateAfter": "## Now\n### alpha\nfirst change\n",
+   "files": {},
+   "preLink": null,
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "B6",
+    "turn_id": "B6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "B fingerprint refresh makes later unseen work item warn",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "stateAfter": "## Now\n### alpha\nfirst change\n",
+   "files": {
+    ".burhan/work/alpha/alpha-plan.md": "x\n"
+   },
+   "preLink": null,
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "B7",
+    "turn_id": "B7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/alpha/alpha-plan.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "B subagent state edit counts as sub written",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "B8",
+    "turn_id": "B8",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": ".burhan/work/alpha/alpha-story.md",
+       "by": "burhan-planner"
+      },
+      {
+       "seq": 2,
+       "kind": "edit",
+       "file": ".burhan/local/PROGRESS.md",
+       "by": "burhan-planner"
+      }
+     ]
+    }
+   },
+   "expected": "",
+   "linked": "alpha"
+  },
+  {
+   "name": "B subagent work item without state warns",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "B9",
+    "turn_id": "B9",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": ".burhan/work/alpha/alpha-story.md",
+       "by": "burhan-planner"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": "alpha"
+  },
+  {
+   "name": "D state over configured budget warns",
+   "config": [
+    "WF_STATE_BUDGET=2"
+   ],
+   "state": "one\ntwo\nthree\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "D1",
+    "turn_id": "D1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-SIZE GATE: `.burhan/local/PROGRESS.md` is 3 lines (budget: 2). It is a snapshot, not a journal (WORKFLOW §5): close out items no longer in flight, keep one-line pointers, delete resolved lines.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "D state at configured budget is silent",
+   "config": [
+    "WF_STATE_BUDGET=3"
+   ],
+   "state": "one\ntwo\nthree\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "D2",
+    "turn_id": "D2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "D non numeric budget fails open",
+   "config": [
+    "WF_STATE_BUDGET=not-a-number"
+   ],
+   "state": "one\ntwo\nthree\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "D3",
+    "turn_id": "D3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "E Draft and reviewed item warns",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/foo-story.md": "- **Status:** Draft\n- ✅ Reviewed\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "E1",
+    "turn_id": "E1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/foo-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ STALE-STATUS GATE: `.burhan/work/foo/foo-story.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "E Planned and completed status warns",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/foo-plan.md": "Status: Planned\nVerdict: Completed\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "E2",
+    "turn_id": "E2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/foo-plan.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ STALE-STATUS GATE: `.burhan/work/foo/foo-plan.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "E Draft and resolved discovery warns",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/discovery/2026-10-15-status.md": "Status: Draft\nVerdict: Resolved\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "E3",
+    "turn_id": "E3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/discovery/2026-10-15-status.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STALE-STATUS GATE: `.burhan/discovery/2026-10-15-status.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "E Planned and QC PASS warns",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/discovery/2026-10-15-qc.md": "Status: Planned\nVerdict: QC PASS\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "E4",
+    "turn_id": "E4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/discovery/2026-10-15-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STALE-STATUS GATE: `.burhan/discovery/2026-10-15-qc.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "E fenced contradictory text is ignored",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/foo-story.md": "```md\nStatus: Draft\n✅ Completed\n```\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "E5",
+    "turn_id": "E5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/foo-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "E ladder line with two arrows is ignored",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/foo-story.md": "Status: Draft → Approved → Completed\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "E6",
+    "turn_id": "E6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/foo-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "E README is skipped",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/README.md": "Status: Draft\n✅ Completed\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "E7",
+    "turn_id": "E7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/README.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "E undated discovery is skipped",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/discovery/README.md": "Status: Draft\n✅ Completed\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "E8",
+    "turn_id": "E8",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/discovery/README.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "E nonexistent written file is ignored",
+   "config": [],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "E9",
+    "turn_id": "E9",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/missing-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "F story created without brainstorming warns",
+   "config": [
+    "WF_SKILLS=superpowers"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F1",
+    "turn_id": "F1",
+    "turn": {
+     "files_created": [
+      ".burhan/work/foo/foo-story.md"
+     ],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "F plan created without writing plans warns",
+   "config": [
+    "WF_SKILLS=superpowers"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F2",
+    "turn_id": "F2",
+    "turn": {
+     "files_created": [
+      ".burhan/work/foo/foo-implementation-plan.md"
+     ],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ SKILL GATE (plan): a plan was CREATED this turn without superpowers:writing-plans.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "F code without TDD or debugging warns",
+   "config": [
+    "WF_SKILLS=superpowers",
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F3",
+    "turn_id": "F3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "F declared patch without item suppresses code skill warning",
+   "config": [
+    "WF_SKILLS=superpowers",
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F4",
+    "turn_id": "F4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "patch — typo only\n",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "F declared patch with non patch routed item still warns",
+   "config": [
+    "WF_SKILLS=superpowers",
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": "## Now\n### foo\n- **Route:** change / bounded\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F5",
+    "turn_id": "F5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "patch — typo only\n",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "F declared patch with patch routed item is silent",
+   "config": [
+    "WF_SKILLS=superpowers",
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": "## Now\n### foo\n- **Route:** change / patch\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F6",
+    "turn_id": "F6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "patch — typo only\n",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "F sensitive patch route still warns",
+   "config": [
+    "WF_SKILLS=superpowers",
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_SENSITIVE_REGEX='secret'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F7",
+    "turn_id": "F7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "secret.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "patch — typo only\n",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "F review without requesting code review warns",
+   "config": [
+    "WF_SKILLS=superpowers"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F8",
+    "turn_id": "F8",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-task.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "F required skills used is silent",
+   "config": [
+    "WF_SKILLS=superpowers",
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F9",
+    "turn_id": "F9",
+    "turn": {
+     "files_created": [
+      ".burhan/work/foo/foo-story.md",
+      ".burhan/work/foo/foo-implementation-plan.md"
+     ],
+     "files_edited": [
+      "a.src",
+      ".burhan/work/foo/reviews/foo-task.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [
+      "superpowers:brainstorming",
+      "superpowers:writing-plans",
+      "superpowers:test-driven-development",
+      "superpowers:requesting-code-review"
+     ],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "F subagent code does not judge main agent skills",
+   "config": [
+    "WF_SKILLS=superpowers",
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "F10",
+    "turn_id": "F10",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src",
+       "by": "burhan-builder"
+      }
+     ]
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "G exact Read-only yes warns",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": "## Now\n### foo\n- **Read-only:** yes\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "G1",
+    "turn_id": "G1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "G exact Read-only no is silent",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": "## Now\n### foo\n- **Read-only:** no\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "G2",
+    "turn_id": "G2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "G investigation route without explicit no warns",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": "## Now\n### foo\n- **Route:** investigation / bounded\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "G3",
+    "turn_id": "G3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "G investigation explicit no is silent",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": "## Now\n### foo\n- **Route:** investigation / spike · **Read-only:** no\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "G4",
+    "turn_id": "G4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "G bug spike route warns",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": "## Now\n### foo\n- **Route:** bug / spike\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "G5",
+    "turn_id": "G5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "G subagent code edit counts",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": "## Now\n### foo\n- **Read-only:** yes\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "G6",
+    "turn_id": "G6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src",
+       "by": "burhan-builder"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "I recently removed foreign owned block warns in minutes",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "stateAfter": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "preStore": {
+    "other/item": "beta\n",
+    "other/T.jsonl": "{}\n"
+   },
+   "preAge": {
+    "other/T.jsonl": 120
+   },
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "remover",
+    "turn_id": "I1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/local/PROGRESS.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ You removed the `beta` block — another session (active 2m ago) is working on it. Put it back.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "I recent foreign block reports hours",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "stateAfter": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "preStore": {
+    "other/item": "beta\n",
+    "other/T.jsonl": "{}\n"
+   },
+   "preAge": {
+    "other/T.jsonl": 7200
+   },
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "remover",
+    "turn_id": "I2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/local/PROGRESS.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ You removed the `beta` block — another session (active 2h ago) is working on it. Put it back.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "I day old foreign block is silent",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "stateAfter": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "preStore": {
+    "other/item": "beta\n",
+    "other/T.jsonl": "{}\n"
+   },
+   "preAge": {
+    "other/T.jsonl": 172800
+   },
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "remover",
+    "turn_id": "I3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/local/PROGRESS.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "I unsafe other session id is ignored",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "stateAfter": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "preStore": {
+    "bad session/item": "beta\n",
+    "bad session/T.jsonl": "{}\n"
+   },
+   "preAge": {
+    "bad session/T.jsonl": 120
+   },
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "remover",
+    "turn_id": "I4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/local/PROGRESS.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "I foreign link to different item is silent",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "stateAfter": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "preStore": {
+    "other/item": "alpha\n",
+    "other/T.jsonl": "{}\n"
+   },
+   "preAge": {
+    "other/T.jsonl": 120
+   },
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "remover",
+    "turn_id": "I5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/local/PROGRESS.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "I item still present is silent",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "files": {},
+   "preLink": null,
+   "preStore": {
+    "other/item": "beta\n",
+    "other/T.jsonl": "{}\n"
+   },
+   "preAge": {
+    "other/T.jsonl": 120
+   },
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "remover",
+    "turn_id": "I6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/local/PROGRESS.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "H missing Performed by warns",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "# QC\n- **Verdict:** PASS\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H1",
+    "turn_id": "H1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ QC PROVENANCE: `.burhan/work/foo/reviews/foo-qc.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H malformed Performed by warns",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "# QC\n- **Performed by:** claude · opus\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H2",
+    "turn_id": "H2",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ QC PROVENANCE: `.burhan/work/foo/reviews/foo-qc.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H fresh subagent provenance is accepted",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "- **Performed by:** claude · opus · fresh subagent\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H3",
+    "turn_id": "H3",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H other agent provenance is accepted",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "- **Performed by:** claude · opus · other agent\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H4",
+    "turn_id": "H4",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H human provenance is accepted",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "- **Performed by:** human · reviewer · human\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H5",
+    "turn_id": "H5",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H same session provenance is accepted",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "- **Performed by:** claude · opus · same session\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H6",
+    "turn_id": "H6",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H bold CR provenance is accepted",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "- **Performed by:** **claude · opus · fresh subagent**\r\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H7",
+    "turn_id": "H7",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H subagent QC provenance is audited",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "# QC\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H8",
+    "turn_id": "H8",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": ".burhan/work/foo/reviews/foo-qc.md",
+       "by": "burhan-reviewer"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ QC PROVENANCE: `.burhan/work/foo/reviews/foo-qc.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H main QC beside same turn code warns independence",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "- **Performed by:** claude · opus · fresh subagent\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H9",
+    "turn_id": "H9",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src",
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ QC INDEPENDENCE: a QC report was written in the same turn as code, so it is not independent. Re-run QC in a fresh context (Claude Code: the burhan-reviewer subagent), or record 'same session' as a limitation.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H same session declared suppresses independence",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "- **Performed by:** claude · opus · same session\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H10",
+    "turn_id": "H10",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src",
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "H subagent QC next to code is independent",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc.md": "- **Performed by:** claude · opus · fresh subagent\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "H11",
+    "turn_id": "H11",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": [
+      {
+       "seq": 1,
+       "kind": "edit",
+       "file": "a.src"
+      },
+      {
+       "seq": 2,
+       "kind": "edit",
+       "file": ".burhan/work/foo/reviews/foo-qc.md",
+       "by": "burhan-reviewer"
+      }
+     ]
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "B absolute work item path warns",
+   "config": [],
+   "state": "## Now\n### alpha\n",
+   "files": {
+    ".burhan/work/alpha/alpha-story.md": "x\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "BX",
+    "turn_id": "BX",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "@P/.burhan/work/alpha/alpha-story.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": "alpha"
+  },
+  {
+   "name": "D missing state is silent",
+   "config": [
+    "WF_STATE_BUDGET=1"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "DX",
+    "turn_id": "DX",
+    "turn": {
+     "files_created": [],
+     "files_edited": [],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "E Draft plan with completed subunit heading warns",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/foo-implementation-plan.md": "Overall status: Draft\n### Sub-unit 1 — done · ✅\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "EX",
+    "turn_id": "EX",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/foo-implementation-plan.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ STALE-STATUS GATE: `.burhan/work/foo/foo-implementation-plan.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\"}\n",
+   "linked": null
+  },
+  {
+   "name": "F review with requesting code review is silent",
+   "config": [
+    "WF_SKILLS=superpowers"
+   ],
+   "state": null,
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "FX",
+    "turn_id": "FX",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-task.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [
+      "superpowers:requesting-code-review"
+     ],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "G Read-only uppercase Yes is not exact",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'"
+   ],
+   "state": "## Now\n### foo\n- **Read-only:** Yes\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "GX",
+    "turn_id": "GX",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "I safe other item identifier that does not match is silent",
+   "config": [],
+   "state": "## Now\n### alpha\n### beta\n",
+   "stateAfter": "## Now\n### alpha\n",
+   "files": {},
+   "preLink": null,
+   "preStore": {
+    "other/item": "gamma\n",
+    "other/T.jsonl": "{}\n"
+   },
+   "preAge": {
+    "other/T.jsonl": 120
+   },
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "remover",
+    "turn_id": "IX",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/local/PROGRESS.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "H QC round file is checked for provenance",
+   "config": [],
+   "state": null,
+   "files": {
+    ".burhan/work/foo/reviews/foo-qc-r2.md": "# QC\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "HX",
+    "turn_id": "HX",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      ".burhan/work/foo/reviews/foo-qc-r2.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ QC PROVENANCE: `.burhan/work/foo/reviews/foo-qc-r2.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\"}\n",
+   "linked": null
+  },
+  {
+   "name": "order A B D E F G H",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify'",
+    "WF_SKILLS=superpowers",
+    "WF_STATE_BUDGET=1"
+   ],
+   "state": "## Now\n### foo\n- **Read-only:** yes\nextra\n",
+   "files": {
+    ".burhan/work/foo/foo-story.md": "Status: Draft\n✅ Completed\n",
+    ".burhan/work/foo/reviews/foo-qc.md": "# QC\n"
+   },
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "session": "O1",
+    "turn_id": "O1",
+    "turn": {
+     "files_created": [
+      ".burhan/work/foo/foo-story.md"
+     ],
+     "files_edited": [
+      "a.src",
+      ".burhan/work/foo/foo-story.md",
+      ".burhan/work/foo/reviews/foo-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "done",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\\n\\n⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ STATE-SIZE GATE: `.burhan/local/PROGRESS.md` is 4 lines (budget: 1). It is a snapshot, not a journal (WORKFLOW §5): close out items no longer in flight, keep one-line pointers, delete resolved lines.\\n\\n⚠ STALE-STATUS GATE: `.burhan/work/foo/foo-story.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\\n\\n⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.\\n\\n⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\\n\\n🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\\n\\n⚠ QC PROVENANCE: `.burhan/work/foo/reviews/foo-qc.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\\n\\n⚠ QC INDEPENDENCE: a QC report was written in the same turn as code, so it is not independent. Re-run QC in a fresh context (Claude Code: the burhan-reviewer subagent), or record 'same session' as a limitation.\"}\n",
+   "linked": "foo"
+  },
+  {
+   "name": "order D E F G I H",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_SKILLS=superpowers",
+    "WF_STATE_BUDGET=1"
+   ],
+   "state": "## Now\n### beta\n- **Read-only:** yes\nextra\n",
+   "stateAfter": "## Now\n### alpha\n- **Read-only:** yes\nextra\n",
+   "files": {
+    ".burhan/work/alpha/alpha-story.md": "Status: Planned\nVerdict: Resolved\n",
+    ".burhan/work/alpha/reviews/alpha-qc.md": "# QC\n"
+   },
+   "preLink": null,
+   "preStore": {
+    "other/item": "beta\n",
+    "other/T.jsonl": "{}\n"
+   },
+   "preAge": {
+    "other/T.jsonl": 7200
+   },
+   "sessionStart": true,
+   "event": {
+    "event": "turn_end",
+    "session": "O2",
+    "turn_id": "O2",
+    "turn": {
+     "files_created": [
+      ".burhan/work/alpha/alpha-story.md"
+     ],
+     "files_edited": [
+      "a.src",
+      ".burhan/local/PROGRESS.md",
+      ".burhan/work/alpha/alpha-story.md",
+      ".burhan/work/alpha/reviews/alpha-qc.md"
+     ],
+     "shell_commands": [],
+     "skills_used": [],
+     "assistant_text": "",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ STATE-SIZE GATE: `.burhan/local/PROGRESS.md` is 4 lines (budget: 1). It is a snapshot, not a journal (WORKFLOW §5): close out items no longer in flight, keep one-line pointers, delete resolved lines.\\n\\n⚠ STALE-STATUS GATE: `.burhan/work/alpha/alpha-story.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\\n\\n⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.\\n\\n⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\\n\\n🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\\n\\n⚠ You removed the `beta` block — another session (active 2h ago) is working on it. Put it back.\\n\\n⚠ QC PROVENANCE: `.burhan/work/alpha/reviews/alpha-qc.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\\n\\n⚠ QC INDEPENDENCE: a QC report was written in the same turn as code, so it is not independent. Re-run QC in a fresh context (Claude Code: the burhan-reviewer subagent), or record 'same session' as a limitation.\"}\n",
+   "linked": "alpha"
+  },
+  {
+   "name": "F several blocks and no link: a patch line keeps its exemption",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'",
+    "WF_SKILLS=superpowers"
+   ],
+   "state": "## Now\n### alpha\n- **Route:** feature / architectural\n- **Read-only:** yes\n### beta\n- **Route:** change / patch\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "nolink",
+    "turn_id": "N1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "patch — typo. Done, verify-it a passed.",
+     "steps": []
+    }
+   },
+   "expected": "",
+   "linked": null
+  },
+  {
+   "name": "G several blocks and no link: no item, so not read-only",
+   "config": [
+    "WF_CODE_REGEX='\\.src$'",
+    "WF_EVIDENCE_REGEX='^verify-it'",
+    "WF_SKILLS=superpowers"
+   ],
+   "state": "## Now\n### alpha\n- **Route:** feature / architectural\n- **Read-only:** yes\n### beta\n- **Route:** change / patch\n",
+   "files": {},
+   "preLink": null,
+   "event": {
+    "event": "turn_end",
+    "agent": "claude",
+    "session": "nolink",
+    "turn_id": "N1",
+    "turn": {
+     "files_created": [],
+     "files_edited": [
+      "a.src"
+     ],
+     "shell_commands": [
+      "verify-it a"
+     ],
+     "skills_used": [],
+     "assistant_text": "Done, verify-it a passed.",
+     "steps": []
+    }
+   },
+   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\"}\n",
+   "linked": null
+  }
+ ]
+}
