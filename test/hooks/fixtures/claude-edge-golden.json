@@ -1,0 +1,755 @@
+{
+ "generated_by": "kit/hooks/adapters/claude/{normalize,emit}.sh + jq 2026-10-15; CLAUDE_PROJECT_DIR=/proj unless arg=noenv; @DIR = a temp dir",
+ "cases": [
+  {
+   "name": "post: empty file_path beats notebook_path",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Edit\", \"tool_input\": {\"file_path\": \"\", \"notebook_path\": \"n\"}}",
+   "transcript": null,
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "post: tool_input is a string",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Edit\", \"tool_input\": \"x\", \"tool_response\": {\"filePath\": \"/r\"}}",
+   "transcript": null,
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "post: only tool_response.filePath",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Write\", \"tool_response\": {\"filePath\": \"/r\"}}",
+   "transcript": null,
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/r\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "post: file_path numeric",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Write\", \"tool_input\": {\"file_path\": 5}}",
+   "transcript": null,
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"5\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "post: tool_input null",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Write\", \"tool_input\": null}",
+   "transcript": null,
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "post: file_path false falls through",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PostToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Write\", \"tool_input\": {\"file_path\": false, \"notebook_path\": \"nb\"}}",
+   "transcript": null,
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"nb\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "pre: tool_input is string",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Bash\", \"tool_input\": \"x\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "pre: tool_input is null",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Bash\", \"tool_input\": null}",
+   "transcript": null,
+   "expected": "{\"event\":\"pre_shell\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "pre: tool_input is array",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Bash\", \"tool_input\": [1]}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "pre: tool_input is number",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Bash\", \"tool_input\": 3}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "pre: command null",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": null}}",
+   "transcript": null,
+   "expected": "{\"event\":\"pre_shell\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "pre: command number",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": 7}}",
+   "transcript": null,
+   "expected": "{\"event\":\"pre_shell\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":7,\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "pre: command empty",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"\"}}",
+   "transcript": null,
+   "expected": "{\"event\":\"pre_shell\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "pre: command false",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"PreToolUse\", \"session_id\": \"s\", \"cwd\": \"/c\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": false}}",
+   "transcript": null,
+   "expected": "{\"event\":\"pre_shell\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "prompt numeric",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"UserPromptSubmit\", \"session_id\": \"s\", \"cwd\": \"/c\", \"prompt\": 42}",
+   "transcript": null,
+   "expected": "{\"event\":\"prompt\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":42,\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "prompt null",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"UserPromptSubmit\", \"session_id\": \"s\", \"cwd\": \"/c\", \"prompt\": null}",
+   "transcript": null,
+   "expected": "{\"event\":\"prompt\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "prompt multiline",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"UserPromptSubmit\", \"session_id\": \"s\", \"cwd\": \"/c\", \"prompt\": \"a\\nb\\u0000c\"}",
+   "transcript": null,
+   "expected": "{\"event\":\"prompt\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"a\\nb\\u0000c\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "session id numeric",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"SessionStart\", \"session_id\": 5, \"cwd\": \"/c\"}",
+   "transcript": null,
+   "expected": "{\"event\":\"session_start\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"5\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "session id trailing newline",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"SessionStart\", \"session_id\": \"s\\n\\n\", \"cwd\": \"/c\"}",
+   "transcript": null,
+   "expected": "{\"event\":\"session_start\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "session id null",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"SessionStart\", \"session_id\": null, \"cwd\": \"/c\"}",
+   "transcript": null,
+   "expected": "{\"event\":\"session_start\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "cwd numeric (no CLAUDE_PROJECT_DIR)",
+   "sub": "normalize",
+   "arg": "noenv",
+   "stdin": "{\"hook_event_name\": \"SessionStart\", \"session_id\": \"s\", \"cwd\": 9}",
+   "transcript": null,
+   "expected": "{\"event\":\"session_start\",\"agent\":\"claude\",\"project_dir\":\"9\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "subagent stop",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"SubagentStop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "unknown event",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Bogus\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "no event name",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"session_id\":\"s\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "stop: stop_hook_active string true",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"stop_hook_active\": \"true\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"p\"}, \"timestamp\": \"2026-10-15T10:00:00Z\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"t\"}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"t\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: stop_hook_active number 1",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"stop_hook_active\": 1}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"p\"}, \"timestamp\": \"2026-10-15T10:00:00Z\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"t\"}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"t\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: stop_hook_active true",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"stop_hook_active\": true}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"p\"}, \"timestamp\": \"2026-10-15T10:00:00Z\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"t\"}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"t\",\"steps\":[]},\"reentrant\":true}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: stop_hook_active null",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"stop_hook_active\": null}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"p\"}, \"timestamp\": \"2026-10-15T10:00:00Z\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"t\"}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"t\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: last_assistant_message numeric",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"last_assistant_message\": 5}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"5\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: last_assistant_message already at the end",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"last_assistant_message\": \"tail\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"x tail\"}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"x tail\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: last_assistant_message trailing newline",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"last_assistant_message\": \"tail\\n\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"x\"}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"x\\ntail\\n\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: last_assistant_message with empty transcript text",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"last_assistant_message\": \"only\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"only\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: transcript_path is a directory",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"transcript_path\": \"@DIR\"}",
+   "transcript": null,
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: transcript_path empty",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\", \"transcript_path\": \"\"}",
+   "transcript": null,
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: empty command / file_path values",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"\"}}, {\"type\": \"tool_use\", \"id\": \"b\", \"name\": \"Write\", \"input\": {\"file_path\": \"\"}}, {\"type\": \"tool_use\", \"id\": \"c\", \"name\": \"Write\", \"input\": {\"file_path\": null}}, {\"type\": \"tool_use\", \"id\": \"d\", \"name\": \"Edit\", \"input\": {\"file_path\": \"/p/e.src\"}}, {\"type\": \"tool_use\", \"id\": \"e\", \"name\": \"Bash\", \"input\": {\"command\": \"ok\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"b\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"c\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"d\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"e\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"\"],\"files_edited\":[\"/p/e.src\"],\"shell_commands\":[\"\",\"ok\"],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"\",\"exit\":0,\"status\":\"ok\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"\",\"seq\":2},{\"kind\":\"edit\",\"file\":\"\",\"seq\":3},{\"kind\":\"edit\",\"file\":\"/p/e.src\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"ok\",\"exit\":0,\"status\":\"ok\",\"seq\":5}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: numeric uuid",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": 12}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":12,\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "stop: tool_input not an object",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"x\"}}, {\"type\": \"tool_use\", \"id\": \"b\", \"name\": \"Edit\", \"input\": \"oops\"}, {\"type\": \"tool_use\", \"id\": \"c\", \"name\": \"Bash\", \"input\": \"str\"}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"b\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"c\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result Exit code 2",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"Exit code 2\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":2,\"status\":\"failed\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result leading space + Exit code",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"  Exit code 3\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":3,\"status\":\"failed\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result Error: Exit code",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"Error: Exit code 4\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":4,\"status\":\"failed\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result blocked wording",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"Command was blocked by policy\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":null,\"status\":\"blocked\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result requires approval",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"This requires approval\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":null,\"status\":\"blocked\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result can't be checked",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"can't be checked before it runs\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":null,\"status\":\"blocked\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result permission",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"Permission denied for tool\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":null,\"status\":\"blocked\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result rejected",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"The tool use was rejected\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":null,\"status\":\"blocked\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result doesn't want",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"The user doesn't want to proceed\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":null,\"status\":\"blocked\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result other failure",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"Something odd\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":null,\"status\":\"failed\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: bash result ok",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"fine\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"run\"],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":0,\"status\":\"ok\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: run_in_background",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"sleep 9\", \"run_in_background\": true}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"sleep 9\"],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"sleep 9\",\"exit\":null,\"status\":\"background\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: no result yet",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"run\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"run\"],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"run\",\"exit\":null,\"status\":\"unknown\",\"seq\":1}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: duplicate tool_use_id",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"one\"}}, {\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Bash\", \"input\": {\"command\": \"two\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"Exit code 1\", \"is_error\": true}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"one\",\"exit\":1,\"status\":\"failed\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"two\",\"exit\":1,\"status\":\"failed\",\"seq\":2}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: agent without id",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"name\": \"Agent\", \"input\": {\"subagent_type\": \"x\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: agent with subagent_type tab",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Task\", \"input\": {\"subagent_type\": \"a\\tb\"}}, {\"type\": \"tool_use\", \"id\": \"b\", \"name\": \"Agent\", \"input\": {\"subagent_type\": \"  \"}}, {\"type\": \"tool_use\", \"id\": \"c\", \"name\": \"Agent\", \"input\": {}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"b\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"c\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: Write update vs create",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"tool_use\", \"id\": \"a\", \"name\": \"Write\", \"input\": {\"file_path\": \"/p/n.src\"}}, {\"type\": \"tool_use\", \"id\": \"b\", \"name\": \"Write\", \"input\": {\"file_path\": \"/p/o.src\"}}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"a\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"b\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\", \"toolUseResult\": {\"type\": \"update\"}}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/p/n.src\"],\"files_edited\":[\"/p/o.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/p/n.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/p/o.src\",\"seq\":2}]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "steps: skill + text parts",
+   "sub": "normalize",
+   "arg": null,
+   "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"s\", \"cwd\": \"/c\"}",
+   "transcript": [
+    "{\"type\": \"user\", \"message\": {\"content\": \"go\"}, \"timestamp\": \"2026-10-15T10:00:00Z\", \"uuid\": \"U1\"}",
+    "{\"type\": \"assistant\", \"message\": {\"content\": [{\"type\": \"text\", \"text\": \"one\"}, {\"type\": \"tool_use\", \"id\": \"s\", \"name\": \"Skill\", \"input\": {\"skill\": \"x:y\"}}, {\"type\": \"text\", \"text\": \"two\"}]}, \"timestamp\": \"2026-10-15T10:00:01Z\"}",
+    "{\"type\": \"user\", \"message\": {\"content\": [{\"type\": \"tool_result\", \"tool_use_id\": \"s\", \"content\": \"ok\", \"is_error\": false}]}, \"timestamp\": \"2026-10-15T10:00:02Z\"}"
+   ],
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"U1\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[\"x:y\"],\"assistant_text\":\"one\\ntwo\",\"steps\":[]},\"reentrant\":false}\n",
+   "rc": 0
+  },
+  {
+   "name": "emit: message trailing newline",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":\"abc\\n\"}",
+   "transcript": null,
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"abc\"}}\n",
+   "rc": 0
+  },
+  {
+   "name": "emit: message only newline",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":\"\\n\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "emit: message number",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":5}",
+   "transcript": null,
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"5\"}}\n",
+   "rc": 0
+  },
+  {
+   "name": "emit: message true",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":true}",
+   "transcript": null,
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"true\"}}\n",
+   "rc": 0
+  },
+  {
+   "name": "emit: message false",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":false}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "emit: message NUL inside",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":\"a\\u0000b\"}",
+   "transcript": null,
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"ab\"}}\n",
+   "rc": 0
+  },
+  {
+   "name": "emit: message only NUL",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":\"\\u0000\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "emit: message object",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":{\"k\":1}}",
+   "transcript": null,
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"{\\n  \\\"k\\\": 1\\n}\"}}\n",
+   "rc": 0
+  },
+  {
+   "name": "emit: message array",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":[1,2]}",
+   "transcript": null,
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"[\\n  1,\\n  2\\n]\"}}\n",
+   "rc": 0
+  },
+  {
+   "name": "emit: message spaces",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "{\"message\":\"  \"}",
+   "transcript": null,
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"  \"}}\n",
+   "rc": 0
+  },
+  {
+   "name": "emit: message top-level array",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "[1]",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "emit: message top-level string",
+   "sub": "emit",
+   "arg": "turn_end",
+   "stdin": "\"x\"",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "emit: event constructor",
+   "sub": "emit",
+   "arg": "constructor",
+   "stdin": "{\"message\":\"x\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "emit: event toString",
+   "sub": "emit",
+   "arg": "toString",
+   "stdin": "{\"message\":\"x\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "emit: event __proto__",
+   "sub": "emit",
+   "arg": "__proto__",
+   "stdin": "{\"message\":\"x\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  },
+  {
+   "name": "emit: event hasOwnProperty",
+   "sub": "emit",
+   "arg": "hasOwnProperty",
+   "stdin": "{\"message\":\"x\"}",
+   "transcript": null,
+   "expected": "",
+   "rc": 0
+  }
+ ]
+}

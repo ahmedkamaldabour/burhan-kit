@@ -1,0 +1,6 @@
+{"type":"user","uuid":"u-unsafe","message":{"content":"go"}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"path","name":"Agent","input":{"subagent_type":"unsafe-path","prompt":"x"}},{"type":"tool_use","id":"space","name":"Task","input":{"subagent_type":"unsafe-space","prompt":"y"}},{"type":"tool_use","id":"safe","name":"Agent","input":{"subagent_type":"burhan-builder","prompt":"z"}}]}}
+{"type":"user","toolUseResult":{"agentId":"../escape"},"message":{"content":[{"type":"tool_result","tool_use_id":"path","content":"ok"}]}}
+{"type":"user","toolUseResult":{"agentId":"has space"},"message":{"content":[{"type":"tool_result","tool_use_id":"space","content":"ok"}]}}
+{"type":"user","toolUseResult":{"agentId":"safe_id"},"message":{"content":[{"type":"tool_result","tool_use_id":"safe","content":"ok"}]}}
+

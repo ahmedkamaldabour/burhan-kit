@@ -1,0 +1,2 @@
+{"type":"assistant","isSidechain":true,"message":{"content":[{"type":"tool_use","id":"k","name":"Bash","input":{"command":"OKCMD"}}]}}
+

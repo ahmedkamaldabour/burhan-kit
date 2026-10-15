@@ -1,0 +1,4 @@
+{"type":"assistant","isSidechain":true,"message":{"content":[{"type":"tool_use","id":"inner","name":"Agent","input":{"subagent_type":"burhan-reviewer","prompt":"nested"}}]}}
+{"type":"user","toolUseResult":{"agentId":"inner"},"message":{"content":[{"type":"tool_result","tool_use_id":"inner","content":"ok"}]},"isSidechain":true}
+{"type":"assistant","isSidechain":true,"message":{"content":[{"type":"tool_use","id":"write","name":"Write","input":{"file_path":"/proj/outer.ts"}}]}}
+

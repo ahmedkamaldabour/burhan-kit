@@ -1,0 +1,5 @@
+{"type":"user","uuid":"u-s2","message":{"content":"go"}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"ag1","name":"Agent","input":{"subagent_type":"burhan-builder","prompt":"x"}}]}}
+{"type":"user","toolUseResult":{"agentId":"a111"},"message":{"content":[{"type":"tool_result","tool_use_id":"ag1","content":"built"}]}}
+{"type":"assistant","message":{"content":[{"type":"text","text":"done"}]}}
+

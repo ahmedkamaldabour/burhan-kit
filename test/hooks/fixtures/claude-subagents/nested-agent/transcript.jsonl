@@ -1,0 +1,4 @@
+{"type":"user","uuid":"u-nested","message":{"content":"go"}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"outer","name":"Agent","input":{"subagent_type":"burhan-builder","prompt":"x"}}]}}
+{"type":"user","toolUseResult":{"agentId":"outer"},"message":{"content":[{"type":"tool_result","tool_use_id":"outer","content":"ok"}]}}
+

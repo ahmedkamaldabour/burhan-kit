@@ -1,0 +1,191 @@
+{
+ "generated_by": "kit/hooks/adapters/claude/normalize.sh + jq 2026-10-15; CLAUDE_PROJECT_DIR=/proj; transcript_path = the fixture path",
+ "cases": [
+  {
+   "name": "stop + compaction-mid-turn.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "compaction-mid-turn.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/imp.src\"],\"files_edited\":[\"/proj/imp.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/imp.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/imp.src\",\"seq\":2}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + compaction-mid-turn.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "compaction-mid-turn.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/imp.src\"],\"files_edited\":[\"/proj/imp.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/imp.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/imp.src\",\"seq\":2}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + garbage-lines.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "garbage-lines.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + garbage-lines.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "garbage-lines.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + notification.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "notification.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\",\"/proj/b.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/b.src\",\"seq\":2}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + notification.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "notification.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\",\"/proj/b.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/b.src\",\"seq\":2}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + nul-bytes.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "nul-bytes.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"do\\u0000ne\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + nul-bytes.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "nul-bytes.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"do\\u0000ne\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + prior-turn-edit.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "prior-turn-edit.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"Waiting for you.\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + prior-turn-edit.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "prior-turn-edit.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"Waiting for you.\",\"steps\":[]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + sidechain.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "sidechain.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/main.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/main.src\",\"seq\":1}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + sidechain.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "sidechain.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/main.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/main.src\",\"seq\":1}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + single-turn.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "single-turn.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/src/new.src\"],\"files_edited\":[\"/proj/src/old.src\",\"/proj/src/multi.src\",\"/proj/nb.ipynb\"],\"shell_commands\":[\"verify-it src/new.src\"],\"skills_used\":[\"superpowers:test-driven-development\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/src/new.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/src/old.src\",\"seq\":2},{\"kind\":\"edit\",\"file\":\"/proj/src/multi.src\",\"seq\":3},{\"kind\":\"edit\",\"file\":\"/proj/nb.ipynb\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"verify-it src/new.src\",\"exit\":0,\"status\":\"ok\",\"seq\":5}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + single-turn.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "single-turn.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/src/new.src\"],\"files_edited\":[\"/proj/src/old.src\",\"/proj/src/multi.src\",\"/proj/nb.ipynb\"],\"shell_commands\":[\"verify-it src/new.src\"],\"skills_used\":[\"superpowers:test-driven-development\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/src/new.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/src/old.src\",\"seq\":2},{\"kind\":\"edit\",\"file\":\"/proj/src/multi.src\",\"seq\":3},{\"kind\":\"edit\",\"file\":\"/proj/nb.ipynb\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"verify-it src/new.src\",\"exit\":0,\"status\":\"ok\",\"seq\":5}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + steps-fail.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "steps-fail.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"u-f\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[\"verify-it b\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":1,\"status\":\"failed\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"verify-it b\",\"exit\":null,\"status\":\"background\",\"seq\":3}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + steps-fail.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "steps-fail.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"u-f\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[\"verify-it b\"],\"skills_used\":[],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":1,\"status\":\"failed\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"verify-it b\",\"exit\":null,\"status\":\"background\",\"seq\":3}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + steps.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "steps.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/b.src\"],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[\"verify-it a\",\"pending\"],\"skills_used\":[],\"assistant_text\":\"All done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":0,\"status\":\"ok\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"verify-it b\",\"exit\":3,\"status\":\"failed\",\"seq\":3},{\"kind\":\"cmd\",\"cmd\":\"ls /x\",\"exit\":null,\"status\":\"blocked\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"pending\",\"exit\":null,\"status\":\"unknown\",\"seq\":5},{\"kind\":\"edit\",\"file\":\"/proj/b.src\",\"seq\":6}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + steps.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "steps.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/b.src\"],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[\"verify-it a\",\"pending\"],\"skills_used\":[],\"assistant_text\":\"All done\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":0,\"status\":\"ok\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"verify-it b\",\"exit\":3,\"status\":\"failed\",\"seq\":3},{\"kind\":\"cmd\",\"cmd\":\"ls /x\",\"exit\":null,\"status\":\"blocked\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"pending\",\"exit\":null,\"status\":\"unknown\",\"seq\":5},{\"kind\":\"edit\",\"file\":\"/proj/b.src\",\"seq\":6}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + tool-results.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "tool-results.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\",\"/proj/b.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/b.src\",\"seq\":2}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + tool-results.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "tool-results.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\",\"/proj/b.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/b.src\",\"seq\":2}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "stop + write-update-and-failed.jsonl",
+   "payload": "p-stop.json",
+   "transcript": "write-update-and-failed.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/new.src\"],\"files_edited\":[\"/proj/.burhan/work/foo/foo-story.md\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"Now I will update the state file.\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/.burhan/work/foo/foo-story.md\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/new.src\",\"seq\":2}]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "stop reentrant + write-update-and-failed.jsonl",
+   "payload": "p-stop-reentrant.json",
+   "transcript": "write-update-and-failed.jsonl",
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/new.src\"],\"files_edited\":[\"/proj/.burhan/work/foo/foo-story.md\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"Now I will update the state file.\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/.burhan/work/foo/foo-story.md\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/new.src\",\"seq\":2}]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "payload p-post-bash.json",
+   "payload": "p-post-bash.json",
+   "transcript": null,
+   "expected": ""
+  },
+  {
+   "name": "payload p-post-edit.json",
+   "payload": "p-post-edit.json",
+   "transcript": null,
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/proj/src/a.src\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "payload p-post-notebook.json",
+   "payload": "p-post-notebook.json",
+   "transcript": null,
+   "expected": "{\"event\":\"post_edit\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/proj/nb.ipynb\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "payload p-pre-bash.json",
+   "payload": "p-pre-bash.json",
+   "transcript": null,
+   "expected": "{\"event\":\"pre_shell\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"git commit -m x\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "payload p-pre-read.json",
+   "payload": "p-pre-read.json",
+   "transcript": null,
+   "expected": ""
+  },
+  {
+   "name": "payload p-prompt.json",
+   "payload": "p-prompt.json",
+   "transcript": null,
+   "expected": "{\"event\":\"prompt\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"fix the bug\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "payload p-session.json",
+   "payload": "p-session.json",
+   "transcript": null,
+   "expected": "{\"event\":\"session_start\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  },
+  {
+   "name": "payload p-stop-reentrant.json",
+   "payload": "p-stop-reentrant.json",
+   "transcript": null,
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":true}\n"
+  },
+  {
+   "name": "payload p-stop.json",
+   "payload": "p-stop.json",
+   "transcript": null,
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
+  }
+ ]
+}

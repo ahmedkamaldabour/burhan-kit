@@ -1,0 +1,9 @@
+{"type":"assistant","isSidechain":true,"message":{"content":[{"type":"tool_use","id":"s1","name":"Write","input":{"file_path":"/proj/t.test"}}]}}
+{"type":"user","toolUseResult":{"type":"create"},"message":{"content":[{"type":"tool_result","tool_use_id":"s1","content":"ok"}]},"isSidechain":true}
+{"type":"assistant","isSidechain":true,"message":{"content":[{"type":"tool_use","id":"s2","name":"Bash","input":{"command":"verify-it a"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"s2","content":"Exit code 1\nnot found","is_error":true}]},"isSidechain":true}
+{"type":"assistant","isSidechain":true,"message":{"content":[{"type":"tool_use","id":"s3","name":"Edit","input":{"file_path":"/proj/a.src"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"s3","content":"ok"}]},"isSidechain":true}
+{"type":"assistant","isSidechain":true,"message":{"content":[{"type":"tool_use","id":"s4","name":"Bash","input":{"command":"verify-it a"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"s4","content":"ok"}]},"isSidechain":true}
+

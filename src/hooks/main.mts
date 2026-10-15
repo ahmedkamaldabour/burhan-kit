@@ -10,6 +10,9 @@ import { preCommitCheck } from './core/pre-commit-check.mjs';
 import { sessionGates } from './core/session-gates.mjs';
 import { promptRouter } from './core/prompt-router.mjs';
 import { turnAudit } from './core/turn-audit.mjs';
+import { emitClaude } from './adapters/claude/emit.mjs';
+import { hookClaude } from './adapters/claude/hook.mjs';
+import { normalizeClaude } from './adapters/claude/normalize.mjs';
 
 export type Registry = Record<string, Record<string, Check>>;
 export const REGISTRY: Registry = {
@@ -18,18 +21,27 @@ export const REGISTRY: Registry = {
 
 export interface RunResult { stdout: string; debug: string }
 
+async function runCore(checkName: string | undefined, stdin: string, env: NodeJS.ProcessEnv, registry: Registry): Promise<string> {
+  const core = registry.core;
+  const check = checkName === undefined ? undefined : core?.[checkName];
+  if (!core || !check || checkName === undefined || !Object.hasOwn(core, checkName)) return '';
+  const ev = parseEvent(stdin);
+  if (!ev) return '';
+  const pd = ev.raw.project_dir;
+  let project = typeof pd === 'string' && pd !== '' ? pd : process.cwd();
+  if (project !== '/' && project.endsWith('/')) project = project.slice(0, -1);
+  return emit(await check({ ev, cfg: loadHookConfig(project, env), project, env }));
+}
+
 export async function run(argv: string[], stdin: string, env: NodeJS.ProcessEnv, registry: Registry = REGISTRY): Promise<RunResult> {
   try {
-    const [part, name] = argv;
-    const check = part !== undefined && name !== undefined ? registry[part]?.[name] : undefined;
-    if (!check || !Object.hasOwn(registry[part!]!, name!)) return { stdout: '', debug: '' };
-    const ev = parseEvent(stdin);
-    if (!ev) return { stdout: '', debug: '' };
-    const pd = ev.raw.project_dir;
-    let project = typeof pd === 'string' && pd !== '' ? pd : process.cwd();
-    if (project !== '/' && project.endsWith('/')) project = project.slice(0, -1);
-    const findings = await check({ ev, cfg: loadHookConfig(project, env), project, env });
-    return { stdout: emit(findings), debug: '' };
+    const [part, name, argument] = argv;
+    if (part === 'core') return { stdout: await runCore(name, stdin, env, registry), debug: '' };
+    if (part !== 'claude') return { stdout: '', debug: '' };
+    if (name === 'normalize') return { stdout: normalizeClaude(stdin, env), debug: '' };
+    if (name === 'emit') return { stdout: emitClaude(argument ?? '', stdin), debug: '' };
+    if (name === 'hook') return { stdout: await hookClaude(argument, stdin, env, (check, input, callEnv) => runCore(check, input, callEnv, registry)), debug: '' };
+    return { stdout: '', debug: '' };
   } catch (e) {
     return { stdout: '', debug: e instanceof Error ? (e.stack ?? e.message) : String(e) };
   }

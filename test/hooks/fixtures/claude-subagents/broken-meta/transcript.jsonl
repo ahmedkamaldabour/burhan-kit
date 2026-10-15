@@ -1,0 +1,4 @@
+{"type":"user","uuid":"u-tm","message":{"content":"go"}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"k1","name":"Agent","input":{"subagent_type":"burhan-explorer","prompt":"x"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"k1","content":"ok"}]}}
+

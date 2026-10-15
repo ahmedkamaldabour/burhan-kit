@@ -4,6 +4,7 @@
 . "$(dirname "$0")/lib.sh"
 ENTRY="$T_ROOT/dist/hooks/main.mjs"
 PORTED_CORE="post-edit-reminder pre-commit-check session-gates prompt-router turn-audit"
+PORTED_CLAUDE="claude"
 
 echo "node port — the entry is built and answers"
 check "dist/hooks/main.mjs exists (npm run build)" "$([ -f "$ENTRY" ] && echo yes)" has "yes"
@@ -16,6 +17,19 @@ for s in $PORTED_CORE; do
   out="$(WF_IMPL_CORE="node $ENTRY core" bash "$T_ROOT/tests/core/$s.test.sh" 2>&1)"; rc=$?
   check "core/$s passes on Node" "rc=$rc" has "rc=0"
   check "core/$s ran cases on Node (not an empty pass)" "$out" lacks "passed: 0 "
+  [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -E '^  FAIL' | head -5 | sed 's/^/        /'
+done
+
+echo "node port — ported Claude adapter suite passes through WF_IMPL_CLAUDE"
+for s in $PORTED_CLAUDE; do
+  out="$(WF_IMPL_CLAUDE="node $ENTRY claude" bash "$T_ROOT/tests/adapters/$s/$s.test.sh" 2>&1)"; rc=$?
+  check "adapters/$s passes on Node" "rc=$rc" has "rc=0"
+  check "adapters/$s ran cases on Node (not an empty pass)" "$out" lacks "passed: 0 "
+  [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -E '^  FAIL' | head -5 | sed 's/^/        /'
+
+  out="$(WF_IMPL_CORE="node $ENTRY core" WF_IMPL_CLAUDE="node $ENTRY claude" bash "$T_ROOT/tests/adapters/$s/$s.test.sh" 2>&1)"; rc=$?
+  check "adapters/$s with Node core passes on Node" "rc=$rc" has "rc=0"
+  check "adapters/$s with Node core ran cases (not an empty pass)" "$out" lacks "passed: 0 "
   [ "$rc" -ne 0 ] && printf '%s\n' "$out" | grep -E '^  FAIL' | head -5 | sed 's/^/        /'
 done
 t_summary

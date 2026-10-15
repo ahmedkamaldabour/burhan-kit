@@ -1,0 +1,235 @@
+{
+ "generated_by": "kit/hooks/adapters/claude/emit.sh + jq 2026-10-15",
+ "cases": [
+  {
+   "event": "session_start",
+   "input": "{\"message\": \"hi\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"hi\"}}\n"
+  },
+  {
+   "event": "session_start",
+   "input": "{\"message\": \"line1\\nline2\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"line1\\nline2\"}}\n"
+  },
+  {
+   "event": "session_start",
+   "input": "{\"message\": \"quote \\\" and \\\\ backslash\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"quote \\\" and \\\\ backslash\"}}\n"
+  },
+  {
+   "event": "session_start",
+   "input": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"Arabic ⚑ خلص ✅\"}}\n"
+  },
+  {
+   "event": "session_start",
+   "input": "{\"message\": \"del  ctl \\u0001 tab\\t\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"del \\u007f ctl \\u0001 tab\\t\"}}\n"
+  },
+  {
+   "event": "session_start",
+   "input": "{\"message\": \"\"}",
+   "expected": ""
+  },
+  {
+   "event": "prompt",
+   "input": "{\"message\": \"hi\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"hi\"}}\n"
+  },
+  {
+   "event": "prompt",
+   "input": "{\"message\": \"line1\\nline2\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"line1\\nline2\"}}\n"
+  },
+  {
+   "event": "prompt",
+   "input": "{\"message\": \"quote \\\" and \\\\ backslash\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"quote \\\" and \\\\ backslash\"}}\n"
+  },
+  {
+   "event": "prompt",
+   "input": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"Arabic ⚑ خلص ✅\"}}\n"
+  },
+  {
+   "event": "prompt",
+   "input": "{\"message\": \"del  ctl \\u0001 tab\\t\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"del \\u007f ctl \\u0001 tab\\t\"}}\n"
+  },
+  {
+   "event": "prompt",
+   "input": "{\"message\": \"\"}",
+   "expected": ""
+  },
+  {
+   "event": "pre_shell",
+   "input": "{\"message\": \"hi\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"hi\"}}\n"
+  },
+  {
+   "event": "pre_shell",
+   "input": "{\"message\": \"line1\\nline2\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"line1\\nline2\"}}\n"
+  },
+  {
+   "event": "pre_shell",
+   "input": "{\"message\": \"quote \\\" and \\\\ backslash\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"quote \\\" and \\\\ backslash\"}}\n"
+  },
+  {
+   "event": "pre_shell",
+   "input": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Arabic ⚑ خلص ✅\"}}\n"
+  },
+  {
+   "event": "pre_shell",
+   "input": "{\"message\": \"del  ctl \\u0001 tab\\t\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"del \\u007f ctl \\u0001 tab\\t\"}}\n"
+  },
+  {
+   "event": "pre_shell",
+   "input": "{\"message\": \"\"}",
+   "expected": ""
+  },
+  {
+   "event": "post_edit",
+   "input": "{\"message\": \"hi\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"hi\"}}\n"
+  },
+  {
+   "event": "post_edit",
+   "input": "{\"message\": \"line1\\nline2\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"line1\\nline2\"}}\n"
+  },
+  {
+   "event": "post_edit",
+   "input": "{\"message\": \"quote \\\" and \\\\ backslash\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"quote \\\" and \\\\ backslash\"}}\n"
+  },
+  {
+   "event": "post_edit",
+   "input": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Arabic ⚑ خلص ✅\"}}\n"
+  },
+  {
+   "event": "post_edit",
+   "input": "{\"message\": \"del  ctl \\u0001 tab\\t\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"del \\u007f ctl \\u0001 tab\\t\"}}\n"
+  },
+  {
+   "event": "post_edit",
+   "input": "{\"message\": \"\"}",
+   "expected": ""
+  },
+  {
+   "event": "turn_end",
+   "input": "{\"message\": \"hi\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"hi\"}}\n"
+  },
+  {
+   "event": "turn_end",
+   "input": "{\"message\": \"line1\\nline2\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"line1\\nline2\"}}\n"
+  },
+  {
+   "event": "turn_end",
+   "input": "{\"message\": \"quote \\\" and \\\\ backslash\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"quote \\\" and \\\\ backslash\"}}\n"
+  },
+  {
+   "event": "turn_end",
+   "input": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"Arabic ⚑ خلص ✅\"}}\n"
+  },
+  {
+   "event": "turn_end",
+   "input": "{\"message\": \"del  ctl \\u0001 tab\\t\"}",
+   "expected": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"del \\u007f ctl \\u0001 tab\\t\"}}\n"
+  },
+  {
+   "event": "turn_end",
+   "input": "{\"message\": \"\"}",
+   "expected": ""
+  },
+  {
+   "event": "bogus",
+   "input": "{\"message\": \"hi\"}",
+   "expected": ""
+  },
+  {
+   "event": "bogus",
+   "input": "{\"message\": \"line1\\nline2\"}",
+   "expected": ""
+  },
+  {
+   "event": "bogus",
+   "input": "{\"message\": \"quote \\\" and \\\\ backslash\"}",
+   "expected": ""
+  },
+  {
+   "event": "bogus",
+   "input": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "expected": ""
+  },
+  {
+   "event": "bogus",
+   "input": "{\"message\": \"del  ctl \\u0001 tab\\t\"}",
+   "expected": ""
+  },
+  {
+   "event": "bogus",
+   "input": "{\"message\": \"\"}",
+   "expected": ""
+  },
+  {
+   "event": "",
+   "input": "{\"message\": \"hi\"}",
+   "expected": ""
+  },
+  {
+   "event": "",
+   "input": "{\"message\": \"line1\\nline2\"}",
+   "expected": ""
+  },
+  {
+   "event": "",
+   "input": "{\"message\": \"quote \\\" and \\\\ backslash\"}",
+   "expected": ""
+  },
+  {
+   "event": "",
+   "input": "{\"message\": \"Arabic ⚑ خلص ✅\"}",
+   "expected": ""
+  },
+  {
+   "event": "",
+   "input": "{\"message\": \"del  ctl \\u0001 tab\\t\"}",
+   "expected": ""
+  },
+  {
+   "event": "",
+   "input": "{\"message\": \"\"}",
+   "expected": ""
+  },
+  {
+   "event": "turn_end",
+   "input": "{}",
+   "expected": ""
+  },
+  {
+   "event": "turn_end",
+   "input": "{\"message\":null}",
+   "expected": ""
+  },
+  {
+   "event": "turn_end",
+   "input": "not json",
+   "expected": ""
+  },
+  {
+   "event": "turn_end",
+   "input": "",
+   "expected": ""
+  }
+ ]
+}

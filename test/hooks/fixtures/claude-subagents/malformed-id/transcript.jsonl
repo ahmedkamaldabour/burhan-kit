@@ -1,0 +1,5 @@
+{"type":"user","uuid":"u-bad","message":{"content":"go"}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"x1","name":"Agent","input":{"subagent_type":"weird","prompt":"x"}},{"type":"tool_use","id":"x2","name":"Agent","input":{"subagent_type":"bur\thue\nx","prompt":"y"}}]}}
+{"type":"user","toolUseResult":{"agentId":{"o":1}},"message":{"content":[{"type":"tool_result","tool_use_id":"x1","content":"?"}]}}
+{"type":"user","toolUseResult":{"agentId":"agood"},"message":{"content":[{"type":"tool_result","tool_use_id":"x2","content":"ok"}]}}
+

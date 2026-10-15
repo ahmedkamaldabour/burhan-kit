@@ -1,0 +1,2 @@
+{"type":"assistant","isSidechain":true,"message":{"content":[{"type":"tool_use","id":"q","name":"Bash","input":{"command":"ls 4"}}]}}
+

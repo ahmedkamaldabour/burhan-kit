@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { HookConfig } from './config.mjs';
+import { rawText, shellText } from './jq.mjs';
 
 /** Everything a check gets. */
 export interface Ctx { ev: HookEvent; cfg: HookConfig; project: string; env: NodeJS.ProcessEnv }
@@ -26,8 +27,6 @@ const at = (root: unknown, path: string): unknown => {
   }
   return v;
 };
-/** One value as `jq -r` prints it (strings raw, everything else as JSON). */
-const jqText = (v: unknown): string => (typeof v === 'string' ? v : JSON.stringify(v, null, 2));
 /** $(…) drops trailing newlines. */
 export const chomp = (s: string): string => s.replace(/\n+$/, '');
 
@@ -40,8 +39,8 @@ export function parseEvent(stdin: string): HookEvent | null {
   const raw = v as Record<string, unknown>;
   return {
     raw,
-    get: (path) => { const x = at(raw, path); return x === undefined || x === null || x === false ? '' : chomp(jqText(x)); },
-    list: (path) => { const x = at(raw, path); return Array.isArray(x) ? x.filter((i) => i !== null).map(jqText) : []; },
+    get: (path) => shellText(at(raw, path)),
+    list: (path) => { const x = at(raw, path); return Array.isArray(x) ? x.filter((i) => i !== null).map((i) => (i === false ? 'false' : rawText(i)).replaceAll('\u0000', '')) : []; },
   };
 }
 

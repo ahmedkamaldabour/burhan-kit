@@ -1,0 +1,9 @@
+{"type":"user","uuid":"u-sa","message":{"content":"go"}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"ag1","name":"Agent","input":{"subagent_type":"burhan-builder","prompt":"sub-unit 1"}}]}}
+{"type":"user","toolUseResult":{"agentId":"a111","agentType":"burhan-builder","status":"completed"},"message":{"content":[{"type":"tool_result","tool_use_id":"ag1","content":"built"}]}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"ag2","name":"Agent","input":{"subagent_type":"burhan-reviewer","prompt":"review"}}]}}
+{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"ag2","content":"ok"}]}}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"ag3","name":"Agent","input":{"subagent_type":"ghost","prompt":"x"}}]}}
+{"type":"user","toolUseResult":{"agentId":"a999"},"message":{"content":[{"type":"tool_result","tool_use_id":"ag3","content":"?"}]}}
+{"type":"assistant","message":{"content":[{"type":"text","text":"Sub-unit 1 is done ✅"}]}}
+

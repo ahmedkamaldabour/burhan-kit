@@ -24,6 +24,12 @@ test('event: get mirrors jq -r "(path) // empty"', () => {
   assert.deepEqual(e.list('.missing'), []);
   assert.deepEqual(e.list('.a'), []);
 });
+test('event: NUL characters vanish from values, as they do in bash', () => {
+  const e = ev({ a: 'do\u0000ne', l: ['x\u0000y', 'z'] });
+  assert.equal(e.get('.a'), 'done');
+  assert.deepEqual(e.list('.l'), ['xy', 'z']);
+  assert.deepEqual(ev({ l: ['a\n', false, 3, null] }).list('.l'), ['a\n', 'false', '3'], 'list keeps an item\'s own newline and false; null is dropped');
+});
 test('event: empty, invalid or non-object stdin -> null', () => {
   for (const s of ['', 'not json', '[1]', '"s"', 'null']) assert.equal(parseEvent(s), null, s);
 });
