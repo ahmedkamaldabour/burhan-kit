@@ -1,9 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.2.2 — 2026-10-15
+
+### Upgrading from 0.2.1
+- The install folder is now `.burhan/` (it was `.workflow/`). Projects installed with 0.2.1 are **not**
+  migrated: remove the old install with `npx burhan-kit uninstall` (0.2.1) and run `npx burhan-kit` again.
+
+### Fixed
+- The state-transition gate no longer warns when the state file was edited by a shell command; a
+  per-turn fingerprint kept outside the project decides, and a turn that did not touch it still warns.
 
 ### Changed
-- Setup now asks a fourth reviewer/QC question only when both agents are selected, stores `other` or `same`, and improves agent-led folder and closing-report guidance.
+- Setup now asks a fourth reviewer/QC question only when both agents are selected, stores `other` (the
+  other agent than the one running `/burhan:qc`) or `same`, and improves agent-led folder and
+  closing-report guidance. Existing `claude` / `codex` / `same` values keep working.
 - Rewrote the English and Egyptian-Arabic READMEs around a concise, verified first-use path for
   GitHub and npm.
 - Sessions can link to one in-flight work item for item-specific gates and evidence; `burhan use <slug>`
