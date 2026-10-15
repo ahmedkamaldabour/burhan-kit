@@ -18,3 +18,7 @@ export const kitDir = (): string => join(packageRoot(), 'kit');
 
 export const readVersion = (): string =>
   (JSON.parse(readFileSync(join(packageRoot(), 'package.json'), 'utf8')) as { version: string }).version;
+
+/** The built Node hooks the CLI ships next to itself: `dist/hooks` in the package, `.test-build/src/hooks` under test
+ *  (main.mjs, core/, adapters/, install-root.mjs, gates.txt). `init` and `upgrade` copy them to `.burhan/hooks/node/`. */
+export const nodeHooksDir = (): string => join(dirname(fileURLToPath(import.meta.url)), '..', 'hooks');

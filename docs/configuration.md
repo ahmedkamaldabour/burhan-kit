@@ -54,7 +54,7 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
 | `burhan setup [dir] --set check=<cmd\|none> [sensitive=<p;q>] [--force]` | Sets the check and the sensitive paths directly |
 | `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.burhan/local/` and private work/discovery files; `--all` removes them too. Work outside `.burhan/`, project memory and unknown files always stay. Removes only owned kit files, blocks, exact hook commands and marked Claude files; keeps user ignore rules and protection for retained private data. Validates before the first change and never follows a symlink out of the project |
 | `burhan upgrade [--apply]` | Refresh kit-owned files; agents default to the installed ones; idempotent. Never rewrites `workflow.config` — `doctor` lists keys a newer version added |
-| `burhan doctor` | Read-only: bash ≥ 4, `jq` ≥ 1.6 (an older jq cannot compile the hooks' filters), a sha256 tool, `timeout`; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust (read from `~/.codex/config.toml`, never written); the state file's size. `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
+| `burhan doctor` | Read-only: `node` ≥ 22 on PATH (the Node hooks need nothing else — no bash, `jq`, sha256 tool or `timeout`); with `WF_HOOK_RUNTIME=bash` instead bash ≥ 4, `jq` ≥ 1.6, a sha256 tool and `timeout`, plus a deprecation warning; Claude Code ≥ 2.1.139 for the exec-form hooks; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust (read from `~/.codex/config.toml`, never written); the state file's size. `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
 | `burhan status [--write]` | The work-item index, derived from the item files; `--write` regenerates `<docs>/README.md` (a hand-written index is never overwritten without `--force`, which keeps a backup) |
 | `burhan stats [--json] [--docs <path>]` | Items per route, QC PASS / FAIL, QC by the implementing agent vs independently, escaped defects, per-phase timing. Reports written before these fields existed are read heuristically; anything unclear is `unknown` / `unrecorded`, never guessed |
 | `burhan evidence [--item <slug>] [--session <id>] [--last N] [--json]` | The evidence ledger: each edit and command with its exit code, in order |
@@ -72,6 +72,7 @@ holds personal overrides, read after the team file, key by key.
 |---|---|
 | `WF_DOCS_DIR`, `WF_DISCOVERY_DIR`, `WF_STATE_FILE`, `WF_STATE_BUDGET` | where work items, discoveries and the live state file live |
 | `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` | the fast, non-mutating check run before every commit |
+| `WF_HOOK_RUNTIME` | `node` (default) or `bash` — which hooks `init` / `upgrade` install. Team-only (the hook commands are committed); run `burhan upgrade --apply` after changing it. `bash` is the 0.2 runtime, a rollback that needs bash ≥ 4 and `jq`, removed in a later release |
 | `WF_CODE_REGEX`, `WF_TEST_REGEX` | which paths are code / tests |
 | `WF_EVIDENCE_REGEX` | which commands count as verification evidence |
 | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` | access-control paths and the reminder after editing one |
@@ -228,6 +229,11 @@ the same cases — see [`tests/CONFORMANCE.md`](https://github.com/ahmedkamaldab
 tests and unusual setups): `WF_CONFIG` (config file path), `WF_TIMEOUT_BIN` (timeout utility, or
 `none`), `WF_CODEX_LEDGER_DIR` (Codex ledger location).
 
-Adding an agent = one folder under `kit/hooks/adapters/<agent>/` (`normalize.sh`, `emit.sh`,
-`hook.sh`, a config snippet) plus fixtures captured from that agent's real payloads. The core never
+The Node hooks are installed to `.burhan/hooks/node/` (a copy of the package's `dist/hooks`); Claude Code runs them in exec form
+(`node` + args, no shell, Claude Code ≥ 2.1.139) and Codex through a one-line `node -e` launcher that finds that folder from the
+session's directory upward (it runs the first `.burhan/hooks/node/main.mjs` it finds, so a nested copy of the kit would win — keep one install per project tree). Codex trusts hooks by their command's hash, so after the first Node `upgrade` Codex lists them as
+"Modified since last trusted" until you trust them again.
+
+Adding an agent = one adapter under `src/hooks/adapters/<agent>/` (normalize, emit, hook, and its entry in `main.mts`) and one
+snippet under `kit/hooks/adapters/<agent>/` (the bash version under `kit/hooks/adapters/<agent>/*.sh` is the 0.2 rollback), plus fixtures captured from that agent's real payloads. The core never
 changes.

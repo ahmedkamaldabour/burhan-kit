@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { AGENTS } from '../install.js';
 import type { Agent } from '../bootstrap.js';
 import { parseConfig, TEAM_CONFIG } from '../config.js';
+import { agentInstalled } from '../hooks-merge.js';
 
 export type DocsChoice = { kind: 'private' } | { kind: 'shared' } | { kind: 'custom'; path: string };
 export interface SetupAnswers {
@@ -24,7 +25,7 @@ export function recommended(target: string, _home: string): SetupAnswers {
 /** AC-17: the answers an existing install already stands for (the team config is the truth); null when burhan is not installed. */
 export function currentAnswers(target: string): SetupAnswers | null {
   if (!existsSync(join(target, '.burhan/WORKFLOW.md'))) return null;
-  const agents = AGENTS.filter((a) => existsSync(join(target, '.burhan/hooks/adapters', a)));
+  const agents = AGENTS.filter((a) => agentInstalled(target, a));
   const team = existsSync(join(target, TEAM_CONFIG)) ? parseConfig(readFileSync(join(target, TEAM_CONFIG), 'utf8')).values : {};
   const docsDir = (team.WF_DOCS_DIR || PRIVATE_DOCS).replace(/^(\.\/)+/, '').replace(/\/+$/, '');
   const docs: DocsChoice = docsDir === PRIVATE_DOCS ? { kind: 'private' } : docsDir === SHARED_DOCS ? { kind: 'shared' } : { kind: 'custom', path: docsDir };

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runChecks, type Check, type Probe } from '../src/lib/doctor.js';
 import { install } from '../src/lib/install.js';
@@ -9,14 +9,16 @@ import { runCli } from '../src/main.js';
 import { capture, tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-doctor-home-');
-const good: Probe = { bashMajor: () => 5, has: () => true, jqVersion: () => 'jq-1.8.1', claudeVersion: () => '2.1.296', home: () => home };
+const good: Probe = { bashMajor: () => 5, has: () => true, jqVersion: () => 'jq-1.8.1', nodeVersion: () => '24.13.0', claudeVersion: () => '2.1.296', home: () => home };
 const probe = (o: Partial<Probe> = {}): Probe => ({ ...good, ...o });
 
-function project(agents: ('claude' | 'codex')[] = ['claude']): string {
+function project(agents: ('claude' | 'codex')[] = ['claude'], runtime: 'node' | 'bash' = 'node'): string {
   const p = tmpDir('burhan-doctor-');
+  if (runtime === 'bash') { mkdirSync(join(p, '.burhan'), { recursive: true }); writeFileSync(join(p, '.burhan/workflow.config'), 'WF_HOOK_RUNTIME=bash\n'); }
   install({ mode: 'init', target: p, agents, apply: true, bootstrap: false }, capture(p).io);
   return p;
 }
+const bashProject = (agents: ('claude' | 'codex')[] = ['claude']): string => project(agents, 'bash');
 const cfg = (p: string) => join(p, '.burhan/workflow.config');
 const edit = (f: string, fn: (s: string) => string) => writeFileSync(f, fn(readFileSync(f, 'utf8')));
 const find = (cs: Check[], status: Check['status'], text: string) => cs.find((c) => c.status === status && c.text.includes(text));
@@ -25,7 +27,7 @@ const bad = (cs: Check[]) => cs.filter((c) => c.status === 'fail' || c.status ==
 test('a fresh init is healthy: no fail, no warn', () => {
   const cs = runChecks(project(), probe());
   assert.deepEqual(bad(cs), []);
-  for (const t of ['bash 5', 'jq', 'sha256', 'kit', 'workflow.config', '.claude/settings.json: all 5 hooks wired', 'burhan-reviewer', 'local/']) assert.ok(find(cs, 'ok', t), t);
+  for (const t of ['node 24', 'kit', 'workflow.config', '.claude/settings.json: all 5 hooks wired', 'burhan-reviewer', 'local/']) assert.ok(find(cs, 'ok', t), t);
   assert.ok(find(cs, 'skip', 'codex'), 'an agent init did not install is skipped');
 });
 
@@ -52,8 +54,8 @@ test('legacy config keys are silently ignored in team and local config; upgrade 
   for (const key of ['WF_FORBIDDEN_REGEX', 'WF_FORBIDDEN_REASON', 'WF_SINGLE_TEST_HINT']) assert.ok(!warning?.text.includes(key), key);
 });
 
-test('runtime: bash 3 and a missing jq or sha256 tool fail, with the fix', () => {
-  const p = project();
+test('runtime bash: bash 3 and a missing jq or sha256 tool fail, with the fix', () => {
+  const p = bashProject();
   assert.ok(find(runChecks(p, probe({ bashMajor: () => 3 })), 'fail', 'brew install bash'));
   assert.ok(find(runChecks(p, probe({ bashMajor: () => null })), 'fail', 'bash'));
   assert.ok(find(runChecks(p, probe({ has: (c) => c !== 'jq' })), 'fail', 'jq'));
@@ -64,8 +66,8 @@ test('runtime: bash 3 and a missing jq or sha256 tool fail, with the fix', () =>
   assert.ok(!find(runChecks(p, probe({ has: (c) => c !== 'timeout' })), 'warn', 'timeout'), 'gtimeout alone is enough');
 });
 
-test('runtime: jq below the minimum the hooks are tested on fails; an unreadable version warns', () => {
-  const p = project();
+test('runtime bash: jq below the minimum the hooks are tested on fails; an unreadable version warns', () => {
+  const p = bashProject();
   for (const v of ['jq-1.6', 'jq-1.7.1', 'jq-1.8.1', 'jq-1.7', 'jq-1.6-dirty', 'jq-1.6-159-gcff5336']) {
     const c = runChecks(p, probe({ jqVersion: () => v }));
     assert.ok(find(c, 'ok', 'jq'), `${v} is supported`);
@@ -89,8 +91,8 @@ test('install: not installed fails; an older kit stamp says run upgrade', () => 
   assert.ok(c && c.text.includes('burhan upgrade --apply') && c.text.includes(readVersion()), c?.text);
 });
 
-test('install: kit files that differ from this CLI\'s kit (same version, edited or another build) warn', () => {
-  const p = project();
+test('install (bash runtime): kit files that differ from this CLI\'s kit (same version, edited or another build) warn', () => {
+  const p = bashProject();
   assert.ok(find(runChecks(p, probe()), 'ok', 'kit files match'));
   writeFileSync(join(p, '.burhan/hooks/core/turn-audit.sh'), '# edited\n');
   const c = find(runChecks(p, probe()), 'warn', 'hooks/core/turn-audit.sh');
@@ -252,4 +254,59 @@ test('CLI: doctor never writes, prints one line per check, exit 1 only on fail',
   const e = capture(empty);
   assert.equal(await runCli(['doctor', empty], e.io), 1);
   assert.match(e.o.out, /^fail +/m);
+});
+
+test('runtime node: node >= 22 on PATH is required; bash, jq, sha256 and timeout are not needed', () => {
+  const p = project();
+  const ok = runChecks(p, probe());
+  assert.ok(find(ok, 'ok', 'node 24.13.0'));
+  assert.ok(find(ok, 'skip', 'not needed by the Node hooks'));
+  for (const gone of ['bash', 'jq', 'sha256', 'timeout']) assert.ok(!ok.some((c) => c.status !== 'skip' && c.text.startsWith(gone)), `${gone} is not checked`);
+  assert.ok(find(runChecks(p, probe({ nodeVersion: () => null })), 'fail', 'node: not found'));
+  assert.ok(find(runChecks(p, probe({ nodeVersion: () => '20.11.1' })), 'fail', 'Node ≥ 22'));
+  assert.deepEqual(bad(runChecks(p, probe({ bashMajor: () => null, has: () => false }))).filter((c) => !c.includes('node')), [], 'no bash or jq needed');
+});
+
+test('runtime bash: the old checks apply, with a deprecation warning, and the bash hooks are checked for wiring', () => {
+  const p = bashProject();
+  const cs = runChecks(p, probe());
+  assert.ok(find(cs, 'ok', 'bash 5'));
+  assert.ok(find(cs, 'warn', 'WF_HOOK_RUNTIME=bash'));
+  assert.ok(find(cs, 'ok', '.claude/settings.json: all 5 hooks wired'));
+  assert.ok(find(runChecks(p, probe({ bashMajor: () => 3 })), 'fail', 'brew install bash'));
+});
+
+test('node wiring: an exec-form hook that was removed or changed fails; a user node hook does not count as ours', () => {
+  const p = project();
+  const file = join(p, '.claude/settings.json');
+  const original = readFileSync(file, 'utf8');
+  const s = JSON.parse(original) as { hooks: Record<string, { hooks: { command: string; args?: string[] }[] }[]> };
+  s.hooks.Stop = [{ hooks: [{ command: 'node', args: ['tools/mine.js'] }] }];
+  writeFileSync(file, JSON.stringify(s));
+  assert.ok(find(runChecks(p, probe()), 'fail', 'Stop (turn-audit)'));
+  writeFileSync(file, original);
+  assert.ok(find(runChecks(p, probe()), 'ok', 'all 5 hooks wired'));
+});
+
+test('claude: the exec form needs Claude Code >= 2.1.139 under the Node runtime', () => {
+  const p = project();
+  assert.ok(find(runChecks(p, probe({ claudeVersion: () => '2.1.120' })), 'fail', '2.1.139'));
+  assert.ok(find(runChecks(p, probe({ claudeVersion: () => '2.1.139' })), 'ok', 'Claude Code 2.1.139'));
+  assert.ok(find(runChecks(p, probe({ claudeVersion: () => null })), 'skip', '2.1.139'));
+  assert.ok(!find(runChecks(bashProject(), probe({ claudeVersion: () => '2.1.120' })), 'fail', '2.1.139'), 'the bash form has no such minimum');
+});
+
+test('node kit files: an edited copy under .burhan/hooks/node warns; a missing entry file is incomplete', () => {
+  const p = project();
+  edit(join(p, '.burhan/hooks/node/gates.txt'), (t) => t + 'x\n');
+  assert.ok(find(runChecks(p, probe()), 'warn', '.burhan/hooks/node/gates.txt'));
+  const q = project();
+  rmSync(join(q, '.burhan/hooks/node/main.mjs'));
+  assert.ok(find(runChecks(q, probe()), 'fail', 'hooks/node/main.mjs'));
+});
+
+test('an agent installed under the Node runtime has no adapter directory and is still found from its hook file', () => {
+  const cs = runChecks(project(['claude', 'codex']), probe());
+  assert.ok(find(cs, 'ok', '.codex/hooks.json: all 5 hooks wired'));
+  assert.ok(!find(cs, 'skip', 'codex: not installed'));
 });

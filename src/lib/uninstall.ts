@@ -6,7 +6,7 @@ import { isManagedCommand } from './commands.js';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { isWritable, putFile, realTarget } from './fs-safe.js';
-import { burhanHookCommands, removeHooks, validHooksFile, type Settings } from './hooks-merge.js';
+import { burhanHookKeys, removeHooks, validHooksFile, type Settings } from './hooks-merge.js';
 import { AGENTS } from './install.js';
 
 const HOOKS_FILE: Record<Agent, string> = { claude: '.claude/settings.json', codex: '.codex/hooks.json' };
@@ -66,7 +66,7 @@ export function uninstall(o: { target: string; apply: boolean; all: boolean }, i
       let v: unknown;
       try { v = JSON.parse(readFileSync(abs(hf), 'utf8')); } catch { v = undefined; }
       if (!validHooksFile(v)) throw new BurhanError(`${hf}: expected a JSON object whose "hooks" (if present) maps event names to arrays of hook groups — fix it, then re-run`);
-      const commands = burhanHookCommands(target, a);
+      const commands = burhanHookKeys(target, a);
       const next = removeHooks(v, commands);
       if (JSON.stringify(next) !== JSON.stringify(v)) {
         if (next === null) rm(hf, `remove ${hf} (it held only burhan's hooks)`);

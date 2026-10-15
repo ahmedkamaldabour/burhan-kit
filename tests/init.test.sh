@@ -7,6 +7,8 @@ CLI="$T_ROOT/dist/cli.js"
 repo() { local d; d="$(t_tmp)"; git -C "$d" init -q; printf '%s' "$d"; }
 inst() { node "$CLI" init "$@" 2>&1; echo "rc=$?"; }
 upg()  { node "$CLI" upgrade "$@" 2>&1; echo "rc=$?"; }
+# hook entries as one line each: the command, and for the exec form its args after it
+hooks_of() { jq -r '.. | objects | select(has("command")) | ([.command] + (.args // [])) | join(" ")' "$1" 2>/dev/null; }
 tree() { (cd "$1" && find . -path ./.git -prune -o -type f -print | sort | while IFS= read -r f; do printf '%s  %s\n' "$(t_sha < "$f")" "$f"; done); }
 
 echo "init — arguments"
@@ -30,10 +32,11 @@ echo '{"permissions":{"allow":["Bash(ls)"]},"hooks":{"Stop":[{"hooks":[{"type":"
 printf '# My project\n\nKeep this line.\n' > "$R/CLAUDE.md"
 out="$(inst "$R" --agents claude --apply)"
 check "apply -> rc 0" "$out" has "rc=0"
-for f in WORKFLOW.md SETUP.md VERSION workflow.config phases/review.md phases/lifecycle.md hooks/core/turn-audit.sh hooks/adapters/claude/hook.sh templates/story.md commands/e2e.md; do
+for f in WORKFLOW.md SETUP.md VERSION workflow.config phases/review.md phases/lifecycle.md hooks/node/main.mjs hooks/node/core/turn-audit.mjs hooks/node/adapters/claude/hook.mjs hooks/node/gates.txt templates/story.md commands/e2e.md; do
   check ".burhan/$f installed" "$( [ -f "$R/.burhan/$f" ] && echo yes)" has yes
 done
-check "codex adapter NOT installed for claude-only" "$( [ -e "$R/.burhan/hooks/adapters/codex" ] && echo yes)" lacks yes
+check "the bash hooks are not part of the default install" "$( [ -e "$R/.burhan/hooks/core" ] || [ -e "$R/.burhan/hooks/adapters" ] && echo yes)" lacks yes
+check ".codex/hooks.json NOT created for claude-only" "$( [ -e "$R/.codex" ] && echo yes)" lacks yes
 check_eq ".burhan/SETUP.md is the kit's copy (kit-owned)" "$(t_sha < "$R/.burhan/SETUP.md")" "$(t_sha < "$T_KIT/SETUP.md")"
 echo "edited" > "$R/.burhan/SETUP.md"; upg "$R" --apply >/dev/null
 check_eq "upgrade refreshes .burhan/SETUP.md" "$(t_sha < "$R/.burhan/SETUP.md")" "$(t_sha < "$T_KIT/SETUP.md")"
@@ -43,7 +46,7 @@ check_eq "VERSION recorded" "$(cat "$R/.burhan/VERSION")" "$(jq -r .version "$T_
 S="$R/.claude/settings.json"
 check_eq "existing permission kept" "$(jq -c .permissions "$S")" '{"allow":["Bash(ls)"]}'
 check "existing Stop hook kept" "$(jq -r '.. | .command? // empty' "$S")" has "echo mine"
-check "turn-audit wired" "$(jq -r '.. | .command? // empty' "$S")" has "hook.sh\" turn-audit"
+check "turn-audit wired (exec form: node + args)" "$(hooks_of "$S")" has 'node ${CLAUDE_PROJECT_DIR}/.burhan/hooks/node/main.mjs claude hook turn-audit'
 check "no absolute home paths" "$(cat "$S")" lacks "$HOME/"
 check "Claude commands installed" "$( [ -f "$R/.claude/commands/burhan/e2e.md" ] && [ -f "$R/.claude/commands/burhan/qc.md" ] && echo yes)" has yes
 check "bootstrap block added" "$(cat "$R/CLAUDE.md")" has "<!-- burhan:start"
@@ -56,7 +59,7 @@ inst "$R" --agents claude --apply >/dev/null   # a config change legitimately re
 snap="$(tree "$R")"
 inst "$R" --agents claude --apply >/dev/null
 check_eq "re-run -> byte-identical tree" "$(tree "$R")" "$snap"
-check_eq "no duplicate hook entries" "$(jq '[.. | .command? // empty | select(test("turn-audit"))] | length' "$S")" "1"
+check_eq "no duplicate hook entries" "$(hooks_of "$S" | grep -c 'hook turn-audit')" "1"
 check "user config not overwritten" "$(cat "$R/.burhan/workflow.config")" has "my own check"
 
 echo "init — bootstrap block refresh keeps outside content"
@@ -82,7 +85,7 @@ check "--no-bootstrap -> no CLAUDE.md created" "$( [ -e "$R3/CLAUDE.md" ] && ech
 R4="$(repo)"
 inst "$R4" --agents claude --apply >/dev/null
 check "absent CLAUDE.md -> created with block" "$(cat "$R4/CLAUDE.md" 2>/dev/null)" has "burhan:end"
-check "absent settings.json -> created" "$(jq -r '.. | .command? // empty' "$R4/.claude/settings.json" 2>/dev/null)" has "session-gates"
+check "absent settings.json -> created" "$(hooks_of "$R4/.claude/settings.json")" has "session-gates"
 
 echo "init — user-edited command is not clobbered"
 R5="$(repo)"; mkdir -p "$R5/.claude/commands/burhan"; echo "my own feat-e2e" > "$R5/.claude/commands/burhan/e2e.md"
@@ -141,7 +144,7 @@ echo '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"bash \"${CLAUDE_P
 cp "$R/.claude/settings.json" "$R/.burhan/hooks/adapters/claude/settings.snippet.json"
 inst "$R" --agents claude --apply >/dev/null
 check "previous exact owned command removed" "$(cat "$R/.claude/settings.json")" lacks "--previous"
-check_eq "exactly one turn-audit entry" "$(jq '[.. | .command? // empty | select(test("turn-audit"))] | length' "$R/.claude/settings.json")" "1"
+check_eq "exactly one turn-audit entry" "$(hooks_of "$R/.claude/settings.json" | grep -c 'turn-audit')" "1"
 printf 'WF_CHECK_TIMEOUT=200\n' >> "$R/.burhan/workflow.config"
 inst "$R" --agents claude --apply >/dev/null
 check_eq "pre-commit hook timeout follows WF_CHECK_TIMEOUT + 10" "$(jq '.hooks.PreToolUse[0].hooks[0].timeout' "$R/.claude/settings.json")" "210"
@@ -156,8 +159,9 @@ echo "init — codex"
 R="$(repo)"; printf '# agents\nmine\n' > "$R/AGENTS.md"
 out="$(inst "$R" --agents claude,codex --apply)"
 check "claude,codex -> rc 0" "$out" has "rc=0"
-check "codex adapter installed" "$( [ -f "$R/.burhan/hooks/adapters/codex/hook.sh" ] && echo yes)" has yes
-check "codex hooks wired" "$(jq -r '.. | .command? // empty' "$R/.codex/hooks.json")" has 'exec bash "$f" turn-audit'
+check "codex adapter installed (inside the Node hooks)" "$( [ -f "$R/.burhan/hooks/node/adapters/codex/hook.mjs" ] && echo yes)" has yes
+check "codex hooks wired (the node -e launcher)" "$(hooks_of "$R/.codex/hooks.json")" has 'codex hook turn-audit'
+check "codex launcher is one string in the shell-safe subset" "$(hooks_of "$R/.codex/hooks.json" | grep -c '[$%^&|<>!`]')" has 0
 check "AGENTS.md block tells Codex to read WORKFLOW.md" "$(cat "$R/AGENTS.md")" has "Read \`.burhan/WORKFLOW.md\`"
 check "AGENTS.md own content kept" "$(cat "$R/AGENTS.md")" has "mine"
 check "codex trust note printed" "$out" has "trust"
@@ -225,9 +229,9 @@ check_eq "CLAUDE.md is a directory -> nothing written" "$( [ -e "$R/.burhan" ] &
 R="$(repo)"; out="$(inst "$R" --agents claude,claude)"
 check_eq "--agents claude,claude -> claude once" "$(printf '%s\n' "$out" | grep -c 'hooks → claude')" "1"
 R="$(repo)"; inst "$R" --agents claude,codex --apply >/dev/null
-echo "# stale" >> "$R/.burhan/hooks/adapters/claude/hook.sh"
+echo "// stale" >> "$R/.burhan/hooks/node/adapters/claude/hook.mjs"
 upg "$R" --agents codex --apply >/dev/null
-check_eq "upgrade --agents codex also refreshes the installed claude adapter" "$(t_sha < "$R/.burhan/hooks/adapters/claude/hook.sh")" "$(t_sha < "$T_KIT/hooks/adapters/claude/hook.sh")"
+check_eq "upgrade --agents codex also refreshes the Node hooks of the installed claude adapter" "$(t_sha < "$R/.burhan/hooks/node/adapters/claude/hook.mjs")" "$(t_sha < "$T_ROOT/dist/hooks/adapters/claude/hook.mjs")"
 R="$(repo)"; inst "$R" --agents claude --apply >/dev/null; chmod 444 "$R/.burhan/bindings.md"
 check "read-only bindings.md (never written once present) does not block upgrade" "$(upg "$R" --apply)" has "rc=0"
 echo "reviewer subagent and verify skill"
@@ -295,4 +299,19 @@ check "an emptied key removes our managed role agent" "$( [ -e "$R/.claude/agent
 check "...and leaves the others" "$( [ -e "$R/.claude/agents/burhan-planner.md" ] && echo kept)" has kept
 echo "mine" > "$R/.claude/agents/burhan-explorer.md"; t_sedi 's/^WF_MODEL_CLAUDE_EXPLORER=haiku$/WF_MODEL_CLAUDE_EXPLORER=""/' "$R/.burhan/workflow.config"; upg "$R" --apply >/dev/null
 check_eq "a user's own file with a role name is never removed" "$(cat "$R/.claude/agents/burhan-explorer.md")" "mine"
+echo "init — the bash runtime (WF_HOOK_RUNTIME=bash, the rollback) and the move between runtimes"
+R="$(repo)"; mkdir -p "$R/.burhan"; printf 'WF_HOOK_RUNTIME=bash\n' > "$R/.burhan/workflow.config"
+check "bash runtime init -> rc 0" "$(inst "$R" --agents claude,codex --apply)" has "rc=0"
+check "bash runtime installs hooks/core and the adapters" "$( [ -f "$R/.burhan/hooks/core/turn-audit.sh" ] && [ -f "$R/.burhan/hooks/adapters/codex/hook.sh" ] && echo yes)" has yes
+check "bash runtime has no Node hooks" "$( [ -e "$R/.burhan/hooks/node" ] && echo yes)" lacks yes
+check "bash runtime: Claude commands are bash" "$(hooks_of "$R/.claude/settings.json")" has 'hook.sh" turn-audit'
+t_sedi 's/^WF_HOOK_RUNTIME=bash$/WF_HOOK_RUNTIME=node/' "$R/.burhan/workflow.config"
+out="$(upg "$R" --apply)"
+check "bash -> node upgrade -> rc 0" "$out" has "rc=0"
+check "bash -> node: the bash hooks are removed" "$( [ -e "$R/.burhan/hooks/core" ] || [ -e "$R/.burhan/hooks/adapters" ] && echo yes)" lacks yes
+check "bash -> node: the Node hooks are installed" "$( [ -f "$R/.burhan/hooks/node/main.mjs" ] && echo yes)" has yes
+check "bash -> node: no old hook entries left" "$(hooks_of "$R/.claude/settings.json" "$R/.codex/hooks.json")" lacks "hook.sh"
+check "bash -> node: says Codex must be trusted again" "$out" has "Modified since last trusted"
+snap="$(tree "$R")"; upg "$R" --apply >/dev/null
+check_eq "node upgrade is idempotent" "$(tree "$R")" "$snap"
 t_summary

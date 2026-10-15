@@ -6,7 +6,7 @@ import { BurhanError } from '../errors.js';
 import { parseConfig, TEAM_CONFIG } from '../config.js';
 import { cfgPath } from '../../hooks/core/config.mjs';
 import { putFile, realTarget } from '../fs-safe.js';
-import { kitDir } from '../kit.js';
+import { kitDir, nodeHooksDir } from '../kit.js';
 import { readExistingHooks, type ExistingHook } from '../hooks-merge.js';
 import { PRIVATE_DISCOVERY, PRIVATE_DOCS, SHARED_DISCOVERY, SHARED_DOCS, type SetupAnswers } from './answers.js';
 import { assertWritable, setConfigKeys } from './config-write.js';
@@ -56,6 +56,7 @@ function committedSetupFiles(target: string, planned?: readonly PlannedFile[]): 
     if (file.action === 'remove' || privateFile(file.rel)) return [];
     if (!file.rel.endsWith('/')) return [file.rel];
     const kitRel = file.rel.replace(/^\.burhan\//, '').replace(/\/$/, '');
+    if (kitRel === 'hooks/node') return filesBelow(nodeHooksDir(), '').map((rel) => `.burhan/hooks/node${rel}`);
     return file.rel.startsWith('.burhan/')
       ? filesBelow(kitDir(), kitRel).map((rel) => `.burhan/${rel}`)
       : filesBelow(target, file.rel);

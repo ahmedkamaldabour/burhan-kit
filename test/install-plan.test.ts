@@ -33,7 +33,8 @@ test('planInstall lists the files it would write and writes nothing', () => {
   const f = (rel: string) => p.files.find((x) => x.rel === rel);
   assert.deepEqual(f('CLAUDE.md'), { rel: 'CLAUDE.md', existed: false, action: 'create', kind: 'bootstrap' });
   assert.deepEqual(f('.claude/settings.json'), { rel: '.claude/settings.json', existed: false, action: 'create', kind: 'hooks' });
-  assert.equal(f('.burhan/hooks/core/')?.kind, 'kit');
+  assert.equal(f('.burhan/hooks/node/')?.kind, 'kit');
+  assert.equal(f('.burhan/hooks/core/'), undefined, 'the bash hooks are not part of the default install');
   assert.equal(f('.burhan/bindings.md')?.kind, 'config');
   assert.equal(f('.burhan/.gitignore')?.kind, 'gitignore');
   assert.ok(p.agents.includes('claude'));
