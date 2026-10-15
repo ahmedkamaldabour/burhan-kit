@@ -98,10 +98,10 @@ test('CLI edge cases: --last 0, a subdirectory, an empty env var, the config val
     assert.equal(await runCli(['evidence'], b.io), 0);
     assert.match(b.o.out, /verify-it a/, 'run from a subdirectory finds the project root');
   } finally { delete process.env.WF_EVIDENCE_DIR; }
-  assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: '', XDG_STATE_HOME: '/x' }), '/x/burhan/evidence', 'empty means unset, like ${VAR:-…} in bash');
+  assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: '', XDG_STATE_HOME: '/x' }), join('/x', 'burhan', 'evidence'), 'empty means unset, like ${VAR:-…} in bash');
   assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: '/env' }, '/conf'), '/conf', 'the config wins, as when bash sources it after the environment');
-  assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: 'relative', XDG_STATE_HOME: '/x' }), '/x/burhan/evidence', 'a relative value is ignored, like the hook');
-  assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: '/env', XDG_STATE_HOME: '/x' }, ''), '/x/burhan/evidence',
+  assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: 'relative', XDG_STATE_HOME: '/x' }), join('/x', 'burhan', 'evidence'), 'a relative value is ignored, like the hook');
+  assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: '/env', XDG_STATE_HOME: '/x' }, ''), join('/x', 'burhan', 'evidence'),
     'a config line WF_EVIDENCE_DIR="" overrides the environment with "unset", as when bash sources it');
   assert.ok(new RegExp(ereToJs('\\<node\\>')).test('run node now') && !new RegExp(ereToJs('\\<node\\>')).test('nodejs'), 'GNU word boundaries');
   assert.ok(new RegExp(ereToJs('^a{,2}$')).test('aa'), '{,n} means {0,n} in ERE');

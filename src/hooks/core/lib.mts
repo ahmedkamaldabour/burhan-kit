@@ -44,15 +44,27 @@ export function parseEvent(stdin: string): HookEvent | null {
   };
 }
 
+/** Windows (W3): backslashes are separators and the drive letter's case does not matter, so a payload path and the
+ *  project path compare as plain `/` strings. */
+function windowsForm(p: string, project: string): [string, string] {
+  p = p.replace(/\\/g, '/'); project = project.replace(/\\/g, '/');
+  const drive = /^[A-Za-z]:/;
+  if (drive.test(p) && drive.test(project) && p[0].toLowerCase() === project[0].toLowerCase()) p = project[0] + p.slice(1);
+  return [p, project];
+}
+
+/** The ledger's file name: `file` without the project prefix, otherwise as sent (no normalisation, like the Bash
+ *  ledger). On Windows both are first put in `/` form (W3), so an edit inside the project is recorded relative to it. */
+export function stripProject(file: string, project: string, win = process.platform === 'win32'): string {
+  if (win) [file, project] = windowsForm(file, project);
+  return file.startsWith(project + '/') ? file.slice(project.length + 1) : file;
+}
+
 /** wf_rel_stream: a project-relative, lexically normalised path. "." and empty segments go, ".." pops a real
  *  directory, a leading ".." stays (outside never looks inside). On Windows (W3) backslashes are separators
  *  and the drive letter's case does not matter. */
 export function relPath(p: string, project: string, win = process.platform === 'win32'): string {
-  if (win) {
-    p = p.replace(/\\/g, '/'); project = project.replace(/\\/g, '/');
-    const drive = /^[A-Za-z]:/;
-    if (drive.test(p) && drive.test(project) && p[0].toLowerCase() === project[0].toLowerCase()) p = project[0] + p.slice(1);
-  }
+  if (win) [p, project] = windowsForm(p, project);
   if (project !== '' && p.startsWith(project + '/')) p = p.slice(project.length + 1);
   const abs = p.startsWith('/');
   const st: string[] = [];

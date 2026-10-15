@@ -4,7 +4,7 @@ import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpDir } from '../helpers.js';
-import { parseEvent, relPath, stateNow, itemNow, itemBlock, itemField, itemRoute, itemSlugs, itemResolved } from '../../src/hooks/core/lib.mjs';
+import { parseEvent, relPath, stripProject, stateNow, itemNow, itemBlock, itemField, itemRoute, itemSlugs, itemResolved } from '../../src/hooks/core/lib.mjs';
 import { linkedItem } from '../../src/hooks/core/store.mjs';
 
 // The Node side of tests/core/lib.test.sh (bash-internal), plus what the port adds (Windows paths).
@@ -123,4 +123,17 @@ test('linkedItem reads only a safe session link from the external evidence store
     writeFileSync(join(root, key, 'S1', 'item'), bad + '\n');
     assert.equal(linkedItem(p, 'S1', slugs, cfg), '', `unsafe stored link: ${bad}`);
   }
+});
+
+test('stripProject: the ledger\'s project-relative file name, with Windows paths (W3) and without normalisation elsewhere', () => {
+  // Unix: a plain prefix strip, nothing else (the Bash ledger does exactly this).
+  assert.equal(stripProject('/p/proj/a/b.txt', '/p/proj', false), 'a/b.txt');
+  assert.equal(stripProject('/p/proj/./a/../b.txt', '/p/proj', false), './a/../b.txt', 'no normalisation: the ledger records what the agent sent');
+  assert.equal(stripProject('/other/x', '/p/proj', false), '/other/x');
+  assert.equal(stripProject('/p/proj', '/p/proj', false), '/p/proj');
+  // Windows: backslashes are separators and the drive letter's case does not matter.
+  assert.equal(stripProject('C:\\proj\\src\\a.ts', 'C:\\proj', true), 'src/a.ts');
+  assert.equal(stripProject('c:\\proj\\a.ts', 'C:\\proj', true), 'a.ts');
+  assert.equal(stripProject('C:/proj/a.ts', 'C:\\proj', true), 'a.ts');
+  assert.equal(stripProject('D:\\other\\a.ts', 'C:\\proj', true), 'D:/other/a.ts', 'outside the project: separators normalised, never stripped');
 });

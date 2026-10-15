@@ -2,7 +2,7 @@
 import { chmodSync, existsSync, mkdirSync, readdirSync, realpathSync, rmdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { itemResolved, itemSlugs, stateNow, type Ctx } from './lib.mjs';
+import { itemResolved, itemSlugs, stateNow, stripProject, type Ctx } from './lib.mjs';
 import { atomicPrivateWrite, evidenceRoot, linkedItem, projectKey, safeId } from './store.mjs';
 
 const OFF = new Set(['off', 'no', 'false', '0']);
@@ -116,7 +116,7 @@ export function evidenceRecord(ctx: Ctx): void {
       const line: Record<string, unknown> = { ts, agent: ctx.ev.get('.agent'), session, turn, part, seq: step.seq, kind };
       if (kind === 'edit') {
         const file = string(step.file);
-        line.file = file.startsWith(ctx.project + '/') ? file.slice(ctx.project.length + 1) : file;
+        line.file = stripProject(file, ctx.project);
       } else {
         line.cmd = step.cmd;
         line.exit = step.exit;
