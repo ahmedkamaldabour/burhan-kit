@@ -31,10 +31,15 @@ test('the Windows job covers no-bash on Node 22 and 24 and Git Bash on Node 24',
 
 test('the no-bash variant removes bash and jq from PATH and arms the tripwire', () => {
   const w = job('windows');
-  assert.match(w, /BURHAN_EXPECT_NO_BASH/);
-  assert.match(w, /GITHUB_ENV/);
-  assert.match(w, /bash\.exe/);
-  assert.match(w, /jq\.exe/);
+  assert.match(w, /BURHAN_EXPECT_NO_BASH: \$\{\{ matrix\.variant == 'no-bash' && '1' \|\| '' \}\}/);
+  assert.match(w, /if: matrix\.variant == 'no-bash'\n\s+shell: pwsh/);
+  assert.match(w, /Test-Path -LiteralPath \(Join-Path \$d 'bash\.exe'\)/);
+  assert.match(w, /Test-Path -LiteralPath \(Join-Path \$d 'jq\.exe'\)/);
+  assert.match(w, /Out-File -FilePath \$env:GITHUB_ENV/);
+});
+
+test('the git-bash variant arms the mirrored tripwire', () => {
+  assert.match(job('windows'), /BURHAN_EXPECT_BASH: \$\{\{ matrix\.variant == 'git-bash' && '1' \|\| '' \}\}/);
 });
 
 test('the Windows job never runs a shell script or the bash suites', () => {

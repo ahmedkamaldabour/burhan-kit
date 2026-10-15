@@ -54,7 +54,8 @@ function windowsForm(p: string, project: string): [string, string] {
 }
 
 /** The ledger's file name: `file` without the project prefix, otherwise as sent (no normalisation, like the Bash
- *  ledger). On Windows both are first put in `/` form (W3), so an edit inside the project is recorded relative to it. */
+ *  ledger). On Windows both are first put in `/` form (W3) — so an edit inside the project is recorded relative to it,
+ *  and a path outside it comes back with `/` separators. */
 export function stripProject(file: string, project: string, win = process.platform === 'win32'): string {
   if (win) [file, project] = windowsForm(file, project);
   return file.startsWith(project + '/') ? file.slice(project.length + 1) : file;

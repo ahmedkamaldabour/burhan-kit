@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { test } from 'node:test';
-import { jsonText, slashes, tmpDir } from '../helpers.js';
+import { jsonText, posixOnly, slashes, tmpDir } from '../helpers.js';
 import { parseEvent } from '../../src/hooks/core/lib.mjs';
 import { linkItem, projectKey } from '../../src/hooks/core/store.mjs';
 import { evidencePrune, phaseNow } from '../../src/hooks/core/ledger.mjs';
@@ -37,7 +37,7 @@ test('evidenceRecord (called directly) matches the Bash + jq golden ledger', () 
   }
 });
 
-test('evidenceRecord writes private directories and files', { skip: process.platform === 'win32' }, () => {
+test('evidenceRecord writes private directories and files', { skip: posixOnly }, () => {
   const dir = project('## Now\n### alpha\n- **Sub-unit:** build\n');
   const root = tmpDir('burhan-ledger-modes-');
   record(dir, root, fixture.cases[0].events[0]);
@@ -57,7 +57,7 @@ test('evidenceRecord is off for all disabled ledger values', () => {
   }
 });
 
-test('evidenceRecord fails open when the root cannot be written', { skip: process.platform === 'win32' }, () => {
+test('evidenceRecord fails open when the root cannot be written', { skip: posixOnly }, () => {
   const dir = project('## Now\n### alpha\n');
   const root = tmpDir('burhan-ledger-readonly-');
   chmodSync(root, 0o555);

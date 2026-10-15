@@ -33,5 +33,8 @@ export const maskPath = (text: string, path: string, token: string): string =>
 /** A relative path with `/` separators, whatever the OS (the key of a file in a golden tree). */
 export const slashes = (path: string): string => path.split(sep).join('/');
 
+/** `skip` option for a test that cannot run on Windows: the reason is printed in the test log, so a skip is never anonymous. */
+export const notOnWindows = (reason: string): string | false => (process.platform === 'win32' ? reason : false);
+
 /** `skip` option for tests whose subject is a POSIX permission bit (chmod, mode): Windows has no such bits, so the test says nothing there. */
 export const posixOnly: string | false = process.platform === 'win32' ? 'POSIX permission bits do not exist on Windows' : false;

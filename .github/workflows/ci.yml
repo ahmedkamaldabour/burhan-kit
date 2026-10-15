@@ -57,7 +57,8 @@ jobs:
   # The Node hooks need neither bash nor jq, so Windows is tested twice: "no-bash" removes bash and jq from
   # PATH (the 0.3 claim, at both ends of `engines`), and a tripwire test fails the job if either is still
   # reachable; "git-bash" keeps Git for Windows, which is what Claude Code uses there and what the pre-commit
-  # check prefers. Only the Node suite runs here; the bash suites and `npm run lint` stay on Linux and macOS.
+  # check prefers (a mirrored tripwire fails that job if Git Bash is gone; it does not run the bash hooks, whose own
+  # Windows story is out of scope). Only the Node suite runs here; the bash suites and `npm run lint` stay on Linux and macOS.
   windows:
     name: windows (${{ matrix.variant }}, node ${{ matrix.node }})
     runs-on: windows-latest
@@ -70,6 +71,7 @@ jobs:
           - { variant: git-bash, node: 24 }
     env:
       BURHAN_EXPECT_NO_BASH: ${{ matrix.variant == 'no-bash' && '1' || '' }}
+      BURHAN_EXPECT_BASH: ${{ matrix.variant == 'git-bash' && '1' || '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
