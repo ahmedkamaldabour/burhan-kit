@@ -72,7 +72,7 @@ test('WF_CHECK_TIMEOUT=0 means no limit (GNU timeout 0)', async () => {
 test('a huge WF_CHECK_TIMEOUT does not overflow the timer (no 1 ms timeout, no warning)', async () => {
   assert.equal((await runCheck('exit 0', dir(), 9999999999, process.env)).kind, 'pass');
 });
-test('$0 inside the check is the bare shell name, as with `bash -c`', { skip: posix ? false : 'the check uses bash variable syntax (cmd.exe has none)' }, async () => {
+test('$0 inside the check is the bare shell name, as with `bash -c`', { skip: notOnWindows('Git Bash (MSYS) reports $0 as its full path /usr/bin/bash, and cmd.exe has no $0') }, async () => {
   assert.match((await runCheck('echo "zero=[$0]"; exit 1', dir(), 10, process.env)).output, /zero=\[(bash|sh)\]/);
 });
 test('timeout: the whole process group is stopped — a grandchild does not survive', { skip: notOnWindows('POSIX process groups and `$!`; the tree-kill test below covers Windows') }, async () => {
