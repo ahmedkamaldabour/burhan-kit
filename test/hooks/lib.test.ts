@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpDir } from '../helpers.js';
@@ -99,11 +99,15 @@ test('itemResolved: an unlinked multi-item session has no active item', () => {
 test('linkedItem reads only a safe session link from the external evidence store', () => {
   const p = project('## Now\n### alpha\n');
   const root = tmpDir('burhan-links-');
-  const key = createHash('sha256').update(p).digest('hex').slice(0, 16);
+  // The key is the hash of the PHYSICAL project path, like `pwd -P` in the Bash hooks (macOS tmp dirs live under a /var symlink).
+  const key = createHash('sha256').update(realpathSync(p)).digest('hex').slice(0, 16);
   mkdirSync(join(root, key, 'S1'), { recursive: true });
   writeFileSync(join(root, key, 'S1', 'item'), 'alpha\nignored\n');
   const cfg = { WF_EVIDENCE_DIR: root };
   assert.equal(linkedItem(p, 'S1', cfg), 'alpha');
+  const viaLink = join(tmpDir('burhan-links-via-'), 'project-link');
+  symlinkSync(p, viaLink);
+  assert.equal(linkedItem(viaLink, 'S1', cfg), 'alpha', 'a symlinked project path resolves to the same key');
   assert.equal(linkedItem(p, '../S1', cfg), '');
   assert.equal(linkedItem(p, 'missing', cfg), '');
   // Bash rejects a stored value that is not a safe id (wf_safe_id); Node must too.
