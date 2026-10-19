@@ -1,3 +1,4 @@
+import type { Agent } from '../bootstrap.js';
 import type { PlannedFile } from '../install.js';
 import { lstatSync, realpathSync } from 'node:fs';
 import { join, sep } from 'node:path';
@@ -48,13 +49,16 @@ function outsideSettings(target: string): { rel: string; real: string }[] {
   return out;
 }
 
-/** The one setup explanation for Superpowers, shared verbatim by summaries and agent instructions. */
-export function superpowersLine(p: SetupPlan, lang: 'en' | 'ar'): string {
-  return messages(lang).superpowers(p.superpowersAvailable, p.superpowersDisabled);
+/**
+ * The one setup explanation for Superpowers, shared verbatim by summaries and agent instructions. `agents` defaults to
+ * the plan's; `setup --agent` passes both, because it runs before the agents are answered.
+ */
+export function superpowersLine(p: SetupPlan, lang: 'en' | 'ar', agents: readonly Agent[] = p.answers.agents): string {
+  return messages(lang).superpowers(p.superpowersAvailable, p.superpowersDisabled, agents);
 }
 
 /** AC-06 / AC-03a / AC-05 / AC-18: what will change, the editable defaults, how to change or undo. Prints no setting names. */
-export function renderSummary(p: SetupPlan, lang: 'en' | 'ar'): string {
+export function renderSummary(p: SetupPlan, lang: 'en' | 'ar', superpowersAgents: readonly Agent[] = p.answers.agents): string {
   const m = messages(lang);
   const files = collapse(p.files);
   const out: string[] = [m.title(p.install.target), ''];
@@ -77,7 +81,7 @@ export function renderSummary(p: SetupPlan, lang: 'en' | 'ar'): string {
     `  ${m.models}`,
     `  ${m.branches}`,
     `  ${m.check(cfg.WF_STACK_SETUP === 'pending', cfg.WF_CHECK_CMD || 'none')}`);
-  out.push(`  ${superpowersLine(p, lang)}`);
+  out.push(`  ${superpowersLine(p, lang, superpowersAgents)}`);
   if (p.existingHooks.length) out.push('', ...m.existingHooks(p.existingHooks));
   const ignored = ignoredCommittedSetupFiles(p.install.target, p.files);
   if (ignored.length) out.push('', ...m.ignoredCommittedFiles(ignored));

@@ -167,14 +167,14 @@ test('R-6: superpowers is detected read-only from the home plugins folder', () =
 
 const SUPERPOWERS_LINES = {
   en: {
-    found: "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Recommended; turn off with WF_SKILLS='none'.",
+    found: "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Strongly recommended; turn off with WF_SKILLS='none'.",
     disabled: "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'.",
-    absent: 'Superpowers is optional (Claude Code): /plugin install superpowers@claude-plugins-official',
+    absent: 'Superpowers is strongly recommended, and optional: burhan never installs it · Claude Code: /plugin install superpowers@claude-plugins-official',
   },
   ar: {
-    found: "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". مقترح؛ وتقدر تقفله بـ WF_SKILLS='none'.",
+    found: "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". موصى به بقوة؛ وتقدر تقفله بـ WF_SKILLS='none'.",
     disabled: "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'.",
-    absent: 'Superpowers اختياري في Claude Code: /plugin install superpowers@claude-plugins-official',
+    absent: 'Superpowers موصى به بقوة، وهو اختياري: burhan مش بيسطّبه خالص · Claude Code: /plugin install superpowers@claude-plugins-official',
   },
 } as const;
 

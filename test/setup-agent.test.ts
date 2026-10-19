@@ -61,8 +61,8 @@ for (const lang of ['en', 'ar'] as const) for (const present of [false, true]) f
     assert.equal(runAnswers(target, answersFile({ agents: 'claude', mode: 'step', docs: 'private', lang }), false, result.io, lang, suppliedHome), 0);
     const expected = present
       ? lang === 'en'
-        ? "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Recommended; turn off with WF_SKILLS='none'."
-        : "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". مقترح؛ وتقدر تقفله بـ WF_SKILLS='none'."
+        ? "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Strongly recommended; turn off with WF_SKILLS='none'."
+        : "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". موصى به بقوة؛ وتقدر تقفله بـ WF_SKILLS='none'."
       : '/plugin install superpowers@claude-plugins-official';
     for (const output of [protocol, result.o.out]) {
       assert.equal(output.split(expected).length - 1, 1);

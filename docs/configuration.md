@@ -197,10 +197,14 @@ no skill is referenced.
 
 Setup checks plugin availability read-only, independently of the saved skills preference. If it finds an enabled plugin,
 it says: "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building,
-verification before "done". Recommended; turn off with `WF_SKILLS='none'`." If it finds one but the project explicitly
-has `WF_SKILLS='none'`, it says: "Superpowers found, but turned off for this project (`WF_SKILLS='none'`). To use it,
-set `WF_SKILLS='superpowers'`." If absent, it suggests exactly one optional Claude Code command:
-`/plugin install superpowers@claude-plugins-official`. It never installs plugins, writes plugin files or overrides an
+verification before "done". Strongly recommended; turn off with `WF_SKILLS='none'`." If it finds one but the project
+explicitly has `WF_SKILLS='none'`, it says: "Superpowers found, but turned off for this project (`WF_SKILLS='none'`). To
+use it, set `WF_SKILLS='superpowers'`." If absent, it says Superpowers is strongly recommended, and optional (burhan
+never installs it), and, when Claude Code is selected, gives one command: `/plugin install superpowers@claude-plugins-official`.
+Detection looks only under `~/.claude/plugins` (Claude Code); setup never reads `~/.codex`. So, unless Superpowers is
+turned off, whenever Codex is selected, and always in `setup --agent` (it runs before the agents are answered),
+the line adds the official Codex route, worded conditionally:
+"if it is not installed yet: in Codex CLI run `/plugins`, search `superpowers`, choose Install Plugin". It never installs plugins, writes plugin files or overrides an
 explicit `WF_SKILLS` value.
 
 ## Team use

@@ -16,7 +16,9 @@ export function agentInstructions(target: string, lang: Lang, home: string): str
     recommended: recommendedAnswers,
     questions,
   };
-  const details = plan.existingHooks.length ? renderSummary(plan, lang) : superpowersLine(plan, lang);
+  // The agents are not answered yet, so the Superpowers line carries both routes (install-flow F-1).
+  const both = ['claude', 'codex'] as const;
+  const details = plan.existingHooks.length ? renderSummary(plan, lang, both) : superpowersLine(plan, lang, both);
   return `${m.agent.rules.join('\n')}${details ? `\n\n${details}` : ''}\n\n\`\`\`json\n${JSON.stringify(body, null, 2)}\n\`\`\`\n`;
 }
 
@@ -74,5 +76,6 @@ export function runAnswers(target: string, file: string, apply: boolean, io: Io,
   if (!apply) return 0;
   applySetup(plan, fs);
   io.stdout(`\n${m.wizard.done}\n${m.changeUndo}\n${m.wizard.askAgent}\n`);
+  io.stdout(`\n${m.onboardStep(a.agents).join('\n')}\n`);
   return 0;
 }

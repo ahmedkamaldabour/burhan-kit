@@ -140,7 +140,11 @@ for f in README.md README.ar.md; do
   check "$f links the Codex trust steps" "$(cat "$T_ROOT/$f")" has "docs/configuration.md#codex-trust-the-hooks"
 done
 check "SETUP: local/ git-ignored" "$setup" has ".burhan/local/"
-check "SETUP: baseline offered, never automatic" "$setup" has "never start it on your own"
+check "SETUP: the understanding is never started automatically" "$setup" has "never start it on your own"
+step8="$(sed -n '/^## 8\. Close/,$p' SETUP.md)"
+check "SETUP step 8: relay setup's Step 3 block" "$step8" has 'relay the "Step 3" block'
+check "SETUP step 8: the understanding runs in a NEW agent session" "$step8" has 'NEW agent session'
+check "SETUP step 8: no baseline offer in this session" "$step8" lacks 'offer a read-only baseline'
 check "SETUP: upgrade instead of init when installed" "$setup" has "upgrade"
 check "SETUP constraint: no commit without a / b / c" "$setup" has "Never commit without asking (a) / (b) / (c)"
 check "SETUP constraint: no global config edits" "$setup" has "Never edit global"

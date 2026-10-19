@@ -67,13 +67,16 @@ export interface Messages {
   reviewer(value: 'other' | 'same' | 'claude' | 'codex'): string;
   docsPrivate: string; docsShared: string; docsCustom: string;
   models: string;
-  superpowers(available: boolean, disabled: boolean): string;
+  /** One line. Detection is Claude Code only, so the Codex route is printed, worded conditionally, whenever Codex is selected. */
+  superpowers(available: boolean, disabled: boolean, agents: readonly Agent[]): string;
   branches: string;
   check(pending: boolean, cmd: string): string;
   changeUndo: string;
   nothingCommitted: string;
   codexTrust: string;
   newAgentSession(target: string): string;
+  /** Step 3 of the first run, the last block setup prints: a ready-to-copy line per selected agent. */
+  onboardStep(agents: readonly Agent[]): string[];
   ignoredCommittedFiles(lines: readonly string[]): string[];
   outsideSettings(paths: readonly { rel: string; real: string }[]): string[];
   existingHooks(hooks: readonly ExistingHook[]): string[];
@@ -145,17 +148,28 @@ const en: Messages = {
   reviewer: (v) => v === 'other' ? 'Review and QC: the other agent' : v === 'claude' || v === 'codex' ? `Review and QC: ${v === 'claude' ? 'Claude' : 'Codex'} (kept from your existing settings)` : 'Review and QC: the same agent in a fresh context',
   docsPrivate: 'private, not in git', docsShared: 'shared in git', docsCustom: 'your folder',
   models: 'Models: same as your session',
-  superpowers: (available, disabled) => !available
-    ? 'Superpowers is optional (Claude Code): /plugin install superpowers@claude-plugins-official'
-    : disabled
-      ? "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'."
-      : "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Recommended; turn off with WF_SKILLS='none'.",
+  superpowers: (available, disabled, agents) => available && disabled
+    ? "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'."
+    : [
+      available
+        ? "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Strongly recommended; turn off with WF_SKILLS='none'."
+        : 'Superpowers is strongly recommended, and optional: burhan never installs it',
+      ...(!available && agents.includes('claude') ? ['Claude Code: /plugin install superpowers@claude-plugins-official'] : []),
+      ...(agents.includes('codex') ? ['Codex — if it is not installed yet: in Codex CLI run /plugins, search superpowers, choose Install Plugin.'] : []),
+    ].join(' · '),
   branches: 'Branches: feature branches + pull requests; commit only after the a/b/c checkpoint',
   check: (p, c) => p ? 'Check before commit: your agent sets this up on first use' : `Check before commit: ${c} (kept)`,
   changeUndo: 'Change anytime: npx burhan-kit setup · Undo: npx burhan-kit uninstall',
   nothingCommitted: 'Nothing is committed · nothing outside this project changes',
   codexTrust: "Codex: first-use setup starts after you trust burhan's hooks in Codex (open Codex in this project and review them).",
   newAgentSession: (target) => `Start a new agent session in ${target} for burhan's hooks to take effect.`,
+  onboardStep: (agents) => [
+    'Step 3 — understand this project (once, in a NEW agent session)',
+    'Open a NEW agent session inside this project, then:',
+    ...(agents.includes('claude') ? ['  Claude Code — type: /burhan:onboard'] : []),
+    ...(agents.includes('codex') ? ['  Codex — say: Follow .burhan/commands/onboard.md'] : []),
+    'The agent reads the whole project, shows you a draft and what it could not examine, and saves it in the repo only after you approve. Run it once: an approved understanding is not repeated, and a draft is completed.',
+  ],
   ignoredCommittedFiles: (lines) => ['Warning: these files are ignored by this project’s .gitignore. Add these exact lines; burhan did not edit it:', ...lines],
   outsideSettings: (paths) => ['Warning: these settings files are symlinks to real files outside this project:', ...paths.map((path) => `  ${path.rel} → ${path.real} — outside this project`)],
   existingHooks: (hooks) => [
@@ -173,6 +187,7 @@ const en: Messages = {
       '- Show its summary to the person. Run it again with --apply only after the user says yes.',
       '- Relay the Superpowers line below exactly as it appears. Do not paraphrase or omit it.',
       '- Under Q3, if CLAUDE.md, AGENTS.md, or project commands name a stories/specs folder, offer: A folder I choose — <path> (already used by this project). Never guess or select that folder.',
+      '- After --apply, relay the "Step 3" block it prints exactly as it appears, as its own part of your reply (not folded into the closing report): the person opens a NEW agent session in the project and runs it there.',
       "- End with a closing report in the user's writing language: at most six short lines; say what changed, what remains open, and how to undo. No table and no setting names.",
     ],
     readFailed: (f, w) => `cannot read the answers file ${f}: ${w}`,
@@ -247,17 +262,28 @@ const ar: Messages = {
   reviewer: (v) => v === 'other' ? 'المراجعة والـ QC: الـ agent التاني' : v === 'claude' || v === 'codex' ? `المراجعة والـ QC: ${v === 'claude' ? 'Claude' : 'Codex'} (متسابة زي ما هي من إعداداتك)` : 'المراجعة والـ QC: نفس الـ agent في context جديد',
   docsPrivate: 'خاصة بيك، بره git', docsShared: 'مشتركة في git', docsCustom: 'الفولدر بتاعك',
   models: 'الموديلات: نفس موديل الـ session بتاعتك',
-  superpowers: (available, disabled) => !available
-    ? 'Superpowers اختياري في Claude Code: /plugin install superpowers@claude-plugins-official'
-    : disabled
-      ? "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'."
-      : "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". مقترح؛ وتقدر تقفله بـ WF_SKILLS='none'.",
+  superpowers: (available, disabled, agents) => available && disabled
+    ? "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'."
+    : [
+      available
+        ? "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". موصى به بقوة؛ وتقدر تقفله بـ WF_SKILLS='none'."
+        : 'Superpowers موصى به بقوة، وهو اختياري: burhan مش بيسطّبه خالص',
+      ...(!available && agents.includes('claude') ? ['Claude Code: /plugin install superpowers@claude-plugins-official'] : []),
+      ...(agents.includes('codex') ? ['Codex — لو لسه مش متسطّب: في Codex CLI شغّل /plugins، دوّر على superpowers، واختار Install Plugin.'] : []),
+    ].join(' · '),
   branches: 'الـ branches: branch لكل ميزة + pull request؛ ومفيش commit غير بعد ما تختار a/b/c',
   check: (p, c) => p ? 'الفحص قبل الـ commit: الـ agent بتاعك هيظبطه أول ما يشتغل' : `الفحص قبل الـ commit: ${c} (زي ما هو)`,
   changeUndo: 'تغيّر في أي وقت: npx burhan-kit setup · ترجع في كلامك: npx burhan-kit uninstall',
   nothingCommitted: 'مفيش حاجة بتتعمل لها commit · ومفيش حاجة بتتغيّر بره المشروع ده',
   codexTrust: 'Codex: الـ setup بتاع أول استخدام بيبدأ بعد ما توافق على الـ hooks بتاعة burhan جوّه Codex (افتح Codex في المشروع ده وراجعها).',
   newAgentSession: (target) => `ابدأ session جديدة للـ agent جوّه ${target} عشان hooks burhan تشتغل.`,
+  onboardStep: (agents) => [
+    'الخطوة 3 — فهم المشروع (مرة واحدة، في جلسة agent جديدة)',
+    'افتح جلسة agent جديدة جوّه المشروع ده، وبعدين:',
+    ...(agents.includes('claude') ? ['  Claude Code — اكتب: /burhan:onboard'] : []),
+    ...(agents.includes('codex') ? ['  Codex — قول: اتبع .burhan/commands/onboard.md'] : []),
+    'الـ agent بيقرا المشروع كله، ويوريك مسودة وإيه اللي ما قدرش يفحصه، ومش بيحفظها في الريبو غير بعد موافقتك. شغّله مرة واحدة: الفهم المعتمد مش بيتكرر، والمسودة بتتكمّل.',
+  ],
   ignoredCommittedFiles: (lines) => ['تحذير: الـ .gitignore بتاع المشروع مخبّي الملفات دي. ضيف السطور دي زي ما هي؛ burhan ماعدّلهاش:', ...lines],
   outsideSettings: (paths) => ['تحذير: ملفات الإعدادات دي symlink لملفات حقيقية برّه المشروع:', ...paths.map((path) => `  ${path.rel} → ${path.real} — دي برّه المشروع`)],
   existingHooks: (hooks) => [
@@ -274,6 +300,7 @@ const ar: Messages = {
       '- حط الإجابات في ملف JSON بنفس شكل "recommended" اللي تحت، وبعدين شغّل: npx burhan-kit setup --answers <file>',
       '- وري الشخص الملخص. ومتشغّلوش بـ --apply غير لما المستخدم يقول أيوه.',
       '- وصّل سطر Superpowers اللي تحت زي ما هو بالظبط. متعيدش صياغته ومتسيبهوش.',
+      '- بعد --apply، وصّل بلوك "الخطوة 3" اللي بيطبعه زي ما هو بالظبط، كجزء لوحده في ردّك (مش جوّه التقرير الختامي): الشخص يفتح جلسة agent جديدة جوّه المشروع ويشغّله هناك.',
       '- تحت السؤال التالت، لو CLAUDE.md أو AGENTS.md أو أوامر المشروع مسمّيين فولدر stories/specs، اعرض: فولدر أختاره — <path> (المشروع ده بيستخدمه بالفعل). متخمنش أو تختار الفولدر ده.',
       '- اختم بتقرير بلغة كتابة المستخدم: ستة سطور قصيرة بالكتير؛ قول إيه اتغيّر، وإيه لسه مفتوح، وإزاي يرجع. من غير جدول ولا أسماء إعدادات.',
     ],

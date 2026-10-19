@@ -85,5 +85,6 @@ export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' 
       io.stdout(m.stack.result(r.code, r.kind === 'timeout') + '\n');
     }
   }
+  io.stdout(`\n${m.onboardStep(a.agents).join('\n')}\n`);
   return 0;
 }

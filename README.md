@@ -17,6 +17,17 @@ No “done” without proof: agree on the work first, build in reviewed steps, a
 
 ## Install / Quick start
 
+The first run is three steps, in this order.
+
+### Step 1 — Superpowers first
+
+Superpowers is strongly recommended, and optional: burhan never installs it. With it, burhan uses its skills at each step (brainstorming before a story, TDD while building, verification before "done").
+
+- Claude Code: `/plugin install superpowers@claude-plugins-official`
+- Codex — if it is not installed yet: in Codex CLI run `/plugins`, search `superpowers`, choose Install Plugin.
+
+### Step 2 — Set up burhan
+
 1. Use Node 22 or newer in the repository you want to set up. The hooks need nothing else: no bash, no jq.
 2. Run:
 
@@ -32,13 +43,22 @@ npx burhan-kit
 4. Review the proposed changes and confirm them; nothing is written before confirmation.
 5. Check it worked: the setup summary lists the managed `.burhan/` files; then run `npx burhan-kit doctor`. Project checks are proposed by the agent on first use, then approved by you.
 
-For an agent-led setup, ask it to run `npx burhan-kit setup --agent` and follow the printed guidance. If project evidence already names a stories/specs folder, it can offer that folder without guessing or selecting it.
+Or let your agent do it: ask it to run `npx burhan-kit setup --agent` and follow the printed guidance. If project evidence already names a stories/specs folder, it can offer that folder without guessing or selecting it.
+
+### Step 3 — Understand this project
+
+Once, after setup: open a NEW agent session inside the project, then:
+
+- Claude Code — type: `/burhan:onboard`
+- Codex — say: `Follow .burhan/commands/onboard.md`
+
+The agent reads the whole project, shows you a draft and what it could not examine, and saves it in the repo only after you approve. Run it once: an approved understanding is not repeated, and a draft is completed.
 
 ## What happens in your first task
 
 Setup puts burhan’s managed working agreement, configuration, and hooks in `.burhan/`. It keeps existing hooks: they run alongside burhan’s hooks, so reminders can repeat.
 
-Start an item with your agent. Each task has a story, plan, and reviews in the location you chose. Run `burhan use <slug>` to link the current session to that item—especially useful when more than one task is active. Superpowers is optional (Claude Code: `/plugin install superpowers@claude-plugins-official`); burhan never installs it for you.
+Start an item with your agent. Each task has a story, plan, and reviews in the location you chose. Run `burhan use <slug>` to link the current session to that item—especially useful when more than one task is active.
 
 **A real first task:** an agent edited `src/add.js`, ran no check, and replied “Done.”
 
