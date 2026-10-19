@@ -74,9 +74,11 @@ These are by design, and listed so nobody mistakes them for guarantees:
   or misfire on some wordings. It only suggests. The mode the hooks act on is the exact `Mode` field.
 - **`Accepted by`.** The field checks its form (`<name> · YYYY-MM-DD`), not who the name belongs to.
   The working agreement forbids the agent from writing it.
-- **Codex trust in `burhan doctor`.** The doctor looks for the project's hooks in `~/.codex/config.toml`
-  under a key format inferred from plugin hooks; a project hook's key has not been observed yet. It
-  can warn after you trusted every hook — the `Trusted` line in Codex's `/hooks` is what counts.
+- **Codex trust in `burhan doctor`.** The doctor reads only the table names under `[hooks.state."…"]`
+  in `~/.codex/config.toml`. The key form was observed on Linux with Codex CLI 0.150.1; macOS and
+  Windows are not verified. It cannot see a hook that is `Modified since last trusted` or disabled, so
+  it can say `present` for a hook Codex will not run — the `Trusted` line in Codex's `/hooks` is what
+  counts. In Codex, the missing `⚑ WORKFLOW GATES` line is a hint, not proof, that the hooks are off.
 - **The `burhan-verify` skill.** Claude Code calls it at the model's discretion. The pre-commit hook runs
   `WF_CHECK_CMD` on every `git commit` regardless.
 - **Hook-file formatting.** Setup writes `.claude/settings.json` and `.codex/hooks.json` back as

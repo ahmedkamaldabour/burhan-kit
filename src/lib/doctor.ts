@@ -12,13 +12,14 @@ import { ignoredCommittedSetupFiles } from './setup/engine.js';
 import { readBaseline, readProjectFile } from '../hooks/core/baseline.mjs';
 import { inspect } from './inspect.js';
 import { checkMemory, factFreshness } from './memory.js';
+import { readCodexConfig, stateTableNames, trustedEvents, type CodexConfigSkip } from './codex-trust.js';
 
 /** `burhan doctor`: read-only health checks of an install. It never writes — not the project, not the
  *  agents' settings, not the user's global files (Codex hook trust is only read). */
 
 export interface Check { status: 'ok' | 'warn' | 'fail' | 'skip'; text: string }
 /** What the doctor asks of the machine; injected so tests need no particular PATH. */
-export interface Probe { nodeVersion(): string | null; claudeVersion(): string | null; home(): string }
+export interface Probe { nodeVersion(): string | null; claudeVersion(): string | null; home(): string; platform?(): NodeJS.Platform }
 
 export const realProbe: Probe = {
   nodeVersion: () => {
@@ -30,6 +31,7 @@ export const realProbe: Probe = {
     return r.status === 0 ? (/(\d+\.\d+\.\d+)/.exec(r.stdout)?.[1] ?? null) : null;
   },
   home: () => homedir(),
+  platform: () => process.platform,
 };
 
 const VERIFY_MIN = '2.1.286'; // Claude Code reads skills with `verify` from this version
@@ -43,6 +45,10 @@ const HOOKS: Record<'claude' | 'codex', { file: string; snippet: string }> = {
 // Codex names hook events in snake case in its trust entries.
 const CODEX_EVENT: Record<string, string> = {
   SessionStart: 'session_start', UserPromptSubmit: 'user_prompt_submit', PreToolUse: 'pre_tool_use', PostToolUse: 'post_tool_use', Stop: 'stop',
+};
+const CODEX_SKIP: Record<CodexConfigSkip, string> = {
+  absent: 'not found', symlink: 'is a symbolic link, or sits in a symlinked ~/.codex (not followed)', 'not a file': 'is not a regular file',
+  large: 'is larger than 1 MiB', unreadable: 'could not be read',
 };
 
 type HookFile = { hooks?: Record<string, { hooks?: HookEntry[] }[]> };
@@ -184,23 +190,18 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
         else add('ok', `Claude Code ${cv} (verify skill)`);
       }
     } else {
-      // Read only — trust is the user's to grant, in Codex itself. The hash is not checked.
-      const toml = join(probe.home(), '.codex/config.toml');
-      const text = readText(toml);
-      if (text === null) add('skip', 'codex hook trust: ~/.codex/config.toml not readable');
+      // Read only, table names only (codex-trust.ts) — trust is the user's to grant, in Codex itself.
+      const read = readCodexConfig(probe.home());
+      const reference = "the Trust line in Codex's /hooks is the reference";
+      if ('skip' in read) add('skip', `codex hook trust: ~/.codex/config.toml ${CODEX_SKIP[read.skip]} — not checked; ${reference}`);
       else {
-        // An entry counts when its project path is this project's — as written (the path Codex was
-        // started in may go through a symlink; macOS: /var → /private/var) or as resolved.
-        const trusted = new Set<string>();
-        const real = new Map<string, string>();
-        for (const m of text.matchAll(/"([^"\n]*)\/\.codex\/hooks\.json:([a-z_]+):/g)) {
-          const dir = m[1];
-          if (!real.has(dir)) real.set(dir, realTarget(dir));
-          if (dir === target || dir === resolve(targetIn) || real.get(dir) === target) trusted.add(m[2]);
-        }
-        const untrusted = wanted('codex').filter(({ event }) => !trusted.has(CODEX_EVENT[event] ?? event));
-        if (untrusted.length) add('warn', `codex hook trust: no entry for ${untrusted.map((u) => u.event).join(', ')} — Codex skips untrusted hooks silently, so burhan would do nothing there. Trust them yourself: open Codex in this project (run codex); at "Hooks need review" choose "Review hooks" (or type /hooks); for each event, select the hook whose Source is "Project config - …/.codex/hooks.json" and press t. If this still warns once every burhan hook reads Trusted in Codex, the Trusted line in Codex is what counts (this check infers the key format). Steps: https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks`);
-        else add('ok', 'codex hook trust: an entry for every hook (hashes not checked — re-approve after an upgrade that changes a hook)');
+        const want = wanted('codex').map(({ event }) => ({ event, key: CODEX_EVENT[event] ?? event }));
+        const windows = (probe.platform?.() ?? process.platform) === 'win32';
+        const found = trustedEvents(stateTableNames(read.text), [target, resolve(targetIn)], want.map((w) => w.key), windows);
+        const list = want.map((w) => `${w.event} ${found.has(w.key) ? 'present' : 'absent'}`).join(', ');
+        const blind = 'read from table names only, so "Modified since last trusted" and a disabled hook are not visible here';
+        if (want.every((w) => found.has(w.key))) add('ok', `codex hook trust: an entry for every burhan hook (${list}) — ${blind}; ${reference} (trust again after an upgrade that changes a hook)`);
+        else add('warn', `codex hook trust: ${list} — Codex skips untrusted hooks silently, so burhan does nothing for an absent one. Trust them yourself: open Codex in this project (run codex); at "Hooks need review" choose "Review hooks" (or type /hooks); for each event, select the hook whose Source is "Project config - …/.codex/hooks.json" and press t. This check is ${blind}; if it still warns once every burhan hook reads Trusted in Codex, the Trusted line in Codex is what counts. Steps: https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks`);
       }
     }
   }

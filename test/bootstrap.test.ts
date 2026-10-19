@@ -1,7 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { applyBlock, bootstrapBody, renderBlock, BlockError } from '../src/lib/bootstrap.js';
+import { kitDir } from '../src/lib/kit.js';
 
 const V = '0.1.0';
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -75,4 +78,16 @@ test('CRLF files stay CRLF', () => {
   const r = applyBlock('a\r\nb\r\n', 'claude', V).content;
   assert.ok(r.split('\n').slice(0, -1).every((l) => l.endsWith('\r')));
   assert.ok(r.startsWith('a\r\nb\r\n\r\n<!-- burhan:start -->'));
+});
+
+// codex-trust-detect AC-07: the marker reaches Codex's model at SessionStart (verified in a real Codex session, V-0).
+test('codex body: tells the agent to warn when the gates are missing; claude body unchanged', () => {
+  const marker = readFileSync(join(kitDir(), 'hooks/core/gates.txt'), 'utf8').split('\n')[0];
+  assert.ok(marker.startsWith('⚑ WORKFLOW GATES'), marker);
+  assert.match(bootstrapBody('codex'), /no line beginning `⚑ WORKFLOW GATES`/);
+  assert.match(bootstrapBody('codex'), /\/hooks/);
+  assert.match(bootstrapBody('codex'), /never trust them for the user/);
+  assert.match(bootstrapBody('codex'), /may not be running/, 'a missing marker is a hint, not proof (SU3 review F-1)');
+  assert.match(bootstrapBody('codex'), /tell the user once/, 'said once, not every turn (SU3 review F-2)');
+  assert.doesNotMatch(bootstrapBody('claude'), /WORKFLOW GATES/);
 });

@@ -12,8 +12,8 @@ const home = tmpDir('burhan-doctor-home-');
 const good: Probe = { nodeVersion: () => '24.13.0', claudeVersion: () => '2.1.296', home: () => home };
 const probe = (o: Partial<Probe> = {}): Probe => ({ ...good, ...o });
 
-function project(agents: ('claude' | 'codex')[] = ['claude']): string {
-  const p = tmpDir('burhan-doctor-');
+function project(agents: ('claude' | 'codex')[] = ['claude'], prefix = 'burhan-doctor-'): string {
+  const p = tmpDir(prefix);
   install({ mode: 'init', target: p, agents, apply: true, bootstrap: false }, capture(p).io);
   return p;
 }
@@ -128,8 +128,11 @@ test('claude: an unwired hook fails; missing commands or reviewer fail; an old c
   assert.ok(find(runChecks(v, probe({ claudeVersion: () => null })), 'skip', 'claude'), 'no claude CLI → skip, not fail');
 });
 
+// Trust keys below are SYNTHETIC (their paths contain "synthetic"); every home is a temp folder, never the real ~/.codex.
+const trustTable = (key: string): string => `[hooks.state.${JSON.stringify(key)}]\ntrusted_hash = "synthetic"\n`;
+
 test('codex: wiring checked; hook trust is read only, and an unreadable config is skipped', () => {
-  const p = project(['codex']);
+  const p = project(['codex'], 'burhan-doctor-synthetic-');
   assert.ok(find(runChecks(p, probe()), 'ok', '.codex/hooks.json: all 5 hooks wired'));
   const hf = join(p, '.codex/hooks.json');
   const j = JSON.parse(readFileSync(hf, 'utf8')) as { hooks: Record<string, unknown> };
@@ -138,30 +141,31 @@ test('codex: wiring checked; hook trust is read only, and an unreadable config i
   assert.ok(find(runChecks(p, probe()), 'fail', 'PreToolUse (pre-commit-check)'));
   install({ mode: 'upgrade', target: p, agents: null, apply: true, bootstrap: false }, capture(p).io);
   assert.ok(find(runChecks(p, probe()), 'skip', 'trust'), 'no ~/.codex/config.toml → skip');
-  const h = tmpDir('burhan-doctor-h-');
+  const h = tmpDir('burhan-synthetic-home-');
   mkdirSync(join(h, '.codex'));
-  writeFileSync(join(h, '.codex/config.toml'), '[hooks.state."elsewhere/.codex/hooks.json:stop:0:0"]\ntrusted_hash = "x"\n');
+  writeFileSync(join(h, '.codex/config.toml'), trustTable('synthetic-elsewhere/.codex/hooks.json:stop:0:0'));
   assert.ok(find(runChecks(p, probe({ home: () => h })), 'warn', 'trust'));
-  const entry = (e: string) => `[hooks.state."${p}/.codex/hooks.json:${e}:0:0"]\ntrusted_hash = "x"\n`;
+  const entry = (e: string) => trustTable(`${p}/.codex/hooks.json:${e}:0:0`);
   writeFileSync(join(h, '.codex/config.toml'), entry('stop'));
   const part = find(runChecks(p, probe({ home: () => h })), 'warn', 'trust');
-  assert.ok(part && part.text.includes('SessionStart') && !part.text.includes('Stop'), part?.text);
+  assert.ok(part && part.text.includes('SessionStart absent') && part.text.includes('Stop present'), part?.text);
   for (const step of ['Hooks need review', 'Review hooks', '/hooks', 'press t', 'Project config', '#codex-trust-the-hooks', 'Trusted in Codex'])
     assert.ok(part!.text.includes(step), `the warning says how to trust: ${step}`);
   writeFileSync(join(h, '.codex/config.toml'), ['session_start', 'user_prompt_submit', 'pre_tool_use', 'post_tool_use', 'stop'].map(entry).join(''));
-  assert.ok(find(runChecks(p, probe({ home: () => h })), 'ok', 'trust'));
+  const ok = find(runChecks(p, probe({ home: () => h })), 'ok', 'trust');
+  assert.ok(ok && ok.text.includes('Modified since last trusted') && ok.text.includes('/hooks'), ok?.text);
 });
 
 test('codex trust: the key is matched under the project path as given and as resolved (a symlinked dir; macOS /var → /private/var)', () => {
-  const real = project(['codex']);
-  const parent = tmpDir('burhan-doctor-l-');
+  const real = project(['codex'], 'burhan-doctor-synthetic-');
+  const parent = tmpDir('burhan-doctor-synthetic-l-');
   const link = join(parent, 'proj');
   symlinkSync(real, link);
   const resolved = realpathSync(real);
-  const h = tmpDir('burhan-doctor-h-');
+  const h = tmpDir('burhan-synthetic-home-');
   mkdirSync(join(h, '.codex'));
   const events = ['session_start', 'user_prompt_submit', 'pre_tool_use', 'post_tool_use', 'stop'];
-  const entries = (dir: string) => events.map((e) => `[hooks.state."${dir}/.codex/hooks.json:${e}:0:0"]\ntrusted_hash = "x"\n`).join('');
+  const entries = (dir: string) => events.map((e) => trustTable(`${dir}/.codex/hooks.json:${e}:0:0`)).join('');
   for (const [keyDir, asked, why] of [[link, link, 'trusted through the symlink, checked through it'],
     [resolved, link, 'trusted at the real path, checked through the symlink'],
     [link, resolved, 'trusted through the symlink, checked at the real path'],
@@ -171,6 +175,34 @@ test('codex trust: the key is matched under the project path as given and as res
   }
   writeFileSync(join(h, '.codex/config.toml'), entries(join(parent, 'other')));
   assert.ok(find(runChecks(link, probe({ home: () => h })), 'warn', 'trust'), 'another project\'s entries never count');
+});
+
+test('codex trust: skip reasons are named, and nothing but event names leaves the config', (t) => {
+  const p = project(['codex'], 'burhan-doctor-synthetic-');
+  const h = tmpDir('burhan-synthetic-home-');
+  mkdirSync(join(h, '.codex'));
+  writeFileSync(join(h, '.codex/config.toml'), `${trustTable('/synthetic/other/.codex/hooks.json:stop:0:0')}secret_synthetic = "synthetic-value-123"\n`);
+  const all = runChecks(p, probe({ home: () => h })).map((c) => c.text).join('\n');
+  assert.ok(!all.includes('synthetic/other') && !all.includes('synthetic-value-123'), 'no foreign key, no value is printed');
+  writeFileSync(join(h, '.codex/config.toml'), Buffer.alloc(1024 * 1024 + 1, 0x20));
+  assert.ok(find(runChecks(p, probe({ home: () => h })), 'skip', 'larger than 1 MiB'));
+  if (process.platform === 'win32') { t.diagnostic('symlink case skipped on Windows'); return; }
+  const h2 = tmpDir('burhan-synthetic-home-');
+  symlinkSync(join(h, '.codex'), join(h2, '.codex'));
+  const s = find(runChecks(p, probe({ home: () => h2 })), 'skip', 'symbolic link');
+  assert.ok(s && s.text.includes('/hooks') && s.text.includes('a symlinked ~/.codex'), s?.text);
+});
+
+// Review fix round (SU2 review F-1): the Windows rule reaches the doctor through Probe.platform.
+test('codex trust: on Windows, keys with backslashes and another case count; elsewhere they do not', () => {
+  const p = project(['codex'], 'burhan-doctor-synthetic-');
+  const h = tmpDir('burhan-synthetic-home-');
+  mkdirSync(join(h, '.codex'));
+  const winDir = realpathSync(p).replace(/\//g, '\\').toUpperCase();
+  writeFileSync(join(h, '.codex/config.toml'), ['session_start', 'user_prompt_submit', 'pre_tool_use', 'post_tool_use', 'stop'].map((e) => trustTable(`${winDir}\\.codex\\hooks.json:${e}:2:1`)).join(''));
+  assert.ok(find(runChecks(p, probe({ home: () => h, platform: () => 'win32' })), 'ok', 'trust'), 'win32: separators and case folded');
+  const linux = find(runChecks(p, probe({ home: () => h, platform: () => 'linux' })), 'warn', 'trust');
+  assert.ok(linux && linux.text.includes('Stop absent'), linux?.text);
 });
 
 test('unreadable files are reported, never a crash', { skip: process.getuid?.() === 0 || posixOnly }, () => {

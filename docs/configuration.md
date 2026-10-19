@@ -54,7 +54,7 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
 | `burhan setup [dir] --set check=<cmd\|none> [sensitive=<p;q>] [--force]` | Sets the check and the sensitive paths directly |
 | `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.burhan/local/` and private work/discovery files; `--all` removes them too. Work outside `.burhan/`, project memory and unknown files always stay. Removes only owned kit files, blocks, exact hook commands and marked Claude files; keeps user ignore rules and protection for retained private data. Validates before the first change and never follows a symlink out of the project |
 | `burhan upgrade [--apply]` | Refresh kit-owned files; agents default to the installed ones; idempotent. Never rewrites `workflow.config` — `doctor` lists keys a newer version added |
-| `burhan doctor` | Read-only: `node` ≥ 22 on PATH (the hooks need nothing else — no bash, `jq`, sha256 tool or `timeout`); a leftover `WF_HOOK_RUNTIME=bash` is a warning (the bash hooks were removed in 0.3.0); Claude Code ≥ 2.1.139 for the exec-form hooks; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust (read from `~/.codex/config.toml`, never written); the state file's size; the project-memory warnings (no decided baseline on a project with code, a Draft, `memory check` fails, changed or missing facts — warnings only). `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
+| `burhan doctor` | Read-only: `node` ≥ 22 on PATH (the hooks need nothing else — no bash, `jq`, sha256 tool or `timeout`); a leftover `WF_HOOK_RUNTIME=bash` is a warning (the bash hooks were removed in 0.3.0); Claude Code ≥ 2.1.139 for the exec-form hooks; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust per event (table names only, from `~/.codex/config.toml`, never written); the state file's size; the project-memory warnings (no decided baseline on a project with code, a Draft, `memory check` fails, changed or missing facts — warnings only). `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
 | `burhan inspect [dir] [--json]` | Read-only, bounded look at the tree (names only, no file content, no LLM): brownfield or greenfield, why, the files a newcomer opens first, and what was cut (depth 12, 20,000 entries, 1,000 per folder, 10 s). Symlinks are counted, never followed. A path that is not a folder is exit 2 |
 | `burhan memory check [dir]` | Read-only check of the project memory: the Baseline line, fact rows, duplicate IDs, one state per ID, leftover merge markers (fail); secret-looking text (warn, the value never printed). Exit 1 on a fail — usable in CI |
 | `burhan memory status [dir]` | Each current fact `fresh`, `changed`, `missing` or `unchecked`, from the hashes in its evidence; no Git needed |
@@ -169,12 +169,30 @@ install burhan. The screens below were captured on Codex CLI 0.150.1.
    - **Trust all and continue** (or `t` on the list) also works, but it trusts every listed hook,
      your Codex plugins' hooks included. Use it only if you want that.
 5. Check: each burhan hook's **Trust** line now reads `Trusted`, and the list no longer says the
-   burhan hooks need review. Then run `npx burhan-kit doctor`. Its trust check looks for the
-   project's entries in `~/.codex/config.toml`, under a key format inferred from plugin hooks (a
-   project hook's key was not observed). If it still warns after every burhan hook reads `Trusted`,
+   burhan hooks need review. Then run `npx burhan-kit doctor`: it names each of the five events as
+   `present` or `absent`. If it still warns after every burhan hook reads `Trusted`,
    the Trust line in Codex is what counts.
 
-Codex keeps the trust in `~/.codex/config.toml`, as a `trusted_hash` under `[hooks.state."…"]`.
+Trusting the project **folder** is a separate step and does not trust its hooks: on Linux with
+Codex CLI 0.150.1, a folder trust alone left the burhan hooks not running in `codex exec`.
+
+Codex keeps the trust in `~/.codex/config.toml`, one `[hooks.state."<absolute path of the
+project>/.codex/hooks.json:<event>:<group>:<handler>"]` table per hook, holding its `trusted_hash`
+(seen on Linux with Codex CLI 0.150.1; macOS and Windows not verified). The doctor's trust check:
+
+- reads only the **names** of those tables, never a value, and prints only burhan's event names with
+  `present` or `absent` — no other key, path or value;
+- reads only `~/.codex/config.toml` (`CODEX_HOME` is not read), and skips it with the reason when it
+  is not found or not a regular file, when it or `~/.codex` is a symbolic link (not followed), when it
+  is larger than 1 MiB, or when it cannot be read;
+- matches any group and handler number, and on Windows treats `\` and `/` alike and ignores case;
+- cannot see whether a hook is `Modified since last trusted` or disabled, and reads only the
+  `[hooks.state."…"]` header form (not dotted keys or inline tables).
+
+In Codex, the AGENTS.md block also tells the agent that a session without the `⚑ WORKFLOW GATES` line
+(the first line of burhan's session context) may mean the hooks are not running, and to ask you once
+to trust them in `/hooks`. The agent never trusts anything itself.
+
 **Trust again** whenever Codex shows a burhan hook as `Modified since last trusted - review
 required`, or shows "Hooks need review" at startup. That can happen after `burhan upgrade` changes a
 hook, or after a `WF_CHECK_TIMEOUT` change plus `burhan upgrade`, because the pre-commit hook's

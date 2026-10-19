@@ -19,7 +19,9 @@ export function bootstrapBody(agent: Agent): string {
       ? ['@.burhan/WORKFLOW.md', '@.burhan/bindings.md']
       : ['Read `.burhan/WORKFLOW.md` before any project work. Work-item commands are described in',
          '`.burhan/commands/e2e.md`, `.burhan/commands/qc.md` and `.burhan/commands/onboard.md`; when following one,',
-         '`$ARGUMENTS` means the work-item slug (or title) the user names.']),
+         '`$ARGUMENTS` means the work-item slug (or title) the user names.',
+         'If this session\'s context has no line beginning `⚑ WORKFLOW GATES`, burhan\'s hooks may not be running in',
+         'Codex: tell the user once to open `/hooks` in Codex and trust the burhan hooks themselves; never trust them for the user.']),
     '',
     'At the start of every session, read the state file named in `.burhan/bindings.md` first.',
   ].join('\n');
