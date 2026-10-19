@@ -54,7 +54,11 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
 | `burhan setup [dir] --set check=<cmd\|none> [sensitive=<p;q>] [--force]` | Sets the check and the sensitive paths directly |
 | `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.burhan/local/` and private work/discovery files; `--all` removes them too. Work outside `.burhan/`, project memory and unknown files always stay. Removes only owned kit files, blocks, exact hook commands and marked Claude files; keeps user ignore rules and protection for retained private data. Validates before the first change and never follows a symlink out of the project |
 | `burhan upgrade [--apply]` | Refresh kit-owned files; agents default to the installed ones; idempotent. Never rewrites `workflow.config` — `doctor` lists keys a newer version added |
-| `burhan doctor` | Read-only: `node` ≥ 22 on PATH (the hooks need nothing else — no bash, `jq`, sha256 tool or `timeout`); a leftover `WF_HOOK_RUNTIME=bash` is a warning (the bash hooks were removed in 0.3.0); Claude Code ≥ 2.1.139 for the exec-form hooks; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust (read from `~/.codex/config.toml`, never written); the state file's size. `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
+| `burhan doctor` | Read-only: `node` ≥ 22 on PATH (the hooks need nothing else — no bash, `jq`, sha256 tool or `timeout`); a leftover `WF_HOOK_RUNTIME=bash` is a warning (the bash hooks were removed in 0.3.0); Claude Code ≥ 2.1.139 for the exec-form hooks; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust (read from `~/.codex/config.toml`, never written); the state file's size; the project-memory warnings (no decided baseline on a project with code, a Draft, `memory check` fails, changed or missing facts — warnings only). `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
+| `burhan inspect [dir] [--json]` | Read-only, bounded look at the tree (names only, no file content, no LLM): brownfield or greenfield, why, the files a newcomer opens first, and what was cut (depth 12, 20,000 entries, 1,000 per folder, 10 s). Symlinks are counted, never followed. A path that is not a folder is exit 2 |
+| `burhan memory check [dir]` | Read-only check of the project memory: the Baseline line, fact rows, duplicate IDs, one state per ID, leftover merge markers (fail); secret-looking text (warn, the value never printed). Exit 1 on a fail — usable in CI |
+| `burhan memory status [dir]` | Each current fact `fresh`, `changed`, `missing` or `unchecked`, from the hashes in its evidence; no Git needed |
+| `burhan memory affected [dir] --since <ref>` | The facts whose evidence files changed since `<ref>` (renames list the old path too; untracked files are not included); needs Git |
 | `burhan status [--write]` | The work-item index, derived from the item files; `--write` regenerates `<docs>/README.md` (a hand-written index is never overwritten without `--force`, which keeps a backup) |
 | `burhan stats [--json] [--docs <path>]` | Items per route, QC PASS / FAIL, QC by the implementing agent vs independently, escaped defects, per-phase timing. Reports written before these fields existed are read heuristically; anything unclear is `unknown` / `unrecorded`, never guessed |
 | `burhan evidence [--item <slug>] [--session <id>] [--last N] [--json]` | The evidence ledger: each edit and command with its exit code, in order |
@@ -206,6 +210,40 @@ turned off, whenever Codex is selected, and always in `setup --agent` (it runs b
 the line adds the official Codex route, worded conditionally:
 "if it is not installed yet: in Codex CLI run `/plugins`, search `superpowers`, choose Install Plugin". It never installs plugins, writes plugin files or overrides an
 explicit `WF_SKILLS` value.
+
+## Project memory
+
+burhan keeps one shared understanding of the project in the repository: `.burhan/PROJECT.md` (purpose, areas,
+where to look first, coverage, discovery limitations) and one file per area in `.burhan/context/` (architecture,
+stack, data, integrations, environments, conventions, business rules, decisions), one fact per row with its
+confidence, evidence and verification point. Formats: `.burhan/templates/project.md` and
+`.burhan/templates/context-area.md`; rules: `.burhan/phases/memory.md`.
+
+- **Onboarding.** Once, in a new agent session: `/burhan:onboard` in Claude Code; in Codex, say
+  "Follow .burhan/commands/onboard.md". The agent runs `burhan inspect`, scans the whole project, writes a
+  draft, shows it with what it could not examine, and waits. A later run does not redo an approved
+  baseline; it completes a Draft, or refreshes the facts `memory status` reports as changed or missing.
+- **The Baseline line** in PROJECT.md is exactly one of `Baseline: Draft`,
+  `Baseline: Approved — <name> · YYYY-MM-DD` or `Baseline: Waived — <name> · YYYY-MM-DD`. The agent writes
+  Approved or Waived only after the person decides, with the name the person gives. burhan checks the shape of the Baseline line, not who wrote it:
+  it is a record, not proof. Older projects: `Memory status: Approved <date>` counts as Approved; any other
+  `Memory status:` value counts as Draft.
+- **What burhan does while a project with code has no decided baseline** — guidance, never a block:
+  a short reminder on every prompt (shorter for a Draft), a warning at the end of a turn that wrote a story
+  or code, and a `doctor` warning. Exempt: greenfield projects, the patch lane, read-only items, and prompts
+  that run the onboarding. The hooks cannot tell an operational question from work, so operational questions also see the reminder.
+- **Brownfield** means at least 10 source files (`WF_CODE_REGEX` when set, else a built-in list of source
+  extensions). The hooks look at most 5,000 entries and 1 second per turn and answer "greenfield" past that;
+  `burhan inspect` says when it cut the walk. A folder with more than 1,000 entries is read only in part
+  (the first 1,000 names), so code listed after them is not seen.
+- **Freshness.** Evidence is a path and the first 16 hex characters of the file's SHA-256 — never content;
+  the hash covers the whole file, so an edit anywhere in it marks every fact that cites it `changed`;
+  changed does not mean false: re-check the fact, then reconfirm or supersede it. CRLF line endings count as LF, so
+  a Windows checkout gives the same hash. A fact without a hash is `unchecked`, and files over 64 MiB are `unchecked` (not hashed).
+- **CI.** Add `npx burhan-kit memory check` to fail a build on malformed or conflicting memory.
+- **Team.** Different slugs never collide. Two people adding facts to the same area can get a text conflict:
+  resolve it by keeping each row; `memory check` catches a duplicate ID or one fact in two states. On these files,
+  never use `merge=union`: it merges silently and hides duplicates.
 
 ## Team use
 

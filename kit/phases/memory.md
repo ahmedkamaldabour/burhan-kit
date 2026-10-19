@@ -26,6 +26,22 @@ and business rules → a draft `.burhan/PROJECT.md` + `.burhan/context/` with ev
 limitations of the discovery → **the human reviews and approves** → it becomes project memory.
 Never approve it yourself; an unapproved draft is not memory.
 
+- **Baseline** (`.burhan/PROJECT.md`, exact forms: `phases/files.md` · Fields): `Draft` until the person decides. Approved
+  or Waived is written only when the person says so: the agent asks the person for their name and writes it exactly as
+  given, never guessed, and never writes either word on its own. A `Draft` is completed; an `Approved` baseline is not
+  redone (refresh only what changed). This is a checkable form, not proof that a person wrote it.
+- **The person's request stays apart:** a request is a task to do, not knowledge about the project. Keep it in
+  `.burhan/local/` while onboarding, and continue it after the decision.
+- **Secrets:** evidence is a path and a hash, never content; a fact may say which setting holds a secret, never the
+  secret itself.
+- **Coverage:** PROJECT.md lists what the agent inspected, sampled and did not inspect — in the agent's own words,
+  since burhan cannot check what was read. Every topic gets an answer, even when the answer is "not applicable".
+- **Freshness:** the evidence hash covers the whole file, so an edit anywhere marks the fact `changed`; `changed` does
+  not mean false — re-check it, then reconfirm or supersede.
+- **Team:** one file per area, one fact per row. Two people adding facts to the same area can get a text conflict:
+  keep both rows (different slugs never collide; the same slug added twice is caught by `burhan memory check`) and
+  never use `merge=union`, which hides duplicates.
+
 **Knowledge review (K).** Near close-out, propose only stable, future-facing knowledge (with
 evidence) and say whether each one is new, reconfirms, supersedes or disputes an existing fact. The
 human promotes or rejects each; or the plan records "Knowledge review: none". Never promote

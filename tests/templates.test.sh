@@ -38,12 +38,66 @@ while IFS= read -r ref; do
 done < <(printf '%s' "$wf" | grep -o -E 'templates/[a-z-]+\.md' | sort -u)
 
 echo "commands — exist and only reference real templates"
-for c in e2e qc; do
+for c in e2e qc onboard; do
   check "commands/$c.md exists" "$( [ -f "commands/$c.md" ] && echo yes)" has "yes"
 done
 while IFS= read -r ref; do
   check "commands reference $ref — exists" "$( [ -f "$ref" ] && echo yes)" has "yes"
 done < <(cat commands/*.md 2>/dev/null | grep -o -E 'templates/[a-z-]+\.md' | sort -u)
+
+echo "onboard command (project-scan-and-memory AC-02…AC-05, AC-12)"
+ob="$(cat commands/onboard.md 2>/dev/null)"
+for phrase in \
+  'description:' \
+  '.burhan/local/onboard-request.md' \
+  'a request is a task to do, not knowledge about the project' \
+  'kit command' \
+  'inspect' \
+  'Every topic of the checklist gets an answer' \
+  'Architecture' 'Stack' 'Data' 'Integrations' 'Environments' 'Conventions' 'Business rules' 'Decisions' \
+  'Purpose' 'Where to look first' 'Discovery limitations' \
+  'decides where to look closer, never what to skip' \
+  '- **Baseline:** Draft' \
+  'Inspected' 'Sampled' 'Not inspected' \
+  'a path and a hash, never content' \
+  'never the secret itself' \
+  'memory check' 'memory status' \
+  'Stop and wait for the person' \
+  'ask the person what name to write' \
+  'never guess it' \
+  'Never write Approved or Waived on your own' \
+  'continue the saved request, so the person never has to say it twice' \
+  'An Approved baseline is not redone' \
+  'A Draft baseline is completed' \
+  '## Refresh' \
+  're-check only the facts it lists as changed or missing' \
+  'reconfirm or supersede' \
+  'changed does not mean false' \
+  'show the person the result before saving' \
+  'commit checkpoint' \
+  "sed 's/\\r\$//' <file> | sha256sum | cut -c1-16" \
+  'line endings were counted differently' \
+  '**Waive**' \
+  'the draft is not memory' \
+  '(git-ignored)' \
+  'write no draft' \
+  'a refresh never changes the Baseline line' \
+  'operational and security risks' \
+  'add the new fact under a new ID' \
+  'YYYY-MM-DD' \
+  'has no `·` and no `<`' \
+  'Only a clear yes approves' \
+  'never hash a file that holds secrets' \
+  'A Draft in the repository is not memory' \
+  'continue any saved request (step 7)' \
+  'change the draft, present it again' \
+  '`- **Baseline:** Waived — <name> · YYYY-MM-DD`' \
+  'there are no memory files to commit' \
+  'if it is meant for later, ask whether to start it now' \
+  'a reconfirmation is a save too' ; do
+  check "onboard says: $phrase" "$ob" has "$phrase"
+done
+check "onboard: no approval on the person's behalf (core §4-D)" "$ob" has "§4-D"
 
 echo "workflow.config.example — documents every key"
 cfg="$(cat workflow.config.example 2>/dev/null)"
@@ -75,6 +129,30 @@ check "memory entry stays inside the namespace" "$(cat phases/memory.md)" has '.
 check "memory areas stay inside the namespace" "$(cat templates/project.md)" has '.burhan/context/stack.md'
 check "verify skill is namespaced" "$(cat skills/claude/burhan-verify/SKILL.md 2>/dev/null)" has 'name: burhan-verify'
 check "memory IDs are slugs, not sequential" "$(cat templates/context-area.md)" lacks "<AREA>-01"
+echo "project memory format (project-scan-and-memory SU1)"
+proj="$(cat templates/project.md)"; area="$(cat templates/context-area.md)"; story_t="$(cat templates/story.md)"
+check "PROJECT template: the Baseline line starts as Draft" "$proj" has '- **Baseline:** Draft'
+check "PROJECT template: the Approved form" "$proj" has '`Approved — <name> · YYYY-MM-DD`'
+check "PROJECT template: the Waived form" "$proj" has '`Waived — <name> · YYYY-MM-DD`'
+check "PROJECT template: the old field is gone" "$proj" lacks 'Memory status'
+for line in '## Coverage' '- **Inspected:**' '- **Sampled:**' '- **Not inspected:**'; do
+  check "PROJECT template: $line" "$proj" has "$line"
+done
+check "context template: evidence carries a whole-file hash" "$area" has '`path/to/file` sha256:<16 hex>'
+check "context template: Verified is date @ commit" "$area" has 'YYYY-MM-DD @ <commit>'
+check "context template: the hash covers the whole file" "$area" has 'The hash covers the whole file'
+check "story template: the Baseline line" "$story_t" has '- **Baseline:** <Approved — <name> · YYYY-MM-DD | Waived — <name> · YYYY-MM-DD | n/a (greenfield)>'
+baseline_row="$(grep -F '| `Baseline` |' phases/files.md)"
+check "Fields table: the Baseline row" "$baseline_row" has '| `Baseline` |'
+for form in '`Draft`' '`Approved — <name> · YYYY-MM-DD`' '`Waived — <name> · YYYY-MM-DD`' '`n/a (greenfield)`' 'no `<` or `·`' '`Memory status: Approved YYYY-MM-DD` counts as Approved' 'any other `Memory status:` value counts as `Draft`'; do
+  check "Fields table: Baseline names $form" "$baseline_row" has "$form"
+done
+check "context template: Verified header uses the @ form" "$area" has 'Verified (date @ commit)'
+check "context template: evidence items are space-separated, hash in lower-case hex" "$area" has 'separated by a space; the hash is lower-case hex'
+check "context template: a row with < is a placeholder" "$area" has 'a row whose ID still contains `<` is a placeholder'
+check "context template: evidence without a hash is accepted, freshness unchecked" "$area" has 'Evidence without a hash is accepted; its freshness is `unchecked`'
+check "context template: the older Verified form is still read" "$area" has 'older files may use `YYYY-MM-DD · <commit>`'
+check "context template: the hash counts CRLF as LF" "$area" has 'line endings counted as LF'
 check "docs index is marked generated" "$(head -1 templates/docs-index.md)" has "generated by burhan status"
 check "WORKFLOW explains team use" "$wf" has "Team use"
 check "WORKFLOW: concurrent items are one per session" "$wf" has "Several items may be in flight, one per session"

@@ -10,6 +10,8 @@ import { evidence } from './lib/evidence.js';
 import { stats } from './lib/stats.js';
 import { status } from './lib/status.js';
 import { useItem } from './lib/use.js';
+import { memoryAffected, memoryCheck, memoryStatus } from './lib/memory.js';
+import { inspectCommand } from './lib/inspect.js';
 import { homedir } from 'node:os';
 import { clackPrompter, numberedPrompter, withFallback } from './lib/setup/prompter.js';
 import { runWizard } from './lib/setup/wizard.js';
@@ -60,6 +62,14 @@ export const USAGE = `usage: burhan <command> [options]
                        save the project's check command (runs it once first)
   uninstall [dir] [--apply] [--all]
                        remove burhan from a project; keeps workflow.config, bindings.md, local/ and your work files unless --all
+  inspect [dir] [--json]
+                       read-only, bounded look at the tree (names only, no LLM): brownfield or greenfield, the important files
+  memory check [dir]   read-only check of the project memory (.burhan/PROJECT.md, .burhan/context/): fact shape,
+                       duplicate IDs, one state per ID, merge markers, secret-looking text (exit 1 on a fail)
+  memory status [dir]  each fact fresh / changed / missing / unchecked, from the evidence hashes (no Git needed);
+                       changed does not mean false
+  memory affected [dir] --since <ref>
+                       the facts whose evidence files changed since <ref> (needs Git)
   doctor [dir]         read-only health check: runtime, install, config, hook wiring, state (exit 1 on a fail)
   use <slug>           validate an in-Now item; the turn-end hook links this session
   --version | --help
@@ -136,6 +146,21 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         const { positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: {} });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         return doctor({ target: positionals[0] ?? io.cwd }, io);
+      }
+      case 'inspect': {
+        const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: { json: { type: 'boolean' } } });
+        if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
+        return inspectCommand(positionals[0] ?? io.cwd, values.json === true, io);
+      }
+      case 'memory': {
+        const [sub, ...args] = rest;
+        if (sub !== 'check' && sub !== 'status' && sub !== 'affected') throw new BurhanError(`memory needs a subcommand: check, status or affected${sub === undefined ? '' : ` (not "${sub}")`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: sub === 'affected' ? { since: { type: 'string' } } : {} });
+        if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
+        const dir = positionals[0] ?? io.cwd;
+        if (sub === 'status') return memoryStatus(dir, io);
+        if (sub === 'affected') return memoryAffected(dir, values.since as string | undefined, io);
+        return memoryCheck(dir, io);
       }
       case 'use': {
         if (rest.length !== 1) throw new BurhanError('use needs exactly one item slug');

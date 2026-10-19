@@ -116,6 +116,21 @@ done
 check "configuration documents the conditional Codex route" "$(cat docs/configuration.md)" has 'if it is not installed yet: in Codex CLI run `/plugins`, search `superpowers`, choose Install Plugin'
 check "configuration: never reads the Codex config" "$(cat docs/configuration.md)" has 'never reads `~/.codex`'
 
+echo "project memory docs (project-scan-and-memory SU7)"
+cfgdoc="$(cat docs/configuration.md)"
+for phrase in '## Project memory' '`burhan inspect' '`burhan memory check' '`burhan memory status' '`burhan memory affected' \
+  'npx burhan-kit memory check' 'Baseline: Approved — <name> · YYYY-MM-DD' '/burhan:onboard' '.burhan/commands/onboard.md' \
+  'guidance, never a block' 'the hash covers the whole file' 'changed does not mean false' 'CRLF line endings count as LF' \
+  'checks the shape of the Baseline line, not who wrote it' 'operational questions also see the reminder' \
+  'more than 1,000 entries' 'never use `merge=union`' \
+  'at most 5,000 entries and 1 second per turn' 'depth 12, 20,000 entries, 1,000 per folder, 10 s' \
+  '`Memory status: Approved <date>` counts as Approved' 'renames list the old path too; untracked files are not included' \
+  'Exempt: greenfield projects, the patch lane, read-only items' 'A fact without a hash is `unchecked`' \
+  'resolve it by keeping each row' 'with the name the person gives' 'files over 64 MiB are `unchecked`' \
+  'the project-memory warnings'; do
+  check "configuration.md states: $phrase" "$cfgdoc" has "$phrase"
+done
+
 echo "Public-page safety"
 for f in README.md README.ar.md; do
   check "$f omits retired product terms" "$(grep -inE 'WF_SINGLE_TEST_HINT|never-run|never run|forbidden command|resource rule' "$f")" lacks ':'

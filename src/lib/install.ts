@@ -18,7 +18,7 @@ const SNIPPET: Record<Agent, string> = { claude: 'hooks/adapters/claude/settings
 const BASH_DIRS = ['hooks/core', ...AGENTS.map((a) => `hooks/adapters/${a}`)];
 const NODE_DIR = 'hooks/node';
 const BOOT_FILE: Record<Agent, string> = { claude: 'CLAUDE.md', codex: 'AGENTS.md' };
-const COMMANDS = ['e2e', 'qc'];
+const COMMANDS = ['e2e', 'qc', 'onboard'];
 
 /** keepProjectFiles: never create workflow.config / bindings.md from the templates — `burhan setup` writes them itself, first. */
 export interface InstallOptions { mode: 'init' | 'upgrade'; target: string; agents: Agent[] | null; apply: boolean; bootstrap: boolean; keepProjectFiles?: boolean }

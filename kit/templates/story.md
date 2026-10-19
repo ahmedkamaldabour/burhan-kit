@@ -11,6 +11,7 @@
 - **Source:** <conversation / ticket / document>, <YYYY-MM-DD>
 - **Parent:** <parent slug, or —> · **Answers for:** <parent AC IDs, or —> · **Depends on:** <sibling slugs, or —>
 - **Escapes:** <slug of an item that passed QC whose defect this is (bugs), or —>
+- **Baseline:** <Approved — <name> · YYYY-MM-DD | Waived — <name> · YYYY-MM-DD | n/a (greenfield)> — from `.burhan/PROJECT.md`; Approved or Waived only as the person decided, with the name they gave
 - **Mode:** <step|auto — exactly one; default from WF_MODE_<TYPE>_<SCOPE>, else WF_MODE_DEFAULT; switch any time — phases/lifecycle.md>
 
 > Delete any section that does not apply — an absent section is never a violation. Length caps: `phases/files.md`.

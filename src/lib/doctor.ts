@@ -9,6 +9,9 @@ import { realTarget } from './fs-safe.js';
 import { agentInstalled, hookKey, type HookEntry, type Settings } from './hooks-merge.js';
 import { kitDir, nodeHooksDir, readVersion } from './kit.js';
 import { ignoredCommittedSetupFiles } from './setup/engine.js';
+import { readBaseline, readProjectFile } from '../hooks/core/baseline.mjs';
+import { inspect } from './inspect.js';
+import { checkMemory, factFreshness } from './memory.js';
 
 /** `burhan doctor`: read-only health checks of an install. It never writes — not the project, not the
  *  agents' settings, not the user's global files (Codex hook trust is only read). */
@@ -163,7 +166,7 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     else add('ok', `${rel}: all ${wanted(agent).length} hooks wired`);
 
     if (agent === 'claude') {
-      for (const f of ['.claude/commands/burhan/e2e.md', '.claude/commands/burhan/qc.md', '.claude/agents/burhan-reviewer.md']) {
+      for (const f of ['.claude/commands/burhan/e2e.md', '.claude/commands/burhan/qc.md', '.claude/commands/burhan/onboard.md', '.claude/agents/burhan-reviewer.md']) {
         const p = join(target, f);
         if (!existsSync(p)) add('fail', `${f}: missing — run burhan upgrade --apply`);
         else if (readText(p) === null) add('fail', `unreadable: ${f} — check its permissions`);
@@ -201,6 +204,33 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
       }
     }
   }
+
+  // ---- project memory (guidance: warnings only, never a fail)
+  try {
+    const pf = readProjectFile(target);
+    const b = 'text' in pf ? readBaseline(pf.text) : null;
+    const decided = b !== null && (b.state === 'approved' || b.state === 'waived');
+    const legacy = b?.legacy ? ' (older Memory status: field — the next onboarding writes Baseline:)' : '';
+    const look = decided ? null : inspect(target);
+    const cut = look !== null && Object.values(look.truncated).some(Boolean);
+    if (decided) add('ok', `project memory: baseline ${b.state === 'approved' ? 'Approved' : 'Waived'}${b.name ? ` — ${b.name}` : ''} · ${b.date}${legacy}`);
+    else if (look!.kind === 'greenfield') add('ok', `project memory: greenfield — no baseline needed yet${cut ? ' (only part of the tree was read — run burhan inspect)' : ''}`);
+    else if (b?.state === 'draft') add('warn', `project memory: the baseline is a Draft${legacy} — finish the onboarding and get the person's decision (Claude Code: /burhan:onboard · Codex: .burhan/commands/onboard.md)`);
+    else add('warn', `project memory: this project has code but no approved baseline${b?.state === 'malformed' ? ' (the Baseline line is not in an exact form)' : ''} — run the onboarding (Claude Code: /burhan:onboard · Codex: .burhan/commands/onboard.md), or the person waives it`);
+    const mem = checkMemory(target);
+    if (mem.present) {
+      const fails = mem.problems.filter((x) => x.level === 'fail').length;
+      if (fails > 0) add('warn', `project memory: memory check: ${fails} fail — run burhan memory check`);
+      let changed = 0; let missing = 0;
+      const cache = new Map<string, string>();
+      for (const f of mem.facts) {
+        if (f.state === 'superseded') continue;
+        const st = factFreshness(f, target, cache);
+        if (st === 'changed') changed++; else if (st === 'missing') missing++;
+      }
+      if (changed + missing > 0) add('warn', `project memory: ${changed} fact${changed === 1 ? '' : 's'} changed, ${missing} missing — changed does not mean false: run burhan memory status and refresh them (.burhan/commands/onboard.md · Refresh)`);
+    }
+  } catch { add('skip', 'project memory: could not be read'); }
 
   const ignoredCommitted = ignoredCommittedSetupFiles(target);
   if (ignoredCommitted.length) add('warn', `git ignores setup files. Add these exact lines to .gitignore; burhan did not edit it:\n${ignoredCommitted.join('\n')}`);

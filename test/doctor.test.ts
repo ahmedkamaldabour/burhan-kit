@@ -114,6 +114,10 @@ test('claude: an unwired hook fails; missing commands or reviewer fail; an old c
   const cs = runChecks(q, probe());
   assert.ok(find(cs, 'warn', 'qc.md'), 'a command not managed by burhan is reported');
   assert.ok(find(cs, 'warn', 'burhan-reviewer'), 'a reviewer not managed by burhan is reported');
+  const o = project();
+  rmSync(join(o, '.claude/commands/burhan/onboard.md'));
+  assert.ok(find(runChecks(o, probe()), 'fail', 'onboard.md'), 'a missing onboard command is a fail');
+  assert.ok(find(runChecks(project(), probe()), 'ok', '.claude/commands/burhan/onboard.md'), 'an installed onboard command is ok');
 
   assert.ok(!find(runChecks(project(), probe({ claudeVersion: () => '2.1.200' })), 'warn', 'verify'), 'no verify skill → no version warning');
   const v = project();
@@ -278,4 +282,68 @@ test('an agent installed under the Node runtime has no adapter directory and is 
   const cs = runChecks(project(['claude', 'codex']), probe());
   assert.ok(find(cs, 'ok', '.codex/hooks.json: all 5 hooks wired'));
   assert.ok(!find(cs, 'skip', 'codex: not installed'));
+});
+
+// Project memory (project-scan-and-memory SU7, AC-09 (e)).
+test('project memory: a brownfield without a decided baseline warns, a Draft warns, a decided one is ok; greenfield is ok', async () => {
+  const { createHash } = await import('node:crypto');
+  const p = project();
+  assert.ok(find(runChecks(p, probe()), 'ok', 'project memory: greenfield'), 'a fresh project needs no baseline');
+  mkdirSync(join(p, 'src'));
+  for (let i = 0; i < 12; i++) writeFileSync(join(p, 'src', `f${i}.ts`), `x${i}`);
+  assert.ok(find(runChecks(p, probe()), 'warn', 'no approved baseline'), 'brownfield, no PROJECT.md');
+  writeFileSync(join(p, '.burhan/PROJECT.md'), '- **Baseline:** Draft\n');
+  assert.ok(find(runChecks(p, probe()), 'warn', 'baseline is a Draft'));
+  writeFileSync(join(p, '.burhan/PROJECT.md'), '- **Baseline:** Approved — Ahmed · 2026-10-19\n');
+  const ok = find(runChecks(p, probe()), 'ok', 'baseline Approved — Ahmed · 2026-10-19');
+  assert.ok(ok, 'the decided baseline is named');
+  const h = (s: string): string => createHash('sha256').update(s).digest('hex').slice(0, 16);
+  mkdirSync(join(p, '.burhan/context'));
+  writeFileSync(join(p, '.burhan/context/stack.md'), `## Current\n| ID | Fact | Confidence | Evidence | Verified |\n|--|--|--|--|--|\n| STACK-a | A. | confirmed | \`src/f0.ts\` sha256:${h('x0')} | 2026-10-19 |\n| STACK-b | B. | confirmed | \`src/f1.ts\` sha256:${h('old')} | 2026-10-19 |\n| STACK-c | C. | confirmed | \`src/gone.ts\` sha256:${h('x')} | 2026-10-19 |\n`);
+  const fresh = find(runChecks(p, probe()), 'warn', 'project memory: 1 fact changed, 1 missing');
+  assert.ok(fresh && fresh.text.includes('changed does not mean false') && fresh.text.includes('memory status'), fresh?.text);
+  writeFileSync(join(p, '.burhan/context/data.md'), '## Current\n| ID | Fact | Confidence | Evidence | Verified |\n|--|--|--|--|--|\n| STACK-a | dup | confirmed | `x` | 2026-10-19 |\n');
+  assert.ok(find(runChecks(p, probe()), 'warn', 'memory check: 1 fail'));
+  assert.ok(!runChecks(p, probe()).some((c) => c.status === 'fail' && c.text.includes('memory')), 'memory findings never fail doctor');
+});
+
+test('project memory (review fixes): Waived is ok, a malformed line says so, superseded facts are not counted, WF_CODE_REGEX decides, a cut walk is said', async () => {
+  const p = project();
+  mkdirSync(join(p, 'src'));
+  for (let i = 0; i < 12; i++) writeFileSync(join(p, 'src', `f${i}.ts`), `x${i}`);
+  writeFileSync(join(p, '.burhan/PROJECT.md'), '- **Baseline:** Waived — Sam · 2026-10-19\n');
+  assert.ok(find(runChecks(p, probe()), 'ok', 'baseline Waived — Sam · 2026-10-19'));
+  writeFileSync(join(p, '.burhan/PROJECT.md'), '- **Baseline:** Approved\n');
+  assert.ok(find(runChecks(p, probe()), 'warn', 'the Baseline line is not in an exact form'));
+  writeFileSync(join(p, '.burhan/PROJECT.md'), '- **Memory status:** Draft (awaiting human approval)\n');
+  assert.ok(find(runChecks(p, probe()), 'warn', 'older Memory status: field'));
+  writeFileSync(join(p, '.burhan/PROJECT.md'), '- **Baseline:** Approved — Ahmed · 2026-10-19\n');
+  mkdirSync(join(p, '.burhan/context'));
+  writeFileSync(join(p, '.burhan/context/old.md'), '## Superseded\n| ID | Fact | Confidence | Evidence | Verified | Superseded by | When |\n|--|--|--|--|--|--|--|\n| OLD-a | A. | inferred | `src/gone.ts` sha256:0123456789abcdef | 2026-10-01 | OLD-b | 2026-10-19 |\n');
+  assert.ok(!runChecks(p, probe()).some((c) => c.text.includes('missing —')), 'a superseded fact is history, not counted');
+  edit(cfg(p), (s2) => `${s2}\nWF_CODE_REGEX='^lib/'\n`);
+  writeFileSync(join(p, '.burhan/PROJECT.md'), '# P\n');
+  assert.ok(find(runChecks(p, probe()), 'ok', 'greenfield'), 'src/*.ts do not match WF_CODE_REGEX');
+  const wide = project();
+  for (let d = 0; d < 25; d++) { mkdirSync(join(wide, `a${d}`)); for (let i = 0; i < 900; i++) writeFileSync(join(wide, `a${d}`, `n${i}.md`), ''); }
+  mkdirSync(join(wide, 'zz')); for (let i = 0; i < 12; i++) writeFileSync(join(wide, 'zz', `f${i}.ts`), '');
+  const cut = find(runChecks(wide, probe()), 'ok', 'greenfield');
+  assert.ok(cut && cut.text.includes('only part of the tree was read'), cut?.text);
+});
+
+test('freshness hashes each file once and leaves files over 64 MiB unchecked', async () => {
+  const { factFreshness, MAX_HASH_BYTES } = await import('../src/lib/memory.js');
+  assert.equal(MAX_HASH_BYTES, 64 * 1024 * 1024);
+  const p = tmpDir('burhan-doctor-big-');
+  const { openSync, ftruncateSync, closeSync } = await import('node:fs');
+  const fd = openSync(join(p, 'big.bin'), 'w'); ftruncateSync(fd, MAX_HASH_BYTES + 1); closeSync(fd);
+  const f = { id: 'D-a', state: 'current' as const, file: 'x', line: 1, confidence: 'confirmed', evidence: '`big.bin` sha256:0123456789abcdef', verified: '2026-10-19' };
+  const t0 = performance.now();
+  assert.equal(factFreshness(f, p), 'unchecked');
+  assert.ok(performance.now() - t0 < 200, 'not read');
+  const cache = new Map<string, string>();
+  writeFileSync(join(p, 'a.txt'), 'A');
+  const g = { ...f, evidence: '`a.txt` sha256:0123456789abcdef' };
+  factFreshness(g, p, cache); factFreshness(g, p, cache);
+  assert.equal(cache.size, 1);
 });

@@ -62,7 +62,7 @@ function committedSetupFiles(target: string, planned?: readonly PlannedFile[]): 
       : filesBelow(target, file.rel);
   });
   const files = filesBelow(target, '.burhan');
-  for (const rel of ['.claude/settings.json', '.claude/commands/burhan/e2e.md', '.claude/commands/burhan/qc.md', '.claude/agents/burhan-reviewer.md', '.claude/skills/burhan-verify/SKILL.md', '.codex/hooks.json', 'CLAUDE.md', 'AGENTS.md']) {
+  for (const rel of ['.claude/settings.json', '.claude/commands/burhan/e2e.md', '.claude/commands/burhan/qc.md', '.claude/commands/burhan/onboard.md', '.claude/agents/burhan-reviewer.md', '.claude/skills/burhan-verify/SKILL.md', '.codex/hooks.json', 'CLAUDE.md', 'AGENTS.md']) {
     try { if (statSync(join(target, rel)).isFile()) files.push(rel); } catch { /* absent is fine */ }
   }
   return files.filter((rel) => !privateFile(rel));

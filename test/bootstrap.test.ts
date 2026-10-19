@@ -12,6 +12,7 @@ test('bodies: claude imports the rules, codex reads them and explains $ARGUMENTS
   assert.match(bootstrapBody('claude'), /^@\.burhan\/bindings\.md$/m);
   assert.match(bootstrapBody('codex'), /Read `\.burhan\/WORKFLOW\.md`/);
   assert.match(bootstrapBody('codex'), /\.burhan\/commands\/e2e\.md/);
+  assert.match(bootstrapBody('codex'), /\.burhan\/commands\/onboard\.md/);
   assert.match(bootstrapBody('codex'), /\$ARGUMENTS/);
 });
 

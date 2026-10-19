@@ -158,3 +158,9 @@ R155|commands/e2e.md|**S+P** → one approval gate, two files
 R156|core|`.burhan/bindings.md`
 R157|phases/memory.md|`.burhan/PROJECT.md`
 R158|phases/memory.md|`.burhan/context/<area>.md`
+R159|phases/memory.md|asks the person for their name and writes it exactly as given, never guessed
+R160|phases/memory.md|a request is a task to do, not knowledge about the project
+R161|phases/memory.md|which setting holds a secret, never the secret itself
+R162|phases/memory.md|burhan cannot check what was read
+R163|phases/memory.md|`changed` does not mean false
+R164|phases/memory.md|never use `merge=union`

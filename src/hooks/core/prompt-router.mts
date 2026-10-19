@@ -1,6 +1,7 @@
 /** User prompt phase suggestions (port of prompt-router.sh). */
 import { ere } from './ere.mjs';
 import type { Check } from './lib.mjs';
+import { reminderLine, undecided } from './understanding.mjs';
 
 // Arabic has no \b in grep; bound Arabic words by whitespace/ASCII punctuation instead, so that
 // e.g. "المعدل" does not match "عدل" and "مخلص" does not match "خلص".
@@ -16,7 +17,8 @@ function sedGlobal(text: string, src: string, replacement: string): string {
   return text.replace(new RegExp(src, 'g'), replacement);
 }
 
-export const promptRouter: Check = ({ ev, cfg }) => {
+export const promptRouter: Check = (ctx) => {
+  const { ev, cfg } = ctx;
   const raw = ev.get('.prompt');
   if (raw === '') return [];
   if (raw.includes('SYSTEM NOTIFICATION') || raw.includes('task-notification') || raw.includes('local-command-caveat')) return [];
@@ -82,5 +84,11 @@ export const promptRouter: Check = ({ ev, cfg }) => {
     add('• Finishing a branch → merge / PR / cleanup is the human\'s decision.', 'superpowers:finishing-a-development-branch');
   }
   if (out === '' && skills) out = '• No phase keyword matched — run superpowers:using-superpowers before acting.';
-  return out === '' ? [] : [`⚑ Router — before acting:\n${out}`];
+  const found = out === '' ? [] : [`⚑ Router — before acting:\n${out}`];
+  // The understanding reminder is its own line, outside the two-line cap; not while the person runs the onboarding.
+  let state: ReturnType<typeof undecided> = null;
+  if (!m(`burhan:onboard|commands/onboard\\.md|${W}understand (this|the) project${WE}|${AB}(افهم|فهم) المشروع${AE}`)) {
+    try { state = undecided(ctx); } catch { state = null; }
+  }
+  return state === null ? found : [...found, reminderLine(state)];
 };

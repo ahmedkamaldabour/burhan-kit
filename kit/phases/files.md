@@ -43,6 +43,7 @@ whole **Now** when there is none).
 | `Mode` | `step` or `auto` | state file | session start (anything else = `step`) |
 | `Read-only` | `yes` or `no` — on an `investigation` or `bug / spike` route anything but `no` counts as `yes` | state file | read-only check |
 | `Accepted by` | `<name> · YYYY-MM-DD` — written only after the human accepts | QC | stats, docs index |
+| `Baseline` | PROJECT.md: `Draft`, `Approved — <name> · YYYY-MM-DD` or `Waived — <name> · YYYY-MM-DD` (the name has a letter and no `<` or `·`); story: the same Approved or Waived form, or `n/a (greenfield)`. Older projects: `Memory status: Approved YYYY-MM-DD` counts as Approved (no name), any other `Memory status:` value counts as `Draft` | `.burhan/PROJECT.md`, story | memory check, reminders, turn-end warning, doctor |
 | `Reopened after PASS` | `YYYY-MM-DD — why`, or `—` | plan | stats (escaped defects) |
 | `Performed by` | `<agent> · <model> · <context>` — context: `fresh subagent`, `other agent`, `human` or `same session` | review, QC | QC provenance check, stats |
 

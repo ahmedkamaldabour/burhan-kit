@@ -18,7 +18,7 @@ export function bootstrapBody(agent: Agent): string {
     ...(agent === 'claude'
       ? ['@.burhan/WORKFLOW.md', '@.burhan/bindings.md']
       : ['Read `.burhan/WORKFLOW.md` before any project work. Work-item commands are described in',
-         '`.burhan/commands/e2e.md` and `.burhan/commands/qc.md`; when following one,',
+         '`.burhan/commands/e2e.md`, `.burhan/commands/qc.md` and `.burhan/commands/onboard.md`; when following one,',
          '`$ARGUMENTS` means the work-item slug (or title) the user names.']),
     '',
     'At the start of every session, read the state file named in `.burhan/bindings.md` first.',

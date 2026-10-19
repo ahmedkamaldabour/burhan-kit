@@ -48,7 +48,9 @@ check_eq "existing permission kept" "$(jq -c .permissions "$S")" '{"allow":["Bas
 check "existing Stop hook kept" "$(jq -r '.. | .command? // empty' "$S")" has "echo mine"
 check "turn-audit wired (exec form: node + args)" "$(hooks_of "$S")" has 'node ${CLAUDE_PROJECT_DIR}/.burhan/hooks/node/main.mjs claude hook turn-audit'
 check "no absolute home paths" "$(cat "$S")" lacks "$HOME/"
-check "Claude commands installed" "$( [ -f "$R/.claude/commands/burhan/e2e.md" ] && [ -f "$R/.claude/commands/burhan/qc.md" ] && echo yes)" has yes
+check "Claude commands installed" "$( [ -f "$R/.claude/commands/burhan/e2e.md" ] && [ -f "$R/.claude/commands/burhan/qc.md" ] && [ -f "$R/.claude/commands/burhan/onboard.md" ] && echo yes)" has yes
+check "the onboard command is managed" "$(head -6 "$R/.claude/commands/burhan/onboard.md")" has "managed by burhan"
+check "the onboard command reaches Codex as a file" "$( [ -f "$R/.burhan/commands/onboard.md" ] && echo yes)" has yes
 check "bootstrap block added" "$(cat "$R/CLAUDE.md")" has "<!-- burhan:start"
 check "bootstrap imports WORKFLOW.md" "$(cat "$R/CLAUDE.md")" has "@.burhan/WORKFLOW.md"
 check "content outside block preserved" "$(cat "$R/CLAUDE.md")" has "Keep this line."

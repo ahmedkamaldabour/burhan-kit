@@ -8,6 +8,7 @@ import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
 import { evidenceRoot, fingerprintRefresh, linkedItem, linkItem, mtime, projectKey, safeId, stateSnapshotFile } from './store.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
+import { gateLine, undecided } from './understanding.mjs';
 
 const CLAIM = '(^|[^[:alnum:]_])(done|fixed|passing|passes|complete|completed|works now)([^[:alnum:]_]|$)|✅|(^|[[:space:][:punct:]])(خلص|خلصت|اتصلح)([[:space:][:punct:]]|$)';
 const PERFORMED = '[^·<>]*[^·<>[:space:]] · [^·<>]*[^·<>[:space:]] · (fresh subagent|other agent|human|same session)';
@@ -135,6 +136,15 @@ const gateE: Gate = (audit) => {
   return stale.length === 0 ? [] : [`⚠ STALE-STATUS GATE: ${stale.join(', ')} says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.`];
 };
 
+/** The patch lane: a `patch — <reason>` routing line this turn, the item's route a patch when an item applies, and no
+ *  sensitive path written (WORKFLOW §3). Shared by the skill gate and the baseline gate. */
+const patchTurn = (audit: Audit): boolean => {
+  let patch = ereTest('^[[:space:]>*_-]*patch\\**[[:space:]]*(—|–)', audit.text, { i: true });
+  if (patch && resolvedSlug(audit) !== '') patch = ['change / patch', 'bug / patch', 'refactor / patch'].includes(itemRoute(resolvedItemNow(audit)));
+  if (patch && (audit.ctx.cfg.WF_SENSITIVE_REGEX ?? '') !== '' && matches(audit.ctx.cfg.WF_SENSITIVE_REGEX ?? '', audit.written.join('\n'))) patch = false;
+  return patch;
+};
+
 // ---- F ---------------------------------------------------------------------
 const gateF: Gate = (audit) => {
   if (audit.ctx.cfg.WF_SKILLS !== 'superpowers') return [];
@@ -143,9 +153,7 @@ const gateF: Gate = (audit) => {
   const used = (pattern: string): boolean => ereTest(pattern, audit.skillsUsed.join('\n'));
   if (ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && !used('brainstorming')) out.push('⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.');
   if (ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && !used('writing-plans')) out.push('⚠ SKILL GATE (plan): a plan was CREATED this turn without superpowers:writing-plans.');
-  let patch = ereTest('^[[:space:]>*_-]*patch\\**[[:space:]]*(—|–)', audit.text, { i: true });
-  if (patch && resolvedSlug(audit) !== '') patch = ['change / patch', 'bug / patch', 'refactor / patch'].includes(itemRoute(resolvedItemNow(audit)));
-  if (patch && (audit.ctx.cfg.WF_SENSITIVE_REGEX ?? '') !== '' && matches(audit.ctx.cfg.WF_SENSITIVE_REGEX ?? '', audit.written.join('\n'))) patch = false;
+  const patch = patchTurn(audit);
   if (matches(audit.ctx.cfg.WF_CODE_REGEX ?? '', audit.written.join('\n')) && !patch && !used('test-driven-development|systematic-debugging')) out.push('⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.');
   const reviews = audit.written.filter((file) => ereTest('/reviews/[^/]+\\.md$', file) && !ereTest('-(qc|verification)(-r[0-9]+)?\\.md$', file));
   if (reviews.length > 0 && !used('requesting-code-review')) out.push('⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review.');
@@ -218,7 +226,19 @@ const gateH: Gate = (audit) => {
   return out;
 };
 
-const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateH];
+// ---- Baseline (project understanding) ------------------------------------
+const gateBaseline: Gate = (audit) => {
+  // The onboarding turn writes only memory files, so it never reaches this gate (no story, no code).
+  const story = ereTest(`${docsRe(audit)}.*-story\\.md$`, audit.written.join('\n'));
+  const code = codeInTurn(audit);
+  if (!story && !code) return [];
+  if (patchTurn(audit)) return [];
+  const state = undecided(audit.ctx);
+  if (state === null) return [];
+  return [gateLine(story && code ? 'a story was written and code was edited' : story ? 'a story was written' : 'code was edited', state)];
+};
+
+const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateH, gateBaseline];
 
 export const turnAudit: Check = (ctx) => {
   const auditCtx = { ...ctx, env: { ...ctx.env, ...ctx.cfg } };
