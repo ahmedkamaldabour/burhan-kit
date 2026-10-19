@@ -4,15 +4,14 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ereToJs, evidenceRoot, projectKey, readLedger, summarizeLedger } from '../src/lib/evidence.js';
-import { kitDir, nodeHooksDir } from '../src/lib/kit.js';
+import { nodeHooksDir } from '../src/lib/kit.js';
 import { evidenceRoot as hookEvidenceRoot, projectKey as hookProjectKey } from '../src/hooks/core/store.mjs';
 import { runCli } from '../src/main.js';
 import { capture, tmpDir } from './helpers.js';
 
 const tmp = (p: string) => tmpDir(p);
 
-/** Runs the real Node turn-audit hook on an event (the hooks need no bash; their equality with the bash hooks is the
- *  differential's job), so the CLI is tested against what the hook writes. */
+/** Runs the real Node turn-audit hook on an event, so the CLI is tested against what the hook writes. */
 function runTurnAudit(event: string, evdir: string): ReturnType<typeof spawnSync> {
   return spawnSync(process.execPath, [join(nodeHooksDir(), 'main.mjs'), 'core', 'turn-audit'], { input: event, encoding: 'utf8', env: { ...process.env, WF_EVIDENCE_DIR: evdir } });
 }
@@ -38,12 +37,10 @@ test('the project key matches the Node hooks\' own project key (not a re-impleme
   assert.equal(projectKey(p), hookProjectKey(p));
 });
 
-const hasBash = spawnSync('bash', ['-c', 'exit 0']).status === 0;
-// Git Bash computes the key from an MSYS path (/d/a/...), not the Windows path the Node hooks hash: only Unix compares them.
-test('the project key matches the bash hooks\' wf_project_key', { skip: process.platform === 'win32' ? 'bash paths are MSYS paths on Windows' : hasBash ? false : 'bash is not available' }, () => {
-  const p = project();
-  const r = spawnSync('bash', ['-c', '. "$1/hooks/core/lib.sh"; WF_PROJECT="$2"; wf_project_key', '_', kitDir(), p], { encoding: 'utf8' });
-  assert.equal(projectKey(p), r.stdout.trim());
+// The literal is what the 0.2.2 bash hooks' wf_project_key printed for this path (measured 2026-10-19, before they were
+// removed): a 0.2.2 evidence ledger keeps its directory name after the upgrade.
+test('the project key keeps the 0.2.2 value: sha256 of the physical path, 16 hex characters', () => {
+  assert.equal(hookProjectKey('/nonexistent/burhan-key-pin'), '2a6904cdcc79ead7');
 });
 
 test('stats reads POSIX classes in WF_EVIDENCE_REGEX the way the hook (grep -E) does', () => {

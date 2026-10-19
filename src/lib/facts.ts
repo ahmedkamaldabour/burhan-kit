@@ -43,7 +43,7 @@ const PRE_FIELD_INDEPENDENT = /\(subagent\)|\bby an? (fresh |independent )?subag
 /** "Performed by: <agent> · <model> · <context>" — the context is exactly one of four values. */
 const CONTEXT: Record<string, Independence> = { 'same session': 'self', 'fresh subagent': 'independent', 'other agent': 'independent', human: 'independent' };
 /** Exactly "<agent> · <model> · <context>" (asterisks removed first). Same rule as the hook's
- *  WF_PERFORMED_RE in kit/hooks/core/lib.sh. */
+ *  PERFORMED in src/hooks/core/turn-audit.mts. */
 const PERFORMED = /^[^·<>]*[^·<>\s] · [^·<>]*[^·<>\s] · (fresh subagent|other agent|human|same session)$/;
 export const performedBy = (raw: string): Independence => {
   const m = PERFORMED.exec(raw.replace(/\*/g, '').trim());

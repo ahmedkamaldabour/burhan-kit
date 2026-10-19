@@ -251,14 +251,15 @@ t1=$(date +%s)
 check_eq "60 agents found through their meta files" "$n" "60"
 check_eq "...within the Stop hook's time budget (< 8 s here)" "$( [ $((t1 - t0)) -lt 8 ] && echo fast || echo "slow: $((t1 - t0)) s")" "fast"
 
-echo "claude settings snippet"
-SN="$A/settings.snippet.json"
+echo "claude settings snippet (Node, exec form)"
+SN="$A/settings.node.snippet.json"
 check_eq "valid JSON" "$(jq -e . "$SN" >/dev/null && echo ok)" "ok"
-check "commands use the canonical adapter path" "$(jq -r '.. | .command? // empty' "$SN")" has ".burhan/hooks/adapters/claude/hook.sh"
-check "no ownership comments in commands" "$(jq -r '.. | .command? // empty' "$SN")" lacks "<!--"
+check_eq "every entry runs node" "$(jq -r '[.. | .command? // empty] | unique | join(",")' "$SN")" "node"
+check "entries use the canonical install path" "$(jq -r '.. | .args? // empty | .[0]' "$SN")" has '${CLAUDE_PROJECT_DIR}/.burhan/hooks/node/main.mjs'
+check "no ownership comments in commands" "$(cat "$SN")" lacks "<!--"
 for c in session-gates prompt-router pre-commit-check post-edit-reminder turn-audit; do
-  check "wires $c" "$(jq -r '.. | .command? // empty' "$SN")" has "hook.sh\" $c"
-  check "$c script exists" "$( [ -f "$T_KIT/hooks/core/$c.sh" ] && echo yes)" has yes
+  check "wires $c" "$(jq -r '.. | .args? // empty | join(" ")' "$SN")" has "claude hook $c"
+  check "$c check exists" "$( [ -f "$T_ROOT/src/hooks/core/$c.mts" ] && echo yes)" has yes
 done
 check "paths are project-relative" "$(cat "$SN")" lacks "$HOME/"
 check "pre-commit timeout exceeds the default check timeout" "$(jq '.hooks.PreToolUse[0].hooks[0].timeout > 60' "$SN")" has "true"

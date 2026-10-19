@@ -2,8 +2,7 @@
 # Helpers for core hook tests. Source after tests/lib.sh.
 #   proj [config-lines...]        -> new project dir with .burhan/workflow.config
 #   ev <json-fragment>            -> normalized event JSON (defaults filled, project_dir = $P)
-#   core <script> <event-json>    -> runs hooks/core/<script>.sh with the event on stdin
-CORE="$T_KIT/hooks/core"
+#   core <check> <event-json>     -> runs the core check (tests/impl.sh: the Node hooks by default) with the event on stdin
 
 proj() {
   P="$(t_tmp)"

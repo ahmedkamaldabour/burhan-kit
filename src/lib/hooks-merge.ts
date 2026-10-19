@@ -46,19 +46,39 @@ export function validHooksFile(v: unknown): v is Settings {
   return isObject(h) && Object.values(h).every((groups) => Array.isArray(groups) && groups.every(validGroup));
 }
 
-/** Everything burhan has ever written for this agent: the kit's bash and Node snippets, and the bash snippet an
- *  older install left in the project — so an upgrade from any layout replaces the old entries instead of duplicating them. */
+/** The hook commands burhan 0.2.2 wrote for the bash runtime (removed in 0.3.0). An upgrade still has to recognise them as ours so it
+ *  replaces them instead of leaving them beside the Node entries; they used to come from the kit's bash snippets, which no longer ship.
+ *  Pinned byte for byte to the v0.2.2 snippets by test/legacy-bash.test.ts. */
+export const LEGACY_BASH_COMMANDS: Record<'claude' | 'codex', readonly string[]> = {
+  claude: [
+    "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" session-gates",
+    "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" prompt-router",
+    "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" pre-commit-check",
+    "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" post-edit-reminder",
+    "bash \"${CLAUDE_PROJECT_DIR:-.}/.burhan/hooks/adapters/claude/hook.sh\" turn-audit",
+  ],
+  codex: [
+    "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" session-gates; exit 0",
+    "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" prompt-router; exit 0",
+    "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" pre-commit-check; exit 0",
+    "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" post-edit-reminder; exit 0",
+    "d=\"$PWD\"; while [ \"$d\" != / ] && [ ! -f \"$d/.burhan/hooks/adapters/codex/hook.sh\" ]; do d=\"$(dirname \"$d\")\"; done; f=\"$d/.burhan/hooks/adapters/codex/hook.sh\"; [ -f \"$f\" ] && exec bash \"$f\" turn-audit; exit 0",
+  ],
+};
+
+/** Everything burhan has ever written for this agent: the 0.2.2 bash commands, the bash snippet an older project still holds (it may
+ *  carry commands of an even older release), the kit's Node snippet, and the Node one this project was installed with — so an upgrade
+ *  from any layout replaces the old entries instead of duplicating them. */
 export function burhanHookKeys(target: string, agent: 'claude' | 'codex'): string[] {
   const name = agent === 'claude' ? 'settings' : 'hooks';
-  const rels = [`hooks/adapters/${agent}/${name}.snippet.json`, `hooks/adapters/${agent}/${name}.node.snippet.json`];
-  // The kit's snippets, the bash one an older project holds, and the Node one this project was installed with (kept so a later
-  // release that changes an entry still recognises the old one as ours).
-  return [...rels.map((r) => join(kitDir(), r)), join(target, '.burhan', rels[0]), join(target, '.burhan/hooks/node/snippets', `${agent}.snippet.json`)].flatMap((file) => {
+  const node = `hooks/adapters/${agent}/${name}.node.snippet.json`;
+  const files = [join(kitDir(), node), join(target, '.burhan', `hooks/adapters/${agent}/${name}.snippet.json`), join(target, '.burhan/hooks/node/snippets', `${agent}.snippet.json`)];
+  return [...LEGACY_BASH_COMMANDS[agent], ...files.flatMap((file) => {
     try {
       const settings: unknown = JSON.parse(readFileSync(file, 'utf8'));
       return validHooksFile(settings) ? snippetKeys(settings) : [];
     } catch { return []; }
-  });
+  })];
 }
 
 /** True when the agent's hook file holds one of our entries (any layout burhan ever wrote). A file that is no longer valid

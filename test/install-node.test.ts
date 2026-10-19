@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { applyPlan, planInstall, type InstallOptions } from '../src/lib/install.js';
 import { installRoot } from '../src/hooks/install-root.mjs';
+import { bashInstall } from './legacy-bash.js';
 import { tmpDir } from './helpers.js';
 
 function freshRepo(config?: string): string {
@@ -49,49 +50,38 @@ test('the layout is pinned: the entry sits where installRoot finds the project',
   assert.ok(launcher.includes("'.burhan','hooks','node','main.mjs'"), 'the Codex launcher looks for exactly that path');
 });
 
-test('WF_HOOK_RUNTIME=bash keeps the 0.2 bash hooks and removes the Node directory; switching back and forth is clean and idempotent', () => {
+test('a leftover WF_HOOK_RUNTIME=bash installs the Node hooks and says the key was removed in 0.3.0', () => {
   const d = freshRepo(BASH);
-  run(opts(d));
-  assert.ok(existsSync(join(d, '.burhan/hooks/core/lib.sh')));
-  assert.ok(existsSync(join(d, '.burhan/hooks/adapters/claude/hook.sh')));
-  assert.equal(existsSync(join(d, '.burhan/hooks/node')), false);
-  assert.ok(commands(d).every((e) => e.command.startsWith('bash ') && e.args === undefined));
-  const bashTree = tree(d);
-  run(opts(d, { mode: 'upgrade', agents: null }));
-  assert.deepEqual(tree(d), bashTree, 'a second bash upgrade changes nothing');
-
-  writeFileSync(join(d, '.burhan/workflow.config'), 'WF_HOOK_RUNTIME=node\n');
-  run(opts(d, { mode: 'upgrade', agents: null }));
+  const plan = planInstall(opts(d, { apply: false }));
+  assert.ok(plan.steps.some((s) => /WF_HOOK_RUNTIME=bash/u.test(s.say) && /removed in 0\.3\.0/u.test(s.say) && /Node/u.test(s.say)), 'the note names the key and the release');
+  applyPlan(plan);
+  assert.ok(existsSync(join(d, '.burhan/hooks/node/main.mjs')));
   assert.equal(existsSync(join(d, '.burhan/hooks/core')), false);
   assert.equal(existsSync(join(d, '.burhan/hooks/adapters')), false);
-  assert.ok(existsSync(join(d, '.burhan/hooks/node/main.mjs')));
-  const nodeTree = tree(d);
+  assert.ok(commands(d).every((e) => e.command === 'node' && e.args !== undefined), 'Claude gets the exec form');
+  const settled = tree(d);
   run(opts(d, { mode: 'upgrade', agents: null }));
-  assert.deepEqual(tree(d), nodeTree, 'a second node upgrade changes nothing');
-
-  writeFileSync(join(d, '.burhan/workflow.config'), BASH);
-  run(opts(d, { mode: 'upgrade', agents: null }));
-  assert.equal(existsSync(join(d, '.burhan/hooks/node')), false);
-  assert.ok(existsSync(join(d, '.burhan/hooks/core/lib.sh')));
+  assert.deepEqual(tree(d), settled, 'a second upgrade changes nothing');
 });
 
-test('an unknown WF_HOOK_RUNTIME is a note and means node', () => {
+test('any other WF_HOOK_RUNTIME value is a note and means node; "node" is silent', () => {
   const d = freshRepo('WF_HOOK_RUNTIME=perl\n');
   const p = planInstall(opts(d, { apply: false }));
-  assert.ok(p.steps.some((s) => /WF_HOOK_RUNTIME/u.test(s.say) && /perl/u.test(s.say)));
+  assert.ok(p.steps.some((s) => /WF_HOOK_RUNTIME/u.test(s.say) && /perl/u.test(s.say) && /no longer used/u.test(s.say)));
   applyPlan(p);
   assert.ok(existsSync(join(d, '.burhan/hooks/node/main.mjs')));
+  const quiet = planInstall(opts(freshRepo('WF_HOOK_RUNTIME=node\n'), { apply: false }));
+  assert.equal(quiet.steps.some((s) => /WF_HOOK_RUNTIME/u.test(s.say)), false);
 });
 
 test('upgrading a 0.2 bash install: Node commands, no old entries, the user\'s own hooks kept, bash dirs gone, nothing duplicated', () => {
-  const d = freshRepo(BASH);
-  run(opts(d, { agents: ['claude', 'codex'] }));
+  const d = freshRepo();
+  bashInstall(d, ['claude', 'codex']);
   const mine = { type: 'command', command: 'node', args: ['tools/mine.js'] };
   const file = join(d, '.claude/settings.json');
   const cur = settings(d);
   cur.hooks.Stop.unshift({ hooks: [mine] } as never);
   writeFileSync(file, JSON.stringify(cur, null, 2));
-  writeFileSync(join(d, '.burhan/workflow.config'), ''); // the default runtime is node
   const plan = planInstall(opts(d, { mode: 'upgrade', agents: null, apply: false }));
   assert.deepEqual([...plan.agents].sort(), ['claude', 'codex'], 'agents are found from the installed adapters');
   assert.ok(plan.steps.some((s) => /trust/iu.test(s.say) && /codex/iu.test(s.say)), 'the Codex re-trust notice is part of the plan');
@@ -115,9 +105,8 @@ test('under the Node runtime the installed agents are found from their hook file
 });
 
 test('the plan lists the Node directory and the removed bash directories as kit files', () => {
-  const d = freshRepo(BASH);
-  run(opts(d));
-  writeFileSync(join(d, '.burhan/workflow.config'), '');
+  const d = freshRepo();
+  bashInstall(d, ['claude']);
   const plan = planInstall(opts(d, { mode: 'upgrade', agents: null, apply: false }));
   const f = (rel: string) => plan.files.find((x) => x.rel === rel);
   assert.deepEqual(f('.burhan/hooks/node/'), { rel: '.burhan/hooks/node/', existed: false, action: 'create', kind: 'kit' });
@@ -125,20 +114,16 @@ test('the plan lists the Node directory and the removed bash directories as kit 
   assert.equal(f('.burhan/hooks/adapters/claude/')?.action, 'remove');
 });
 
-test('a runtime switch with a partial --agents list rewrites every installed agent (no dangling hooks)', () => {
-  const d = freshRepo(BASH);
-  run(opts(d, { agents: ['claude', 'codex'] }));
-  writeFileSync(join(d, '.burhan/workflow.config'), 'WF_HOOK_RUNTIME=node\n');
+test('replacing the bash hooks with a partial --agents list rewrites every installed agent (no dangling hooks)', () => {
+  const d = freshRepo();
+  bashInstall(d, ['claude', 'codex']);
   const plan = planInstall(opts(d, { mode: 'upgrade', agents: ['codex'], apply: false }));
   assert.deepEqual([...plan.agents].sort(), ['claude', 'codex'], 'the bash hooks go away for everyone, so everyone is rewritten');
-  assert.ok(plan.steps.some((s) => /claude/u.test(s.say) && /runtime|also|every/iu.test(s.say)), 'the plan says why claude is included');
+  assert.ok(plan.steps.some((s) => /claude/u.test(s.say) && /rewritten too/u.test(s.say)), 'the plan says why claude is included');
   applyPlan(plan);
   assert.equal(commands(d).filter((e) => e.command.includes('hook.sh')).length, 0, 'claude no longer points at the removed bash hooks');
   assert.equal(commands(d, '.codex/hooks.json').filter((e) => e.command.includes('hook.sh')).length, 0);
-  writeFileSync(join(d, '.burhan/workflow.config'), BASH);
-  applyPlan(planInstall(opts(d, { mode: 'upgrade', agents: ['claude'], apply: false })));
-  assert.equal(commands(d, '.codex/hooks.json').filter((e) => e.command.startsWith('node -e')).length, 0, 'codex no longer points at the removed Node hooks');
-  assert.ok(existsSync(join(d, '.burhan/hooks/adapters/codex/hook.sh')), 'and the bash codex adapter is there for it');
+  assert.equal(commands(d, '.codex/hooks.json').filter((e) => e.command.startsWith('node -e')).length, 5);
 });
 
 test('the project keeps the Node snippets it was installed with, so a later release recognises these entries as ours', () => {

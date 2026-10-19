@@ -5,7 +5,7 @@ a() { core $S "$(ev "$1")" | jq -r '.message // empty'; }
 # t <created-json> <edited-json> <commands-json> <skills-json> <text>
 t() { jq -cn --argjson c "$1" --argjson e "$2" --argjson s "$3" --argjson k "$4" --arg x "$5" \
   '{turn:{files_created:$c,files_edited:$e,shell_commands:$s,skills_used:$k,assistant_text:$x}}'; }
-echo "turn-audit.sh"
+echo "turn-audit"
 
 BASE=("WF_CODE_REGEX='\\.src\$'" "WF_EVIDENCE_REGEX='^verify-it'")
 
@@ -53,19 +53,6 @@ rm -f "$P/.burhan/local/PROGRESS.md"
 core session-gates "$(ev '{"event":"session_start","session":"state-missing"}')" >/dev/null
 check "missing state snapshot -> still warns" \
   "$(a "$(jq -cn --arg p "$P" '{event:"turn_end",project_dir:$p,session:"state-missing",turn:{files_edited:[".burhan/work/foo/foo-story.md"]}}')")" has "STATE-TRANSITION GATE"
-P="$(proj "${BASE[@]}")"; mkdir -p "$P/.burhan/local"
-printf '%s\n' '## Now' 'portable' > "$P/.burhan/local/PROGRESS.md"
-tools="$(t_tmp)/no-sha-bin"; mkdir -p "$tools"
-for tool in bash jq awk cat cksum cut sed mkdir mktemp mv rm grep sort tail tr wc dirname pwd node; do [ -n "$(command -v "$tool")" ] && ln -s "$(command -v "$tool")" "$tools/$tool"; done
-bash_bin="$(command -v bash)"
-core_without_sha() { PATH="$tools" "$bash_bin" "$T_ROOT/tests/impl.sh" core "$S"; }
-printf '%s' "$(ev '{"event":"session_start","session":"cksum-fingerprint"}')" | core_without_sha session-gates >/dev/null
-snapshot="$(find "$XDG_STATE_HOME" -path '*/cksum-fingerprint/state-fingerprint' -type f -print -quit)"
-check "cksum fallback stores a fingerprint when SHA tools are unavailable" "$(test -n "$snapshot" && sed -n '1p' "$snapshot")" has "file:"
-printf '%s\n' '## Now' 'portable changed' > "$P/.burhan/local/PROGRESS.md"
-out="$(printf '%s' "$(ev '{"event":"turn_end","session":"cksum-fingerprint","turn":{"files_edited":[".burhan/work/foo/foo-story.md"]}}')" | core_without_sha turn-audit | jq -r '.message // empty')"
-check "cksum fingerprint lets B see a disk state update" "$out" lacks "STATE-TRANSITION GATE"
-
 echo "  -- legacy settings are inert"
 P="$(proj "WF_FORBIDDEN_REGEX='run-everything'" "WF_FORBIDDEN_REASON='it melts the laptop'")"
 out="$(a "$(t '[]' '[]' '["tool run-everything --all"]' '[]' '')")"
@@ -77,12 +64,6 @@ mkdir -p "$P/.burhan/local"
 printf '%s\n' "WF_FORBIDDEN_REGEX='run-everything'" "WF_FORBIDDEN_REASON='legacy local reason'" "WF_SINGLE_TEST_HINT='legacy local runner'" > "$P/.burhan/local/workflow.config"
 out="$(a "$(t '[]' '[]' '["tool run-everything"]' '[]' '')")"
 check_eq "legacy local settings emit no audit finding" "$out" ""
-header="$(sed -n '1,16p' "$CORE/turn-audit.sh")"
-check "audit header has no C label" "$header" lacks "#   C "
-for label in D E F G H; do
-  check "audit header retains label $label" "$header" has "#   $label "
-done
-
 echo "  -- D: state file over budget"
 P="$(proj)"; mkdir -p "$P/.burhan/local"
 seq 1 81 > "$P/.burhan/local/PROGRESS.md"

@@ -17,7 +17,7 @@ No “done” without proof: agree on the work first, build in reviewed steps, a
 
 ## Install / Quick start
 
-1. Use Node 22 or newer in the repository you want to set up.
+1. Use Node 22 or newer in the repository you want to set up. The hooks need nothing else: no bash, no jq.
 2. Run:
 
 ```bash
@@ -81,9 +81,24 @@ npx burhan-kit doctor
 
 `init` and `upgrade` show their plan before writing unless you add `--apply`; `doctor` is read-only.
 
+## Upgrading from 0.2.2
+
+`npx burhan-kit upgrade --apply` replaces the 0.2.2 bash hooks with the Node hooks and removes the old hook folders; your own hooks are kept. In Codex, trust the hooks again afterwards. Installs from 0.2.1 or older (under `.workflow/`) are not migrated; see the [changelog](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md).
+
+To go back to 0.2.2, uninstall first and then install the old version. Running `upgrade` with 0.2.2 instead would leave both sets of hooks, so every hook would run twice. Name the agents you use:
+
+```bash
+npx burhan-kit uninstall --apply
+npx burhan-kit@0.2.2 init --agents claude,codex --apply
+```
+
+Your `workflow.config` and `bindings.md` are kept.
+
 ## Supported agents
 
-Claude Code and Codex are supported. In Codex, trust the project hooks after setup or they will not run; the configuration reference explains the trust step.
+Claude Code (2.1.139 or newer) and Codex are supported. In Codex, trust the project hooks after setup or they will not run; the configuration reference explains the trust step.
+
+**Windows:** the hooks run on Node, without bash or jq. CI runs them on `windows-latest` with Node 22 and 24, with and without Git Bash. Not verified yet: Windows with PowerShell only (no Git Bash), and a real Claude Code or Codex session on Windows.
 
 ## Limits
 

@@ -8,7 +8,7 @@ import { BurhanError } from './errors.js';
 import { realTarget } from './fs-safe.js';
 import { isAbsoluteOverride } from '../hooks/core/store.mjs';
 
-/** One step of a turn, as the turn-audit hook records it (kit/hooks/core/turn-audit.sh). */
+/** One step of a turn, as the turn-audit hook records it (src/hooks/core/turn-audit.mts). */
 export interface LedgerRecord {
   ts: string; agent: string; session: string; turn: string; part?: number; seq: number; kind: 'edit' | 'cmd';
   file?: string; cmd?: string; exit?: number | null; status?: string; item: string | null; project: string;

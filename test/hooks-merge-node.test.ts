@@ -5,11 +5,12 @@ import { join } from 'node:path';
 import { hookKey, mergeHooks, readExistingHooks, removeHooks, snippetKeys, validHooksFile, type HookEntry, type Settings } from '../src/lib/hooks-merge.js';
 import { kitDir } from '../src/lib/kit.js';
 import { tmpDir } from './helpers.js';
+import { v022 } from './legacy-bash.js';
 
 const snippet = (rel: string): Settings => JSON.parse(readFileSync(join(kitDir(), 'hooks/adapters', rel), 'utf8')) as Settings;
-const claudeBash = snippet('claude/settings.snippet.json');
+const claudeBash = JSON.parse(v022('claude.settings.snippet.json')) as Settings; // what 0.2.2 installed
 const claudeNode = snippet('claude/settings.node.snippet.json');
-const codexBash = snippet('codex/hooks.snippet.json');
+const codexBash = JSON.parse(v022('codex.hooks.snippet.json')) as Settings;
 const codexNode = snippet('codex/hooks.node.snippet.json');
 const CHECKS = ['session-gates', 'prompt-router', 'pre-commit-check', 'post-edit-reminder', 'turn-audit'];
 const entries = (s: Settings): HookEntry[] => Object.values(s.hooks ?? {}).flat().flatMap((g) => g.hooks);

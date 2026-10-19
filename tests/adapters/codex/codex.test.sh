@@ -70,17 +70,6 @@ L5="$(t_tmp)/codex-ledger-shared"; mkdir -p "$L5/other/data"; t_age 10 "$L5/othe
 WF_CODEX_LEDGER_DIR="$L5" "${IMPL[@]}" hook record < "$FX/p-post-bash.json"
 WF_CODEX_LEDGER_DIR="$L5" "${IMPL[@]}" hook turn-audit < "$FX/p-stop.json" >/dev/null
 check "Codex ledger: a pre-existing directory is never pruned" "$( [ -d "$L5/other/data" ] && echo kept)" has kept
-# A jq that cannot run the full record filter (an older jq, a bug) must not lose the call silently:
-# the hook falls back to a minimal record, marked as such.
-SHIM="$(t_tmp)/jq-shim"; mkdir -p "$SHIM"; REALJQ="$(command -v jq)"
-printf '#!/usr/bin/env bash\ncase "$*" in *patch_exit*) echo "jq: error: syntax error" >&2; exit 3 ;; esac\nexec "%s" "$@"\n' "$REALJQ" > "$SHIM/jq"; chmod +x "$SHIM/jq"
-L6="$(t_tmp)/codex-ledger-fallback"
-PATH="$SHIM:$PATH" WF_CODEX_LEDGER_DIR="$L6" "${IMPL[@]}" hook record < "$FX/p-post-bash.json"
-rec="$(cat "$L6/S1/U1.jsonl" 2>/dev/null)"
-t_bash_only WF_IMPL_CODEX "the minimal-record fallback exists for a jq that cannot run the record filter; Node has no jq" && check "record filter fails -> a minimal record is still written (tool_name + tool_input)" "$(jq -c '{tool_name, c: .tool_input.command}' <<<"$rec" 2>/dev/null)" has '"tool_name":"Bash"'
-t_bash_only WF_IMPL_CODEX "the minimal-record fallback exists for a jq that cannot run the record filter; Node has no jq" && check "...marked minimal, so the loss is visible" "$rec" has '"record":"minimal"'
-t_bash_only WF_IMPL_CODEX "the minimal-record fallback exists for a jq that cannot run the record filter; Node has no jq" && check "...and keeps tool_use_id, so the exit code can still be found in the rollout" "$rec" has '"tool_use_id":'
-t_bash_only WF_IMPL_CODEX "the minimal-record fallback exists for a jq that cannot run the record filter; Node has no jq" && check_eq "...and read back as a step" "$(jq -c '.transcript_path="/nonexistent"' "$FX/p-stop.json" | WF_CODEX_LEDGER_DIR="$L6" "${IMPL[@]}" normalize | jq '.turn.steps | length')" "1"
 BIGL="$(t_tmp)/big"; mkdir -p "$BIGL/S9"
 for k in $(seq 1 600); do printf '%s\n' "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"echo $k\"},\"tool_use_id\":\"e$k\"}"; done > "$BIGL/S9/U9.jsonl"
 t0=$(date +%s); n="$(jq -c '.session_id="S9" | .turn_id="U9"' "$FX/p-stop.json" | WF_CODEX_LEDGER_DIR="$BIGL" "${IMPL[@]}" normalize | jq '.turn.steps | length')"; t1=$(date +%s)
@@ -159,35 +148,34 @@ P2="$(t_tmp)"; mkdir -p "$P2/.burhan"; printf '%s\n' "WF_CODE_REGEX='\\.src\$'" 
 out="$(jq -c --arg p "$P2" '.cwd=$p | (.. | strings) |= gsub("/proj"; $p)' "$FX/p-post-patch-multi.json" | WF_CODEX_LEDGER_DIR="$(t_tmp)" "${IMPL[@]}" hook post-edit-reminder | jq -r .hookSpecificOutput.additionalContext)"
 check_eq "multi-file patch -> reminder not repeated" "$(printf '%s' "$out" | grep -c 'failing test written FIRST')" "1"
 
-# QC3: Codex launched from a subdirectory -> payload cwd is the subdir; config must still be found
-SUB="$(t_tmp)"; mkdir -p "$SUB/.burhan/hooks/adapters" "$SUB/pkg/inner"
-cp -R "$T_KIT/hooks/core" "$SUB/.burhan/hooks/core"; cp -R "$A" "$SUB/.burhan/hooks/adapters/codex"
+# QC3: Codex launched from a subdirectory -> payload cwd is the subdir; the installed hooks still find the project config
+SUB="$(t_tmp)"; mkdir -p "$SUB/.burhan/hooks" "$SUB/pkg/inner"
+cp -R "$T_ROOT/dist/hooks" "$SUB/.burhan/hooks/node"
 printf '%s\n' "WF_CODE_REGEX='\\.src\$'" > "$SUB/.burhan/workflow.config"
 out="$(jq -c --arg c "$SUB/pkg/inner" --arg f "$SUB/pkg/inner/x.src" '.cwd=$c | .tool_input.command=("*** Begin Patch\n*** Add File: " + $f + "\n+x\n*** End Patch")' "$FX/p-post-patch-add.json" \
-  | WF_CODEX_LEDGER_DIR="$(t_tmp)" bash "$SUB/.burhan/hooks/adapters/codex/hook.sh" post-edit-reminder)"
+  | (cd "$SUB/pkg/inner" && WF_CODEX_LEDGER_DIR="$(t_tmp)" node "$SUB/.burhan/hooks/node/main.mjs" codex hook post-edit-reminder))"
 check "cwd = subdirectory -> project config still applies (QC3)" "$out" has "failing test written FIRST"
 
 L="$(t_tmp)/burhan/codex"; mkdir -p "$L/S1"
 for i in $(seq 1 3); do jq -cn --arg c "$(head -c 60000 /dev/zero | tr '\0' 'c')" '{tool_name:"Bash",tool_input:{command:$c}}'; done > "$L/S1/U1.jsonl"
 check_eq "a >128 KB Codex turn still produces turn_end (ARG_MAX)" "$(jq -c '.last_assistant_message=("z" * 300000)' "$FX/p-stop.json" | WF_CODEX_LEDGER_DIR="$L" "${IMPL[@]}" normalize | jq -r '.event + " " + (.turn.shell_commands|length|tostring)')" "turn_end 3"
 
-echo "codex hooks snippet"
-SN="$A/hooks.snippet.json"
+echo "codex hooks snippet (Node)"
+SN="$A/hooks.node.snippet.json"
 check_eq "valid JSON" "$(jq -e . "$SN" >/dev/null && echo ok)" "ok"
 check "no ownership comments in commands" "$(jq -r '.. | .command? // empty' "$SN")" lacks "<!--"
 for c in session-gates prompt-router pre-commit-check post-edit-reminder turn-audit; do
-  check "wires $c" "$(jq -r '.. | .command? // empty' "$SN")" has "\" $c;"
+  check "wires $c" "$(jq -r '.. | .command? // empty' "$SN")" has "codex hook $c"
 done
-check "commands locate the kit via .burhan/hooks/adapters/codex/hook.sh" "$(jq -r '.. | .command? // empty' "$SN")" has ".burhan/hooks/adapters/codex/hook.sh"
-# Run the real snippet command from a SUBDIRECTORY of a non-git project: it must find the kit by walking up.
-NP="$(t_tmp)"; mkdir -p "$NP/.burhan/hooks/adapters" "$NP/deep/er"
-cp -R "$T_KIT/hooks/core" "$NP/.burhan/hooks/core"; cp -R "$A" "$NP/.burhan/hooks/adapters/codex"
+check "commands locate the hooks via .burhan/hooks/node/main.mjs" "$(jq -r '.. | .command? // empty' "$SN")" has "'.burhan','hooks','node','main.mjs'"
+# Run the real snippet command from a SUBDIRECTORY of a non-git project: it must find the hooks by walking up.
+NP="$(t_tmp)"; mkdir -p "$NP/.burhan/hooks" "$NP/deep/er"
+cp -R "$T_ROOT/dist/hooks" "$NP/.burhan/hooks/node"
 cmd="$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$SN")"
 out="$(cd "$NP/deep/er" && jq -c --arg p "$NP" '.cwd=$p' "$FX/p-session.json" | bash -c "$cmd" 2>&1; echo "rc=$?")"
 check "snippet command works from a subdirectory of a non-git project" "$out" has "WORKFLOW GATES"
 out="$(cd "$(t_tmp)" && echo '{}' | bash -c "$cmd" 2>&1; echo "rc=$?")"
-check "snippet command outside any project -> rc 0, silent" "$out" has "rc=0"
-check "snippet command outside any project -> no 'No such file'" "$out" lacks "No such file"
+check_eq "snippet command outside any project -> rc 0, silent (no output at all)" "$out" "rc=0"
 check "no absolute home paths" "$(cat "$SN")" lacks "$HOME/"
 check_eq "no tool matchers (Codex tool names differ; the adapter filters)" "$(jq '[.. | .matcher? // empty] | length' "$SN")" "0"
 t_summary

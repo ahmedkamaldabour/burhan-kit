@@ -1,4 +1,4 @@
-/** Whole-turn audit (ports kit/hooks/core/turn-audit.sh). */
+/** Whole-turn audit (ported from the 0.2 bash turn-audit.sh). */
 import { evidenceRecord } from './ledger.mjs';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';

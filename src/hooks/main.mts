@@ -1,5 +1,5 @@
 /** Hook entry:  node main.mjs <part> <name> [args]   (part: core | claude | codex)
- *  core <check>: a normalized event on stdin -> {"message":"…"} or nothing (tests/CONFORMANCE.md).
+ *  core <check>: a normalized event on stdin -> {"message":"…"} or nothing (the black-box suites, tests/impl.sh).
  *  claude|codex normalize | emit <event> | hook <check> (codex also: hook record).
  *  Fails open at every step: exit 0, and stdout is complete or empty. WF_HOOK_DEBUG=1 prints the error on stderr. */
 import { readFileSync, realpathSync } from 'node:fs';

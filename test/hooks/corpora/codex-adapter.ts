@@ -36,8 +36,8 @@ export async function runCorpus(driver: Driver): Promise<void> {
       const files: Record<string, string> = {};
       for (const entry of tree(ledger)) if (statSync(join(ledger, entry)).isFile()) files[entry] = readFileSync(join(ledger, entry), 'utf8');
       if (JSON.stringify(files) !== JSON.stringify(c.files)) failures.push(`${driver.label}: ${c.name}: ledger files\n   golden: ${JSON.stringify(c.files).slice(0, 260)}\n   actual: ${JSON.stringify(files).slice(0, 260)}`);
-      // The Node ledger FILE is 0600; bash leaves it at the umask (0664 under 002) — a deliberate difference, so modes are checked on Node only.
-      if (driver.label === 'node' && process.platform !== 'win32') {
+      // The ledger FILE is 0600 (POSIX modes; not on Windows).
+      if (process.platform !== 'win32') {
         const modes = Object.fromEntries(tree(ledger).map((entry) => [entry, '0o' + (statSync(join(ledger, entry)).mode & 0o777).toString(8)]));
         const wanted = Object.fromEntries(Object.entries(c.mode ?? {}).map(([entry, mode]) => [entry, entry.endsWith('.jsonl') ? '0o600' : mode]));
         if (JSON.stringify(modes) !== JSON.stringify(wanted)) failures.push(`${driver.label}: ${c.name}: modes\n   golden: ${JSON.stringify(c.mode)}\n   actual: ${JSON.stringify(modes)}`);

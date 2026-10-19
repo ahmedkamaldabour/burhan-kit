@@ -48,8 +48,6 @@ s=$(date +%s); out="$(c 'git commit -m x')"; e=$(( $(date +%s) - s ))
 check "TERM-ignoring check is killed ($e s)" "$([ "$e" -lt 6 ] && echo fast)" has fast
 check "...and reported as timed out" "$out" has "timed out"
 P="$(proj 'WF_CHECK_CMD="true"')"
-t_bash_only WF_IMPL_CORE "no timeout utility (WF_TIMEOUT_BIN=none) — a port has its own timeout" \
-  && check "no timeout utility -> NOT VERIFIED, not FAIL" "$(printf '%s' "$(ev '{"event":"pre_shell","command":"git commit -m x"}')" | WF_TIMEOUT_BIN=none bash "$T_ROOT/tests/impl.sh" core pre-commit-check 2>/dev/null | jq -r .message)" has "no timeout utility"
 echo "  -- the check runs under the user's own locale (the hooks may switch theirs to UTF-8)"
 P="$(proj "WF_CHECK_CMD='echo \"LC=[\${LC_ALL-unset}]\"; false'")"
 check "LC_ALL=C stays C for the check" "$( (unset LANG LC_CTYPE; export LC_ALL=C; c 'git commit -m x') )" has "LC=[C]"

@@ -47,3 +47,12 @@ test('the Windows job never runs a shell script or the bash suites', () => {
   assert.doesNotMatch(w, /\.sh\b/);
   assert.doesNotMatch(w, /npm test\b|npm run lint|test:bash/);
 });
+
+test('the test job has no jq pinning since 0.3.0 (the hooks need no jq): Ubuntu 24.04 on Node 22 and 24, macOS on 24', () => {
+  const t = job('test');
+  assert.doesNotMatch(t, /^\s+jq:/m, 'no jq matrix key');
+  assert.doesNotMatch(t, /ubuntu-22\.04|matrix\.jq/, 'no jq-1.6 runner and no jq version check');
+  assert.match(t, /os: \[ubuntu-24\.04\]\n\s+node: \[22, 24\]/);
+  assert.match(t, /- \{ os: macos-latest, node: 24 \}/);
+  for (const step of ['npm run lint', 'npm test', 'npm pack --dry-run']) assert.ok(t.includes(step), step);
+});

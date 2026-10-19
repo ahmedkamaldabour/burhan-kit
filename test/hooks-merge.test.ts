@@ -1,11 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { mergeHooks, removeHooks, validHooksFile, type Settings } from '../src/lib/hooks-merge.js';
-import { kitDir } from '../src/lib/kit.js';
+import { v022 } from './legacy-bash.js';
 
-const snippet = JSON.parse(readFileSync(join(kitDir(), 'hooks/adapters/claude/settings.snippet.json'), 'utf8')) as Settings;
+// The merge logic is the same for any snippet; this one is the bash snippet burhan 0.2.2 installed.
+const snippet = JSON.parse(v022('claude.settings.snippet.json')) as Settings;
 const M = '.burhan/hooks/adapters/claude/hook.sh';
 const previous = `bash "${M}" turn-audit --previous`;
 const owned = [...Object.values(snippet.hooks ?? {}).flat().flatMap((group) => group.hooks.map((entry) => entry.command!)), previous];

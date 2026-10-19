@@ -5,7 +5,7 @@ import { parseEvent } from '../../../src/hooks/core/lib.mjs';
 import { projectKey } from '../../../src/hooks/core/store.mjs';
 import { evidenceRecord } from '../../../src/hooks/core/ledger.mjs';
 import { jsonText, slashes, tmpDir } from '../../helpers.js';
-import { cutCountsCharacters, type Driver } from '../drivers.js';
+import { type Driver } from '../drivers.js';
 
 type GoldenCase = {
   name: string;
@@ -47,8 +47,6 @@ function jsonlFiles(dir: string): Record<string, string[]> {
 export async function runCorpus(driver: Driver): Promise<void> {
   const failures: string[] = [];
   for (const c of fixture.cases) {
-    // A known bash defect on GNU coreutils (cut -c is bytewise), deliberately not replicated by the Node hooks.
-    if (driver.label === 'bash' && !cutCountsCharacters && c.name.startsWith('long sub-unit')) continue;
     try {
       const dir = project(c.state);
       const root = tmpDir('burhan-ledger-root-');

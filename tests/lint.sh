@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Syntax-checks every shell script in the kit (`bash -n`). shellcheck is not assumed.
+# Syntax-checks every shell script in the repo (`bash -n`; since 0.3.0 only the test suites). shellcheck is not assumed.
 # Also rejects GNU-only forms in kit/ and tests/ (the hooks and suites run on macOS too):
 # a negative `head` count, `sed -i` without a suffix, and `readlink -f`.
 #   bash tests/lint.sh

@@ -8,7 +8,7 @@ import { applySetup, ignoredCommittedSetupFiles, planSetup, renderSummary, type 
 import { tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-gitignore-home-');
-const probe: Probe = { bashMajor: () => 5, has: () => true, jqVersion: () => 'jq-1.8.1', nodeVersion: () => '24.13.0', claudeVersion: () => '2.1.296', home: () => home };
+const probe: Probe = { nodeVersion: () => '24.13.0', claudeVersion: () => '2.1.296', home: () => home };
 const answers: SetupAnswers = { agents: ['claude', 'codex'], mode: 'step', docs: { kind: 'shared' }, lang: 'en' };
 const ignoredCommittedFiles = [
   '!/.claude/settings.json',

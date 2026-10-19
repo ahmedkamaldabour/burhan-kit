@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.3.0 — 2026-10-19
+
+The hooks now run on Node only. bash and `jq` are no longer needed, and CI runs the hooks on Windows too (see
+Requirements for what is and is not verified there).
+
+### Upgrading from 0.2.2
+- Run `npx burhan-kit upgrade --apply`. It replaces the bash hooks with the Node hooks in
+  `.burhan/hooks/node/`, removes the old `.burhan/hooks/core/` and `.burhan/hooks/adapters/` folders, and
+  rewrites every installed agent's hook entries; your own hooks are kept.
+- **Codex:** the hook commands changed, so Codex lists them as "Modified since last trusted" and skips
+  them silently until you trust them again (`/hooks`, then `t` on each burhan hook).
+- Installs from 0.2.1 or older (under `.workflow/`) are still not migrated: uninstall with that version,
+  then run `npx burhan-kit`.
+- **Going back to 0.2.2:** run `npx burhan-kit uninstall --apply`, then
+  `npx burhan-kit@0.2.2 init --agents <your agents> --apply`. Do not run `upgrade` with 0.2.2 on a 0.3.0
+  project: it keeps the Node entries and adds the bash ones, so every hook runs twice. `workflow.config`
+  and `bindings.md` are kept either way.
+
+### Requirements
+- Node ≥ 22 on the PATH the agent starts with. Nothing else: no bash, `jq`, sha256 tool or `timeout`.
+- Claude Code ≥ 2.1.139: the Claude Code hooks use the exec form (`node` + args, no shell). There is no
+  other hook path for older versions.
+- Windows: CI runs the hooks on `windows-latest` with Node 22 and 24, with and without Git Bash. Not
+  verified yet: Windows with PowerShell only (no Git Bash), and a real Claude Code or Codex session on
+  Windows.
+
+### Changed
+- The hooks are a Node program (`node .burhan/hooks/node/main.mjs …`). Their gates, reminders and
+  messages are the same as in 0.2.2.
+- Measured on one Linux machine, the Node hooks are faster in every case: about 1.4× for the shortest
+  hook (the pre-commit check on a non-commit command) and about 5–8× for the turn-end audit, which reads
+  the transcript. Not measured on macOS or Windows.
+- Behaviour changes:
+  - The hooks read only literal config lines (`KEY=value`, `KEY="value"`, `KEY='value'`). A line that
+    needs a shell to evaluate (for example `$(…)`) is ignored; `doctor` already reported such lines.
+  - `WF_*_REGEX` values go through a POSIX ERE translator instead of `grep -E`. Back-references are not
+    supported: a pattern that uses one makes that check stay silent.
+  - The hook ledgers and state files are written with mode 0600 (owner only) on Linux and macOS; the bash
+    Codex ledger file used to follow the umask.
+- `doctor` checks Node ≥ 22 and no longer checks bash, `jq`, a sha256 tool or `timeout`.
+
+### Removed
+- The bash hook runtime (`kit/hooks/core/*.sh`, the bash adapters and their snippets).
+- `WF_HOOK_RUNTIME`. It never shipped in a 0.2.x release; a leftover `WF_HOOK_RUNTIME=bash` gives a
+  `doctor` warning and an `upgrade` note, and any value means Node.
+- `WF_TIMEOUT_BIN`. Only the bash hooks read it.
+
 ## 0.2.2 — 2026-10-15
 
 ### Upgrading from 0.2.1

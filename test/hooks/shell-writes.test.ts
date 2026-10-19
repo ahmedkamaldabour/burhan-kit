@@ -1,13 +1,10 @@
-import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
-import { join } from 'node:path';
 import { test } from 'node:test';
-import { tmpDir } from '../helpers.js';
 import { shellWrites } from '../../src/hooks/core/shell-writes.mjs';
 
 type Case = { name: string; cmds: string[]; want: string[] };
 
-// Literal expectations from kit/hooks/core/shell-writes.awk's documented heuristic.
+// Literal expectations of the shell-writes heuristic (the contract of the 0.2 awk script, which no longer ships).
 const CASES: Case[] = [
   { name: 'plain, append, clobber, and stdout redirections', cmds: ['echo x > out.txt', 'echo x >> append.txt', 'echo x >| clobber.txt', 'echo x 1> stdout.txt'], want: ['out.txt', 'append.txt', 'clobber.txt', 'stdout.txt'] },
   { name: 'combined stdout and stderr redirections', cmds: ['run &> both.txt', 'run &>> both-append.txt'], want: ['both.txt', 'both-append.txt'] },
@@ -45,24 +42,6 @@ const CASES: Case[] = [
   { name: 'turn-audit: tee with two targets', cmds: ['echo x | tee -a notes.txt a.src'], want: ['notes.txt', 'a.src'] },
 ];
 
-test('shellWrites: the shell-writes awk contract', () => {
+test('shellWrites: the shell-writes contract', () => {
   for (const { name, cmds, want } of CASES) assert.deepEqual(shellWrites(cmds), want, name);
-});
-
-test('shellWrites: matches the awk oracle for the same corpus', (t) => {
-  const oracle = join(process.cwd(), 'kit/hooks/core/shell-writes.awk');
-  const result = spawnSync('awk', ['-f', oracle], {
-    cwd: tmpDir('burhan-shell-writes-'),
-    encoding: 'utf8',
-    input: CASES.flatMap(({ cmds }) => cmds).map((cmd) => cmd + '\x1e').join(''),
-  });
-  if ((result.error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT') {
-    t.skip('awk cannot be spawned');
-    return;
-  }
-  assert.equal(result.status, 0, result.stderr);
-  const want = CASES.flatMap(({ want }) => want);
-  const got = result.stdout === '' ? [] : result.stdout.slice(0, -1).split('\n');
-  assert.deepEqual(shellWrites(CASES.flatMap(({ cmds }) => cmds)), got);
-  assert.deepEqual(got, want, 'the literal table remains an independent oracle check');
 });

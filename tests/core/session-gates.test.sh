@@ -34,7 +34,7 @@ check "Now section content shown" "$out" has "Primary objective:** ship AC-03"
 check "only the Now section is shown" "$out" lacks "secret-ish detail"
 
 # Session links: with more than one in-flight item an unlinked session must not silently inherit the
-# first block. This is shared black-box coverage: tests/node-port.test.sh runs it through WF_IMPL_CORE.
+# first block. Black-box coverage: tests/impl.sh runs it against the Node hooks (or WF_IMPL_CORE).
 P="$(proj 'WF_MODE_DEFAULT=auto')"; mkdir -p "$P/.burhan/local"
 printf '%s\n' '## Now' '### alpha' '- **Mode:** step' '### beta' '- **Mode:** auto' > "$P/.burhan/local/PROGRESS.md"
 out="$(core $S "$(ev '{"event":"session_start","session":"S-unlinked"}')" | jq -r .message)"

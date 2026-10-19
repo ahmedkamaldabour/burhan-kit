@@ -50,14 +50,6 @@ check_eq() {
 
 t_tmp() { mktemp -d "$T_TMP_ROOT/t.XXXXXX"; }
 
-# t_bash_only <WF_IMPL_VAR> <reason> && check … — a case only the bash kit can meet (tests/CONFORMANCE.md ·
-# Bash-only cases). Under a port (the variable is set) it prints a skip line, counts nothing, and fails.
-t_bash_only() {
-  [ -z "${!1:-}" ] && return 0
-  echo "  skip - bash-only: $2"
-  return 1
-}
-
 # t_fail_note <text> — record a failure from inside a $(...) subshell, where T_FAIL is not shared.
 T_NOTES="$T_TMP_ROOT/failure-notes"
 t_fail_note() { printf '%s\n' "$1" >> "$T_NOTES"; }

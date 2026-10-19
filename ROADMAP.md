@@ -46,9 +46,10 @@ until you choose.
   - A new `Tier` field: `strong|standard|cheap|explicit`.
   - `stats` reports findings and escaped defects per tier and per model.
 
-## Planned: 0.3
+## Done
 
-- Move the hooks to the Node/TypeScript runtime and support Windows without requiring Bash or jq.
+- **Hooks without bash (0.3.0).** The hooks run on Node only, with no bash or `jq`, and CI runs them on Windows
+  too; the README says what is and is not verified there.
 
 ## Candidates
 
@@ -61,12 +62,7 @@ until you choose.
   turn. A shell write after the evidence run therefore does not reopen the "done" check.
 - **Evidence across item close.** Closing an item in the same turn tags that turn's last runs with no
   item. `burhan evidence --session` still shows them.
-- **CI hardening.** Pin GitHub Actions by commit SHA. The pinned-jq jobs carry their expected version
-  pattern in the job name (e.g. `jq-1.7|jq-1.7.1`); list them under those names if you make them
-  required checks.
-- **Hooks without bash.** A Node port of the hooks would remove the need for `jq` and run natively on
-  Windows. The black-box suites in `tests/` are written so a port can be checked against the same
-  cases (`tests/CONFORMANCE.md`).
+- **CI hardening.** Pin GitHub Actions by commit SHA.
 - **A plugin route.** A commands-and-skills-only plugin that points at `npx burhan-kit init`, if users
   ask for discovery through a plugin marketplace.
 

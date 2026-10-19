@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Hook latency, end to end through an agent adapter (Claude Code or Codex): median and p90 per case, in ms.
-//   node scripts/bench-hooks.mjs [--runtime bash|node] [--adapter claude|codex] [--runs N] [--json]
-// Not a test and not a CI gate: run it on one machine, for both runtimes, and compare (spec AC5).
+//   node scripts/bench-hooks.mjs [--adapter claude|codex] [--runs N] [--json]
+// Not a test and not a CI gate: timings on a shared runner are noisy. Run it on a quiet machine, build first (npm run build).
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,18 +10,14 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const { values } = parseArgs({ options: { runtime: { type: 'string', default: 'bash' }, adapter: { type: 'string', default: 'claude' }, runs: { type: 'string', default: '20' }, json: { type: 'boolean', default: false } } });
+const { values } = parseArgs({ options: { adapter: { type: 'string', default: 'claude' }, runs: { type: 'string', default: '20' }, json: { type: 'boolean', default: false } } });
 if (values.adapter !== 'claude' && values.adapter !== 'codex') { console.error('bench: --adapter is claude or codex'); process.exit(2); }
 const runs = Number(values.runs);
 if (!Number.isInteger(runs) || runs < 1) { console.error('bench: --runs needs a positive integer'); process.exit(2); }
 
 const nodeEntry = join(root, 'dist/hooks/main.mjs');
-let argv;
-if (values.runtime === 'bash') argv = (check) => ['bash', [join(root, `kit/hooks/adapters/${values.adapter}/hook.sh`), check]];
-else if (values.runtime === 'node') {
-  if (!existsSync(nodeEntry)) { console.error(`bench: ${nodeEntry} not built yet (npm run build)`); process.exit(2); }
-  argv = (check) => [process.execPath, [nodeEntry, values.adapter, 'hook', check]];
-} else { console.error('bench: --runtime is bash or node'); process.exit(2); }
+if (!existsSync(nodeEntry)) { console.error(`bench: ${nodeEntry} not built yet (npm run build)`); process.exit(2); }
+const argv = (check) => [process.execPath, [nodeEntry, values.adapter, 'hook', check]];
 
 const fx = join(root, 'tests/adapters/claude/fixtures');
 const tmp = mkdtempSync(join(tmpdir(), 'burhan-bench-'));
@@ -65,7 +61,7 @@ const env = { ...process.env, CLAUDE_PROJECT_DIR: proj, WF_CODEX_LEDGER_DIR: led
 const pct = (xs, p) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))];
 
 const results = [];
-if (!values.json) console.log(`runtime: ${values.runtime} · adapter: ${values.adapter} · runs: ${runs} · node ${process.version} · ${process.platform}`);
+if (!values.json) console.log(`node hooks · adapter: ${values.adapter} · runs: ${runs} · node ${process.version} · ${process.platform}`);
 try {
   for (const [label, check, input, prepare] of cases) {
     const [cmd, args] = argv(check);

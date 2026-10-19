@@ -1,5 +1,5 @@
-import { accessSync, constants, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { delimiter, isAbsolute, join, resolve } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { isAbsolute, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import type { Io } from '../main.js';
@@ -15,22 +15,9 @@ import { ignoredCommittedSetupFiles } from './setup/engine.js';
 
 export interface Check { status: 'ok' | 'warn' | 'fail' | 'skip'; text: string }
 /** What the doctor asks of the machine; injected so tests need no particular PATH. */
-export interface Probe { bashMajor(): number | null; has(cmd: string): boolean; jqVersion(): string | null; nodeVersion(): string | null; claudeVersion(): string | null; home(): string }
+export interface Probe { nodeVersion(): string | null; claudeVersion(): string | null; home(): string }
 
 export const realProbe: Probe = {
-  bashMajor: () => {
-    const r = spawnSync('bash', ['-c', 'echo "${BASH_VERSINFO[0]}"'], { encoding: 'utf8', timeout: 5000 });
-    const n = r.status === 0 ? Number.parseInt(r.stdout.trim(), 10) : Number.NaN;
-    return Number.isNaN(n) ? null : n;
-  },
-  has: (cmd) => (process.env.PATH ?? '').split(delimiter).some((d) => {
-    if (!d) return false;
-    try { accessSync(join(d, cmd), constants.X_OK); return statSync(join(d, cmd)).isFile(); } catch { return false; }
-  }),
-  jqVersion: () => {
-    const r = spawnSync('jq', ['--version'], { encoding: 'utf8', timeout: 5000 });
-    return r.status === 0 ? r.stdout.trim() || null : null;
-  },
   nodeVersion: () => {
     const r = spawnSync('node', ['-p', 'process.versions.node'], { encoding: 'utf8', timeout: 5000 });
     return r.status === 0 ? r.stdout.trim() || null : null;
@@ -46,12 +33,9 @@ const VERIFY_MIN = '2.1.286'; // Claude Code reads skills with `verify` from thi
 const EXEC_FORM_MIN = '2.1.139'; // Claude Code runs `command` + `args` without a shell from this version
 /** The oldest Node the hooks are written for (package.json engines). */
 export const NODE_MIN_MAJOR = 22;
-/** The oldest jq the hooks are written for and CI runs (tests/jq-compat.test.sh; ubuntu-22.04 ships it). */
-export const JQ_MIN = '1.6';
-type Runtime = 'node' | 'bash';
-const HOOKS: Record<'claude' | 'codex', { file: string; snippet: Record<Runtime, string> }> = {
-  claude: { file: '.claude/settings.json', snippet: { bash: 'hooks/adapters/claude/settings.snippet.json', node: 'hooks/adapters/claude/settings.node.snippet.json' } },
-  codex: { file: '.codex/hooks.json', snippet: { bash: 'hooks/adapters/codex/hooks.snippet.json', node: 'hooks/adapters/codex/hooks.node.snippet.json' } },
+const HOOKS: Record<'claude' | 'codex', { file: string; snippet: string }> = {
+  claude: { file: '.claude/settings.json', snippet: 'hooks/adapters/claude/settings.node.snippet.json' },
+  codex: { file: '.codex/hooks.json', snippet: 'hooks/adapters/codex/hooks.node.snippet.json' },
 };
 // Codex names hook events in snake case in its trust entries.
 const CODEX_EVENT: Record<string, string> = {
@@ -84,8 +68,8 @@ const groups = (v: HookFile, event: string): { hooks?: HookEntry[] }[] => {
 
 const SUBS = /\b(session-gates|prompt-router|pre-commit-check|post-edit-reminder|turn-audit)\b/;
 /** Each snippet event with the core hook it runs, and the key that identifies the entry in the agent's file. */
-function wanted(agent: 'claude' | 'codex', runtime: Runtime): { event: string; sub: string; key: string }[] {
-  const s = (readJson(join(kitDir(), HOOKS[agent].snippet[runtime])) ?? {}) as Settings;
+function wanted(agent: 'claude' | 'codex'): { event: string; sub: string; key: string }[] {
+  const s = (readJson(join(kitDir(), HOOKS[agent].snippet)) ?? {}) as Settings;
   const out: { event: string; sub: string; key: string }[] = [];
   for (const [event, groups] of Object.entries(s.hooks ?? {}))
     for (const g of groups) for (const h of g.hooks ?? []) {
@@ -93,12 +77,6 @@ function wanted(agent: 'claude' | 'codex', runtime: Runtime): { event: string; s
       if (m && typeof h.command === 'string') out.push({ event, sub: m[1], key: hookKey(h) });
     }
   return out;
-}
-
-/** The runtime the team chose (WF_HOOK_RUNTIME in the team config; anything but `bash` means node). */
-function hookRuntime(target: string): Runtime {
-  const t = readText(join(target, TEAM_CONFIG));
-  return t !== null && parseConfig(t, TEAM_CONFIG).values.WF_HOOK_RUNTIME === 'bash' ? 'bash' : 'node';
 }
 
 /** Every file under dir, relative, forward slashes. */
@@ -111,41 +89,16 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
   const add = (status: Check['status'], text: string) => cs.push({ status, text });
 
   // ---- runtime: what the hooks need on this machine
-  const runtime = hookRuntime(existsSync(targetIn) ? realTarget(targetIn) : targetIn);
-  if (runtime === 'node') {
-    const nv = probe.nodeVersion();
-    if (nv === null) add('fail', `node: not found on PATH — the hooks run on Node ≥ ${NODE_MIN_MAJOR}, and the agent runs the \`node\` it finds there (install a current Node and put it first on PATH)`);
-    else if (Number.parseInt(nv, 10) < NODE_MIN_MAJOR) add('fail', `node ${nv}: the hooks need Node ≥ ${NODE_MIN_MAJOR} — the agent runs the \`node\` first on its PATH (nvm/volta users: check the PATH the agent starts with)`);
-    else add('ok', `node ${nv}`);
-    add('skip', 'bash, jq, sha256 and timeout: not needed by the Node hooks');
-  } else {
-    add('warn', 'WF_HOOK_RUNTIME=bash: the bash hooks are a rollback and will be removed in a later release — remove the key from the team workflow.config and run burhan upgrade --apply to use the Node hooks');
-    const bash = probe.bashMajor();
-    if (bash === null) add('fail', 'bash: not found — the hooks run under bash ≥ 4 (Windows: Git Bash or WSL)');
-    else if (bash < 4) add('fail', `bash ${bash}: the hooks need bash ≥ 4 — macOS ships 3.2: brew install bash, and put it first on PATH`);
-    else add('ok', `bash ${bash}`);
-    if (!probe.has('jq')) add('fail', 'jq: not found — the hooks need it (brew/apt install jq)');
-    else {
-      const raw = probe.jqVersion();
-      const v = raw ? /^jq-(\d+)\.(\d+)(?:\.(\d+))?(?=$|[^\d.])/.exec(raw) : null;
-      if (!v) add('warn', `jq: version not readable (${raw ?? 'no output from jq --version'}) — the hooks need jq ≥ ${JQ_MIN}`);
-      else {
-        const ver = `${v[1]}.${v[2]}${v[3] ? `.${v[3]}` : ''}`;
-        if (older(ver, JQ_MIN)) add('fail', `jq ${ver}: the hooks need jq ≥ ${JQ_MIN} — an older jq cannot compile their filters, and they would record nothing (brew/apt upgrade jq)`);
-        else add('ok', `jq ${ver}`);
-      }
-    }
-    const sha = probe.has('sha256sum') || probe.has('shasum');
-    add(sha ? 'ok' : 'fail', sha ? 'sha256 tool (sha256sum or shasum)' : 'sha256 tool: neither sha256sum nor shasum found — the evidence ledger needs one');
-    const to = probe.has('timeout') || probe.has('gtimeout');
-    add(to ? 'ok' : 'warn', to ? 'timeout (or gtimeout)' : 'timeout: neither timeout nor gtimeout found — the pre-commit check reports NOT VERIFIED (macOS: brew install coreutils)');
-  }
+  const nv = probe.nodeVersion();
+  if (nv === null) add('fail', `node: not found on PATH — the hooks run on Node ≥ ${NODE_MIN_MAJOR}, and the agent runs the \`node\` it finds there (install a current Node and put it first on PATH)`);
+  else if (Number.parseInt(nv, 10) < NODE_MIN_MAJOR) add('fail', `node ${nv}: the hooks need Node ≥ ${NODE_MIN_MAJOR} — the agent runs the \`node\` first on its PATH (nvm/volta users: check the PATH the agent starts with)`);
+  else add('ok', `node ${nv}`);
 
   // ---- install
   if (!existsSync(targetIn) || !statSync(targetIn).isDirectory()) { add('fail', `not a directory: ${targetIn}`); return cs; }
   const target = realTarget(targetIn);
   const W = join(target, '.burhan');
-  const parts = ['WORKFLOW.md', 'phases', runtime === 'node' ? 'hooks/node/main.mjs' : 'hooks/core'].filter((f) => !existsSync(join(W, f)));
+  const parts = ['WORKFLOW.md', 'phases', 'hooks/node/main.mjs'].filter((f) => !existsSync(join(W, f)));
   if (!existsSync(join(W, 'WORKFLOW.md'))) { add('fail', `burhan is not installed here (.burhan/WORKFLOW.md missing) — run burhan init ${target} --agents claude[,codex] --apply`); return cs; }
   if (parts.length) add('fail', `.burhan/ is incomplete (missing: ${parts.join(', ')}) — run burhan upgrade --apply`);
   for (const f of ['.burhan/WORKFLOW.md', '.burhan/VERSION'])
@@ -158,9 +111,9 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
   const kit = kitDir();
   const kitFiles = [
     ...['WORKFLOW.md', 'SETUP.md'].map((f) => ({ rel: f, from: join(kit, f) })),
-    ...['phases', 'commands', ...(runtime === 'bash' ? ['hooks/core', ...(['claude', 'codex'] as const).filter((a) => existsSync(join(W, 'hooks/adapters', a))).map((a) => `hooks/adapters/${a}`)] : [])]
+    ...['phases', 'commands']
       .flatMap((d) => readdirSync(join(kit, d), { withFileTypes: true }).filter((e) => e.isFile()).map((e) => ({ rel: `${d}/${e.name}`, from: join(kit, d, e.name) }))),
-    ...(runtime === 'node' ? filesUnder(nodeHooksDir()).map((f) => ({ rel: `hooks/node/${f}`, from: join(nodeHooksDir(), f) })) : []),
+    ...filesUnder(nodeHooksDir()).map((f) => ({ rel: `hooks/node/${f}`, from: join(nodeHooksDir(), f) })),
   ];
   const differ = kitFiles.filter(({ rel, from }) => {
     try { return !readFileSync(join(W, rel)).equals(readFileSync(from)); } catch { return true; }
@@ -184,29 +137,30 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     add('warn', `${f}: CRLF line endings (${cfg.problems.filter((p) => p.file === f && p.reason.startsWith('CRLF')).length} lines) — save it with LF endings; the hooks cannot read those lines`);
   for (const p of cfg.problems.filter((q) => !q.reason.startsWith('CRLF'))) add('warn', `${p.file}:${p.line}: ${p.reason} — the hooks ignore this line`);
   const example = Object.keys(parseConfig(readFileSync(join(kitDir(), 'workflow.config.example'), 'utf8')).values);
-  const legacy = ['WF_FORBIDDEN_REGEX', 'WF_FORBIDDEN_REASON', 'WF_SINGLE_TEST_HINT'];
+  const legacy = ['WF_FORBIDDEN_REGEX', 'WF_FORBIDDEN_REASON', 'WF_SINGLE_TEST_HINT', 'WF_HOOK_RUNTIME'];
   if (team === null) { if (!unreadable(join(target, TEAM_CONFIG))) add('warn', `${TEAM_CONFIG} missing — run burhan upgrade --apply to create it from the example`); }
   else {
     const missing = example.filter((k) => !(k in team));
     if (missing.length) add('warn', `${TEAM_CONFIG}: keys missing compared with this version's example (defaults apply; copy them from workflow.config.example to set them): ${missing.join(', ')}`);
     const unknown = Object.keys(cfg.values).filter((k) => !example.includes(k) && !legacy.includes(k));
     if (unknown.length) add('warn', `unknown config keys (a typo?): ${unknown.join(', ')}`);
+    if (team.WF_HOOK_RUNTIME === 'bash') add('warn', 'WF_HOOK_RUNTIME=bash: the bash hooks were removed in 0.3.0 and the hooks are Node now — remove the key from the team workflow.config and run burhan upgrade --apply');
     if (!missing.length && !unknown.length && !cfg.problems.length) add('ok', 'workflow.config: every key known, none missing');
   }
   const ev = cfg.values.WF_EVIDENCE_DIR;
   if (ev && !isAbsolute(ev)) add('warn', `WF_EVIDENCE_DIR "${ev}" is not an absolute literal path — it is ignored and the default ledger is used`);
   if (cfg.values.WF_SENSITIVE_REGEX && !cfg.values.WF_SENSITIVE_NOTE) add('warn', 'WF_SENSITIVE_REGEX is set but WF_SENSITIVE_NOTE is empty — add the access-control reminder');
 
-  // ---- per agent (only adapters init installed)
+  // ---- per agent (only the agents burhan is installed for)
   for (const agent of ['claude', 'codex'] as const) {
     if (!agentInstalled(target, agent)) { add('skip', `${agent}: not installed`); continue; }
     const rel = HOOKS[agent].file;
     const v = readJson(join(target, rel)) as HookFile | undefined;
     if (v === undefined || typeof v !== 'object' || v === null) { add('fail', `${rel}: missing or not valid JSON — run burhan upgrade --apply`); continue; }
-    const unwired = wanted(agent, runtime).filter(({ event, key }) => !groups(v, event).some((g) => Array.isArray(g.hooks) &&
+    const unwired = wanted(agent).filter(({ event, key }) => !groups(v, event).some((g) => Array.isArray(g.hooks) &&
       g.hooks.some((h) => h && typeof h === 'object' && typeof h.command === 'string' && hookKey(h) === key)));
     if (unwired.length) add('fail', `${rel}: hooks not wired — ${unwired.map((u) => `${u.event} (${u.sub})`).join(', ')} — run burhan upgrade --apply`);
-    else add('ok', `${rel}: all ${wanted(agent, runtime).length} hooks wired`);
+    else add('ok', `${rel}: all ${wanted(agent).length} hooks wired`);
 
     if (agent === 'claude') {
       for (const f of ['.claude/commands/burhan/e2e.md', '.claude/commands/burhan/qc.md', '.claude/agents/burhan-reviewer.md']) {
@@ -216,12 +170,10 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
         else if (!isManagedCommand(readText(p)!)) add('warn', `${f}: not managed by burhan (your own file) — upgrades skip it`);
         else add('ok', f);
       }
-      if (runtime === 'node') {
-        const cv = probe.claudeVersion();
-        if (cv === null) add('skip', `claude CLI version: not found on PATH — the exec-form hooks need Claude Code ≥ ${EXEC_FORM_MIN}`);
-        else if (older(cv, EXEC_FORM_MIN)) add('fail', `Claude Code ${cv}: the Node hooks use the exec form (command + args), which needs Claude Code ≥ ${EXEC_FORM_MIN} — update Claude Code, or set WF_HOOK_RUNTIME=bash and run burhan upgrade --apply`);
-        else add('ok', `Claude Code ${cv} (exec-form hooks)`);
-      }
+      const execVersion = probe.claudeVersion();
+      if (execVersion === null) add('skip', `claude CLI version: not found on PATH — the exec-form hooks need Claude Code ≥ ${EXEC_FORM_MIN}`);
+      else if (older(execVersion, EXEC_FORM_MIN)) add('fail', `Claude Code ${execVersion}: the Node hooks use the exec form (command + args), which needs Claude Code ≥ ${EXEC_FORM_MIN} — update Claude Code (burhan 0.3.0 has no other hook path)`);
+      else add('ok', `Claude Code ${execVersion} (exec-form hooks)`);
       if (existsSync(join(target, '.claude/skills/burhan-verify/SKILL.md'))) {
         const cv = probe.claudeVersion();
         if (cv === null) add('skip', 'claude CLI version: not found on PATH — the verify skill needs Claude Code ≥ ' + VERIFY_MIN);
@@ -243,7 +195,7 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
           if (!real.has(dir)) real.set(dir, realTarget(dir));
           if (dir === target || dir === resolve(targetIn) || real.get(dir) === target) trusted.add(m[2]);
         }
-        const untrusted = wanted('codex', runtime).filter(({ event }) => !trusted.has(CODEX_EVENT[event] ?? event));
+        const untrusted = wanted('codex').filter(({ event }) => !trusted.has(CODEX_EVENT[event] ?? event));
         if (untrusted.length) add('warn', `codex hook trust: no entry for ${untrusted.map((u) => u.event).join(', ')} — Codex skips untrusted hooks silently, so burhan would do nothing there. Trust them yourself: open Codex in this project (run codex); at "Hooks need review" choose "Review hooks" (or type /hooks); for each event, select the hook whose Source is "Project config - …/.codex/hooks.json" and press t. If this still warns once every burhan hook reads Trusted in Codex, the Trusted line in Codex is what counts (this check infers the key format). Steps: https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks`);
         else add('ok', 'codex hook trust: an entry for every hook (hashes not checked — re-approve after an upgrade that changes a hook)');
       }

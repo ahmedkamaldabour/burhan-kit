@@ -17,7 +17,7 @@
 
 ## التثبيت / ابدأ بسرعة
 
-1. استخدم Node 22 أو أحدث جوّه الـ repository اللي عايز تجهزه.
+1. استخدم Node 22 أو أحدث جوّه الـ repository اللي عايز تجهزه. الـ hooks مش محتاجة أي حاجة تانية: لا bash ولا jq.
 2. شغّل:
 
 ```bash
@@ -81,9 +81,24 @@ npx burhan-kit doctor
 
 `init` و`upgrade` بيعرضوا خطتهم قبل الكتابة إلا لو ضفت `--apply`؛ و`doctor` للقراءة بس.
 
+## الترقية من 0.2.2
+
+`npx burhan-kit upgrade --apply` بيبدّل hooks الـ bash بتاعة 0.2.2 بـ hooks الـ Node وبيشيل فولدرات الـ hooks القديمة؛ والـ hooks بتاعتك بتفضل زي ما هي. في Codex، وافق على الـ hooks تاني بعدها. الـ installs من 0.2.1 أو أقدم (تحت `.workflow/`) مش بتتنقل؛ شوف [الـ changelog](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md).
+
+علشان ترجع لـ 0.2.2، اعمل uninstall الأول وبعدين سطّب النسخة القديمة. لو شغّلت `upgrade` بـ 0.2.2 بدل كده، المجموعتين هيفضلوا وكل hook هيشتغل مرتين. اكتب الـ agents اللي بتستخدمها:
+
+```bash
+npx burhan-kit uninstall --apply
+npx burhan-kit@0.2.2 init --agents claude,codex --apply
+```
+
+`workflow.config` و`bindings.md` بيفضلوا زي ما هم.
+
 ## الـ agents المدعومة
 
-Claude Code وCodex مدعومين. في Codex، وافق على project hooks بعد الـ setup وإلا مش هتشتغل؛ مرجع الإعدادات بيشرح خطوة الثقة.
+Claude Code (2.1.139 أو أحدث) وCodex مدعومين. في Codex، وافق على project hooks بعد الـ setup وإلا مش هتشتغل؛ مرجع الإعدادات بيشرح خطوة الثقة.
+
+**Windows:** الـ hooks بتشتغل على Node، من غير bash ولا jq. الـ CI بيشغّلها على `windows-latest` بـ Node 22 و24، مع Git Bash ومن غيره. لسه ما اتأكدش: Windows بـ PowerShell بس (من غير Git Bash)، وجلسة Claude Code أو Codex حقيقية على Windows.
 
 ## الحدود
 

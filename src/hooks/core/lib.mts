@@ -1,5 +1,5 @@
-/** Shared library for the core checks — the Node port of kit/hooks/core/lib.sh.
- *  Contract (tests/CONFORMANCE.md): stdin is a normalized event; stdout is {"message":"…"} or nothing.
+/** Shared library for the core checks — ported from the 0.2 bash lib.sh.
+ *  Contract (the black-box suites, tests/impl.sh): stdin is a normalized event; stdout is {"message":"…"} or nothing.
  *  Fail open: a check returns its findings; the entry prints them only at the very end, exit 0 always. */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

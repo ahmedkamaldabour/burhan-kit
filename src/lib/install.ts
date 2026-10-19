@@ -12,12 +12,9 @@ import { kitDir, nodeHooksDir, readVersion } from './kit.js';
 
 export const AGENTS: readonly Agent[] = ['claude', 'codex'];
 const HOOKS_FILE: Record<Agent, string> = { claude: '.claude/settings.json', codex: '.codex/hooks.json' };
-/** The hook entries each runtime installs: bash commands (0.2) or Node (exec form for Claude Code, a launcher for Codex). */
-const SNIPPET: Record<'node' | 'bash', Record<Agent, string>> = {
-  bash: { claude: 'hooks/adapters/claude/settings.snippet.json', codex: 'hooks/adapters/codex/hooks.snippet.json' },
-  node: { claude: 'hooks/adapters/claude/settings.node.snippet.json', codex: 'hooks/adapters/codex/hooks.node.snippet.json' },
-};
-/** Kit-owned directories of each runtime inside `.burhan/` — the other runtime's are removed. */
+/** The hook entries burhan installs: Node (exec form for Claude Code, a launcher for Codex). */
+const SNIPPET: Record<Agent, string> = { claude: 'hooks/adapters/claude/settings.node.snippet.json', codex: 'hooks/adapters/codex/hooks.node.snippet.json' };
+/** The directories a 0.2.x install holds for the bash hooks (removed in 0.3.0) — an upgrade deletes them. */
 const BASH_DIRS = ['hooks/core', ...AGENTS.map((a) => `hooks/adapters/${a}`)];
 const NODE_DIR = 'hooks/node';
 const BOOT_FILE: Record<Agent, string> = { claude: 'CLAUDE.md', codex: 'AGENTS.md' };
@@ -60,11 +57,6 @@ function canReplace(dir: string): string | null {
 
 const isFileTarget = (p: string): boolean => !existsSync(p) || statSync(p).isFile();
 
-function bashRuntimeMissing(): string[] {
-  if (spawnSync('bash', ['-c', 'exit 0']).status !== 0) return ['bash', 'jq'];
-  return spawnSync('bash', ['-c', 'command -v jq'], { stdio: 'ignore' }).status === 0 ? [] : ['jq'];
-}
-
 /** The `node` the agent will run is the one on PATH; the hooks are written for Node ≥ 22. */
 function nodeRuntimeProblem(): string | null {
   const r = spawnSync('node', ['-p', 'process.versions.node'], { encoding: 'utf8', timeout: 5000 });
@@ -97,18 +89,15 @@ export function planInstall(o: InstallOptions): InstallPlan {
   const checkCmd = team.WF_CHECK_CMD ?? '';
   // Team file only, like WF_CHECK_TIMEOUT: the hook commands are committed, so every machine must install the same ones.
   const runtimeValue = team.WF_HOOK_RUNTIME;
-  const runtime: 'node' | 'bash' = runtimeValue === 'bash' ? 'bash' : 'node';
-  const staleDirs = (runtime === 'bash' ? [NODE_DIR] : BASH_DIRS).filter((d) => existsSync(join(W, d)));
-  // The two runtimes share `.burhan/hooks/`: when one replaces the other, EVERY installed agent's hook file must move with it,
-  // or an agent left out of a partial --agents list would keep pointing at the directory that was just removed.
+  const staleDirs = BASH_DIRS.filter((d) => existsSync(join(W, d)));
+  // The bash hooks live beside the Node ones in `.burhan/hooks/`: when they are removed, EVERY installed agent's hook file must move
+  // to the Node entries, or an agent left out of a partial --agents list would keep pointing at the directories that were just removed.
   const installedAgents = AGENTS.filter((a) => agentInstalled(target, a));
   const requested = o.agents ?? installedAgents;
   const agents = staleDirs.length > 0 ? [...new Set([...requested, ...installedAgents])] : requested;
   if (agents.length === 0) throw new BurhanError('no agents given and none installed — pass --agents claude[,codex]');
   const alsoSwitched = agents.filter((a) => !requested.includes(a));
-  // Every installed bash adapter is refreshed with the core, so none is left behind at an older version.
-  const adapters = runtime === 'bash' ? [...new Set([...agents, ...AGENTS.filter((a) => existsSync(join(W, 'hooks/adapters', a)))])] : [];
-  const kitDirs = ['phases', 'templates', 'commands', ...(runtime === 'bash' ? ['hooks/core', ...adapters.map((a) => `hooks/adapters/${a}`)] : [NODE_DIR])];
+  const kitDirs = ['phases', 'templates', 'commands', NODE_DIR];
   const MODEL_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/; // a leading letter or digit: `model: -` is YAML for a list
   const notes: string[] = [];
   // Managed Claude files beside the commands. Each either should exist with this text, or should not
@@ -163,7 +152,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
       if (!isWritable(hf)) blocked.push(`${hf} is not writable`);
       current = v;
     }
-    const snippet = JSON.parse(readFileSync(join(kit, SNIPPET[runtime][a]), 'utf8')) as Settings;
+    const snippet = JSON.parse(readFileSync(join(kit, SNIPPET[a]), 'utf8')) as Settings;
     const mergedText = JSON.stringify(mergeHooks(current, snippet, burhanHookKeys(target, a), timeout + 10), null, 2) + '\n';
     merged.set(a, mergedText);
     if (a === 'codex' && existsSync(hf) && readFileSync(hf, 'utf8') !== mergedText) hooksChanged.add(a);
@@ -198,31 +187,25 @@ export function planInstall(o: InstallOptions): InstallPlan {
   };
   if (o.mode === 'init' && installed) step(`already installed (${oldVersion ?? 'unknown version'}) — refreshing, same as \`burhan upgrade\``);
   if (oldVersion && oldVersion !== version) step(`upgrade: ${oldVersion} → ${version}`);
-  if (alsoSwitched.length) step(`the hook runtime is changing (${runtime}), so ${alsoSwitched.join(', ')} ${alsoSwitched.length > 1 ? 'are' : 'is'} rewritten too — an agent left on the old hooks would point at files that are being removed`);
+  if (alsoSwitched.length) step(`the bash hooks are being replaced by the Node hooks, so ${alsoSwitched.join(', ')} ${alsoSwitched.length > 1 ? 'are' : 'is'} rewritten too — an agent left on the old hooks would point at files that are being removed`);
 
   for (const f of ['WORKFLOW.md', 'SETUP.md', 'VERSION']) file(`.burhan/${f}`, 'kit');
   for (const d of kitDirs) file(`.burhan/${d}/`, 'kit');
   for (const d of staleDirs) file(`.burhan/${d}/`, 'kit', true);
-  const hooksSay = runtime === 'bash' ? `hooks/core/, hooks/adapters/{${adapters.join(',')}}` : 'hooks/node/';
-  step(`kit files → .burhan/ (WORKFLOW.md, SETUP.md, VERSION, phases/, templates/, commands/, ${hooksSay})`, () => {
+  step('kit files → .burhan/ (WORKFLOW.md, SETUP.md, VERSION, phases/, templates/, commands/, hooks/node/)', () => {
     putFile(join(W, 'WORKFLOW.md'), readFileSync(join(kit, 'WORKFLOW.md')));
     putFile(join(W, 'SETUP.md'), readFileSync(join(kit, 'SETUP.md')));
     putFile(join(W, 'VERSION'), version + '\n');
     for (const d of ['phases', 'templates', 'commands']) replaceDir(join(kit, d), join(W, d));
-    if (runtime === 'node') replaceDir(nodeHooksDir(), join(W, NODE_DIR));
-    else {
-      replaceDir(join(kit, 'hooks/core'), join(W, 'hooks/core'));
-      for (const a of adapters) replaceDir(join(kit, 'hooks/adapters', a), join(W, 'hooks/adapters', a));
-    }
+    replaceDir(nodeHooksDir(), join(W, NODE_DIR));
   });
-  if (staleDirs.length) step(runtime === 'node'
-    ? `removed the bash hooks (${staleDirs.map((d) => `.burhan/${d}/`).join(', ')}) — the Node hooks in .burhan/hooks/node/ replace them`
-    : `removed the Node hooks (.burhan/${NODE_DIR}/) — WF_HOOK_RUNTIME=bash keeps the bash hooks`, () => {
+  if (staleDirs.length) step(`removed the bash hooks (${staleDirs.map((d) => `.burhan/${d}/`).join(', ')}) — the Node hooks in .burhan/hooks/node/ replace them`, () => {
     for (const d of staleDirs) rmSync(join(W, d), { recursive: true, force: true });
     const adaptersDir = join(W, 'hooks/adapters');
     if (existsSync(adaptersDir) && readdirSync(adaptersDir).length === 0) rmSync(adaptersDir, { recursive: true, force: true });
   });
-  if (runtimeValue !== undefined && runtimeValue !== 'node' && runtimeValue !== 'bash') step(`NOTE: WF_HOOK_RUNTIME "${runtimeValue}" is not node or bash — using node`);
+  if (runtimeValue === 'bash') step('NOTE: WF_HOOK_RUNTIME=bash — the bash hooks were removed in 0.3.0; the hooks are Node now. Remove the key from the team workflow.config.');
+  else if (runtimeValue !== undefined && runtimeValue !== 'node') step(`NOTE: WF_HOOK_RUNTIME "${runtimeValue}" is no longer used — the hooks are Node. Remove the key from the team workflow.config.`);
 
   if (giNeeded) file('.burhan/.gitignore', 'gitignore');
   if (giNeeded)
@@ -273,13 +256,8 @@ export function planInstall(o: InstallOptions): InstallPlan {
   const state = cfg.values.WF_STATE_FILE;
   if (state !== undefined && !state.replace(/^(\.\/)+/, '').startsWith('.burhan/local/'))
     step(`NOTE: WF_STATE_FILE is "${state}" — shared by everyone who commits it. For team use, delete that line from .burhan/workflow.config (the default is .burhan/local/PROGRESS.md, git-ignored) and move your current file there.`);
-  if (runtime === 'node') {
-    const problem = nodeRuntimeProblem();
-    if (problem) step(`NOTE: the hooks run on Node ≥ 22 — ${problem}. Install a current Node and put it first on PATH: the agent runs the \`node\` it finds there.`);
-  } else {
-    const missing = bashRuntimeMissing();
-    step(`NOTE: WF_HOOK_RUNTIME=bash keeps the bash hooks (a rollback; they need bash ≥ 4 and jq${missing.length ? ` — missing here: ${missing.join(', ')}` : ''}). Remove the key from the team workflow.config to use the Node hooks.`);
-  }
+  const problem = nodeRuntimeProblem();
+  if (problem) step(`NOTE: the hooks run on Node ≥ 22 — ${problem}. Install a current Node and put it first on PATH: the agent runs the \`node\` it finds there.`);
 
   return { version, target, blocked, steps, files, agents };
 }

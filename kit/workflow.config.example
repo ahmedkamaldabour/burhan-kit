@@ -24,12 +24,6 @@ WF_CHECK_CMD=""
 # written into the committed agent settings by `burhan upgrade`.
 WF_CHECK_TIMEOUT=60
 
-# ---- Hook runtime ------------------------------------------------------------------------------
-# node (default): the hooks run on Node >= 22, with no bash or jq, and on Windows. bash: the 0.2 bash hooks
-# (bash >= 4 and jq >= 1.6), kept as a rollback and removed in a later release.
-# Team-only: the hook commands are committed in the agents' settings. Run `burhan upgrade --apply` after changing it.
-WF_HOOK_RUNTIME="node"
-
 # ---- First-use setup -------------------------------------------------------------------------
 # pending = the agent sets up the project checks on first use; empty or done = nothing to do.
 WF_STACK_SETUP=""

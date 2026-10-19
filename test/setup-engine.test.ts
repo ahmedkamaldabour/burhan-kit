@@ -13,7 +13,7 @@ import { QUESTIONS, messages } from '../src/lib/setup/messages.js';
 import { tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-setup-home-');
-const good: Probe = { bashMajor: () => 5, has: () => true, jqVersion: () => 'jq-1.8.1', nodeVersion: () => '24.13.0', claudeVersion: () => '2.1.296', home: () => home };
+const good: Probe = { nodeVersion: () => '24.13.0', claudeVersion: () => '2.1.296', home: () => home };
 
 function fresh(): string {
   const d = tmpDir('burhan-setup-');

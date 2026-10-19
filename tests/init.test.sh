@@ -110,7 +110,7 @@ check_eq "CRLF file -> line endings stay CRLF" "$(grep -c $'\r$' "$R/CLAUDE.md")
 R="$(repo)"; mkdir -p "$R/.burhan"; cp -R "$T_ROOT/kit" "$T_ROOT/dist" "$T_ROOT/package.json" "$R/.burhan/"
 out="$(cd "$R" && node .burhan/dist/cli.js init . --agents claude --apply 2>&1; echo "rc=$?")"
 check "kit inside target/.burhan -> refuses" "$out" lacks "rc=0"
-check "kit inside target/.burhan -> kit intact" "$( [ -f "$R/.burhan/kit/templates/story.md" ] && [ -f "$R/.burhan/kit/hooks/core/lib.sh" ] && echo yes)" has yes
+check "kit inside target/.burhan -> kit intact" "$( [ -f "$R/.burhan/kit/templates/story.md" ] && [ -f "$R/.burhan/kit/hooks/core/gates.txt" ] && echo yes)" has yes
 
 R="$(repo)"
 out="$(t_timeout 5 node "$CLI" init "$R" --agents 2>&1; echo "rc=$?")"
@@ -299,19 +299,4 @@ check "an emptied key removes our managed role agent" "$( [ -e "$R/.claude/agent
 check "...and leaves the others" "$( [ -e "$R/.claude/agents/burhan-planner.md" ] && echo kept)" has kept
 echo "mine" > "$R/.claude/agents/burhan-explorer.md"; t_sedi 's/^WF_MODEL_CLAUDE_EXPLORER=haiku$/WF_MODEL_CLAUDE_EXPLORER=""/' "$R/.burhan/workflow.config"; upg "$R" --apply >/dev/null
 check_eq "a user's own file with a role name is never removed" "$(cat "$R/.claude/agents/burhan-explorer.md")" "mine"
-echo "init — the bash runtime (WF_HOOK_RUNTIME=bash, the rollback) and the move between runtimes"
-R="$(repo)"; mkdir -p "$R/.burhan"; printf 'WF_HOOK_RUNTIME=bash\n' > "$R/.burhan/workflow.config"
-check "bash runtime init -> rc 0" "$(inst "$R" --agents claude,codex --apply)" has "rc=0"
-check "bash runtime installs hooks/core and the adapters" "$( [ -f "$R/.burhan/hooks/core/turn-audit.sh" ] && [ -f "$R/.burhan/hooks/adapters/codex/hook.sh" ] && echo yes)" has yes
-check "bash runtime has no Node hooks" "$( [ -e "$R/.burhan/hooks/node" ] && echo yes)" lacks yes
-check "bash runtime: Claude commands are bash" "$(hooks_of "$R/.claude/settings.json")" has 'hook.sh" turn-audit'
-t_sedi 's/^WF_HOOK_RUNTIME=bash$/WF_HOOK_RUNTIME=node/' "$R/.burhan/workflow.config"
-out="$(upg "$R" --apply)"
-check "bash -> node upgrade -> rc 0" "$out" has "rc=0"
-check "bash -> node: the bash hooks are removed" "$( [ -e "$R/.burhan/hooks/core" ] || [ -e "$R/.burhan/hooks/adapters" ] && echo yes)" lacks yes
-check "bash -> node: the Node hooks are installed" "$( [ -f "$R/.burhan/hooks/node/main.mjs" ] && echo yes)" has yes
-check "bash -> node: no old hook entries left" "$(hooks_of "$R/.claude/settings.json" "$R/.codex/hooks.json")" lacks "hook.sh"
-check "bash -> node: says Codex must be trusted again" "$out" has "Modified since last trusted"
-snap="$(tree "$R")"; upg "$R" --apply >/dev/null
-check_eq "node upgrade is idempotent" "$(tree "$R")" "$snap"
 t_summary

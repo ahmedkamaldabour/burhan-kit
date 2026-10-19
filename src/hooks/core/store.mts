@@ -1,4 +1,4 @@
-/** Private, fail-open session state shared with the Bash hooks (ports lib.sh:155-272). */
+/** Private, fail-open session state (ported from the 0.2 bash lib.sh). */
 import { createHash, randomBytes } from 'node:crypto';
 import { chmodSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
