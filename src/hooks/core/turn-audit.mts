@@ -159,7 +159,14 @@ const gateF: Gate = (audit) => {
   const patch = patchTurn(audit);
   const usedForCode = ereTest('test-driven-development|systematic-debugging', [...audit.skillsUsed, ...audit.skillsBefore].join('\n'));
   if (matches(audit.ctx.cfg.WF_CODE_REGEX ?? '', audit.written.join('\n')) && !patch && !usedForCode) out.push('⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.');
-  const reviews = audit.written.filter((file) => ereTest('/reviews/[^/]+\\.md$', file) && !ereTest('-(qc|verification)(-r[0-9]+)?\\.md$', file));
+  // A review file counts when the main agent created it or added a `**Performed by:**` line to it; a fix note in a review
+  // the reviewer wrote does not. Only the Claude adapter reports what was written, so Codex keeps the older rule.
+  const claude = audit.ctx.ev.get('.agent') === 'claude';
+  const performedBy = (text: string): boolean => ereTest('performed by:', text, { i: true });
+  const addsReview = (file: string): boolean => audit.created.includes(file)
+    || audit.steps.some((step) => step.kind === 'edit' && step.by === '' && step.file === file && step.performedBy)
+    || audit.cmds.some((cmd) => performedBy(cmd) && shellWrites([cmd]).map((f) => relPath(f, audit.ctx.project)).includes(file));
+  const reviews = audit.written.filter((file) => ereTest('/reviews/[^/]+\\.md$', file) && !ereTest('-(qc|verification)(-r[0-9]+)?\\.md$', file) && (!claude || addsReview(file)));
   if (reviews.length > 0 && !used('requesting-code-review')) out.push('⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review.');
   return out;
 };

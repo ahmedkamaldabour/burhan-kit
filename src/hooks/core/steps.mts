@@ -10,6 +10,8 @@ export interface Step {
   file: string;
   cmd: string;
   by: string;
+  /** The edit wrote a `Performed by:` line (Claude only; false when the adapter did not say). */
+  performedBy: boolean;
 }
 
 const flat = (value: unknown): string => {
@@ -34,6 +36,7 @@ export function parseSteps(raw: unknown[], project = ''): Step[] {
         file: relPath(flat(step.file), project),
         cmd: flat(step.cmd),
         by: flat(step.by),
+        performedBy: step.performed_by === true,
       });
     }
   } catch { /* malformed adapter input is ignored, like jq's empty stream on failure */ }

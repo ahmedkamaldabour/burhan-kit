@@ -6,7 +6,7 @@ import { applyBlock, BlockError, type Agent } from './bootstrap.js';
 import { isManagedCommand, withManagedMark } from './commands.js';
 import { parseConfig, readProjectConfig, TEAM_CONFIG } from './config.js';
 import { BurhanError } from './errors.js';
-import { isWritable, putFile, realTarget, replaceDir } from './fs-safe.js';
+import { isWritable, putFile, realTarget, replaceDir, resolveWritePath } from './fs-safe.js';
 import { agentInstalled, burhanHookKeys, mergeHooks, validHooksFile, type Settings } from './hooks-merge.js';
 import { kitDir, nodeHooksDir, readVersion } from './kit.js';
 
@@ -21,7 +21,7 @@ const BOOT_FILE: Record<Agent, string> = { claude: 'CLAUDE.md', codex: 'AGENTS.m
 const COMMANDS = ['e2e', 'qc', 'onboard'];
 
 /** keepProjectFiles: never create workflow.config / bindings.md from the templates — `burhan setup` writes them itself, first. */
-export interface InstallOptions { mode: 'init' | 'upgrade'; target: string; agents: Agent[] | null; apply: boolean; bootstrap: boolean; keepProjectFiles?: boolean }
+export interface InstallOptions { mode: 'init' | 'upgrade'; target: string; agents: Agent[] | null; apply: boolean; bootstrap: boolean; keepProjectFiles?: boolean; /** `init`/`upgrade` only: write a hooks file that resolves outside the project. */ allowOutsideSettings?: boolean }
 
 export function parseAgents(s: string): Agent[] {
   const list = s.split(',').filter(Boolean);
@@ -68,7 +68,9 @@ function nodeRuntimeProblem(): string | null {
 /** A file the plan writes or removes; `rel` is project-relative, forward slashes. Kit files are listed at
  *  directory level (trailing `/`, e.g. `.burhan/hooks/core/`) because the whole directory is replaced. */
 export interface PlannedFile { rel: string; existed: boolean; action: 'create' | 'modify' | 'remove'; kind: 'kit' | 'config' | 'hooks' | 'bootstrap' | 'managed' | 'gitignore' }
-export interface InstallPlan { version: string; target: string; blocked: string[]; steps: { say: string; run?: () => void }[]; files: PlannedFile[]; agents: Agent[] }
+/** A hooks file whose real path is outside the project: a write would edit someone else's file. */
+export interface OutsideFile { rel: string; real: string }
+export interface InstallPlan { version: string; target: string; blocked: string[]; outside: OutsideFile[]; steps: { say: string; run?: () => void }[]; files: PlannedFile[]; agents: Agent[] }
 
 /** Validates and plans; prints nothing and writes nothing. Throws BurhanError on invalid input. */
 export function planInstall(o: InstallOptions): InstallPlan {
@@ -130,6 +132,8 @@ export function planInstall(o: InstallOptions): InstallPlan {
   // Unwritable paths: --apply refuses before the first write; a dry run still shows the whole plan
   // and names them (an agent's sandbox may protect its own folder, e.g. Codex and .codex/).
   const blocked: string[] = [];
+  const outside: OutsideFile[] = [];
+  const landings = new Map<Agent, string>(); // where the hooks file's write lands, as the kernel resolves it
   const merged = new Map<Agent, string>();
   const hooksChanged = new Set<Agent>();
   const blocks = new Map<Agent, { content: string; editedInside: boolean }>();
@@ -144,6 +148,10 @@ export function planInstall(o: InstallOptions): InstallPlan {
   for (const a of agents) {
     const hf = join(target, HOOKS_FILE[a]);
     if (!isFileTarget(hf)) throw new BurhanError(`${hf} is not a regular file`);
+    const landing = resolveWritePath(hf);
+    if (landing !== null) landings.set(a, landing);
+    if (landing === null) outside.push({ rel: HOOKS_FILE[a], real: `${hf} (a link loop)` });
+    else if (landing !== target && !landing.startsWith(target + sep)) outside.push({ rel: HOOKS_FILE[a], real: landing });
     let current: Settings = {};
     if (existsSync(hf)) {
       let v: unknown;
@@ -219,7 +227,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
 
   for (const a of agents) {
     file(HOOKS_FILE[a], 'hooks');
-    step(`hooks → ${a}: ${HOOKS_FILE[a]} (merged; your other settings and hooks kept)`, () => putFile(join(target, HOOKS_FILE[a]), merged.get(a)!));
+    step(`hooks → ${a}: ${HOOKS_FILE[a]} (merged; your other settings and hooks kept)`, () => putFile(landings.get(a) ?? join(target, HOOKS_FILE[a]), merged.get(a)!));
     if (a === 'claude') {
       for (const c of COMMANDS) {
         const rel = `.claude/commands/burhan/${c}.md`;
@@ -259,7 +267,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
   const problem = nodeRuntimeProblem();
   if (problem) step(`NOTE: the hooks run on Node ≥ 22 — ${problem}. Install a current Node and put it first on PATH: the agent runs the \`node\` it finds there.`);
 
-  return { version, target, blocked, steps, files, agents };
+  return { version, target, blocked, outside, steps, files, agents };
 }
 
 function runStep(s: { say: string; run?: () => void }): void {
@@ -275,11 +283,14 @@ export function applyPlan(p: InstallPlan): void {
 
 export function install(o: InstallOptions, io: Io): number {
   const plan = planInstall(o);
-  const { version, target, blocked, steps, agents } = plan;
+  const { version, target, blocked, outside, steps, agents } = plan;
   // ---------------------------------------------------------------- 3. apply
   if (blocked.length && o.apply) throw new BurhanError(`${blocked[0]} — nothing was changed`);
+  const refused = outside.length > 0 && !o.allowOutsideSettings;
+  if (refused && o.apply) throw new BurhanError(`${outside[0]!.rel} resolves outside the project (${outside[0]!.real}) — nothing was changed; pass --allow-outside-settings if you want burhan to edit that file`);
   io.stdout(o.apply ? `burhan ${version} → ${target}\n` : `DRY RUN — burhan ${version} → ${target} (nothing will change; add --apply)\n`);
   for (const b of blocked) io.stdout(`  BLOCKED: ${b} — --apply would stop here and change nothing; make it writable (or run the command outside the agent's sandbox)\n`);
+  for (const f of outside) io.stdout(`  OUTSIDE: ${f.rel} → ${f.real} is outside the project — ${refused ? '--apply would refuse and change nothing (add --allow-outside-settings to write it)' : 'written because of --allow-outside-settings'}\n`);
   for (const s of steps) {
     io.stdout(`  ${s.say}\n`);
     if (o.apply) runStep(s); // per step, so a failure leaves the same partial output as before
@@ -299,5 +310,5 @@ PreToolUse, PostToolUse and Stop, select the hook whose Source is "Project confi
 and press t. Trust again when Codex shows one as "Modified since last trusted". Steps:
 .burhan/SETUP.md § 7 · \`burhan doctor\` checks it.
 `);
-  return blocked.length ? 1 : 0;
+  return blocked.length || refused ? 1 : 0;
 }

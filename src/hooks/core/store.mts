@@ -204,3 +204,36 @@ export function rememberSkills(project: string, session: string, item: string, s
 export function mtime(path: string): number | null {
   try { return Math.floor(statSync(path).mtimeMs / 1000); } catch { return null; }
 }
+
+/** What a Claude Stop has audited so far in a user turn (ids, counts and skill names — never prompt or file text): the prompt record, the last
+ *  main-transcript record, and per background agent (tool id) how many of its steps. Private, in the session store. */
+export interface AuditMark { turn: string; upTo: string; agents: Record<string, number>; /** skills used so far in this user turn (names), so a later part still counts them */ skills: string[] }
+
+const auditFile = (project: string, session: string, env: Env): string => {
+  const dir = sessionDir(project, session, env, true);
+  return dir ? join(dir, 'audited') : '';
+};
+
+/** The saved mark, or null when it is missing, unreadable or malformed (the caller then audits the whole turn). */
+export function readAuditMark(project: string, session: string, env: Env = process.env): AuditMark | null {
+  try {
+    const file = auditFile(project, session, env);
+    if (!file) return null;
+    const v: unknown = JSON.parse(readFileSync(file, 'utf8'));
+    if (v === null || typeof v !== 'object' || Array.isArray(v)) return null;
+    const { turn, upTo, agents } = v as Record<string, unknown>;
+    if (typeof turn !== 'string' || turn === '' || typeof upTo !== 'string' || upTo === '') return null;
+    if (agents === null || typeof agents !== 'object' || Array.isArray(agents)) return null;
+    const counts: Record<string, number> = {};
+    for (const [k, n] of Object.entries(agents as Record<string, unknown>)) if (typeof n === 'number' && Number.isInteger(n) && n >= 0) counts[k] = n;
+    const skills = Array.isArray((v as Record<string, unknown>).skills) ? ((v as Record<string, unknown>).skills as unknown[]).filter((s): s is string => typeof s === 'string').slice(-100) : [];
+    return { turn, upTo, agents: counts, skills };
+  } catch { return null; }
+}
+
+export function saveAuditMark(project: string, session: string, mark: AuditMark, env: Env = process.env): void {
+  try {
+    const file = auditFile(project, session, env);
+    if (file) atomicPrivateWrite(file, 'audited', JSON.stringify(mark) + '\n');
+  } catch { /* fail open */ }
+}

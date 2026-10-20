@@ -126,6 +126,8 @@ export function evidenceRecord(ctx: Ctx): void {
       line.item = item; line.phase = phase; line.project = ctx.project;
       lines.push(JSON.stringify(line).replace(/\x7f/g, '\\u007f'));
     }
+    // A whole-turn file holds every step of the turn: parts an earlier sliced Stop wrote would count them twice.
+    if (!scoped) { try { for (const f of readdirSync(sessionDir)) if (f.startsWith(`${turn}.`) && /\.[0-9]+\.jsonl$/.test(f)) unlinkSync(join(sessionDir, f)); } catch { /* fail open */ } }
     atomicPrivateWrite(join(sessionDir, name), 'turn', lines.join('\n') + (lines.length ? '\n' : ''));
     evidencePrune(root);
   } catch { /* wf_evidence_record fails open. */ }

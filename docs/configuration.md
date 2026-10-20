@@ -35,6 +35,11 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
   included). If you edited text *inside* the block, the file is backed up to `<file>.burhan-backup`
   before the block is refreshed. A file with a broken marker pair is refused, not repaired.
   `--no-bootstrap` skips it.
+- A hooks file (`.claude/settings.json`, `.codex/hooks.json`) may be a symlink — to a file inside the project it is
+  written as before. If it resolves **outside** the project (a link to the file, to a folder above it, or a dangling
+  link), `init`/`upgrade` print `OUTSIDE: <file> → <real path>` in the dry run and with `--apply`, and `--apply`
+  refuses and changes nothing unless you pass `--allow-outside-settings`. (`setup` shows the same link in its summary
+  before you approve.)
 - Claude commands go to `.claude/commands/burhan/` (`/burhan:e2e`, `/burhan:qc`). A command file you
   wrote yourself is never overwritten. Codex reads them from `.burhan/commands/` via `AGENTS.md`.
 - **Safety:** everything is validated before the first write — any problem (invalid agent config,

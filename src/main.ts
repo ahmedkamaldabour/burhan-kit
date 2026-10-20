@@ -37,9 +37,9 @@ export interface Io { stdout(s: string): void; stderr(s: string): void; cwd: str
 
 export const USAGE = `usage: burhan <command> [options]
 
-  init [dir] --agents claude[,codex] [--apply] [--no-bootstrap]
+  init [dir] --agents claude[,codex] [--apply] [--no-bootstrap] [--allow-outside-settings]
                        install the kit into a project (dir defaults to the current directory)
-  upgrade [dir] [--agents …] [--apply] [--no-bootstrap]
+  upgrade [dir] [--agents …] [--apply] [--no-bootstrap] [--allow-outside-settings]
                        refresh an installed project (agents default to the installed ones)
   status [dir] [--write] [--force] [--docs <path>]
                        list work items; --write regenerates <docs>/README.md
@@ -84,14 +84,14 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
       case 'init': case 'upgrade': {
         const { values, positionals } = parseArgs({
           args: rest, allowPositionals: true, strict: true,
-          options: { agents: { type: 'string' }, apply: { type: 'boolean' }, 'no-bootstrap': { type: 'boolean' } },
+          options: { agents: { type: 'string' }, apply: { type: 'boolean' }, 'no-bootstrap': { type: 'boolean' }, 'allow-outside-settings': { type: 'boolean' } },
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         if (cmd === 'init' && values.agents === undefined) { io.stderr('burhan: init needs --agents claude[,codex]\n'); io.stdout(USAGE); return 2; }
         return install({
           mode: cmd, target: positionals[0] ?? io.cwd,
           agents: values.agents === undefined ? null : parseAgents(values.agents),
-          apply: values.apply === true, bootstrap: values['no-bootstrap'] !== true,
+          apply: values.apply === true, bootstrap: values['no-bootstrap'] !== true, allowOutsideSettings: values['allow-outside-settings'] === true,
         }, io);
       }
       case 'status': {

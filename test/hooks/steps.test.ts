@@ -13,15 +13,15 @@ import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps } from '../..
 test('parseSteps flattens jq TSV fields and supplies the status default', () => {
   assert.deepEqual(parseSteps([{ seq: 2, kind: 'cmd', cmd: 'verify\tit\nnow', exit: '3\r', by: 'builder\n1' },
     { seq: 3, kind: 'edit', file: 'src\ta.ts' }]), [
-    { seq: 2, kind: 'cmd', status: 'unknown', exit: '3 ', file: '', cmd: 'verify it now', by: 'builder 1' },
-    { seq: 3, kind: 'edit', status: 'unknown', exit: '', file: 'src a.ts', cmd: '', by: '' },
+    { seq: 2, kind: 'cmd', status: 'unknown', exit: '3 ', file: '', cmd: 'verify it now', by: 'builder 1', performedBy: false },
+    { seq: 3, kind: 'edit', status: 'unknown', exit: '', file: 'src a.ts', cmd: '', by: '', performedBy: false },
   ]);
 });
 
 test('lastCodeEdit uses ordered edits, including a subagent edit', () => {
   const steps = parseSteps([{ seq: 1, kind: 'edit', file: 'src/old.ts' }, { seq: 3, kind: 'edit', file: 'notes.md' },
     { seq: 8, kind: 'edit', file: 'src/new.ts', by: 'builder' }]);
-  assert.deepEqual(lastCodeEdit(steps, /\.ts$/), { seq: 8, kind: 'edit', status: 'unknown', exit: '', file: 'src/new.ts', cmd: '', by: 'builder' });
+  assert.deepEqual(lastCodeEdit(steps, /\.ts$/), { seq: 8, kind: 'edit', status: 'unknown', exit: '', file: 'src/new.ts', cmd: '', by: 'builder', performedBy: false });
 });
 
 test('evidenceRuns keeps failures but drops result-less subagent runs', () => {

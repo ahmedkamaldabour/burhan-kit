@@ -1,7 +1,9 @@
 import { closeSync, fstatSync, openSync, readSync, statSync } from 'node:fs';
 import { JqError } from '../../core/jq.mjs';
+import type { AuditMark } from '../../core/store.mjs';
 
-export type EditStep = { kind: 'edit'; file: string; seq: number; _ts?: unknown; by?: string };
+/** `performed_by`: the text this edit wrote (Write content, Edit new_string …) has a `Performed by:` line — the mark of a review. Never the text itself. */
+export type EditStep = { kind: 'edit'; file: string; seq: number; _ts?: unknown; by?: string; performed_by?: true };
 export type CommandStep = { kind: 'cmd'; cmd: string; exit: number | null; status: 'background' | 'unknown' | 'ok' | 'failed' | 'blocked'; seq: number; _ts?: unknown; by?: string };
 export type AgentStep = { kind: 'agent'; tool_id: string; agent_id: string | null; async: boolean; by: string; seq: number; _ts?: unknown };
 export type Step = EditStep | CommandStep | AgentStep;
@@ -141,7 +143,9 @@ const steps = (parts: Record<string, unknown>[], byId: Map<string, Result>): Ste
     if (name === 'Write' || name === 'Edit' || name === 'MultiEdit' || name === 'NotebookEdit') {
       if (result?.err === true) continue;
       const toolInput = input(part);
-      out.push({ kind: 'edit', file: string(fallback(toolInput.file_path as string | null | undefined | false, fallback(toolInput.notebook_path as string | null | undefined | false, ''))), seq: 0, _ts: ts });
+      const edits = Array.isArray(toolInput.edits) ? toolInput.edits.map(object).filter((e): e is Record<string, unknown> => e !== null).map((e) => string(e.new_string)) : [];
+      const written = [string(toolInput.content), string(toolInput.new_string), ...edits, string(toolInput.new_source)].join('\n');
+      out.push({ kind: 'edit', file: string(fallback(toolInput.file_path as string | null | undefined | false, fallback(toolInput.notebook_path as string | null | undefined | false, ''))), seq: 0, _ts: ts, ...(/performed by:/iu.test(written) ? { performed_by: true } : {}) });
     } else if (name === 'Bash') {
       const toolInput = input(part);
       const cmd = string(fallback(toolInput.command as string | null | undefined | false, ''));
@@ -175,11 +179,28 @@ export function stepsOfRecords(records: Record<string, unknown>[]): Step[] {
 
 /** Builds the main-turn fields; Agent placeholders remain for the subagent splice. */
 export function turnFromRecords(records: Record<string, unknown>[]): TurnData {
+  return turnWindow(records, null).turn;
+}
+
+/** The turn as one Stop should audit it. With the mark of an earlier Stop of the same prompt, only the records after that
+ *  Stop's last record count (`sliced`); the Agent launches from before it stay, so an agent that finishes later is still
+ *  spliced in (its already-audited steps are skipped by the caller). A mark that does not match gives the whole turn. */
+export function turnWindow(records: Record<string, unknown>[], since: AuditMark | null): { turn: TurnData; sliced: boolean; upTo: string } {
   let promptIndex = -1;
   for (let index = 0; index < records.length; index++) if (promptLike(records[index])) promptIndex = index;
-  const turn = records.slice(promptIndex + 1).filter((record) => record.isSidechain !== true);
+  const turnKey = promptIndex >= 0 ? fallback(records[promptIndex].uuid as unknown, '') : '';
+  const window = records.slice(promptIndex + 1);
+  let start = 0;
+  let sliced = false;
+  if (since !== null && since.turn === turnKey) {
+    const at = window.findIndex((record) => record.uuid === since.upTo);
+    if (at >= 0) { start = at + 1; sliced = true; }
+  }
+  const isMain = (record: Record<string, unknown>): boolean => record.isSidechain !== true;
+  const turn = window.slice(start).filter(isMain);
+  const earlyAgents = toolParts(window.slice(0, start).filter(isMain)).filter((part) => part.type === 'tool_use' && (part.name === 'Agent' || part.name === 'Task'));
   const parts = toolParts(turn);
-  const byId = results(turn);
+  const byId = results(window.filter(isMain));
   const successful = parts.filter((part) => part.type === 'tool_use' && byId.get(key(part.id))?.err !== true);
   /** A tool input's first present field among `keys` (jq `.a // .b // empty`): '' is a value, null and false are absent. */
   const field = (part: Record<string, unknown>, keys: string[]): string[] => {
@@ -189,13 +210,18 @@ export function turnFromRecords(records: Record<string, unknown>[]): TurnData {
   };
   const created = successful.filter((part) => part.name === 'Write' && fallback(byId.get(key(part.id))?.kind, 'create') !== 'update');
   const edited = successful.filter((part) => part.name === 'Edit' || part.name === 'MultiEdit' || part.name === 'NotebookEdit' || (part.name === 'Write' && byId.get(key(part.id))?.kind === 'update'));
+  const last = [...records].reverse().find((record) => typeof record.uuid === 'string' && record.uuid !== '');
   return {
-    files_created: created.flatMap((part) => field(part, ['file_path'])),
-    files_edited: edited.flatMap((part) => field(part, part.name === 'Write' ? ['file_path'] : ['file_path', 'notebook_path'])),
-    shell_commands: successful.filter((part) => part.name === 'Bash').flatMap((part) => field(part, ['command'])),
-    skills_used: successful.filter((part) => part.name === 'Skill').flatMap((part) => field(part, ['skill'])),
-    assistant_text: parts.filter((part) => part.type === 'text').map((part) => string(part.text)).join('\n'),
-    steps: steps(parts, byId),
-    turn_key: promptIndex >= 0 ? fallback(records[promptIndex].uuid as unknown, '') : '',
+    turn: {
+      files_created: created.flatMap((part) => field(part, ['file_path'])),
+      files_edited: edited.flatMap((part) => field(part, part.name === 'Write' ? ['file_path'] : ['file_path', 'notebook_path'])),
+      shell_commands: successful.filter((part) => part.name === 'Bash').flatMap((part) => field(part, ['command'])),
+      skills_used: successful.filter((part) => part.name === 'Skill').flatMap((part) => field(part, ['skill'])),
+      assistant_text: parts.filter((part) => part.type === 'text').map((part) => string(part.text)).join('\n'),
+      steps: steps([...earlyAgents, ...parts], byId),
+      turn_key: turnKey,
+    },
+    sliced,
+    upTo: last === undefined ? '' : String(last.uuid),
   };
 }

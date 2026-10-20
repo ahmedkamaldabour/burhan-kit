@@ -105,7 +105,8 @@ check "plan created w/o writing-plans -> fires" "$(a "$(t '[".burhan/work/foo/fo
 check "code w/o TDD/debugging -> fires" "$(a "$(t '[]' '["a.src"]' '[]' '[]' '')")" has "SKILL GATE (code)"
 check "code with TDD -> silent" "$(a "$(t '[]' '["a.src"]' '[]' '["superpowers:test-driven-development"]' '')")" lacks "SKILL GATE (code)"
 check "code with debugging -> silent" "$(a "$(t '[]' '["a.src"]' '[]' '["superpowers:systematic-debugging"]' '')")" lacks "SKILL GATE (code)"
-check "review w/o code-review -> fires" "$(a "$(t '[]' '[".burhan/work/foo/reviews/foo-task1.md"]' '[]' '[]' '')")" has "SKILL GATE"
+check "review created w/o code-review -> fires" "$(a "$(t '[".burhan/work/foo/reviews/foo-task1.md"]' '[]' '[]' '[]' '')")" has "SKILL GATE"
+check "a fix note edited into a review file -> silent (the review gate counts a created review or a Performed by line)" "$(a "$(t '[]' '[".burhan/work/foo/reviews/foo-task1.md"]' '[]' '[]' '')")" lacks "SKILL GATE: a review file"
 check "qc file -> not the review gate" "$(a "$(t '[]' '[".burhan/work/foo/reviews/foo-qc.md"]' '[]' '[]' '')")" lacks "SKILL GATE"
 check "verification file -> not the review gate" "$(a "$(t '[]' '[".burhan/work/foo/reviews/foo-verification.md"]' '[]' '[]' '')")" lacks "SKILL GATE"
 check "code edited only by a subagent -> F silent (skills are judged in the subagent's own turn)" \
@@ -421,7 +422,7 @@ P="$(proj "${BASE[@]}" 'WF_SKILLS=superpowers' "WF_SENSITIVE_REGEX='auth'")"
 check "a patch that touches a sensitive path -> no exemption" "$(a "$(t '[]' '["src/auth.src"]' '["verify-it a"]' '[]' 'patch — one line. Done.')")" has "SKILL GATE (code)"
 P="$(proj "${BASE[@]}" 'WF_SKILLS=superpowers')"
 P="$(proj "${BASE[@]}" 'WF_SKILLS=superpowers')"
-check "the single review file counts as a review (skill gate)" "$(a "$(t '[]' '[".burhan/work/foo/reviews/foo-review.md"]' '[]' '[]' '')")" has "SKILL GATE"
+check "the single review file counts as a review (skill gate)" "$(a "$(t '[".burhan/work/foo/reviews/foo-review.md"]' '[]' '[]' '[]' '')")" has "SKILL GATE"
 mkdir -p "$P/.burhan/work/foo/reviews"
 for v in pending TBD 'waiting for the reviewer' 'fresh subagent' 'same session' 'claude · fresh subagent' '<agent> · <model> · fresh subagent' 'claude · opus · same session · fresh subagent'; do
   printf '%s\n' '# QC' "- **Performed by:** $v" > "$P/.burhan/work/foo/reviews/foo-qc.md"

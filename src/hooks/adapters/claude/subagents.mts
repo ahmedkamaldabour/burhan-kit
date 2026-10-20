@@ -77,8 +77,10 @@ const byTimestamp = (steps: Step[]): Step[] =>
 /**
  * Replaces Agent/Task placeholders with one level of their subagent evidence.
  * Transcript and metadata failures deliberately fail open to the stripped turn.
+ * `skip[toolId]` leaves out the first n steps of that agent (already audited by an earlier Stop); `counts` receives how
+ * many steps each agent has now.
  */
-export function withSubagentSteps(turn: TurnData, dir: string): TurnData {
+export function withSubagentSteps(turn: TurnData, dir: string, skip: Record<string, number> = {}, counts: Record<string, number> = {}): TurnData {
   try {
     const placeholders = turn.steps.filter((step): step is Extract<Step, { kind: 'agent' }> => step.kind === 'agent');
     if (placeholders.length === 0) return stripped(turn);
@@ -89,7 +91,8 @@ export function withSubagentSteps(turn: TurnData, dir: string): TurnData {
       const path = transcriptFor(placeholder, dir, metas);
       if (!path) continue;
       const steps = withoutAgents(stepsOfRecords(readRecords(path))).map((step) => ({ ...step, by: placeholder.by } as Step));
-      expanded.set(placeholder, steps);
+      counts[placeholder.tool_id] = steps.length;
+      expanded.set(placeholder, steps.slice(skip[placeholder.tool_id] ?? 0));
     }
 
     const synchronous: Step[] = [];
