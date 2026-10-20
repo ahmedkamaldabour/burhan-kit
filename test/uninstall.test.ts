@@ -416,3 +416,80 @@ test('never reports as "kept" a file the same run removes (confirmation review M
     assert.ok(has(t, rel), `"${line.trim()}" but ${rel} is gone`);
   }
 });
+
+// alerts-and-texts SU4 (AC-08): `--all` after a plain uninstall removes what `--all` removes today — no more, no less.
+const withMemory = (t: string): void => {
+  setup(t);
+  put(t, '.burhan/local/PROGRESS.md', 'x\n');
+  put(t, '.burhan/work/a/a-story.md', '# s\n');
+  put(t, '.burhan/PROJECT.md', '# P\n');
+  put(t, '.burhan/context/stack.md', '# c\n');
+};
+test('after a plain uninstall, --all (dry run, then --apply) ends with exactly the tree a direct --all leaves; project memory stays', async () => {
+  const direct = fresh(); put(direct, 'src/app.txt', 'x\n'); withMemory(direct);
+  assert.equal((await un(direct, '--apply', '--all')).code, 0);
+
+  const later = fresh(); put(later, 'src/app.txt', 'x\n'); withMemory(later);
+  assert.equal((await un(later, '--apply')).code, 0);
+  const kept = tree(later);
+  const dry = await un(later, '--all');
+  assert.equal(dry.code, 0, dry.err + dry.out);
+  assert.match(dry.out, /DRY RUN/);
+  for (const rel of ['.burhan/workflow.config', '.burhan/bindings.md', '.burhan/local', '.burhan/work']) assert.match(dry.out, new RegExp(`remove ${rel.replace('.', '\\.')}`), rel);
+  assert.deepEqual(tree(later), kept, 'the dry run changes nothing');
+  const r = await un(later, '--all', '--apply');
+  assert.equal(r.code, 0, r.err + r.out);
+  assert.deepEqual(tree(later), tree(direct), 'same result as a direct --all');
+  assert.ok(has(later, '.burhan/PROJECT.md') && has(later, '.burhan/context/stack.md'), 'project memory stays');
+  assert.equal(readFileSync(join(later, '.burhan/PROJECT.md'), 'utf8'), '# P\n');
+});
+
+test('after a plain uninstall: an unknown file in .burhan/ → --all refuses and removes nothing; plain again names --all', async () => {
+  const t = fresh(); setup(t);
+  assert.equal((await un(t, '--apply')).code, 0);
+  const again = await un(t);
+  assert.notEqual(again.code, 0);
+  assert.match(again.err + again.out, /only your kept files remain; add --all to remove them/);
+  put(t, '.burhan/notes.txt', 'mine\n');
+  const before = tree(t);
+  const r = await un(t, '--all', '--apply');
+  assert.notEqual(r.code, 0);
+  assert.match(r.err + r.out, /burhan is not installed/);
+  assert.deepEqual(tree(t), before);
+});
+
+test('after a plain uninstall: .burhan as a symlink, or no .burhan at all → --all refuses, nothing removed', { skip: posixOnly }, async () => {
+  const t = fresh(); setup(t);
+  assert.equal((await un(t, '--apply')).code, 0);
+  const elsewhere = tmpDir('burhan-un-elsewhere-');
+  rmSync(join(elsewhere), { recursive: true, force: true });
+  spawnSync('mv', [join(t, '.burhan'), elsewhere]);
+  symlinkSync(elsewhere, join(t, '.burhan'));
+  const inside = tree(elsewhere);
+  const r = await un(t, '--all', '--apply');
+  assert.notEqual(r.code, 0);
+  assert.match(r.err + r.out, /burhan is not installed/);
+  assert.deepEqual(tree(elsewhere), inside, 'nothing removed through the link');
+
+  const none = fresh();
+  const n = await un(none, '--all', '--apply');
+  assert.notEqual(n.code, 0);
+  assert.match(n.err + n.out, /burhan is not installed/);
+  assert.doesNotMatch(n.err + n.out, /only your kept files remain/);
+});
+
+test('no leftovers state without a kept burhan file: an empty .burhan/, memory only, or .burhan as a file → refuses, nothing removed', async () => {
+  for (const make of [
+    (t: string) => mkdirSync(join(t, '.burhan')),
+    (t: string) => { put(t, '.burhan/PROJECT.md', '# P\n'); put(t, '.burhan/context/stack.md', '# c\n'); },
+    (t: string) => writeFileSync(join(t, '.burhan'), 'not a folder\n'),
+  ]) {
+    const t = fresh(); make(t);
+    const before = tree(t);
+    const r = await un(t, '--all', '--apply');
+    assert.notEqual(r.code, 0);
+    assert.match(r.err + r.out, /burhan is not installed/);
+    assert.doesNotMatch(r.err + r.out, /only your kept files remain/);
+    assert.deepEqual(tree(t), before);
+  }
+});

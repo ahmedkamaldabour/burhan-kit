@@ -14,6 +14,8 @@ const BOOT_FILE: Record<Agent, string> = { claude: 'CLAUDE.md', codex: 'AGENTS.m
 const KIT = ['WORKFLOW.md', 'SETUP.md', 'VERSION', 'phases', 'templates', 'commands', 'hooks']; // .gitignore: handled apart (I-5)
 const PROJECT = ['workflow.config', 'bindings.md', 'local']; // R-9: kept unless --all
 const MAX_MARK_SCAN = 1_000_000;
+/** What a plain uninstall leaves in .burhan/ (plus project memory, which uninstall never removes). */
+const LEFT_BY_PLAIN = new Set([...PROJECT, '.gitignore', 'work', 'discovery', 'PROJECT.md', 'context']);
 
 interface Op { say: string; run: () => void; rel?: string }
 
@@ -21,7 +23,19 @@ export function uninstall(o: { target: string; apply: boolean; all: boolean }, i
   if (!existsSync(o.target) || !statSync(o.target).isDirectory()) throw new BurhanError(`target is not a directory: ${o.target}`);
   const target = realTarget(o.target);
   const W = join(target, '.burhan');
-  if (!existsSync(join(W, 'WORKFLOW.md'))) throw new BurhanError(`burhan is not installed in ${target}`);
+  if (!existsSync(join(W, 'WORKFLOW.md'))) {
+    // After a plain uninstall only the user's kept files remain; `--all` may still remove them (the hint at the end
+    // promises it). Anything else in .burhan/, or .burhan/ as a symlink, keeps the old refusal.
+    const leftovers = ((): boolean => {
+      try {
+        if (!lstatSync(W).isDirectory()) return false;
+        const entries = readdirSync(W);
+        return entries.every((e) => LEFT_BY_PLAIN.has(e)) && entries.some((e) => [...PROJECT, '.gitignore'].includes(e));
+      } catch { return false; }
+    })();
+    if (!leftovers) throw new BurhanError(`burhan is not installed in ${target}`);
+    if (!o.all) throw new BurhanError(`burhan is not installed in ${target} — only your kept files remain; add --all to remove them`);
+  }
 
   const ops: Op[] = [];
   const kept: string[] = [];

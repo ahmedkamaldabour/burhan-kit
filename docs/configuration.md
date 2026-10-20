@@ -54,7 +54,7 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
 | `burhan setup [dir] --set check=<cmd\|none> [sensitive=<p;q>] [--force]` | Sets the check and the sensitive paths directly |
 | `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.burhan/local/` and private work/discovery files; `--all` removes them too. Work outside `.burhan/`, project memory and unknown files always stay. Removes only owned kit files, blocks, exact hook commands and marked Claude files; keeps user ignore rules and protection for retained private data. Validates before the first change and never follows a symlink out of the project |
 | `burhan upgrade [--apply]` | Refresh kit-owned files; agents default to the installed ones; idempotent. Never rewrites `workflow.config` — `doctor` lists keys a newer version added |
-| `burhan doctor` | Read-only: `node` ≥ 22 on PATH (the hooks need nothing else — no bash, `jq`, sha256 tool or `timeout`); a leftover `WF_HOOK_RUNTIME=bash` is a warning (the bash hooks were removed in 0.3.0); Claude Code ≥ 2.1.139 for the exec-form hooks; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys; every hook wired per agent; Codex hook trust per event (table names only, from `~/.codex/config.toml`, never written); the state file's size; the project-memory warnings (no decided baseline on a project with code, a Draft, `memory check` fails, changed or missing facts — warnings only). `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
+| `burhan doctor` | Read-only: `node` ≥ 22 on PATH (the hooks need nothing else — no bash, `jq`, sha256 tool or `timeout`); a leftover `WF_HOOK_RUNTIME=bash` is a warning (the bash hooks were removed in 0.3.0); Claude Code ≥ 2.1.139 for the exec-form hooks; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys, a `WF_*_REGEX` the hooks refuse (back-reference, too large, invalid); every hook wired per agent; Codex hook trust per event (table names only, from `~/.codex/config.toml`, never written); the state file's size; the project-memory warnings (no decided baseline on a project with code, a Draft, `memory check` fails, changed or missing facts — warnings only). `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
 | `burhan inspect [dir] [--json]` | Read-only, bounded look at the tree (names only, no file content, no LLM): brownfield or greenfield, why, the files a newcomer opens first, and what was cut (depth 12, 20,000 entries, 1,000 per folder, 10 s). Symlinks are counted, never followed. A path that is not a folder is exit 2 |
 | `burhan memory check [dir]` | Read-only check of the project memory: the Baseline line, fact rows, duplicate IDs, one state per ID, leftover merge markers (fail); secret-looking text (warn, the value never printed). Exit 1 on a fail — usable in CI |
 | `burhan memory status [dir]` | Each current fact `fresh`, `changed`, `missing` or `unchecked`, from the hashes in its evidence; no Git needed |
@@ -69,7 +69,8 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
 
 `.burhan/workflow.config` holds literal `KEY=value` lines (`KEY=word`, `KEY='text'`, or `KEY="text"`
 without `$` `` ` `` `\`). Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote. `init`/`upgrade` and `doctor` report any other line. Regexes are POSIX
-extended (`grep -E`). Every check whose key is empty stays silent. `.burhan/local/workflow.config`
+extended (`grep -E`). Every check whose key is empty stays silent. A pattern the hooks refuse (a
+back-reference, or one too large) also leaves its check silent; `doctor` names it. `.burhan/local/workflow.config`
 holds personal overrides, read after the team file, key by key.
 
 | Key | Purpose |
@@ -217,7 +218,7 @@ the [Superpowers](https://github.com/obra/superpowers) plugin (brainstorming, pl
 development, debugging, review), and the turn audit notes a skipped skill. With `none` (or empty)
 no skill is referenced.
 
-Setup checks plugin availability read-only, independently of the saved skills preference. If it finds an enabled plugin,
+Setup checks plugin availability read-only, independently of the saved skills preference. If it finds a Superpowers plugin folder under `~/.claude/plugins`,
 it says: "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building,
 verification before "done". Strongly recommended; turn off with `WF_SKILLS='none'`." If it finds one but the project
 explicitly has `WF_SKILLS='none'`, it says: "Superpowers found, but turned off for this project (`WF_SKILLS='none'`). To

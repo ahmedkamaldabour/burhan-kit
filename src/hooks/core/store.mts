@@ -165,6 +165,41 @@ export function fingerprintRefresh(project: string, session: string, stateFile: 
   } catch { return false; }
 }
 
+// The code skill gate's memory: which of its skills ran in this session while an item was the session's item.
+// One file per session (`skills`, lines `<slug>\t<skill>`), read and written by turn-audit only.
+const CODE_SKILLS = /(^|:)(test-driven-development|systematic-debugging)$/;
+const SKILL_LINES_MAX = 200;
+const skillsFile = (project: string, session: string, env: Env): string => {
+  const dir = sessionDir(project, session, env);
+  return dir ? join(dir, 'skills') : '';
+};
+const skillLines = (file: string): string[] => {
+  try { return readFileSync(file, 'utf8').split('\n').filter((line) => line !== ''); } catch { return []; }
+};
+
+/** The code-gate skills remembered for this item in this session ([] for no item, or on any error). */
+export function rememberedSkills(project: string, session: string, item: string, env: Env = process.env): string[] {
+  try {
+    if (!safeId(item)) return [];
+    const file = skillsFile(project, session, env);
+    if (!file) return [];
+    return skillLines(file).filter((line) => line.startsWith(`${item}\t`)).map((line) => line.slice(item.length + 1));
+  } catch { return []; }
+}
+
+/** Remember this turn's code-gate skills for the item; fail open. */
+export function rememberSkills(project: string, session: string, item: string, skills: string[], env: Env = process.env): void {
+  try {
+    if (!safeId(item)) return;
+    const wanted = skills.filter((skill) => CODE_SKILLS.test(skill) && !/[\t\n\r]/.test(skill));
+    if (wanted.length === 0) return;
+    const file = skillsFile(project, session, env);
+    if (!file) return;
+    const lines = [...new Set([...skillLines(file), ...wanted.map((skill) => `${item}\t${skill}`)])].slice(-SKILL_LINES_MAX);
+    atomicPrivateWrite(file, 'skills', `${lines.join('\n')}\n`);
+  } catch { /* fail open */ }
+}
+
 /** wf_mtime: whole epoch seconds for a readable path. */
 export function mtime(path: string): number | null {
   try { return Math.floor(statSync(path).mtimeMs / 1000); } catch { return null; }

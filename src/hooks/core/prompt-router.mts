@@ -41,15 +41,23 @@ export const promptRouter: Check = (ctx) => {
   // appears at all, step wins — the safer gate.
   let pFlow = sedGlobal(p, 'end[- ]to[- ]end[- ](tests?|testing|suite|specs?)', '');
   pFlow = sedGlobal(pFlow, 'end-to-end', 'end to end');
+  // "auto mode" / "step mode" count after a verb or preposition only, so "what is auto mode?" is no switch.
+  const modeEnd = '([^[:alnum:]_-]|$)';
+  const named = (w: string): string => `${W}(use|using|switch(ed)?([[:space:]]+from[^,.;]*)?[[:space:]]+to|go|run|work|continue|proceed|in|on|with)[[:space:]]+(the[[:space:]]+)?${w}[- ]?mode${modeEnd}`
+    + `|${W}mode[[:space:]]*[:=]?[[:space:]]*${w}${modeEnd}|${AB}و?(استخدم|استعمل|خليها|خليه|خلي|اشتغل|نشتغل|امشي|كمل|بال|ب|في|ف)[[:space:]]*${w}[- ]?mode${modeEnd}`;
+  const negated = (w: string): string => `${W}(don.?t|do not|never|not|no)[[:space:]]+((use|run|go|switch)[[:space:]]+)?((to|in)[[:space:]]+)?(the[[:space:]]+)?${w}[- ]?mode`
+    + `|${AB}(مش|بلاش|من غير)[[:space:]]*(ب|بال)?[[:space:]]*${w}[- ]?mode`;
+  // A negated mode word cancels only its own phrase; the older phrases keep their own negations.
+  const namedMode = (w: string, text: string): boolean => (ere(named(w))?.test(text) ?? false) && !(ere(negated(w))?.test(text) ?? false);
   let negAuto = false;
   if (ere(`${W}(don.?t|do not|never|not)[[:space:]]+(go|run|do|finish|continue|keep going)[^.,;]*end to end|متعملش|ماتعملش|مش لوحدك`)?.test(pFlow) ?? false) negAuto = true;
   let negStep = false;
   if (ere(`${W}(don.?t|do not|no need to|never)[[:space:]]+(wait for|ask me)`)?.test(p) ?? false) negStep = true;
   let stepSwitch = false;
-  if (!negStep && m(`${W}(wait for (my )?approval|(go|work|proceed|do it) step by step|one step at a time|ask me before)${WE}|استن[ىي] موافقتي|(امشي|نمشي|اشتغل) خطو[ةه] خطو[ةه]`)) {
+  if ((!negStep && m(`${W}(wait for (my )?approval|(go|work|proceed|do it) step by step|one step at a time|ask me before)${WE}|استن[ىي] موافقتي|(امشي|نمشي|اشتغل) خطو[ةه] خطو[ةه]`)) || namedMode('step', p)) {
     stepSwitch = true;
     add('• Mode switch → write `**Mode:** step` in the story and the state file: stop after every sub-unit for the human.', '');
-  } else if (!negAuto && (ere(`${W}((go|run|do|finish|carry on|continue|keep going)( it| this| the item)? end to end|on your own([[:space:]]*([,.!?؟—-]|and|then|$))|don.?t wait|do not wait|without waiting|no need to wait)${WE}|(كمل|كمّل|اشتغل|خلص|خلّص|امشي|اعمل[هاـ]*)[^.،]*لوحدك|من غير ما تستن[اىي]|متستناش|ماتستناش`)?.test(pFlow) ?? false)) {
+  } else if ((!negAuto && (ere(`${W}((go|run|do|finish|carry on|continue|keep going)( it| this| the item)? end to end|on your own([[:space:]]*([,.!?؟—-]|and|then|$))|don.?t wait|do not wait|without waiting|no need to wait)${WE}|(كمل|كمّل|اشتغل|خلص|خلّص|امشي|اعمل[هاـ]*)[^.،]*لوحدك|من غير ما تستن[اىي]|متستناش|ماتستناش`)?.test(pFlow) ?? false)) || namedMode('auto', pFlow)) {
     add('• Mode switch → write `**Mode:** auto` in the story and the state file: run the sub-units without pausing. Brakes (scope escalator, discovery, plan change, the same test failing twice, an irreversible action) and the commit checkpoint still stop.', '');
   }
   // "Plan only" is not a mode but a stopping point (phases/lifecycle.md · Modes); a step phrase wins.

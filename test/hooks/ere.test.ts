@@ -1,7 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { ere, ereTest } from '../../src/hooks/core/ere.mjs';
+import { ere, ereRefusal, ereTest } from '../../src/hooks/core/ere.mjs';
+
+test('ereRefusal: the reason the hooks refuse a pattern, null when they accept it', () => {
+  assert.match(ereRefusal('(a)\\1') ?? '', /back-references are not supported/);
+  assert.equal(ereRefusal('.{30000}'), 'pattern too large');
+  assert.match(ereRefusal('a[') ?? '', /\S/, 'an invalid pattern gets a reason too');
+  assert.notEqual(ereRefusal('a['), 'pattern too large');
+  assert.equal(ereRefusal('\\.ts$'), null);
+  assert.equal(ereRefusal('^(src|kit/hooks|scripts)/.*\\.(ts|mts|mjs|sh|awk)$'), null);
+  for (const p of ['(a)\\1', '.{30000}', 'a[', '\\.ts$']) assert.equal(ereRefusal(p) === null, ere(p) !== null, `agrees with ere() on ${p}`);
+});
 
 /** [pattern, text, matches] — what GNU grep -E (3.12, glibc C.UTF-8) answers for "any line of text matches".
  *  The differential test below re-checks every row against a real GNU grep when one is available. */

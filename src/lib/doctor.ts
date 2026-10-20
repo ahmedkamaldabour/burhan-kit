@@ -10,6 +10,7 @@ import { agentInstalled, hookKey, type HookEntry, type Settings } from './hooks-
 import { kitDir, nodeHooksDir, readVersion } from './kit.js';
 import { ignoredCommittedSetupFiles } from './setup/engine.js';
 import { readBaseline, readProjectFile } from '../hooks/core/baseline.mjs';
+import { ereRefusal } from '../hooks/core/ere.mjs';
 import { inspect } from './inspect.js';
 import { checkMemory, factFreshness } from './memory.js';
 import { readCodexConfig, stateTableNames, trustedEvents, type CodexConfigSkip } from './codex-trust.js';
@@ -155,6 +156,12 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     if (unknown.length) add('warn', `unknown config keys (a typo?): ${unknown.join(', ')}`);
     if (team.WF_HOOK_RUNTIME === 'bash') add('warn', 'WF_HOOK_RUNTIME=bash: the bash hooks were removed in 0.3.0 and the hooks are Node now — remove the key from the team workflow.config and run burhan upgrade --apply');
     if (!missing.length && !unknown.length && !cfg.problems.length) add('ok', 'workflow.config: every key known, none missing');
+  }
+  // A pattern the hooks' ERE translator refuses makes its check silent; name it here instead.
+  for (const [key, value] of Object.entries(cfg.values)) {
+    if (legacy.includes(key) || !/^WF_[A-Z0-9_]*_REGEX$/.test(key) || value === '') continue;
+    const why = ereRefusal(value);
+    if (why) add('warn', `${key}: the hooks refuse this pattern (${why}), so its check stays silent — rewrite it`);
   }
   const ev = cfg.values.WF_EVIDENCE_DIR;
   if (ev && !isAbsolute(ev)) add('warn', `WF_EVIDENCE_DIR "${ev}" is not an absolute literal path — it is ignored and the default ledger is used`);

@@ -330,6 +330,18 @@ function nfaSearch(nfa: Nfa, start: number, line: string, isWord: (ch: string) =
 // ---------------------------------------------------------------- API
 export interface Matcher { test(text: string): boolean }
 
+/** The NFA for a pattern; throws (Invalid with the reason) when grep -E would reject it or the port refuses it. */
+function compile(src: string, i: boolean): { nfa: Nfa; start: number } {
+  const node = parse(src);
+  const nfa = new Nfa(i ? 'vi' : 'v');
+  return { nfa, start: nfa.compile(node, nfa.add({ t: 'match' })) };
+}
+
+/** Why the hooks refuse a pattern, or null when they accept it (doctor names it; ere() then returns null). */
+export function ereRefusal(src: string): string | null {
+  try { compile(src, false); return null; } catch (e) { return e instanceof Invalid ? e.message : 'invalid pattern'; }
+}
+
 /** A matcher for the pattern, or null when grep -E would reject it or the port refuses it (the caller then
  *  stays silent).
  *  test(text) is `printf '%s' "$text" | grep -qE -- "$src"`: any line matches; empty text has no line;
@@ -337,9 +349,7 @@ export interface Matcher { test(text: string): boolean }
 export function ere(src: string, opts: { i?: boolean } = {}): Matcher | null {
   let nfa: Nfa, start: number;
   try {
-    const node = parse(src);
-    nfa = new Nfa(opts.i ? 'vi' : 'v');
-    start = nfa.compile(node, nfa.add({ t: 'match' }));
+    ({ nfa, start } = compile(src, !!opts.i));
   } catch {
     return null;
   }

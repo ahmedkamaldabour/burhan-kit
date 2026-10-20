@@ -6,7 +6,7 @@ import { ere, ereTest } from './ere.mjs';
 import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stateNow, type Check, type Ctx } from './lib.mjs';
 import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
-import { evidenceRoot, fingerprintRefresh, linkedItem, linkItem, mtime, projectKey, safeId, stateSnapshotFile } from './store.mjs';
+import { evidenceRoot, fingerprintRefresh, linkedItem, linkItem, mtime, projectKey, rememberedSkills, rememberSkills, safeId, stateSnapshotFile } from './store.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
 import { gateLine, undecided } from './understanding.mjs';
 
@@ -27,6 +27,8 @@ interface Audit {
   created: string[];
   cmds: string[];
   skillsUsed: string[];
+  /** Code-gate skills remembered for this item from earlier turns of this session (store.mts). */
+  skillsBefore: string[];
   text: string;
   steps: Step[];
   subWritten: string[];
@@ -56,10 +58,11 @@ const codeInTurn = (audit: Audit): boolean => {
   return matches(code, audit.written.join('\n')) || (code !== '' && lastCodeEdit(audit.steps, ere(code) ?? /$a/) !== null);
 };
 /** wf_item_now: the slug that applies to this session ('' = none — several blocks and no live link). */
-const resolvedSlug = (audit: Audit): string => {
-  const now = stateNow(audit.ctx.project, audit.ctx.cfg);
-  return itemResolved(now, linkedItem(audit.ctx.project, audit.ctx.ev.get('.session'), itemSlugs(now), audit.ctx.env));
+const sessionSlug = (ctx: Ctx): string => {
+  const now = stateNow(ctx.project, ctx.cfg);
+  return itemResolved(now, linkedItem(ctx.project, ctx.ev.get('.session'), itemSlugs(now), ctx.env));
 };
+const resolvedSlug = (audit: Audit): string => sessionSlug(audit.ctx);
 /** wf_item_block: the block the field readers see (empty when blocks exist and none applies; the whole Now when there is no block). */
 const resolvedItemNow = (audit: Audit): string => {
   const now = stateNow(audit.ctx.project, audit.ctx.cfg);
@@ -154,7 +157,8 @@ const gateF: Gate = (audit) => {
   if (ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && !used('brainstorming')) out.push('⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.');
   if (ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && !used('writing-plans')) out.push('⚠ SKILL GATE (plan): a plan was CREATED this turn without superpowers:writing-plans.');
   const patch = patchTurn(audit);
-  if (matches(audit.ctx.cfg.WF_CODE_REGEX ?? '', audit.written.join('\n')) && !patch && !used('test-driven-development|systematic-debugging')) out.push('⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.');
+  const usedForCode = ereTest('test-driven-development|systematic-debugging', [...audit.skillsUsed, ...audit.skillsBefore].join('\n'));
+  if (matches(audit.ctx.cfg.WF_CODE_REGEX ?? '', audit.written.join('\n')) && !patch && !usedForCode) out.push('⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.');
   const reviews = audit.written.filter((file) => ereTest('/reviews/[^/]+\\.md$', file) && !ereTest('-(qc|verification)(-r[0-9]+)?\\.md$', file));
   if (reviews.length > 0 && !used('requesting-code-review')) out.push('⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review.');
   return out;
@@ -243,7 +247,8 @@ const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateH, g
 export const turnAudit: Check = (ctx) => {
   const auditCtx = { ...ctx, env: { ...ctx.env, ...ctx.cfg } };
   try {
-    if (auditCtx.ev.get('.reentrant') === 'true') { evidenceRecord(auditCtx); return []; }
+    const remember = (): void => { try { rememberSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); } catch { /* fail open */ } };
+    if (auditCtx.ev.get('.reentrant') === 'true') { remember(); evidenceRecord(auditCtx); return []; }
     const cmds = auditCtx.ev.list('.turn.shell_commands');
     const created = [...new Set(auditCtx.ev.list('.turn.files_created').map((file) => relPath(file, auditCtx.project)).filter(Boolean))].sort(codePointCompare);
     const edited = auditCtx.ev.list('.turn.files_edited').map((file) => relPath(file, auditCtx.project)).filter(Boolean);
@@ -267,9 +272,12 @@ export const turnAudit: Check = (ctx) => {
     }
     if (item !== '') linkItem(auditCtx.project, auditCtx.ev.get('.session'), item, itemSlugs(stateNow(auditCtx.project, auditCtx.cfg)), auditCtx.env);
     const subWritten = steps.filter((step) => step.kind === 'edit' && step.by !== '').map((step) => step.file);
-    const audit: Audit = { ctx: auditCtx, written, created, cmds, skillsUsed: auditCtx.ev.list('.turn.skills_used'), text: auditCtx.ev.get('.turn.assistant_text'), steps, subWritten };
+    let skillsBefore: string[] = [];
+    try { skillsBefore = rememberedSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.env); } catch { /* fail open */ }
+    const audit: Audit = { ctx: auditCtx, written, created, cmds, skillsUsed: auditCtx.ev.list('.turn.skills_used'), skillsBefore, text: auditCtx.ev.get('.turn.assistant_text'), steps, subWritten };
     const findings: string[] = [];
     for (const gate of gates) try { findings.push(...gate(audit)); } catch { /* independent gates fail open */ }
+    remember();
     evidenceRecord(auditCtx);
     return findings;
   } catch {

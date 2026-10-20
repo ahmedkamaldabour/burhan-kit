@@ -379,3 +379,21 @@ test('freshness hashes each file once and leaves files over 64 MiB unchecked', a
   factFreshness(g, p, cache); factFreshness(g, p, cache);
   assert.equal(cache.size, 1);
 });
+
+test('a WF_*_REGEX the hooks refuse warns once, naming the key and the reason; an accepted one adds nothing', () => {
+  const p = project();
+  assert.ok(!bad(runChecks(p, probe())).some((t) => t.includes('_REGEX')), 'nothing before');
+  // Function replacements: a `$'` in a replacement string is a special pattern.
+  edit(cfg(p), (t) => t.replace(/^WF_CODE_REGEX=.*$/m, () => "WF_CODE_REGEX='(src)/\\1\\.ts$'").replace(/^WF_TEST_REGEX=.*$/m, () => "WF_TEST_REGEX='^test/'"));
+  mkdirSync(join(p, '.burhan/local'), { recursive: true });
+  writeFileSync(join(p, '.burhan/local/workflow.config'), "WF_EVIDENCE_REGEX='.{30000}'\n");
+  const lines = bad(runChecks(p, probe())).filter((t) => t.includes('_REGEX'));
+  assert.deepEqual(lines, [
+    'warn WF_CODE_REGEX: the hooks refuse this pattern (back-references are not supported), so its check stays silent — rewrite it',
+    'warn WF_EVIDENCE_REGEX: the hooks refuse this pattern (pattern too large), so its check stays silent — rewrite it',
+  ]);
+  assert.ok(find(runChecks(p, probe()), 'ok', 'every key known'), 'the key check is unaffected');
+  // A legacy key and an empty value are never judged.
+  writeFileSync(join(p, '.burhan/local/workflow.config'), "WF_FORBIDDEN_REGEX='(a)\\1'\nWF_SENSITIVE_REGEX=''\n");
+  assert.ok(!bad(runChecks(p, probe())).some((t) => /WF_(FORBIDDEN|SENSITIVE)_REGEX: the hooks refuse/.test(t)));
+});
