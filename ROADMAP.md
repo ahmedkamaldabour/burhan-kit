@@ -50,6 +50,9 @@ until you choose.
 
 - **Hooks without bash (0.3.0).** The hooks run on Node only, with no bash or `jq`, and CI runs them on Windows
   too; the README says what is and is not verified there.
+- **Project memory and a three-step first run (0.4.0).** `/burhan:onboard`, `burhan inspect`, `burhan memory`, the
+  baseline reminder and gate; first-use setup saves what counts as code and proof; a guard against hook files that
+  resolve outside the project; Codex hook trust read per event.
 
 ## Candidates
 

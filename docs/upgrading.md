@@ -17,6 +17,10 @@ npx burhan-kit doctor
 - Your own hooks and settings stay: burhan's hooks run beside them.
 - In Codex, trust the hooks again after an upgrade that changes one (Codex shows it as "Modified since last trusted"; see [Codex: trust the hooks](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks)).
 
+## Upgrading from 0.3.0
+
+`npx burhan-kit upgrade --apply` refreshes the kit files and adds the `/burhan:onboard` command. The hook entries it writes to `.claude/settings.json` and `.codex/hooks.json` are byte-identical to 0.3.0's (measured on a real 0.3.0 install), so Codex shows nothing new to trust; its own screen in `/hooks` is the reference. Then, in a new session, run `/burhan:onboard` once. Versions before 0.4.0 are deprecated.
+
 ## Upgrading from 0.2.2
 
 `npx burhan-kit upgrade --apply` replaces the 0.2.2 bash hooks with the Node hooks and removes the old hook folders; your own hooks are kept. In Codex, trust the hooks again afterwards. Installs from 0.2.1 or older (under `.workflow/`) are not migrated: uninstall with that version, then run `npx burhan-kit`. See the [changelog](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md).

@@ -1,5 +1,67 @@
 # Changelog
 
+## 0.4.0 — 2026-10-22
+
+burhan now learns your project once, and the first run is three steps. Versions before 0.4.0 are deprecated:
+use 0.4.0 or later.
+
+### Upgrading from 0.3.0
+- Run `npx burhan-kit upgrade --apply`. It refreshes the kit files and adds the `/burhan:onboard` command; your
+  `workflow.config` and `bindings.md` are kept. The hook entries in `.claude/settings.json` and `.codex/hooks.json`
+  are byte-identical to 0.3.0's (measured on a real 0.3.0 install), so Codex has nothing new to trust; its `/hooks`
+  screen is the reference.
+- Then, in a new session, run `/burhan:onboard` once.
+- Installs from 0.2.2 or older: see [upgrading](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/upgrading.md).
+
+### Added
+- **Project memory.** `/burhan:onboard` (Codex: say "Follow .burhan/commands/onboard.md") reads the whole project,
+  writes a draft of `.burhan/PROJECT.md` and `.burhan/context/`, shows what it covered and what it could not, and
+  stops. The baseline is `Approved` or `Waived` only after you decide, with the name you give.
+- `burhan inspect [dir] [--json]`: a names-only look at the project (greenfield or brownfield), bounded in depth,
+  entries and time.
+- `burhan memory check | status | affected --since <ref>`: fact shape, duplicate IDs, merge markers and
+  secret-looking text; each fact `fresh`, `changed`, `missing` or `unchecked` from the hashes of the files it cites
+  (changed does not mean false); the facts a diff touches. `memory check` exits 1 on a fail, for CI.
+- While a project with code has no `Approved` or `Waived` baseline: a reminder on every prompt, a turn-end warning
+  (the BASELINE GATE) and a `doctor` warning. Not for greenfield projects, the patch lane, read-only items or the
+  onboarding itself. Guidance only, nothing is blocked.
+- Setup ends with a titled "Step 3" (a new session, then the onboarding). The Superpowers line says it is optional,
+  strongly recommended, never installed by burhan.
+- `setup --set` takes `code=`, `test=` and `evidence=` next to `check=`; each pattern is validated before anything
+  is saved. `doctor` warns when `WF_CODE_REGEX` is empty after first use, because the "done without proof" warning is
+  then off.
+- `init` and `upgrade` refuse, and print `OUTSIDE:`, when `.claude/settings.json` or `.codex/hooks.json` resolves
+  outside the project, unless you add `--allow-outside-settings`.
+- `doctor` reads which burhan hooks Codex has a trust entry for (table names in `~/.codex/config.toml` only, never
+  a value) and says so per event; it cannot see "Modified since last trusted" or a disabled hook.
+- `burhan evidence` marks a command line with a pipe (its recorded exit is the last command's); `--json` adds
+  `"piped": true`.
+- README (English and Arabic) rewritten: the promise, the flow, a real recorded run, the features, a three-step
+  install, honest limits; new `docs/features.md`, `docs/first-task.md`, `docs/upgrading.md`, `docs/ci-and-windows.md`.
+
+### Changed
+- On Claude Code each end-of-turn audit looks only at what is new since the previous Stop of the same prompt, so a
+  background agent's wake-up no longer repeats earlier warnings.
+- A fix note a reviewer adds to its own review file no longer fires the review SKILL GATE; the code SKILL GATE
+  remembers the item's earlier TDD or debugging skill in the same session.
+- The prompt router reads "auto mode" and "step mode" after a verb or preposition, in English and Arabic.
+- The FIRST USE message and `kit/commands/e2e.md` name `npx burhan-kit …`; a new `bindings.md` carries it in its
+  Kit command row.
+- The STALE-STATUS check skips `*.log` files. `doctor` names a `WF_*_REGEX` the hooks refuse and why.
+- `uninstall --all` works after a plain `uninstall`; project memory stays either way.
+- CI runs three jobs, one per system, on Node 24: Ubuntu 24.04, macOS and Windows without bash. Node 22 (the
+  minimum) and Windows with Git Bash are no longer run by CI.
+
+### Known limits
+- The Codex hook-trust check was observed on Linux with Codex CLI 0.150.1; macOS and Windows are not verified.
+- On Codex a finished command may have no recorded exit code, and that counts as passing evidence.
+- Windows with PowerShell only, and a real Claude Code or Codex session on Windows, are not verified.
+- `init` and `upgrade` still write through a symlink for `CLAUDE.md`, `AGENTS.md`, managed `.claude` files and a
+  linked `.burhan`; `setup --set` and `setup --answers --apply` write the hooks file through an outside link without
+  the guard.
+- A Windows path with backslashes in `workflow.config` is ignored inside double quotes; use single quotes or
+  forward slashes (`doctor` reports the line).
+
 ## 0.3.0 — 2026-10-19
 
 The hooks now run on Node only. bash and `jq` are no longer needed, and CI runs the hooks on Windows too (see
