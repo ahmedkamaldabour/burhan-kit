@@ -11,8 +11,11 @@ AR=README.ar.md
 en_sections=('The flow at a glance' 'See it work' 'What you get' 'Install in 3 steps' 'Your first task' 'Teams and project memory' 'Limits' 'Commands and links' 'License')
 ar_sections=('الـ flow في لمحة' 'شوفه شغّال' 'هتاخد إيه' 'التثبيت في 3 خطوات' 'أول مهمة ليك' 'الفرق والذاكرة' 'الحدود' 'الأوامر واللينكات' 'الرخصة')
 
-section() { awk -v h="$2" '$0 == "## " h { on=1; next } /^## / { on=0 } on' "$1"; }
-step() { awk -v a="$2" -v b="$3" '$0 == a { on=1; next } b != "" && $0 == b { on=0 } on' "$1"; }
+# Exact line match by index() and length(), never `==`. On macOS (Apple awk 20200816) the Arabic section grew to 56 lines
+# and 13 bullets, as if several all-Arabic headings compared equal; the likely cause is locale collation in `==`
+# (a hypothesis that fits every number, proved only by macOS CI turning green; macOS CI log 2026-10-22).
+section() { awk -v h="## $2" 'index($0, h) == 1 && length($0) == length(h) { on=1; next } /^## / { on=0 } on' "$1"; }
+step() { awk -v a="$2" -v b="$3" 'index($0, a) == 1 && length($0) == length(a) { on=1; next } b != "" && index($0, b) == 1 && length($0) == length(b) { on=0 } on' "$1"; }
 hero() { awk 'NR == 1 { next } /^## / { exit } { print }' "$1" | grep -vF "$GH/README"; }
 markdown_targets() { grep -oE '!{0,1}\[[^]]*\]\([^)]*\)' "$1" 2>/dev/null | sed -E 's/^!?\[[^]]*\]\(([^ )]+).*\)$/\1/'; }
 raw_html_tags() { grep -nE '<[[:alpha:]][[:alnum:]-]*([[:space:]][^>]*)?>|</[[:alpha:]][[:alnum:]-]*[[:space:]]*>' "$1" | grep -vE '<slug>|<name>|<cmd|<re>|<p;q>|<ref>|<id>' || true; }
@@ -266,6 +269,8 @@ for a in agree-before-you-build prove-what-was-done memory-and-team where-it-run
 done
 check_eq "$EN lists 8 to 10 feature lines" "$(feature_count $EN 'What you get' | awk '$1 >= 8 && $1 <= 10 { print "yes" }')" yes
 check_eq "$AR lists 8 to 10 feature lines" "$(feature_count $AR 'هتاخد إيه' | awk '$1 >= 8 && $1 <= 10 { print "yes" }')" yes
+check_eq "$AR what you get stops at its own next heading (no bullets from Teams and project memory)" "$(section $AR 'هتاخد إيه' | grep -c 'merge=union')" 0
+check_eq "$EN what you get stops at its own next heading (no bullets from Teams and project memory)" "$(section $EN 'What you get' | grep -c 'merge=union')" 0
 
 echo "install: three headed steps, in order, each ends with what you should see"
 S1='### Step 1 — Superpowers (recommended)'; S2='### Step 2 — Set up burhan'; S3='### Step 3 — Let the agent understand your project'
