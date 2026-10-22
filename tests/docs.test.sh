@@ -31,4 +31,14 @@ check "enforcement: the ledger cleanup rule is the real one" "$(cat kit/phases/e
 check "enforcement: no blanket 30-day claim" "$(cat kit/phases/enforcement.md)" lacks 'pruned after 30 days'
 check "enforcement: a piped run records the last command's exit" "$(cat kit/phases/enforcement.md)" has "exit of its last command"
 
+echo "docs-catch-up-baseline: the docs list what the hooks flag and install"
+enfdoc="$(cat kit/phases/enforcement.md)"
+check "enforcement: turn-audit lists the BASELINE GATE" "$enfdoc" has 'BASELINE GATE'
+check "configuration: turn-audit lists the BASELINE GATE" "$cfgdoc" has 'BASELINE GATE'
+check "enforcement: the baseline reminder is outside the router's two lines" "$enfdoc" has 'separate baseline reminder'
+check "configuration: the baseline reminder is outside the router's two lines" "$cfgdoc" has 'separate baseline reminder'
+check "configuration: the file tree lists the onboard command" "$cfgdoc" has '{e2e,qc,onboard}.md'
+check "configuration: the Claude commands bullet lists onboard" "$cfgdoc" has '`/burhan:qc`, `/burhan:onboard`'
+check "configuration: a Claude Stop audits only what is new" "$cfgdoc" has 'only what is new since the previous Stop'
+
 t_summary

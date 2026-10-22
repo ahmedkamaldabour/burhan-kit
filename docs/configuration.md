@@ -11,7 +11,7 @@
             local/      PROGRESS.md workflow.config            per developer, git-ignored
             work/ discovery/                                  private work and discoveries, when created
             PROJECT.md context/                               project memory, only when the memory workflow creates it
-.claude/settings.json · .claude/commands/burhan/{e2e,qc}.md · CLAUDE.md block    (claude)
+.claude/settings.json · .claude/commands/burhan/{e2e,qc,onboard}.md · CLAUDE.md block    (claude)
 .claude/agents/burhan-reviewer.md · .claude/skills/burhan-verify/SKILL.md (if WF_CHECK_CMD is set)   (claude)
 .claude/agents/burhan-{planner,builder,explorer}.md (if WF_MODEL_CLAUDE_* is set)                (claude)
 .codex/hooks.json · AGENTS.md block                                           (codex)
@@ -42,7 +42,7 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
   link), `init`/`upgrade` print `OUTSIDE: <file> → <real path>` in the dry run and with `--apply`, and `--apply`
   refuses and changes nothing unless you pass `--allow-outside-settings`. (`setup` shows the same link in its summary
   before you approve.)
-- Claude commands go to `.claude/commands/burhan/` (`/burhan:e2e`, `/burhan:qc`). A command file you
+- Claude commands go to `.claude/commands/burhan/` (`/burhan:e2e`, `/burhan:qc`, `/burhan:onboard`). A command file you
   wrote yourself is never overwritten. Codex reads them from `.burhan/commands/` via `AGENTS.md`.
 - **Safety:** everything is validated before the first write — any problem (invalid agent config,
   broken markers, unwritable file) exits non-zero and writes nothing. A dry run that meets an
@@ -109,14 +109,14 @@ worktree or when setup changes hooks during a session, so the new session reads 
 | Hook | Moment | Behaviour |
 |---|---|---|
 | `session-gates` | session start | Re-injects the gates; shows the state file's `Now` section and the item's mode |
-| `prompt-router` | your prompt | Suggests the phase for the request (English and Arabic phrases, max 2 lines) — a suggestion only |
+| `prompt-router` | your prompt | Suggests the phase for the request (English and Arabic phrases, max 2 lines; a separate baseline reminder is printed outside that cap) — a suggestion only |
 | `pre-commit-check` | before `git commit` | **Runs** your fast check and reports the measured result, plus the commit checkpoint |
 | `post-edit-reminder` | after an edit | Test-first nudge, sensitive-path note |
-| `turn-audit` | end of turn | Flags unverified "done" (no passing evidence after the last code edit), state not updated, state file over budget, contradictory status, skipped process skills, code written during read-only work, QC provenance |
+| `turn-audit` | end of turn | Flags unverified "done" (no passing evidence after the last code edit), state not updated, state file over budget, contradictory status, skipped process skills, code written during read-only work, QC provenance, the BASELINE GATE (a story or code written while a project with code has no Approved or Waived baseline) |
 
 Every hook **fails open** and **reports** — none blocks. "The turn" means the current turn — from
 your last real message (compaction summaries, tool results and skill expansions don't count) — never
-a window of recent lines, so an earlier turn's edit can't trigger a false alarm.
+a window of recent lines, so an earlier turn's edit can't trigger a false alarm. On Claude Code each Stop of a prompt audits only what is new since the previous Stop of that prompt.
 
 ### Known limits
 
