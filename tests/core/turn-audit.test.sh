@@ -87,6 +87,10 @@ check "item file with both -> fires" "$(a "$(t '[]' '[".burhan/work/foo/foo-stor
 check "docs index with both -> silent" "$(a "$(t '[]' '[".burhan/work/README.md"]' '[]' '[]' '')")" lacks "STALE-STATUS GATE"
 check "dated discovery with both -> fires" "$(a "$(t '[]' '[".burhan/discovery/2026-10-11-x.md"]' '[]' '[]' '')")" has "STALE-STATUS GATE"
 check "discovery index -> silent" "$(a "$(t '[]' '[".burhan/discovery/README.md"]' '[]' '[]' '')")" lacks "STALE-STATUS GATE"
+mkdir -p "$P/.burhan/work/foo/reviews"
+printf '%s\n' "$both" > "$P/.burhan/work/foo/reviews/npm-test-final.log"
+printf '%s\n' "$both" > "$P/.burhan/work/foo/reviews/RUN.LOG"
+check "a raw .log in an item folder with both words -> silent (not a status file)" "$(a "$(t '[]' '[".burhan/work/foo/reviews/npm-test-final.log",".burhan/work/foo/reviews/RUN.LOG"]' '[]' '[]' '')")" lacks "STALE-STATUS GATE"
 printf '%s\n' "- **${lbl}:** Approved" > "$P/.burhan/work/foo/foo-story.md"
 check "consistent file -> silent" "$(a "$(t '[]' '[".burhan/work/foo/foo-story.md"]' '[]' '[]' '')")" lacks "STALE-STATUS GATE"
 

@@ -124,7 +124,7 @@ const gateE: Gate = (audit) => {
   const eligible = `${docsRe(audit)}|${discoveryRe(audit)}`;
   for (const file of audit.written) {
     try {
-      if (file.endsWith('/README.md') || file === 'README.md' || !ereTest(eligible, file)) continue;
+      if (file.endsWith('/README.md') || file === 'README.md' || /\.log$/i.test(file) || !ereTest(eligible, file)) continue; // a raw command log is not a status file
       const text = readFileSync(join(audit.ctx.project, file), 'utf8');
       let fenced = false;
       const states = text.split('\n').filter((line) => {
