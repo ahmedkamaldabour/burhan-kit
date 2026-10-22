@@ -55,4 +55,10 @@ check "upgrading: a section for 0.3.0 installs" "$(cat docs/upgrading.md)" has '
 check "upgrading: the hook entries are unchanged since 0.3.0" "$(cat docs/upgrading.md)" has 'byte-identical'
 check "changelog: 0.4.0 says how to upgrade from 0.3.0" "$(cat CHANGELOG.md)" has '### Upgrading from 0.3.0'
 
+echo "docs-windows-paths: a Windows path with backslashes goes in single quotes"
+check "configuration: a Windows path goes in single quotes" "$cfgdoc" has 'a path with backslashes goes in single quotes'
+check "configuration: the single-quoted example" "$cfgdoc" has "WF_EVIDENCE_DIR='C:\\Users\\me\\ev'"
+check "configuration: a double-quoted one is refused and ignored" "$cfgdoc" has 'in double quotes the line is refused and ignored'
+check "ci and windows: a Windows path goes in single quotes" "$(cat docs/ci-and-windows.md)" has 'with backslashes in single quotes'
+
 t_summary

@@ -26,6 +26,8 @@ npx burhan-kit doctor
 
 The hooks run on Node, without bash or `jq`. The project's CI runs the Node test suite on `windows-latest` with Node 24, without bash or `jq` on the `PATH`. It does not run Windows with Git Bash (the shell Claude Code uses there), although the test for it is still in the repository.
 
+In `.burhan/workflow.config`, write a Windows path with backslashes in single quotes (`WF_EVIDENCE_DIR='C:\Users\me\ev'`); inside double quotes the line is refused and the hooks ignore it.
+
 **Not verified yet:** Windows with PowerShell only (no Git Bash), and a real Claude Code or Codex session on Windows. The repository's own shell test suites and `npm run lint` run on Linux and macOS only, not on Windows.
 
 ## Other systems

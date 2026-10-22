@@ -75,7 +75,7 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
 ## `workflow.config`
 
 `.burhan/workflow.config` holds literal `KEY=value` lines (`KEY=word`, `KEY='text'`, or `KEY="text"`
-without `$` `` ` `` `\`). Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote. `init`/`upgrade` and `doctor` report any other line. Regexes are POSIX
+without `$` `` ` `` `\`). Inside single quotes, $, backticks and \ are literal; a single-quoted value cannot contain a single quote. `init`/`upgrade` and `doctor` report any other line. On Windows, a path with backslashes goes in single quotes, for example `WF_EVIDENCE_DIR='C:\Users\me\ev'`; in double quotes the line is refused and ignored (`doctor` names it). Forward slashes (`C:/Users/me/ev`) are also accepted by the hooks; CI runs only the single-quote form on Windows. Regexes are POSIX
 extended (`grep -E`). Every check whose key is empty stays silent. A pattern the hooks refuse (a
 back-reference, or one too large) also leaves its check silent; `doctor` names it. `.burhan/local/workflow.config`
 holds personal overrides, read after the team file, key by key.
