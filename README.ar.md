@@ -1,136 +1,144 @@
-# برهان (burhan)
+# برهان (Burhan)
 
-مفيش “done” من غير دليل: اتفقوا على الشغل الأول، ابنوا خطوة بخطوة مع مراجعة، وورّوا إيه اللي اتشغّل.
+الـ AI coding agents بتقول “done” من غير دليل. burhan بيحط جوّه مشروعك اتفاق شغل مكتوب وhooks، وبيطلب من الـ agent يتفق معاك على الشغل الأول، ويبني خطوات بتتعمل لها review، ويورّيك إيه اللي شغّله فعلًا. لـ Claude Code وCodex: `npx burhan-kit`.
 
-- اتفاق شغل وhooks جوّه المشروع لـ Claude Code وCodex.
-- موافقة الـ story والخطة، والمراجعة، والتأكد يفضلوا واضحين بدل ما يبقوا وعود في الشات.
-- Evidence ledger بيسجل التعديلات والأوامر، فادعاء إن الشغل خلص يبقى وراه دليل.
+- **اتفق الأول:** الـ story والخطة محتاجين موافقتك قبل أي كود.
+- **الدليل:** التعديلات والأوامر بتتسجل؛ و“done” من غير check ناجح بياخد تحذير.
+- **إنت اللي بتعمل commit:** قبل كل commit بتختار: دلوقتي، أو بعدين، أو بنفسك.
 
 [English](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/README.md)
 
-## burhan بيوقف إيه؟
+## الـ flow في لمحة
 
-- الـ agent يقول “done” بعد تعديل من غير ما يشغّل check. → الـ hook بيقول: “code changed and completion was claimed, but no verification command ran this turn.”
-- الـ agent يبدأ يكتب كود من غير الموافقة المطلوبة. → البوابة المشتركة بتقول: “no code before the approved story/plan the route requires.”
-- مهمتين شغالين، وجلسة واحدة. → شغّل `burhan use <slug>` علشان الـ turn يرتبط بالمهمة الصح.
-- commit هيحصل. → burhan بيسألك تختار: تعمل commit دلوقتي، أو تكمل وتعمله بعدين، أو تعمله بنفسك.
+```text
+ 1. Intake     the agent restates your request and picks a route: type + scope + a one-line reason
+ 2. Story      what and why, with acceptance criteria         <- you approve
+ 3. Plan       how, in small steps called sub-units           <- you approve
+ 4. Build      one sub-unit at a time, test first             <- `step` mode pauses here
+ 5. Review     a fresh reviewer checks that sub-unit          (repeat 4 and 5 per sub-unit)
+ 6. Verify     a real end-to-end check                        <- asks: you or the agent?
+ 7. QC         the final independent check, on the routes that need it   <- you accept the verdict
+ 8. Knowledge  lessons worth keeping                          <- you promote or reject them
+ 9. Commit     you choose: now, later, or yourself            <- always stops
+```
 
-## التثبيت / ابدأ بسرعة
+كل طلب بيتصنّف الأول: type + scope + a one-line reason. ده الـ **route** بتاعه: الـ agent بيعلنه في الأول وتقدر تغيّره، وهو اللي بيحدد الخطوات اللي بعده، فالـ feature والـ bug مش بيمشوا في نفس المسار. النوع `feature` أو `bug` أو `change` (تغيير في سلوك موجود) أو `refactor` أو `release` أو `investigation`. الـ scope يا `bounded` (محلي ومفهوم كويس)، يا `architectural` (بيمس أكتر من جزء في المشروع، أو بيلمس الأمان أو الداتا أو الفلوس أو واجهة غيرك معتمد عليها)، يا `patch` (تعديل واحد واضح). وفي الشغل الـ bounded الـ story والخطة موافقة واحدة.
 
-أول تشغيل تلات خطوات، بالترتيب ده.
+| بتطلب | بيتصنّف | المسار |
+| --- | --- | --- |
+| feature جديد | feature / bounded | story + plan (موافقة واحدة) → build → review → verify → QC → knowledge |
+| bug | bug / bounded | story + plan (موافقة واحدة؛ الـ story فيها الـ root cause بدليل قبل أي إصلاح) → build (بيبدأ بـ failing regression test) → review → verify → knowledge؛ من غير QC |
+| typo | change / patch | التعديل، وcheck ناجح بيتشغّل بعده، والـ commit؛ من غير story ولا خطة |
+| feature أو bug أو change بيلمس، مثلًا، الأمان أو الصلاحيات أو الـ data model أو الفلوس أو public API | architectural | story وخطة كموافقتين → build → review → verify → QC → knowledge |
+| سؤال محتاج تحقيق | investigation | للقراءة بس: findings من غير كود |
 
-### الخطوة 1 — Superpowers الأول
+الـ **story** هي إيه وليه مع شروط القبول؛ والـ **plan** هي إزاي على خطوات صغيرة. الـ **gate** نقطة الـ agent بيقف فيها عندك (كل سهم `<-` فوق، وبعد كل sub-unit في مود `step`)؛ والـ **QC** هو الفحص الأخير بواسطة reviewer جديد ومستقل. الـ refactor والـ release ليهم مسارات أقصر ([الجدول الكامل](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#agree-before-you-build)).
 
-Superpowers موصى به بقوة، وهو اختياري: burhan مش بيسطّبه خالص. لو موجود، burhan بيستخدم الـ skills بتاعته في كل مرحلة (brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول "خلصت").
+الـ route هو اللي بيحدد كام موافقة في المهمة؛ والمود بيحدد بس هل الـ build بيقف بين الـ sub-units. لمهمة فيها 3 sub-units:
 
-- Claude Code: `/plugin install superpowers@claude-plugins-official`
-- Codex — لو لسه مش متسطّب: في Codex CLI شغّل `/plugins`، دوّر على `superpowers`، واختار Install Plugin.
+| مهمة فيها 3 sub-units | `step` (الافتراضي) | `auto` |
+| --- | --- | --- |
+| story + plan | بتوافق | بتوافق، مرة واحدة |
+| build + review لكل sub-unit | بيقف بعد كل واحد من التلاتة | بيكمّل لحد الآخر |
+| verify | بيسأل إنت اللي تشغّله ولا هو | بيسأل مرة واحدة في البداية |
+| verdict الـ QC (على الـ routes اللي فيها QC) | إنت بتقبله | إنت بتقبله |
+| commit | إنت بتختار | إنت بتختار |
+
+في `auto` الـ agent بيرجع يسألك عند **brake**: scope escalator (المهمة طلعت بتلمس الأمان أو الداتا أو الفلوس أو واجهة غيرك معتمد عليها)، أو discovery (حاجة اتلقت والمهمة ما طلبتهاش)، أو تغيير في الخطة، أو نفس الاختبار بيفشل مرتين، أو إجراء irreversible. الـ commit بيقف دايمًا في المودين. بدّل المود في أي وقت بكلام عادي (“go end to end” أو “wait for my approval”)؛ و“plan only” بيقف أول ما الخطة تتوافق عليها ومش بيكتب كود.
+
+## شوفه شغّال
+
+مقتطف من run حقيقي (Claude Code، مهمة من function واحدة، مختصر بـ `…`؛ والـ walkthrough الكامل في [docs/first-task.md](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md)):
+
+```text
+you    /burhan:e2e slugify — add a function slugify(text) in src/slugify.js … with a test
+agent  burhan needs one thing before it can check your work: …
+         Check before commit   `npm test` (runs `node --test` …) …
+       ● Use these   ○ Change something
+you    Use these.
+agent  **Route:** feature / bounded. It's one pure function with no scope escalator, so it gets one combined story and plan gate. …
+       **Waiting on you:** reply "approved" to approve both the story and the plan … I won't write code before then.
+```
+
+الـ **hook** سكريبت صغير الـ agent بيشغّله في لحظات محددة (بداية الـ session، رسالتك، قبل الـ commit، بعد تعديل، نهاية الـ turn). في run تاني الـ agent عدّل ملف، ما قدرش يشغّل الـ check، وقال “Done.” الـ hook اللي في نهاية الـ turn رد، والـ agent سحب كلامه. والـ **ledger** هو السجل الخاص بكل تعديل وأمر؛ و`npx burhan-kit evidence` بيطبعه، وهنا `npm test` بتاع الـ run ده — اترفض من الـ permission prompt بتاع الـ agent نفسه، مش من burhan — متعلّم `blocked`:
+
+```text
+⚠ VERIFICATION GATE: completion was claimed, but the last run of `npm test 2>&1 | tail -15` was blocked and never ran. Run it, show the output — or retract the claim.
+2026-10-22T09:29:59Z  claude  …/… #2  cmd  exit ?  blocked  npm test 2>&1 | tail -15  (pipeline: exit is the last command's)  [slugify]
+```
+
+## هتاخد إيه
+
+**[اتفق قبل ما تبني](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#agree-before-you-build)**
+- الـ agent بيعمل route لكل طلب الأول، فالـ typo مش بياخد إجراءات تقيلة، وتغيير الصلاحيات عمره ما يتحسب “صغير”.
+- الـ agent بيطلب موافقتك على الـ story والخطة قبل الكود؛ ومود `step` أو `auto` بيحدد بيقف فين تاني.
+- قبل كل commit بيشغّل الـ check بتاعك وبيطلب منك تختار: دلوقتي، أو بعدين، أو بنفسك.
+
+**[أثبت اللي اتعمل](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#prove-what-was-done)**
+- “done” من غير check ناجح بعد آخر تعديل في الكود بياخد تحذير (الـ check اتشغّل قبله، أو فشل، أو ما اتشغّلش)، بعد ما مشروعك يحدد إيه الكود وإيه الـ check.
+- الـ ledger بيسرد كل تعديل وأمر، مع exit code على Claude Code، برّه مشروعك.
+- reviewer جديد (subagent في Claude Code، أو الـ agent التاني لو اخترت كده: Claude بيبني وCodex بيراجع، أو العكس) بيراجع كل خطوة والشغل اللي خلص، وكل review بيسجل مين عمله.
+- التقارير بتتبني من السجلات: وصف pull request للمهمة، وكام QC كان مستقل، والـ escaped defects.
+
+**[الذاكرة والفريق](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#memory-and-team)**
+- الـ agent بيفهم مشروعك مرة واحدة وبيوريك فهم إيه؛ كل fact بيقول جه من أنهي ملف، و`memory status` بيكشف الـ facts اللي الملف اللي بتستند عليه اتغيّر. الفهم والإعدادات بتتشارك عن طريق git، وكمان ملفات المهام لو اخترت الفولدر المشترك؛ وحالتك الشخصية بتفضل عندك.
+
+**[بيشتغل فين](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#where-it-runs)**
+- Claude Code وCodex، وبيسيب الـ hooks اللي عندك؛ و`doctor` بيفحص الإعداد، وتوثيق Codex كمان.
+- آمن تجرّبه: `init` و`upgrade` و`uninstall` كلهم dry run لحد `--apply`؛ و`init` و`upgrade` عمرهم ما بيكتبوا فوق `workflow.config` بتاعك؛ والـ `uninstall` بيشيل بس اللي burhan كتبه وبيسيب `workflow.config` و`bindings.md` إلا لو ضفت `--all`.
+
+## التثبيت في 3 خطوات
+
+### الخطوة 1 — Superpowers (موصى بيه)
+
+Superpowers اختياري، لكن موصى به بقوة: burhan مش بيسطّبه خالص. لو موجود، burhan بيستخدم الـ skills بتاعته في كل مرحلة (brainstorming قبل الـ story، وTDD وإنت بتبني، وتأكيد قبل “done”). عايز تجرّب burhan الأول؟ ابدأ من الخطوة 2.
+
+- Claude Code: `/plugin install superpowers@claude-plugins-official` · Codex، لو لسه مش متسطّب: شغّل `/plugins`، دوّر على `superpowers`، واختار Install Plugin.
+
+المفروض تشوف: في ملخص الخطوة 2 جملة “Superpowers found” (Claude Code بس؛ الـ setup مش بيدوّر في Codex).
 
 ### الخطوة 2 — جهّز burhan
 
-1. استخدم Node 22 أو أحدث جوّه الـ repository اللي عايز تجهزه. الـ hooks مش محتاجة أي حاجة تانية: لا bash ولا jq.
-2. شغّل:
+في مشروعك، بـ Node 22 أو أحدث، شغّل `npx burhan-kit`. هيسألك تلات أسئلة (أربعة لو بتستخدم الـ agents الاتنين): أنهي agents، والـ agent يرجعلك إمتى، وملفات المهام تتحفظ فين (ومين يراجع). وبيوريك ملخص ومش بيكتب حاجة قبل ما تأكد. أو اطلب من الـ agent يشغّل `npx burhan-kit setup --agent`. الـ setup بيضيف hooks لإعدادات الـ agent وبيسيب اللي عندك. في Codex، وثّق hooks بتاعت burhan في `/hooks` وإلا مش هتشتغل ([الخطوات](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks))؛ و`npx burhan-kit doctor` بيحذّرك لو مش موثّقة.
 
-```bash
-npx burhan-kit
-```
+المفروض تشوف: قايمة الملفات اللي اتعملت، و`npx burhan-kit doctor` بيطبع آخر سطر فيه بيبدأ بـ `0 fail`.
 
-3. جاوب التلات أسئلة (أربعة لو بتستخدم الـ agents الاتنين):
-   - بتستخدم أنهي أدوات AI للبرمجة؟
-   - الـ agent يرجعلك إمتى؟
-   - burhan يحفظ الـ story والخطة والـ reviews بتاعة كل مهمة فين؟ الإجابة المقترحة هي “في git للفريق — docs/burhan/work/”.
-   - لو بتستخدم الـ agents الاتنين: مين يراجع الشغل ويعمل الـ QC بشكل مستقل؟ الإجابة المقترحة هي الـ agent التاني.
-4. راجع التغييرات المقترحة ووافق عليها؛ مفيش حاجة بتتكتب قبل موافقتك.
-5. اتأكد إنه اشتغل: ملخص الـ setup بيعرض ملفات `.burhan/` المُدارة؛ وبعدها شغّل `npx burhan-kit doctor`. الـ project checks بيقترحها الـ agent أول استخدام، وبعدها أنت بتوافق عليها.
+### الخطوة 3 — خلّي الـ agent يفهم مشروعك
 
-ولو الـ agent هو اللي هيجهز المشروع، قوله يشغّل `npx burhan-kit setup --agent` ويمشي على الإرشادات اللي بتظهر له. لو لقيت دليل في المشروع بيحدد فولدر للـ stories أو الـ specs، يقدر يعرضه من غير ما يخمّن أو يختاره لوحده.
+مرة واحدة، افتح جلسة agent جديدة (الـ **session** يعني محادثة واحدة مع الـ agent) في المشروع، وبعدين: Claude Code: `/burhan:onboard`؛ Codex: قول `Follow .burhan/commands/onboard.md`. الـ agent بيقرا المشروع كله، وبيوريك مسودة وإيه اللي ما قدرش يفحصه، وبيحفظها بس بعد موافقتك: الـ **baseline** بتاعك. شغّله مرة واحدة: الفهم المعتمد مش بيتكرر، والمسودة بتتكمّل.
 
-### الخطوة 3 — فهم المشروع
+المفروض تشوف: مسودة بتقول المشروع ده إيه وبيعمل إيه، والأسئلة اللي الـ agent معرفش يجاوبها. مفيش حاجة بتتحفظ قبل ما تقرر.
 
-مرة واحدة، بعد الـ setup: افتح جلسة agent جديدة جوّه المشروع، وبعدين:
+## أول مهمة ليك
 
-- Claude Code — اكتب: `/burhan:onboard`
-- Codex — قول: `اتبع .burhan/commands/onboard.md`
+ابدأ تغيير صغير بـ `/burhan:e2e <slug>` (عنوان قصير يكفي). أول مرة الـ agent بيجهّز checks المشروع (block واحد بتوافق عليه)، وبعدين بيكتب story وخطة ويقف عند “approved” بتاعك. بترد على أسئلته القليلة، وهو بيبني test-first، وreviewer جديد بيراجع الشغل، وبيسألك قبل ما يعمل commit. ولو عندك أكتر من مهمة مفتوحة، `npx burhan-kit use <slug>` بيربط الـ session بواحدة. الـ run المسجّل كله، كل رسالة وكل تحذير، في [docs/first-task.md](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md).
 
-الـ agent بيقرا المشروع كله، ويوريك مسودة وإيه اللي ما قدرش يفحصه، ومش بيحفظها في الريبو غير بعد موافقتك. شغّله مرة واحدة: الفهم المعتمد مش بيتكرر، والمسودة بتتكمّل.
+## الفرق والذاكرة
 
-## إيه اللي بيحصل في أول مهمة؟
-
-الـ setup بيحط اتفاق الشغل والإعدادات والـ hooks المُدارة بتاعة burhan في `.burhan/`. الـ hooks الموجودة بتفضل شغالة: بتشتغل جنب hooks بتاعة burhan، فممكن التنبيهات تتكرر.
-
-ابدأ مهمة مع الـ agent. كل مهمة ليها story وخطة وreviews في المكان اللي اخترته. شغّل `burhan use <slug>` علشان تربط الـ session الحالية بالمهمة دي—وده مفيد خصوصاً لما أكتر من مهمة تكون شغالة.
-
-**مثال حقيقي لأول مهمة:** agent عدّل `src/add.js`، وما شغّلش check، وقال “Done”.
-
-```text
-⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification
-command ran this turn. Run the checks now and show the real output, or explicitly
-retract the claim.
-```
-
-## بيشتغل إزاي
-
-burhan بيجمع اتفاق جوّه المشروع، وhooks بتفكّر الـ agent بيه، وevidence ledger. مسار الشغل بيبدأ من الهدف: نتفق على الـ story والخطة، نبني جزء واحد مع مراجعة في كل مرة، وبعدين نعرض إيه اللي اتراجع فعلاً.
-
-### مسار الشغل الأساسي
-
-1. اتفقوا على الـ story والخطة؛ burhan بيقف لما وضع الشغل اللي اخترته يحتاج موافقتك.
-2. ابنوا جزء واحد في كل مرة مع مراجعة.
-3. راجع الدليل، وبعدها اختار تعمل commit دلوقتي، أو بعدين، أو بنفسك.
-
-| هتاخد إيه | ليه يهمك |
-| --- | --- |
-| بوابات موافقة | الـ agent بيستنى موافقة الـ story والخطة اللي المسار بتاعه محتاجها. |
-| Hooks وledger | التعديلات والأوامر والـ exit code بتاعهم ليهم سجل دائم. |
-| نقاط مراجعة | مراجعة منفصلة ممكن تلاقي حاجة اللي بنى الشغل فاتته. |
-| روابط الـ sessions | `burhan use <slug>` بيربط الـ session بالمهمة النشطة الصح. |
-
-## الإعدادات
-
-`.burhan/` مُدار من burhan. الـ setup بيعرض التغييرات المقترحة وبيسأل قبل ما يكتب؛ وبعد كده استخدم `npx burhan-kit setup` علشان تغيّر اختياراتك. شوف [مرجع الإعدادات](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md) لكل الإعدادات، ومنها [الثقة في hooks بتاعة Codex](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks).
-
-## Scripts و CI
-
-للـ automation مش للتثبيت أول مرة:
-
-```bash
-npx burhan-kit@latest init --agents claude,codex
-npx burhan-kit upgrade --apply
-npx burhan-kit doctor
-```
-
-`init` و`upgrade` بيعرضوا خطتهم قبل الكتابة إلا لو ضفت `--apply`؛ و`doctor` للقراءة بس.
-
-## الترقية من 0.2.2
-
-`npx burhan-kit upgrade --apply` بيبدّل hooks الـ bash بتاعة 0.2.2 بـ hooks الـ Node وبيشيل فولدرات الـ hooks القديمة؛ والـ hooks بتاعتك بتفضل زي ما هي. في Codex، وافق على الـ hooks تاني بعدها. الـ installs من 0.2.1 أو أقدم (تحت `.workflow/`) مش بتتنقل؛ شوف [الـ changelog](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md).
-
-علشان ترجع لـ 0.2.2، اعمل uninstall الأول وبعدين سطّب النسخة القديمة. لو شغّلت `upgrade` بـ 0.2.2 بدل كده، المجموعتين هيفضلوا وكل hook هيشتغل مرتين. اكتب الـ agents اللي بتستخدمها:
-
-```bash
-npx burhan-kit uninstall --apply
-npx burhan-kit@0.2.2 init --agents claude,codex --apply
-```
-
-`workflow.config` و`bindings.md` بيفضلوا زي ما هم.
-
-## الـ agents المدعومة
-
-Claude Code (2.1.139 أو أحدث) وCodex مدعومين. في Codex، وافق على project hooks بعد الـ setup وإلا مش هتشتغل؛ مرجع الإعدادات بيشرح خطوة الثقة.
-
-**Windows:** الـ hooks بتشتغل على Node، من غير bash ولا jq. الـ CI بيشغّلها على `windows-latest` بـ Node 22 و24، مع Git Bash ومن غيره. لسه ما اتأكدش: Windows بـ PowerShell بس (من غير Git Bash)، وجلسة Claude Code أو Codex حقيقية على Windows.
+- بيتعملها commit ومراجعة زي الكود: `.burhan/PROJECT.md` و`.burhan/context/` و`.burhan/bindings.md` (أوامر مشروعك وفولدراته) و`.burhan/workflow.config` وفولدر كل مهمة. بتاعك إنت بس، وgit بيتجاهله: `.burhan/local/`.
+- لو اتنين ضافوا facts لنفس الـ area ممكن يحصل conflict نصي: سيب كل row؛ و`npx burhan-kit memory check` بيكشف الـ IDs المكررة. متستخدمش `merge=union` على الملفات دي.
+- الـ evidence ledger مخزّن برّه المشروع (`~/.local/state/burhan/evidence/`): أوامر وexit codes بس، ومش الـ output بتاعها أبدًا. وتقدر تمسحه وقت ما تحب.
 
 ## الحدود
 
-burhan بيبلّغ ويوجّه—مش بديل لحكم الإنسان. يقدر يقيّم بس التعديلات والأوامر اللي الـ agent بيبلغ الـ hooks بيها؛ تعديلات الـ shell بتبان بس بصيغ الـ shell المدعومة.
+- burhan بيبلّغ ويوجّه ومبيمنعش. الموافقات والـ test-first قواعد الـ agent مطلوب منه يمشي عليها.
+- بيشوف بس التعديلات والأوامر اللي الـ agent بيبلّغ بيها؛ وتعديل الـ shell بيظهر بس من خلال `>` و`>>` و`tee`.
+- تحذير “done” محتاج `WF_CODE_REGEX` و`WF_EVIDENCE_REGEX` (إعدادات في `.burhan/workflow.config`)؛ الـ agent بيقترحهم أول استخدام، وبعد ما أول استخدام يخلص `doctor` بيحذّر لو الـ code pattern فاضي.
+- Codex بيشغّل hooks المشروع بعد ما توثّقها في `/hooks` بس، ومبيقولش حاجة لو مش موثّقة. وعلى Codex ممكن الأمر اللي خلص يبقى من غير exit code متسجّل، وده بيتحسب دليل ناجح ([فجوة معروفة](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md)).
+- Windows: الـ hooks بتشتغل على Node والـ CI بيغطي `windows-latest`. لسه مش متحقق منه: Windows بـ PowerShell بس، وجلسة Claude Code أو Codex حقيقية على Windows.
 
-## لينكات
+## الأوامر واللينكات
 
-- [الإعدادات](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md)
-- [سجل التغييرات](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md)
-- [Roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md)
-- [English README](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/README.md)
-- [Issues](https://github.com/ahmedkamaldabour/burhan-kit/issues)
+| الأمر | بيعمل إيه |
+| --- | --- |
+| `npx burhan-kit` · `npx burhan-kit setup --agent` | إعداد موجّه (مش بيكتب حاجة قبل ما تأكد) · الأسئلة اللي الـ agent هيسألها |
+| `npx burhan-kit doctor` | فحص صحة للقراءة بس |
+| `npx burhan-kit status` · `npx burhan-kit evidence --item <slug>` | فهرس المهام · الـ ledger بتاع مهمة |
+| `npx burhan-kit memory check` · `npx burhan-kit inspect` | فحص ذاكرة المشروع (للـ CI كمان) · نظرة بالأسماء بس على المشروع |
+| `npx burhan-kit use <slug>` | بيتحقق من المهمة؛ والـ session بتتربط لما الـ turn يخلص |
+| `npx burhan-kit upgrade` · `npx burhan-kit uninstall` | تحديث · إزالة (dry run لحد `--apply`) |
+
+[الإعدادات](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md) · [المميزات بالتفصيل](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md) · [أول مهمة، مسجّلة](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md) · [الترقية والرجوع](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/upgrading.md) · [الـ CI وWindows](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/ci-and-windows.md) · [Changelog](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md) · [Roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md) · [Issues](https://github.com/ahmedkamaldabour/burhan-kit/issues)
 
 ## الرخصة
 
