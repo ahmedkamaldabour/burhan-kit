@@ -17,6 +17,19 @@ hero() { awk 'NR == 1 { next } /^## / { exit } { print }' "$1" | grep -vF "$GH/R
 markdown_targets() { grep -oE '!{0,1}\[[^]]*\]\([^)]*\)' "$1" 2>/dev/null | sed -E 's/^!?\[[^]]*\]\(([^ )]+).*\)$/\1/'; }
 raw_html_tags() { grep -nE '<[[:alpha:]][[:alnum:]-]*([[:space:]][^>]*)?>|</[[:alpha:]][[:alnum:]-]*[[:space:]]*>' "$1" | grep -vE '<slug>|<name>|<cmd|<re>|<p;q>|<ref>|<id>' || true; }
 
+# The bullets under a heading, counted once; when the count is not 8 to 10 the output says what this machine saw
+# (macOS BSD grep/awk once disagreed with Linux on the Arabic section; the numbers below say where).
+feature_count() {
+  local n; n="$(section "$1" "$2" | grep -c '^- ')"
+  if [ "$n" -lt 8 ] || [ "$n" -gt 10 ]; then
+    {
+      echo "        diag: $1 under '$2': $n bullets, $(section "$1" "$2" | wc -l | tr -d ' ') lines; $(uname -s); $(awk --version 2>&1 | head -1)"
+      section "$1" "$2" | awk '/^- / { print "        diag: line " NR ": " substr($0, 1, 12) }'
+    } >&2
+  fi
+  echo "$n"
+}
+
 echo "structure: same headings in English and Arabic, short, no raw HTML"
 for i in "${!en_sections[@]}"; do
   check "$EN has ## ${en_sections[$i]}" "$(grep -F -x "## ${en_sections[$i]}" $EN)" has "## ${en_sections[$i]}"
@@ -149,8 +162,9 @@ check "$AR a gate is every arrow in the diagram" "$(cat $AR)" has 'كل سهم `
 
 echo "strong features in What you get (owner ask, 2026-10-22)"
 for f in $EN $AR; do
-  w="$(section "$f" "$([ "$f" = $EN ] && echo 'What you get' || echo 'هتاخد إيه')")"
-  check "$f what you get: still 8 to 10 feature lines" "$(printf '%s\n' "$w" | grep -c '^- ' | awk '$1 >= 8 && $1 <= 10 { print "yes" }')" has yes
+  h="$([ "$f" = $EN ] && echo 'What you get' || echo 'هتاخد إيه')"
+  w="$(section "$f" "$h")"
+  check "$f what you get: still 8 to 10 feature lines" "$(feature_count "$f" "$h" | awk '$1 >= 8 && $1 <= 10 { print "yes" }')" has yes
 done
 w="$(section $EN 'What you get')"
 check "$EN the warning also covers a check that ran before the edit, failed or never ran" "$w" has 'the check ran before it, failed, or never ran'
@@ -250,8 +264,8 @@ for a in agree-before-you-build prove-what-was-done memory-and-team where-it-run
   check "$AR links features#$a" "$(cat $AR)" has "$GH/docs/features.md#$a"
   check "docs/features.md has the heading for #$a" "$(grep -c "^## $(echo "$a" | sed 's/-/ /g' | awk '{ $1 = toupper(substr($1,1,1)) substr($1,2); print }')$" docs/features.md | awk '$1 == 1 { print "yes" }')" has yes
 done
-check_eq "$EN lists 8 to 10 feature lines" "$(section $EN 'What you get' | grep -c '^- ' | awk '$1 >= 8 && $1 <= 10 { print "yes" }')" yes
-check_eq "$AR lists 8 to 10 feature lines" "$(section $AR 'هتاخد إيه' | grep -c '^- ' | awk '$1 >= 8 && $1 <= 10 { print "yes" }')" yes
+check_eq "$EN lists 8 to 10 feature lines" "$(feature_count $EN 'What you get' | awk '$1 >= 8 && $1 <= 10 { print "yes" }')" yes
+check_eq "$AR lists 8 to 10 feature lines" "$(feature_count $AR 'هتاخد إيه' | awk '$1 >= 8 && $1 <= 10 { print "yes" }')" yes
 
 echo "install: three headed steps, in order, each ends with what you should see"
 S1='### Step 1 — Superpowers (recommended)'; S2='### Step 2 — Set up burhan'; S3='### Step 3 — Let the agent understand your project'
