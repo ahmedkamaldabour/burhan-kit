@@ -13,11 +13,9 @@ jobs:
       fail-fast: false
       matrix:
         # The Ubuntu runner is pinned (not ubuntu-latest) so an image migration cannot change it silently.
-        # Node: the supported lines (engines: >=22). macOS runs once, on the newest Node, to keep its queue short.
-        os: [ubuntu-24.04]
-        node: [22, 24]
-        include:
-          - { os: macos-latest, node: 24 }
+        # One job per system, on Node 24 (the current LTS) to keep CI short. engines is >=22; Node 22 itself is not run.
+        os: [ubuntu-24.04, macos-latest]
+        node: [24]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -44,11 +42,11 @@ jobs:
       - name: package contents
         run: npm pack --dry-run
 
-  # The hooks need neither bash nor jq, so Windows is tested twice: "no-bash" removes bash and jq from
-  # PATH (the 0.3 claim, at both ends of `engines`), and a tripwire test fails the job if either is still
-  # reachable; "git-bash" keeps Git for Windows, which is what Claude Code uses there and what the pre-commit
-  # check prefers (a mirrored tripwire fails that job if Git Bash is gone). Only the Node suite runs here; the
-  # repo's shell test suites and `npm run lint` stay on Linux and macOS.
+  # The hooks need neither bash nor jq, so Windows runs "no-bash": bash and jq are removed from PATH (the 0.3
+  # claim) and a tripwire test fails the job if either is still reachable. The "git-bash" variant (Git for Windows
+  # kept, what Claude Code uses there; a mirrored tripwire fails if it is gone) is not run now: add
+  # `{ variant: git-bash, node: 24 }` to the matrix to bring it back. Only the Node suite runs here; the repo's
+  # shell test suites and `npm run lint` stay on Linux and macOS.
   windows:
     name: windows (${{ matrix.variant }}, node ${{ matrix.node }})
     runs-on: windows-latest
@@ -56,9 +54,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { variant: no-bash, node: 22 }
           - { variant: no-bash, node: 24 }
-          - { variant: git-bash, node: 24 }
     env:
       BURHAN_EXPECT_NO_BASH: ${{ matrix.variant == 'no-bash' && '1' || '' }}
       BURHAN_EXPECT_BASH: ${{ matrix.variant == 'git-bash' && '1' || '' }}

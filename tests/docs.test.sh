@@ -41,4 +41,13 @@ check "configuration: the file tree lists the onboard command" "$cfgdoc" has '{e
 check "configuration: the Claude commands bullet lists onboard" "$cfgdoc" has '`/burhan:qc`, `/burhan:onboard`'
 check "configuration: a Claude Stop audits only what is new" "$cfgdoc" has 'only what is new since the previous Stop'
 
+echo "ci-matrix-slim: the docs describe the three-job CI and what it no longer runs"
+cidoc="$(cat docs/ci-and-windows.md)"
+check "ci doc: one job per system on Node 24" "$cidoc" has 'one job per system, on Node 24'
+check "ci doc: Node 22 is not run by CI" "$cidoc" has 'does not run Node 22'
+check "ci doc: Windows with Git Bash is not run by CI" "$cidoc" has 'does not run Windows with Git Bash'
+check "ci doc: no stale Windows Node 22 claim" "$cidoc" lacks 'with Node 22 and 24'
+check "configuration: CI runs Node 24" "$cfgdoc" has 'CI runs Node 24'
+check "configuration: no stale CI Node 22 and 24 claim" "$cfgdoc" lacks 'CI runs Node 22 and 24'
+
 t_summary

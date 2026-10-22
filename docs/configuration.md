@@ -287,7 +287,7 @@ confidence, evidence and verification point. Formats: `.burhan/templates/project
 
 ## Develop
 
-The CLI needs Node ≥ 22; CI runs Node 22 and 24.
+The CLI needs Node ≥ 22; CI runs Node 24 only (one job each on Ubuntu, macOS and Windows).
 
 ```bash
 npm ci

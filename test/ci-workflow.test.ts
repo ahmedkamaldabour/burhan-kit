@@ -22,11 +22,11 @@ test('a Windows job runs the Node suite on windows-latest', () => {
   assert.match(w, /npm run test:node/);
 });
 
-test('the Windows job covers no-bash on Node 22 and 24 and Git Bash on Node 24', () => {
+test('the Windows job runs no-bash on Node 24 only (Node 22 and Git Bash are not run by CI)', () => {
   const w = job('windows');
-  assert.match(w, /variant: no-bash, node: 22/);
   assert.match(w, /variant: no-bash, node: 24/);
-  assert.match(w, /variant: git-bash, node: 24/);
+  assert.doesNotMatch(w, /node: 22/);
+  assert.doesNotMatch(w, /variant: git-bash,/, 'the git-bash variant is out of the matrix; its tripwire env line stays');
 });
 
 test('the no-bash variant removes bash and jq from PATH and arms the tripwire', () => {
@@ -48,11 +48,10 @@ test('the Windows job never runs a shell script or the bash suites', () => {
   assert.doesNotMatch(w, /npm test\b|npm run lint|test:bash/);
 });
 
-test('the test job has no jq pinning since 0.3.0 (the hooks need no jq): Ubuntu 24.04 on Node 22 and 24, macOS on 24', () => {
+test('the test job has no jq pinning since 0.3.0 (the hooks need no jq): Ubuntu 24.04 and macOS, both on Node 24', () => {
   const t = job('test');
   assert.doesNotMatch(t, /^\s+jq:/m, 'no jq matrix key');
   assert.doesNotMatch(t, /ubuntu-22\.04|matrix\.jq/, 'no jq-1.6 runner and no jq version check');
-  assert.match(t, /os: \[ubuntu-24\.04\]\n\s+node: \[22, 24\]/);
-  assert.match(t, /- \{ os: macos-latest, node: 24 \}/);
+  assert.match(t, /os: \[ubuntu-24\.04, macos-latest\]\n\s+node: \[24\]/);
   for (const step of ['npm run lint', 'npm test', 'npm pack --dry-run']) assert.ok(t.includes(step), step);
 });
