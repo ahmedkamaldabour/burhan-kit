@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { ereToJs, evidenceRoot, projectKey, readLedger, summarizeLedger } from '../src/lib/evidence.js';
+import { ereToJs, evidenceRoot, isPiped, projectKey, readLedger, summarizeLedger } from '../src/lib/evidence.js';
 import { nodeHooksDir } from '../src/lib/kit.js';
 import { evidenceRoot as hookEvidenceRoot, projectKey as hookProjectKey } from '../src/hooks/core/store.mjs';
 import { runCli } from '../src/main.js';
@@ -136,4 +136,28 @@ test('the CLI and the hooks pick the same evidence root for every kind of overri
     assert.equal(evidenceRoot(env), hookEvidenceRoot(env), `override ${JSON.stringify(override)}`);
   }
   assert.equal(evidenceRoot({ WF_EVIDENCE_DIR: tmpAbs }), tmpAbs, 'an absolute override in the OS\'s own form is honoured');
+});
+
+// first-use-fixes SU3: a pipeline's status is the last command's, so the ledger's exit can hide a failing run
+test('isPiped: a pipe outside quotes counts; ||, quoted, escaped and heredoc-body pipes do not', () => {
+  for (const c of ['npm test 2>&1 | head -30', 'a | b | c', 'a |& b', 'cd x && npm test | tail -3', 'echo "ok" | wc -l', 'cat <<< x\nnpm test | head']) assert.equal(isPiped(c), true, c);
+  for (const c of ['a || b', 'echo "a | b"', "echo 'a|b'", 'echo a \\| b', 'npm test', '', "git commit -F - <<'EOF'\nfix: a | b\nEOF", 'echo `a | b`'.replace('`a | b`', '"$(a | b)"')]) assert.equal(isPiped(c), false, c);
+});
+
+test('burhan evidence marks a piped run in text and adds piped:true to --json; plain commands and edits are unchanged', async () => {
+  const p = project(); const ev = tmp('burhan-evd-');
+  audit(p, ev, 'S1', 'T1', [{ kind: 'edit', file: join(p, 'a.src'), seq: 1 }, { kind: 'cmd', cmd: 'verify-it a | head -30', exit: 0, status: 'ok', seq: 2 }, { kind: 'cmd', cmd: 'verify-it b', exit: 0, status: 'ok', seq: 3 }]);
+  process.env.WF_EVIDENCE_DIR = ev;
+  try {
+    const text = capture(p);
+    assert.equal(await runCli(['evidence', p], text.io), 0);
+    const rows = text.o.out.trim().split('\n');
+    assert.match(rows[1], /exit 0  ok  verify-it a \| head -30 {2}\(pipeline: exit is the last command's\)/);
+    assert.doesNotMatch(rows[2], /pipeline/);
+    assert.doesNotMatch(rows[0], /pipeline/);
+    const json = capture(p);
+    assert.equal(await runCli(['evidence', p, '--json'], json.io), 0);
+    const recs = JSON.parse(json.o.out) as { kind: string; piped?: boolean }[];
+    assert.deepEqual(recs.map((r) => r.piped ?? null), [null, true, null]);
+  } finally { delete process.env.WF_EVIDENCE_DIR; }
 });

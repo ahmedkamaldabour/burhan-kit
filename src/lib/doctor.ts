@@ -163,6 +163,8 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     const why = ereRefusal(value);
     if (why) add('warn', `${key}: the hooks refuse this pattern (${why}), so its check stays silent — rewrite it`);
   }
+  // First-use is done but nothing says what counts as code: the "done without proof" warning and the test-first reminder are off.
+  if (cfg.values.WF_STACK_SETUP === 'done' && !(cfg.values.WF_CODE_REGEX ?? '')) add('warn', 'WF_CODE_REGEX is empty — the "done without proof" warning and the test-first reminder are off; say what counts as code: burhan setup --set check=<command> code=<pattern> test=<pattern> evidence=<pattern>');
   const ev = cfg.values.WF_EVIDENCE_DIR;
   if (ev && !isAbsolute(ev)) add('warn', `WF_EVIDENCE_DIR "${ev}" is not an absolute literal path — it is ignored and the default ledger is used`);
   if (cfg.values.WF_SENSITIVE_REGEX && !cfg.values.WF_SENSITIVE_NOTE) add('warn', 'WF_SENSITIVE_REGEX is set but WF_SENSITIVE_NOTE is empty — add the access-control reminder');

@@ -83,9 +83,27 @@ export function summarizeLedger(recs: LedgerRecord[], evidenceRegex: string): Le
   };
 }
 
+/** True when the command line holds a pipeline: a `|` outside quotes that is not `||`. A shell reports the
+ *  last command's status for a pipeline, so the exit the ledger recorded can hide a failing first command.
+ *  Heuristic, like the hooks' shell-write reader: a heredoc body is data, so scanning stops at its first line break. */
+export function isPiped(cmd: string): boolean {
+  let quote = '';
+  let heredoc = false;
+  for (let i = 0; i < cmd.length; i++) {
+    const c = cmd[i]!;
+    if (quote) { if (c === '\\' && quote === '"') i++; else if (c === quote) quote = ''; continue; }
+    if (c === '\\') { i++; continue; }
+    if (c === '"' || c === "'" || c === '`') { quote = c; continue; }
+    if (c === '\n') { if (heredoc) return false; continue; }
+    if (c === '<' && cmd[i + 1] === '<') { if (cmd[i + 2] === '<') i += 2; else { heredoc = true; i++; } continue; } // `<<<` is a here-string, `<<` a heredoc
+    if (c === '|') { if (cmd[i + 1] === '|') { i++; continue; } return true; }
+  }
+  return false;
+}
+
 const line = (r: LedgerRecord): string =>
   `${r.ts}  ${r.agent}  ${r.session}/${r.turn}${r.part ? `.${r.part}` : ''} #${r.seq}  ` +
-  (r.kind === 'edit' ? `edit  ${r.file ?? ''}` : `cmd  exit ${r.exit ?? '?'}  ${r.status ?? 'unknown'}  ${r.cmd ?? ''}`) +
+  (r.kind === 'edit' ? `edit  ${r.file ?? ''}` : `cmd  exit ${r.exit ?? '?'}  ${r.status ?? 'unknown'}  ${r.cmd ?? ''}${r.kind === 'cmd' && isPiped(r.cmd ?? '') ? "  (pipeline: exit is the last command's)" : ''}`) +
   (r.by ? `  (${r.by})` : '') + (r.item ? `  [${r.item}]` : '');
 
 export function evidence(o: { target: string; item?: string; session?: string; last?: string; json: boolean }, io: Io): number {
@@ -97,7 +115,7 @@ export function evidence(o: { target: string; item?: string; session?: string; l
   }
   let recs = readLedger(target).filter((r) => (!o.item || r.item === o.item) && (!o.session || r.session === o.session));
   if (n !== undefined) recs = n === 0 ? [] : recs.slice(-n);
-  if (o.json) { io.stdout(JSON.stringify(recs, null, 2) + '\n'); return 0; }
+  if (o.json) { io.stdout(JSON.stringify(recs.map((r) => (r.kind === 'cmd' && isPiped(r.cmd ?? '') ? { ...r, piped: true } : r)), null, 2) + '\n'); return 0; }
   if (recs.length === 0) {
     io.stdout(o.item || o.session
       ? `no evidence recorded for ${o.item ? `item "${o.item}"` : `session "${o.session}"`}\n`

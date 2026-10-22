@@ -235,6 +235,8 @@ check "lifecycle: the route sets the stops, not the mode" "$(cat phases/lifecycl
 echo "pull request only on request"
 check "close-out: a PR only when the human asks" "$(cat phases/close-out.md)" has "Pull request — only when the human asks"
 check "close-out names the PR body command" "$(cat phases/close-out.md)" has "burhan pr-body --item <slug>"
+check "e2e names the kit command for use and changed" "$(cat commands/e2e.md)" has 'npx burhan-kit use <slug>'
+check "e2e says the kit command comes from the bindings" "$(cat commands/e2e.md)" has 'the kit command'
 check "e2e: push or PR only when asked" "$(cat commands/e2e.md)" has "Push or open a pull request only when the human asks"
 check "qc: PR only if asked" "$(cat commands/qc.md)" has "a pull request only if"
 echo "fixed-form fields (the user's ruling)"

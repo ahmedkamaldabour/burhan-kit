@@ -4,6 +4,7 @@ import { applyPlan, planInstall } from '../install.js';
 import { BurhanError } from '../errors.js';
 import { parseConfig, TEAM_CONFIG } from '../config.js';
 import { putFile, realTarget } from '../fs-safe.js';
+import { ereRefusal } from '../../hooks/core/ere.mjs';
 import { runCheck } from '../../hooks/core/run-check.mjs';
 import type { Io } from '../../main.js';
 import { assertWritable, sensitiveRegex, setConfigKeys } from './config-write.js';
@@ -17,7 +18,7 @@ export function stackInstructions(lang: 'en' | 'ar'): string {
   return messages(lang as Lang).stack.instructions;
 }
 
-export interface StackValues { check: string; sensitive: string[] }
+export interface StackValues { check: string; sensitive: string[]; code?: string; test?: string; evidence?: string }
 
 const list = (s: string): string[] => s.split(';').map((x) => x.trim()).filter(Boolean);
 
@@ -26,13 +27,14 @@ export function parseSetArgs(args: string[]): StackValues {
   const out: StackValues = { check: '', sensitive: [] };
   for (const a of args) {
     const i = a.indexOf('=');
-    if (i <= 0) throw new BurhanError(`"${a}" is not KEY=VALUE — use check=<command|none> sensitive=<p;q>`);
+    if (i <= 0) throw new BurhanError(`"${a}" is not KEY=VALUE — use check=<command|none> [code=<pattern>] [test=<pattern>] [evidence=<pattern>] [sensitive=<p;q>]`);
     const key = a.slice(0, i);
     const val = a.slice(i + 1);
     if (key === 'check') out.check = val.trim();
     else if (key === 'never-run' || key === 'never-run-regex') throw new BurhanError(`setting "${key}" was removed`);
     else if (key === 'sensitive') out.sensitive = list(val);
-    else throw new BurhanError(`unknown setting "${key}" — the choices are check and sensitive`);
+    else if (key === 'code' || key === 'test' || key === 'evidence') out[key] = val.trim();
+    else throw new BurhanError(`unknown setting "${key}" — the choices are check, sensitive, code, test, evidence`);
   }
   if (out.check === '') throw new BurhanError('check=<command|none> is required — say which command checks the work before a commit, or none');
   return out;
@@ -56,6 +58,15 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
   sensitive.forEach((c) => assertWritable('a sensitive path', c));
   const sens = sensitiveRegex(sensitive);
   assertWritable('the sensitive paths', sens);
+  // The three patterns feed the "done without proof" warning: refuse one the hooks would refuse, before anything runs.
+  const patterns: [string, 'WF_CODE_REGEX' | 'WF_TEST_REGEX' | 'WF_EVIDENCE_REGEX', string | undefined][] = [
+    ['code', 'WF_CODE_REGEX', v.code], ['test', 'WF_TEST_REGEX', v.test], ['evidence', 'WF_EVIDENCE_REGEX', v.evidence]];
+  for (const [name, , value] of patterns) {
+    if (!value) continue;
+    assertWritable(`the ${name} pattern`, value);
+    const why = ereRefusal(value);
+    if (why) throw new BurhanError(`the ${name} pattern: the hooks refuse it (${why}) — rewrite it`);
+  }
 
   if (check === '') io.stdout(m.none + '\n');
   else {
@@ -72,6 +83,7 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
     values.WF_SENSITIVE_REGEX = sens;
     if ((have.WF_SENSITIVE_NOTE ?? '') === '') values.WF_SENSITIVE_NOTE = DEFAULT_SENSITIVE_NOTE;
   }
+  for (const [, key, value] of patterns) if (value) values[key] = value;
   putFile(configPath, setConfigKeys(text, values));
   // The verify skill carries the check command: regenerate it (and anything else that depends on the config).
   // The bootstrap block only where the project already has it: a --no-bootstrap install stays without one.

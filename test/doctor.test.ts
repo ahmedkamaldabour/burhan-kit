@@ -397,3 +397,19 @@ test('a WF_*_REGEX the hooks refuse warns once, naming the key and the reason; a
   writeFileSync(join(p, '.burhan/local/workflow.config'), "WF_FORBIDDEN_REGEX='(a)\\1'\nWF_SENSITIVE_REGEX=''\n");
   assert.ok(!bad(runChecks(p, probe())).some((t) => /WF_(FORBIDDEN|SENSITIVE)_REGEX: the hooks refuse/.test(t)));
 });
+
+test('first-use fixes: an empty WF_CODE_REGEX warns once first-use is done, and only then', () => {
+  const p = project();
+  const set = (key: string, value: string) => edit(cfg(p), (t) => t.replace(new RegExp(`^${key}=.*$`, 'm'), () => `${key}='${value}'`));
+  const code = (cs: Check[]) => find(cs, 'warn', 'WF_CODE_REGEX is empty');
+  assert.equal(code(runChecks(p, probe())), undefined, 'a fresh init (first-use not done) is silent');
+  set('WF_STACK_SETUP', 'pending');
+  assert.equal(code(runChecks(p, probe())), undefined, 'first-use pending is silent');
+  set('WF_STACK_SETUP', 'done');
+  const w = code(runChecks(p, probe()));
+  assert.ok(w, 'done + empty warns');
+  assert.match(w!.text, /done without proof/);
+  assert.match(w!.text, /setup --set check=<command> code=<pattern>/);
+  set('WF_CODE_REGEX', '\\.js$');
+  assert.equal(code(runChecks(p, probe())), undefined, 'a set pattern is silent');
+});

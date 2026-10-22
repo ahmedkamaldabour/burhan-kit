@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { applyPlan, planInstall, type InstallPlan, type PlannedFile } from '../install.js';
+import { applyPlan, KIT_COMMAND, planInstall, type InstallPlan, type PlannedFile } from '../install.js';
 import { BurhanError } from '../errors.js';
 import { parseConfig, TEAM_CONFIG } from '../config.js';
 import { cfgPath } from '../../hooks/core/config.mjs';
@@ -134,10 +134,10 @@ export function docsPathError(path: string): string | undefined {
 const ROW = (name: string, tail: string): RegExp => new RegExp(`^(\\| \\*\\*${name}\\*\\* \\| )(.*?)( \\| ${tail} \\|)$`);
 const placeholder = (v: string): boolean => /^\*\(.*\)\*$/.test(v.trim());
 
-/** Fill the two rows only while they are still the template's placeholders; null = nothing to change. */
+/** Fill the three rows only while they are still the template's placeholders; null = nothing to change. */
 function planBindings(existing: string | null, kitText: string, docsLabel: string): string | null {
   const text = existing ?? kitText;
-  const rows: [RegExp, string][] = [[ROW('Work-item docs location', '`WF_DOCS_DIR`'), docsLabel], [ROW('Branching rule', '—'), BRANCH_RULE]];
+  const rows: [RegExp, string][] = [[ROW('Work-item docs location', '`WF_DOCS_DIR`'), docsLabel], [ROW('Branching rule', '—'), BRANCH_RULE], [ROW('Kit command', '—'), KIT_COMMAND]];
   let changed = existing === null;
   const lines = text.split('\n').map((l) => {
     for (const [re, value] of rows) {

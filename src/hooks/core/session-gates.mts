@@ -59,7 +59,7 @@ export const sessionGates: Check = ({ cfg, project, ev, env }) => {
   }
   out.push(fill({ DOCS_DIR: cfg.WF_DOCS_DIR ?? '', STATE_FILE: cfg.WF_STATE_FILE ?? '', CHECK_CMD: cfg.WF_CHECK_CMD ?? '', MODE: mode },
     cfg.WF_SKILLS === 'superpowers'));
-  if (cfg.WF_STACK_SETUP === 'pending') out.push("⚑ FIRST USE: burhan's project checks are not set up yet. Before other work, run `burhan setup --stack` and follow it.");
+  if (cfg.WF_STACK_SETUP === 'pending') out.push("⚑ FIRST USE: burhan's project checks are not set up yet. Before other work, run `npx burhan-kit setup --stack` and follow it.");
   if (oldPlanOnly) out.push(oldPlanOnly);
 
   if (slugs.length > 1 && item === '') {

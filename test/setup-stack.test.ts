@@ -7,7 +7,7 @@ import { parseConfig } from '../src/lib/config.js';
 import { BurhanError } from '../src/lib/errors.js';
 import { applySetup, planSetup } from '../src/lib/setup/engine.js';
 import { sensitiveRegex } from '../src/lib/setup/config-write.js';
-import { parseSetArgs, setStack, stackInstructions } from '../src/lib/setup/stack.js';
+import { parseSetArgs, setStack, stackInstructions, type StackValues } from '../src/lib/setup/stack.js';
 import { capture, tmpDir } from './helpers.js';
 import { install } from '../src/lib/install.js';
 import { writeFileSync } from 'node:fs';
@@ -164,4 +164,62 @@ test('setStack keeps the block in a project that has one', async () => {
   assert.equal(await setStack(t, v(), { force: false }, capture(t).io), 0);
   assert.match(readFileSync(join(t, 'CLAUDE.md'), 'utf8'), /<!-- burhan:start /);
   assert.doesNotMatch(readFileSync(join(t, 'CLAUDE.md'), 'utf8'), /STALE BODY/);
+});
+
+// first-use-fixes SU1: what counts as code, tests and proof is saved with the check, so the "done without proof" warning is not silent
+const w = (o: Partial<StackValues> = {}): StackValues => ({ check: 'exit 0', sensitive: [], ...o });
+
+test('parseSetArgs reads code, test and evidence next to check and sensitive, in any order', () => {
+  const got = parseSetArgs(['evidence=^npm test', 'check=npm test', 'code=\\.js$', 'test=\\.test\\.js$', 'sensitive=src/auth']);
+  assert.equal(got.check, 'npm test');
+  assert.equal(got.code, '\\.js$');
+  assert.equal(got.test, '\\.test\\.js$');
+  assert.equal(got.evidence, '^npm test');
+  assert.deepEqual(got.sensitive, ['src/auth']);
+  assert.throws(() => parseSetArgs(['check=x', 'colour=red']), /code, test, evidence/);
+});
+
+test('setStack saves the three patterns with the check in one write', async () => {
+  const t = installed();
+  assert.equal(await setStack(t, w({ code: '\\.(js|ts)$', test: '\\.test\\.(js|ts)$', evidence: '^npm test' }), { force: false }, capture(t).io), 0);
+  const c = cfgOf(t);
+  assert.equal(c.WF_CODE_REGEX, '\\.(js|ts)$');
+  assert.equal(c.WF_TEST_REGEX, '\\.test\\.(js|ts)$');
+  assert.equal(c.WF_EVIDENCE_REGEX, '^npm test');
+  assert.equal(c.WF_CHECK_CMD, 'exit 0');
+  assert.equal(c.WF_STACK_SETUP, 'done');
+});
+
+test('a pattern the hooks refuse, or a value with a quote, saves nothing and does not run the check', async () => {
+  const marker = 'node -e "require(\\"node:fs\\").writeFileSync(\\"ran.txt\\",\\"x\\")"';
+  const cases: [Partial<StackValues>, RegExp][] = [[{ code: '(src)/\\1$' }, /code pattern/], [{ evidence: '.{30000}' }, /evidence pattern/], [{ test: "it's" }, /single quote/]];
+  for (const [bad, why] of cases) {
+    const t = installed();
+    const before = cfgText(t);
+    const { o, io } = capture(t);
+    await assert.rejects(setStack(t, w({ check: marker, ...bad }), { force: false }, io), (e: unknown) => e instanceof BurhanError && why.test(e.message));
+    assert.equal(cfgText(t), before, 'the config is untouched');
+    assert.equal(existsSync(join(t, 'ran.txt')), false, 'the check was not run');
+    assert.doesNotMatch(o.out, /Running the check/);
+  }
+});
+
+test('leaving the pattern keys out keeps the ones already saved', async () => {
+  const t = installed();
+  assert.equal(await setStack(t, w({ code: '\\.js$', evidence: 'npm test' }), { force: false }, capture(t).io), 0);
+  assert.equal(await setStack(t, w({ check: 'exit 0' }), { force: false }, capture(t).io), 0);
+  assert.equal(cfgOf(t).WF_CODE_REGEX, '\\.js$');
+  assert.equal(cfgOf(t).WF_EVIDENCE_REGEX, 'npm test');
+});
+
+test('the first-use instructions ask for the code, test and proof decisions in both languages and still show the person no patterns', () => {
+  for (const lang of ['en', 'ar'] as const) {
+    const text = stackInstructions(lang);
+    assert.match(text, /Code files/);
+    assert.match(text, /Test files/);
+    assert.match(text, /Proof/);
+    assert.match(text, /setup --set check=.* code=.* test=.* evidence=/);
+    assert.match(text, /POSIX extended/);
+  }
+  assert.match(stackInstructions('en'), /no tables, no setting names, no patterns/);
 });

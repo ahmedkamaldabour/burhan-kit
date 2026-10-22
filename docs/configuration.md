@@ -19,7 +19,9 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
 ```
 
 - `.burhan/bindings.md` (WORKFLOW §1) and `.burhan/workflow.config` are created **only if
-  absent**, never overwritten by init/upgrade. Only the listed kit-owned files are refreshed on
+  absent**, never overwritten by init/upgrade. A new `bindings.md` has its **Kit command** row set to
+  `npx burhan-kit` (the agent runs the kit with it); `setup` fills that row, and the two work-file rows, in an
+  existing file only while they are still the template's placeholders — a value you wrote is never replaced. Only the listed kit-owned files are refreshed on
   upgrade — to customise a template, copy it elsewhere. Memory, work and unknown files are not kit-owned.
 - The installer appends missing `/local/`, `/work/` and `/discovery/` rules to `.burhan/.gitignore`
   without changing existing text or the root `.gitignore`. Kit, team config and memory remain trackable.
@@ -56,10 +58,10 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
 | `burhan setup [dir] --agent [--lang en\|ar]` | Prints the questions and rules for an AI agent to ask, with the recommended answers |
 | `burhan setup [dir] --answers <file> [--apply]` | Shows, or with `--apply` writes, the setup for the answers in a JSON file |
 | `burhan setup [dir] --stack` | Prints the first-use instructions for an AI agent  |
-| `burhan setup [dir] --set check=<cmd\|none> [sensitive=<p;q>] [--force]` | Sets the check and the sensitive paths directly |
+| `burhan setup [dir] --set check=<cmd\|none> [code=<re>] [test=<re>] [evidence=<re>] [sensitive=<p;q>] [--force]` | Sets the check, what counts as code, tests and proof, and the sensitive paths directly. Each pattern is checked before anything runs or is written (a back-reference or an oversized pattern is refused). A key you leave out keeps its saved value, and an empty value does not clear one — edit `.burhan/workflow.config` for that |
 | `burhan uninstall [dir] [--apply] [--all]` | Removes burhan from the project; a dry run without `--apply`. Keeps `workflow.config`, `bindings.md`, `.burhan/local/` and private work/discovery files; `--all` removes them too. Work outside `.burhan/`, project memory and unknown files always stay. Removes only owned kit files, blocks, exact hook commands and marked Claude files; keeps user ignore rules and protection for retained private data. Validates before the first change and never follows a symlink out of the project |
 | `burhan upgrade [--apply]` | Refresh kit-owned files; agents default to the installed ones; idempotent. Never rewrites `workflow.config` — `doctor` lists keys a newer version added |
-| `burhan doctor` | Read-only: `node` ≥ 22 on PATH (the hooks need nothing else — no bash, `jq`, sha256 tool or `timeout`); a leftover `WF_HOOK_RUNTIME=bash` is a warning (the bash hooks were removed in 0.3.0); Claude Code ≥ 2.1.139 for the exec-form hooks; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys, a `WF_*_REGEX` the hooks refuse (back-reference, too large, invalid); every hook wired per agent; Codex hook trust per event (table names only, from `~/.codex/config.toml`, never written); the state file's size; the project-memory warnings (no decided baseline on a project with code, a Draft, `memory check` fails, changed or missing facts — warnings only). `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
+| `burhan doctor` | Read-only: `node` ≥ 22 on PATH (the hooks need nothing else — no bash, `jq`, sha256 tool or `timeout`); a leftover `WF_HOOK_RUNTIME=bash` is a warning (the bash hooks were removed in 0.3.0); Claude Code ≥ 2.1.139 for the exec-form hooks; kit version against the CLI; config lines the hooks cannot read, unknown and missing keys, a `WF_*_REGEX` the hooks refuse (back-reference, too large, invalid); every hook wired per agent; Codex hook trust per event (table names only, from `~/.codex/config.toml`, never written); the state file's size; once first-use setup is done, a warning that `WF_CODE_REGEX is empty` (the "done without proof" warning and the test-first reminder are off); the project-memory warnings (no decided baseline on a project with code, a Draft, `memory check` fails, changed or missing facts — warnings only). `ok` · `warn` · `fail` · `skip`; exit 1 only on a `fail` |
 | `burhan inspect [dir] [--json]` | Read-only, bounded look at the tree (names only, no file content, no LLM): brownfield or greenfield, why, the files a newcomer opens first, and what was cut (depth 12, 20,000 entries, 1,000 per folder, 10 s). Symlinks are counted, never followed. A path that is not a folder is exit 2 |
 | `burhan memory check [dir]` | Read-only check of the project memory: the Baseline line, fact rows, duplicate IDs, one state per ID, leftover merge markers (fail); secret-looking text (warn, the value never printed). Exit 1 on a fail — usable in CI |
 | `burhan memory status [dir]` | Each current fact `fresh`, `changed`, `missing` or `unchecked`, from the hashes in its evidence; no Git needed |
@@ -82,7 +84,7 @@ holds personal overrides, read after the team file, key by key.
 |---|---|
 | `WF_DOCS_DIR`, `WF_DISCOVERY_DIR`, `WF_STATE_FILE`, `WF_STATE_BUDGET` | where work items, discoveries and the live state file live |
 | `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` | the fast, non-mutating check run before every commit |
-| `WF_CODE_REGEX`, `WF_TEST_REGEX` | which paths are code / tests |
+| `WF_CODE_REGEX`, `WF_TEST_REGEX` | which paths are code / tests; with `WF_CODE_REGEX` empty the "done without proof" warning stays off |
 | `WF_EVIDENCE_REGEX` | which commands count as verification evidence |
 | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` | access-control paths and the reminder after editing one |
 | `WF_STACK_SETUP` | `pending` = the agent sets up the project checks on first use (`setup --stack`); empty or `done` = nothing to do |
@@ -135,6 +137,10 @@ order** — the same shape on Claude Code and Codex — under `~/.local/state/bu
 inside the project, never command output). A "done" counts only with a passing evidence command
 after the last code edit. `burhan evidence --item <slug>` lists what was really run, for verification
 and QC reports to cite.
+
+A command line with a pipe (`npm test | head`) records the exit of its last command, so a failing first
+command can show as `exit 0`; `burhan evidence` marks those lines (`--json` adds `"piped": true`). A session
+folder older than 30 days that holds only ledger files is removed; one that also holds session files stays.
 
 ## Independent QC and model per phase
 

@@ -10,6 +10,10 @@ import { isWritable, putFile, realTarget, replaceDir, resolveWritePath } from '.
 import { agentInstalled, burhanHookKeys, mergeHooks, validHooksFile, type Settings } from './hooks-merge.js';
 import { kitDir, nodeHooksDir, readVersion } from './kit.js';
 
+/** The Kit command row of bindings.md names how this project runs the kit CLI. */
+export const KIT_COMMAND = '`npx burhan-kit`';
+const KIT_ROW = /^(\| \*\*Kit command\*\* \| )\*\(.*\)\*( \| — \|)$/m;
+
 export const AGENTS: readonly Agent[] = ['claude', 'codex'];
 const HOOKS_FILE: Record<Agent, string> = { claude: '.claude/settings.json', codex: '.codex/hooks.json' };
 /** The hook entries burhan installs: Node (exec form for Claude Code, a launcher for Codex). */
@@ -221,7 +225,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
       putFile(gi, (giText && !giText.endsWith('\n') ? giText + '\n' : giText ?? '') + giMissing.join('\n') + '\n'));
 
   if (existsSync(join(W, 'bindings.md'))) step('bindings.md exists — kept as is (your WORKFLOW §1)');
-  else if (!o.keepProjectFiles) { file('.burhan/bindings.md', 'config'); step('bindings.md ← templates/bindings.md (fill it in: WORKFLOW §1)', () => putFile(join(W, 'bindings.md'), readFileSync(join(kit, 'templates/bindings.md')))); }
+  else if (!o.keepProjectFiles) { file('.burhan/bindings.md', 'config'); step('bindings.md ← templates/bindings.md (fill it in: WORKFLOW §1)', () => putFile(join(W, 'bindings.md'), readFileSync(join(kit, 'templates/bindings.md'), 'utf8').replace(KIT_ROW, (_m, a: string, b: string) => `${a}${KIT_COMMAND}${b}`))); }
   if (existsSync(join(W, 'workflow.config'))) step('workflow.config exists — kept as is');
   else if (!o.keepProjectFiles) { file('.burhan/workflow.config', 'config'); step('workflow.config ← workflow.config.example (fill it in, with bindings.md)', () => putFile(join(W, 'workflow.config'), readFileSync(join(kit, 'workflow.config.example')))); }
 

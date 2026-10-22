@@ -21,7 +21,7 @@ test('--help prints usage and exits 0; no command exits 2', async () => {
   const a = capture();
   assert.equal(await runCli(['--help'], a.io), 0);
   assert.match(a.o.out, /usage: burhan <command>/);
-  assert.match(a.o.out, /--set check=<cmd\|none> \[sensitive=<p;q>\]/);
+  assert.match(a.o.out, /--set check=<cmd\|none> \[code=<re>\] \[test=<re>\] \[evidence=<re>\] \[sensitive=<p;q>\]/);
   assert.doesNotMatch(a.o.out, /never-run|neverRun|WF_FORBIDDEN|WF_SINGLE_TEST_HINT/i);
   const b = capture();
   assert.equal(await runCli([], b.io), 2);
@@ -64,6 +64,22 @@ test('setup --stack prints the first-use block; setup --set saves the check end 
   const b = capture(t);
   assert.equal(await runCli(['setup', t, '--set', 'check=exit 0', 'sensitive=a;b'], b.io), 0);
   assert.equal(parseConfig(readFileSync(join(t, '.burhan/workflow.config'), 'utf8')).values.WF_CHECK_CMD, 'exit 0');
+});
+
+test('setup --set saves code, test and evidence end to end; a pattern the hooks refuse exits 2 and saves nothing', async () => {
+  const t = tmpDir('burhan-cli-set-patterns-');
+  spawnSync('git', ['init', '-q'], { cwd: t });
+  await runWizard(t, capture(t).io, scriptedPrompter(['use', 'apply']), 'en', t);
+  const cfg = (): Record<string, string> => parseConfig(readFileSync(join(t, '.burhan/workflow.config'), 'utf8')).values;
+  const ok = capture(t);
+  assert.equal(await runCli(['setup', t, '--set', 'check=exit 0', 'code=\\.js$', 'test=\\.test\\.js$', 'evidence=^npm test'], ok.io), 0);
+  assert.equal(cfg().WF_CODE_REGEX, '\\.js$');
+  assert.equal(cfg().WF_TEST_REGEX, '\\.test\\.js$');
+  assert.equal(cfg().WF_EVIDENCE_REGEX, '^npm test');
+  const bad = capture(t);
+  assert.equal(await runCli(['setup', t, '--set', 'check=exit 0', '--force', 'code=(a)\\1'], bad.io), 2);
+  assert.match(bad.o.err, /code pattern/);
+  assert.equal(cfg().WF_CODE_REGEX, '\\.js$', 'the saved pattern is untouched');
 });
 
 test('setup allowed flag forms still dispatch normally (AC-05)', async () => {

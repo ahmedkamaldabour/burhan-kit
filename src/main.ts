@@ -58,8 +58,8 @@ export const USAGE = `usage: burhan <command> [options]
   setup [dir] --answers <file> [--apply]
                        show (or, with --apply, write) the setup for the answers in a JSON file
   setup [dir] --stack  print the first-use instructions for an AI agent
-  setup [dir] --set check=<cmd|none> [sensitive=<p;q>] [--force]
-                       save the project's check command (runs it once first)
+  setup [dir] --set check=<cmd|none> [code=<re>] [test=<re>] [evidence=<re>] [sensitive=<p;q>] [--force]
+                       save the project's check command (runs it once first) and, if given, what counts as code, tests and proof
   uninstall [dir] [--apply] [--all]
                        remove burhan from a project; keeps workflow.config, bindings.md, local/ and your work files unless --all
   inspect [dir] [--json]

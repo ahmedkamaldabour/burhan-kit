@@ -11,7 +11,7 @@ Project values (docs location, state file, check and test commands) come from
 
 If `$ARGUMENTS` is empty, ask which item to work on and stop.
 
-Run `burhan use <slug>` first, before assessing or editing the item. It validates the selected
+Run the kit command's `use <slug>` first (`.burhan/bindings.md` · Kit command, e.g. `npx burhan-kit use <slug>`), before assessing or editing the item. It validates the selected
 in-flight block; the turn-end hook writes this session's external link.
 
 ## 1) Assess where we are — report before doing anything
@@ -65,8 +65,8 @@ reviewed).
 - **Story approved (or no story on this route), no plan** → investigate the real code (cite file:line), re-verify the story's
   facts, then write `<slug>-implementation-plan.md` from `templates/plan.md`. An open *material*
   question blocks approval. **Present it and STOP for approval.**
-- **Plan approved** → re-validate it against the current code (facts drift): `burhan changed --item
-  $ARGUMENTS` lists what changed since the story's **Verified at commit**; re-check only those (no
+- **Plan approved** → re-validate it against the current code (facts drift): the kit command's `changed --item
+  $ARGUMENTS` (e.g. `npx burhan-kit changed --item $ARGUMENTS`) lists what changed since the story's **Verified at commit**; re-check only those (no
   sha → every fact). Then step 3.
 
 ## 3) Build — one sub-unit at a time, never the whole item (routes with **T**)
