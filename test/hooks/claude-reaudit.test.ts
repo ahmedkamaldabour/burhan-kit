@@ -197,7 +197,8 @@ test('the evidence folder named only in workflow.config is the one the marker us
   const configured = tmpDir('burhan-reaudit-configured-');
   delete w.env.WF_EVIDENCE_DIR;
   w.env.XDG_STATE_HOME = tmpDir('burhan-reaudit-xdg-'); // the default root, which must stay empty
-  writeFileSync(join(w.project, '.burhan/workflow.config'), `WF_EVIDENCE_DIR="${configured}"\n`);
+  // single quotes: a Windows path has backslashes, which the double-quoted form refuses (config.mts)
+  writeFileSync(join(w.project, '.burhan/workflow.config'), `WF_EVIDENCE_DIR='${configured}'\n`);
   const s = session(w, 'S1');
   s.add(prompt('add the fix note'), editReview(w), say('note added'));
   assert.match(await stop(w, s), REVIEW_GATE);

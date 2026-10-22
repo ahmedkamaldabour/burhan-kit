@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, mkdirSync, readdirSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readdirSync, realpathSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { MAX_CODEX_CONFIG_BYTES, normalisePath, readCodexConfig, stateTableNames, trustedEvents } from '../src/lib/codex-trust.js';
 import { tmpDir } from './helpers.js';
@@ -92,9 +92,10 @@ test('matching: this project only, any group and handler, burhan events only, pa
   assert.equal(normalisePath('/', false), '/');
 });
 
+// doctor hands trustedEvents the resolved project (realTarget); a temp folder can itself sit under a link (macOS /var).
 test('matching: a key under a symlink to the project counts', (t) => {
   if (process.platform === 'win32') { t.diagnostic('symlink case skipped on Windows'); return; }
-  const real = tmpDir('burhan-synthetic-proj-'); const parent = tmpDir('burhan-synthetic-l-');
+  const real = realpathSync(tmpDir('burhan-synthetic-proj-')); const parent = tmpDir('burhan-synthetic-l-');
   symlinkSync(real, join(parent, 'link'));
   assert.deepEqual([...trustedEvents([`${join(parent, 'link')}/.codex/hooks.json:stop:0:0`], [real], EV, false)], ['stop']);
 });
