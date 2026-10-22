@@ -83,7 +83,7 @@ Tell pre-existing failures apart from new ones by comparing against a clean base
 
 ## 5) Report and proposed verdict
 
-Write `reviews/$ARGUMENTS-qc.md` from `templates/qc.md`: the matrix, unrequested behaviour, the
+Write `reviews/$ARGUMENTS-qc.md` (a confirmation round: `reviews/$ARGUMENTS-qc-r<N>.md`) from `templates/qc.md`: the matrix, unrequested behaviour, the
 adversarial findings with severity (Critical / Important / Minor) and file:line, the regression
 result with real output, limitations, and a top-line **proposed** verdict: **PASS** or
 **FAIL — N issues**. Write the verdict to the state file (a QC verdict is a transition, WORKFLOW §5) —
@@ -104,3 +104,7 @@ behalf). Only after they accept a PASS:
    the human asks (`burhan pr-body` builds its description).
 
 On FAIL, the item goes back to build; nothing is closed.
+
+The next QC is a confirmation round (phases/review.md · Re-review after findings), written as
+`reviews/$ARGUMENTS-qc-r<N>.md`: the findings list, the fix diff and a full test run from the ledger; it widens to
+a full pass when the fix is outside the findings. The first QC is always the full pass of this file.

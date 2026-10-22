@@ -90,8 +90,12 @@ For the next unimplemented sub-unit only:
 
 - An independent review of the sub-unit's diff against `.burhan/phases/review.md` (security first), in a fresh
   context where feasible (Claude Code: the `burhan-reviewer` subagent, given only the paths; wait for its
-  report before the next sub-unit). Record
+  report before the next sub-unit). Give it the changed files of the diff range (`git diff --name-only <range>`)
+  and read the lean-start and reading rules in `phases/review.md`. Record
   **Performed by** in the review file, in the exact form of phases/files.md · Fields.
+- A sub-unit the approved plan puts in a review group (`Review group: <letter>`) is reviewed with its group
+  (`phases/review.md` · Review groups): one section, after the group's last sub-unit; they stay 🟢 until then.
+  The wait for the report below applies at the group's last sub-unit.
 - Add the sub-unit's section to `reviews/<slug>-review.md` (from `templates/review.md`): a **short**
   checklist when it touches nothing sensitive and no scope escalator, the **full** review otherwise
   (`.burhan/phases/review.md` · Sized by risk).
@@ -100,8 +104,9 @@ For the next unimplemented sub-unit only:
 
 ## 5) Between sub-units
 
-Report what changed (files, real test output, review outcome), update the plan (🟢 → ✅) and the
-state file. Then, in `step` mode, **STOP for the human before the next sub-unit**; in `auto`, go on
+Report what changed (files, real test output, review outcome), update the plan (🟢 → ✅; a review
+group's sub-units together, so a group member that is not the last one is reported without a review
+outcome and stays 🟢) and the state file. Then, in `step` mode, **STOP for the human before the next sub-unit**; in `auto`, go on
 unless a brake fires.
 
 **Commit checkpoint — never on your own judgment.** Show `git status` / diff and ask: (a) commit

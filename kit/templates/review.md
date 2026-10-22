@@ -6,6 +6,7 @@ no scope escalator, **full** otherwise.
 > Delete any section that does not apply — an absent section is never a violation. Length caps: `phases/files.md`.
 
 ## Sub-unit 1 — <name> · short | full
+(a review group covers several sub-units: `## Sub-units 1–2 — <name> · short (group A)`; phases/review.md · Review groups)
 - **Date:** YYYY-MM-DD · **Performed by:** <agent> · <model> · <exactly one: fresh subagent | other agent | human | same session>
 - **Diff:** <commit range or "working tree">
 
@@ -20,5 +21,10 @@ no scope escalator, **full** otherwise.
 
 | # | Severity (Critical / Important / Minor) | Finding (file:line) | Owner | Resolution |
 |---|----------|---------|-------|------------|
+
+**Re-review after findings** (phases/review.md; delete when this is a first review):
+
+| Finding (from the earlier review) | Closed / still open / replaced | Evidence (fix diff hunk, test) |
+|---|---|---|
 
 **Checks run:** exact commands and results. **Limitations:** what this review did not cover, and why.

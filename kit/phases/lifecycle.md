@@ -28,6 +28,7 @@ steps apply.
                               │
   ⑤  REVIEW (R)  Independent review of each sub-unit's diff (phases/review.md) →
                  a section in reviews/<slug>-review.md (short or full, by risk).
+                 How much it reads, re-reviews and review groups: phases/review.md.
                  Fix in-scope findings; track the rest.
                               │
   ⑥  VERIFY (V)  Real end-to-end check as the verification identity.

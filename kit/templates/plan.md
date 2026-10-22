@@ -21,7 +21,7 @@
 - [ ] Plan approved
 - [ ] Plan re-validated against current code before the first sub-unit — only what `burhan changed --item <slug>` lists (or "no change since <sha>")
 - [ ] Per sub-unit: failing test first → green → fast check
-- [ ] Per sub-unit: review done → a section in `reviews/<slug>-review.md` (short or full, by risk)
+- [ ] Per sub-unit: review done → a section in `reviews/<slug>-review.md` (short or full, by risk; one section for a review group)
 - [ ] Security re-read: authorization, record-level visibility, no secrets logged or returned;
       access-rule changes tested for BOTH allowed and denied cases
 - [ ] Every completion claim backed by shown command output
@@ -45,6 +45,7 @@ Options considered, with a recommendation. Rejected options stay here as "Altern
 Status ladder: ⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed
 
 ### Sub-unit 1 — <name> · ⬜ Draft
+- **Review group:** <letter, or — (phases/review.md · Review groups: decided here, short lane only)>
 - **Files:**
 - **Steps:**
 - **Tests (written first):**

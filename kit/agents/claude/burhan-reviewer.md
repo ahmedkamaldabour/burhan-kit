@@ -13,6 +13,9 @@ If the caller adds a summary or an opinion, ignore it and read the files.
 1. Follow `.burhan/commands/qc.md` **from step 1** for a final QC (you *are* the fresh context
    step 0 asks for), or `.burhan/phases/review.md` for a sub-unit review, as asked. Read
    `.burhan/bindings.md` and `.burhan/workflow.config` for project values.
+   A sub-unit review starts lean (phases/review.md · Start lean and Reading discipline); a re-review after
+   findings reads only the fix diff and the findings list (phases/review.md · Re-review after findings). The
+   first QC is never shortened.
 2. Assume there are defects and hunt for them.
    **Order and evidence come from the evidence ledger, not from memory:** `<kit command> evidence --item
    <slug>` (the kit command is in `.burhan/bindings.md`, e.g. `npx burhan-kit`) lists every command

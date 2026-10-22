@@ -164,3 +164,21 @@ R161|phases/memory.md|which setting holds a secret, never the secret itself
 R162|phases/memory.md|burhan cannot check what was read
 R163|phases/memory.md|`changed` does not mean false
 R164|phases/memory.md|never use `merge=union`
+R165|phases/review.md|starts from the plan's section for the sub-unit, its diff and the evidence ledger
+R166|phases/review.md|When in doubt, open it.
+R167|phases/review.md|every hunk of the diff is read in full
+R168|phases/review.md|A re-review after findings reads only the fix diff and the findings list
+R169|phases/review.md|the first QC is never shortened
+R170|phases/review.md|A QC re-run after a FAIL is a confirmation round
+R171|phases/review.md|-qc-r<N>.md
+R172|phases/review.md|review group
+R173|phases/review.md|at most 400 changed lines
+R174|phases/review.md|git diff --numstat
+R175|phases/review.md|is never grouped
+R176|phases/review.md|goes back to 🔵 In progress
+R177|phases/review.md|git diff --name-only <range>
+R178|agents/claude/burhan-reviewer.md|starts lean
+R179|agents/claude/burhan-reviewer.md|reads only the fix diff and the findings list
+R180|commands/qc.md|confirmation round
+R181|commands/e2e.md|review group
+R182|templates/plan.md|Review group
