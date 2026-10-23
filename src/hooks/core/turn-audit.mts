@@ -52,6 +52,8 @@ const completionClaim = (text: string): boolean => {
 const escapeEre = (text: string): string => text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
 const linesIn = (text: string): number => text === '' ? 0 : text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
 const docsRe = (audit: Audit): string => `^${escapeEre(audit.ctx.cfg.WF_DOCS_DIR ?? '')}/[^/]+/`;
+/** A file that can carry a status: markdown directly in the item folder or directly in its `reviews/`. Raw output and notes elsewhere are not read. */
+const itemFileRe = (audit: Audit): string => `${docsRe(audit)}([^/]+|reviews/[^/]+)\\.md$`;
 /** A file saved as an original input — `<docs>/<slug>/sources/…` at any depth. It is not work, so no gate looks at it. */
 const sourcesRe = (audit: Pick<Audit, 'ctx'>): string => `^${escapeEre(audit.ctx.cfg.WF_DOCS_DIR ?? '')}/[^/]+/sources/`;
 const discoveryRe = (audit: Audit): string => `^${escapeEre(audit.ctx.cfg.WF_DISCOVERY_DIR ?? '')}/[0-9]{4}-[0-9]{2}-[0-9]{2}-[^/]+\\.md$`;
@@ -123,7 +125,7 @@ const gateD: Gate = ({ ctx }) => {
 // ---- E ---------------------------------------------------------------------
 const gateE: Gate = (audit) => {
   const stale: string[] = [];
-  const eligible = `${docsRe(audit)}|${discoveryRe(audit)}`;
+  const eligible = `${itemFileRe(audit)}|${discoveryRe(audit)}`;
   for (const file of audit.written) {
     try {
       if (file.endsWith('/README.md') || file === 'README.md' || /\.log$/i.test(file) || !ereTest(eligible, file)) continue; // a raw command log is not a status file
