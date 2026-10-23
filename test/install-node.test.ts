@@ -36,7 +36,7 @@ test('the default runtime is Node: the hook code lands in .burhan/hooks/node, th
   assert.equal(existsSync(join(d, '.burhan/hooks/core')), false);
   assert.equal(existsSync(join(d, '.burhan/hooks/adapters')), false);
   const entries = commands(d);
-  assert.equal(entries.length, 5);
+  assert.equal(entries.length, 6);
   for (const e of entries) { assert.equal(e.command, 'node'); assert.equal(e.args![0], '${CLAUDE_PROJECT_DIR}/.burhan/hooks/node/main.mjs'); }
 });
 
@@ -88,10 +88,10 @@ test('upgrading a 0.2 bash install: Node commands, no old entries, the user\'s o
   applyPlan(plan);
   const after = commands(d);
   assert.equal(after.filter((e) => e.command.includes('hook.sh')).length, 0);
-  assert.equal(after.filter((e) => e.command === 'node' && e.args![1] === 'claude').length, 5);
+  assert.equal(after.filter((e) => e.command === 'node' && e.args![1] === 'claude').length, 6);
   assert.deepEqual(settings(d).hooks.Stop[0].hooks, [mine], 'the user\'s node hook is untouched and first');
   assert.equal(commands(d, '.codex/hooks.json').filter((e) => e.command.includes('hook.sh')).length, 0);
-  assert.equal(commands(d, '.codex/hooks.json').filter((e) => e.command.startsWith('node -e')).length, 5);
+  assert.equal(commands(d, '.codex/hooks.json').filter((e) => e.command.startsWith('node -e')).length, 6);
   const settled = tree(d);
   run(opts(d, { mode: 'upgrade', agents: null }));
   assert.deepEqual(tree(d), settled, 'a second upgrade changes nothing');
@@ -123,7 +123,7 @@ test('replacing the bash hooks with a partial --agents list rewrites every insta
   applyPlan(plan);
   assert.equal(commands(d).filter((e) => e.command.includes('hook.sh')).length, 0, 'claude no longer points at the removed bash hooks');
   assert.equal(commands(d, '.codex/hooks.json').filter((e) => e.command.includes('hook.sh')).length, 0);
-  assert.equal(commands(d, '.codex/hooks.json').filter((e) => e.command.startsWith('node -e')).length, 5);
+  assert.equal(commands(d, '.codex/hooks.json').filter((e) => e.command.startsWith('node -e')).length, 6);
 });
 
 test('the project keeps the Node snippets it was installed with, so a later release recognises these entries as ours', () => {

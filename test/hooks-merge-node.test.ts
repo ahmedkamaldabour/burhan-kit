@@ -12,13 +12,13 @@ const claudeBash = JSON.parse(v022('claude.settings.snippet.json')) as Settings;
 const claudeNode = snippet('claude/settings.node.snippet.json');
 const codexBash = JSON.parse(v022('codex.hooks.snippet.json')) as Settings;
 const codexNode = snippet('codex/hooks.node.snippet.json');
-const CHECKS = ['session-gates', 'prompt-router', 'pre-commit-check', 'post-edit-reminder', 'turn-audit'];
+const CHECKS = ['session-gates', 'prompt-router', 'pre-commit-check', 'pre-edit-skill', 'post-edit-reminder', 'turn-audit'];
 const entries = (s: Settings): HookEntry[] => Object.values(s.hooks ?? {}).flat().flatMap((g) => g.hooks);
 const mine: HookEntry = { type: 'command', command: 'node', args: ['tools/my-hook.js'] };
 
 test('the Claude Node snippet is exec form: node + the installed entry, no shell', () => {
   const list = entries(claudeNode);
-  assert.equal(list.length, 5);
+  assert.equal(list.length, 6);
   for (const e of list) {
     assert.equal(e.command, 'node');
     assert.deepEqual((e.args as string[]).slice(0, 3), ['${CLAUDE_PROJECT_DIR}/.burhan/hooks/node/main.mjs', 'claude', 'hook']);
@@ -31,7 +31,7 @@ test('the Claude Node snippet is exec form: node + the installed entry, no shell
 
 test('the Codex Node snippet is one launcher in the shell-safe subset (S1 W2)', () => {
   const list = entries(codexNode);
-  assert.equal(list.length, 5);
+  assert.equal(list.length, 6);
   for (const e of list) {
     const c = e.command as string;
     assert.match(c, /^node -e "[^"]*" codex hook [a-z-]+$/u, c);
@@ -39,7 +39,7 @@ test('the Codex Node snippet is one launcher in the shell-safe subset (S1 W2)', 
     assert.ok(c.includes('.burhan') && c.includes('main.mjs'), 'finds the installed entry');
     assert.equal(e.args, undefined, 'Codex has no argv form');
   }
-  assert.deepEqual(entries(codexNode).map((e) => (e.command as string).split(' ').pop()), entries(codexBash).map((e) => /\b(session-gates|prompt-router|pre-commit-check|post-edit-reminder|turn-audit)\b/u.exec(String(e.command))![1]));
+  assert.deepEqual(entries(codexNode).map((e) => (e.command as string).split(' ').pop()).filter((name) => name !== 'pre-edit-skill'), entries(codexBash).map((e) => /\b(session-gates|prompt-router|pre-commit-check|post-edit-reminder|turn-audit)\b/u.exec(String(e.command))![1]));
 });
 
 test('hookKey tells a command-only entry from an exec-form entry, and one exec form from another', () => {
@@ -47,7 +47,7 @@ test('hookKey tells a command-only entry from an exec-form entry, and one exec f
   assert.notEqual(hookKey({ command: 'node', args: ['a'] }), hookKey({ command: 'node', args: ['b'] }));
   assert.notEqual(hookKey({ command: 'node', args: ['a'] }), hookKey({ command: 'node' }));
   assert.equal(hookKey({ command: 'node', args: ['a'] }), hookKey({ type: 'command', command: 'node', args: ['a'], timeout: 5 }));
-  assert.equal(snippetKeys(claudeNode).length, 5);
+  assert.equal(snippetKeys(claudeNode).length, 6);
 });
 
 test('validHooksFile accepts args as an array of strings only', () => {
@@ -61,7 +61,7 @@ test('merge writes the exec form, applies the pre-commit timeout by args, keeps 
   const current: Settings = { hooks: { Stop: [{ hooks: [mine] }] } };
   const out = mergeHooks(current, claudeNode, owned, 70);
   assert.deepEqual(out.hooks!.Stop[0].hooks, [mine]);
-  assert.equal(entries(out).filter((e) => e.command === 'node').length, 6);
+  assert.equal(entries(out).filter((e) => e.command === 'node').length, 7);
   assert.equal(out.hooks!.PreToolUse[0].hooks[0].timeout, 70);
   assert.deepEqual(mergeHooks(out, claudeNode, owned, 70), out);
 });
@@ -72,7 +72,7 @@ test('migration: the old bash entries are replaced by the Node ones, the user\'s
   assert.equal(entries(old).filter((e) => String(e.command).includes('hook.sh')).length, 5);
   const upgraded = mergeHooks(old, claudeNode, owned, 70);
   assert.equal(entries(upgraded).filter((e) => String(e.command).includes('hook.sh')).length, 0);
-  assert.equal(entries(upgraded).filter((e) => e.command === 'node' && (e.args as string[])[1] === 'claude').length, 5);
+  assert.equal(entries(upgraded).filter((e) => e.command === 'node' && (e.args as string[])[1] === 'claude').length, 6);
   assert.deepEqual(upgraded.hooks!.Stop[0].hooks, [mine]);
   assert.deepEqual(removeHooks(upgraded, owned), { hooks: { Stop: [{ hooks: [mine] }] } });
 });
@@ -83,7 +83,7 @@ test('Codex: the old launcher is replaced by the new one; a user command is kept
   const old = mergeHooks({ hooks: { Stop: [{ hooks: [user] }] } }, codexBash, owned, 70);
   const upgraded = mergeHooks(old, codexNode, owned, 70);
   assert.equal(entries(upgraded).filter((e) => String(e.command).includes('hook.sh')).length, 0);
-  assert.equal(entries(upgraded).filter((e) => String(e.command).startsWith('node -e')).length, 5);
+  assert.equal(entries(upgraded).filter((e) => String(e.command).startsWith('node -e')).length, 6);
   assert.deepEqual(upgraded.hooks!.Stop[0].hooks, [user]);
 });
 

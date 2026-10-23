@@ -6,7 +6,7 @@ import { ere, ereTest } from './ere.mjs';
 import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stateNow, type Check, type Ctx } from './lib.mjs';
 import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
-import { evidenceRoot, fingerprintRefresh, linkedItem, linkItem, mtime, projectKey, rememberedSkills, rememberSkills, safeId, stateSnapshotFile } from './store.mjs';
+import { evidenceRoot, fingerprintRefresh, linkedItem, linkItem, mtime, projectKey, rememberedSkills, rememberPhaseSkills, rememberSkills, safeId, stateSnapshotFile } from './store.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
 import { gateLine, undecided } from './understanding.mjs';
 
@@ -168,6 +168,11 @@ const gateF: Gate = (audit) => {
     || audit.cmds.some((cmd) => performedBy(cmd) && shellWrites([cmd]).map((f) => relPath(f, audit.ctx.project)).includes(file));
   const reviews = audit.written.filter((file) => ereTest('/reviews/[^/]+\\.md$', file) && !ereTest('-(qc|verification)(-r[0-9]+)?\\.md$', file) && (!claude || addsReview(file)));
   if (reviews.length > 0 && !used('requesting-code-review')) out.push('⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review.');
+  // "After work": a file other than the state file and the discoveries, outside the patch lane (a state-only "✅" is bookkeeping, not a claim).
+  const state = audit.ctx.cfg.WF_STATE_FILE ?? '';
+  const discovery = audit.ctx.cfg.WF_DISCOVERY_DIR ?? '\u0000';
+  const worked = audit.written.some((file) => file !== state && !file.startsWith(`${discovery}/`));
+  if (worked && !patch && completionClaim(audit.text) && !used('verification-before-completion')) out.push('⚠ SKILL GATE (verify): completion was claimed after work this turn without superpowers:verification-before-completion. Invoke it before claiming done, or retract the claim.');
   return out;
 };
 
@@ -254,7 +259,7 @@ const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateH, g
 export const turnAudit: Check = (ctx) => {
   const auditCtx = { ...ctx, env: { ...ctx.env, ...ctx.cfg } };
   try {
-    const remember = (): void => { try { rememberSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); } catch { /* fail open */ } };
+    const remember = (): void => { try { rememberSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); rememberPhaseSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); } catch { /* fail open */ } };
     if (auditCtx.ev.get('.reentrant') === 'true') { remember(); evidenceRecord(auditCtx); return []; }
     const cmds = auditCtx.ev.list('.turn.shell_commands');
     const created = [...new Set(auditCtx.ev.list('.turn.files_created').map((file) => relPath(file, auditCtx.project)).filter(Boolean))].sort(codePointCompare);

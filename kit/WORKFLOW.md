@@ -162,3 +162,5 @@ fix a discovery** — document it, get approval, then act (`phases/discoveries.m
 | Project facts, knowledge review | `phases/memory.md` |
 | `WF_SKILLS` is set | `phases/skills.md` |
 | A hook's finding, evidence ledger | `phases/enforcement.md` |
+
+With `WF_SKILLS=superpowers`, invoke the matching skill before acting in each phase (table in `phases/skills.md`); a hook reminds you, it does not do it for you.

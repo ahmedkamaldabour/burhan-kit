@@ -31,6 +31,15 @@
             "command": "node -e \"var f=require('fs'),p=require('path'),u=require('url'),d=process.cwd(),m;for(;;){m=p.join(d,'.burhan','hooks','node','main.mjs');if(f.existsSync(m))break;var n=p.dirname(d);if(n===d)process.exit(0);d=n}process.argv.splice(1,0,m);import(u.pathToFileURL(m).href).catch(function(){process.exit(0)})\" codex hook pre-commit-check"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10,
+            "command": "node -e \"var f=require('fs'),p=require('path'),u=require('url'),d=process.cwd(),m;for(;;){m=p.join(d,'.burhan','hooks','node','main.mjs');if(f.existsSync(m))break;var n=p.dirname(d);if(n===d)process.exit(0);d=n}process.argv.splice(1,0,m);import(u.pathToFileURL(m).href).catch(function(){process.exit(0)})\" codex hook pre-edit-skill"
+          }
+        ]
       }
     ],
     "PostToolUse": [

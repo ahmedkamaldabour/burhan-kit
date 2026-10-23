@@ -16,7 +16,7 @@ check_eq "agent is codex" "$(norm "$FX/p-session.json" | jq -r .agent)" "codex"
 check_eq "project_dir from cwd" "$(norm "$FX/p-session.json" | jq -r .project_dir)" "/proj"
 check "UserPromptSubmit -> prompt" "$(norm "$FX/p-prompt.json" | jq -c '[.event,.prompt]')" has '["prompt","Do exactly'
 check_eq "PreToolUse Bash -> pre_shell" "$(norm "$FX/p-pre-bash.json" | jq -c '[.event,.command]')" '["pre_shell","echo capture-done"]'
-check_eq "PreToolUse apply_patch -> nothing" "$(norm "$FX/p-pre-patch-add.json")" ""
+check_eq "PreToolUse apply_patch (skills off) -> nothing" "$(norm "$FX/p-pre-patch-add.json")" ""
 check_eq "PostToolUse apply_patch (add) -> post_edit" "$(norm "$FX/p-post-patch-add.json" | jq -c '[.event,.file]')" '["post_edit","/proj/notes.txt"]'
 check_eq "PostToolUse apply_patch (update) -> post_edit" "$(norm "$FX/p-post-patch-update.json" | jq -r .file)" "/proj/notes.txt"
 check_eq "multi-file patch -> one post_edit per added/updated/moved file" \
@@ -78,7 +78,7 @@ check "...in a couple of seconds, not minutes" "$( [ $((t1 - t0)) -lt 5 ] && ech
 echo "codex emit"
 check_eq "Stop -> decision block + reason (Codex rejects hookSpecificOutput on Stop)" \
   "$(echo '{"message":"x"}' | "${IMPL[@]}" emit turn_end | jq -c .)" '{"decision":"block","reason":"x"}'
-for pair in session_start:SessionStart prompt:UserPromptSubmit pre_shell:PreToolUse post_edit:PostToolUse; do
+for pair in session_start:SessionStart prompt:UserPromptSubmit pre_shell:PreToolUse pre_edit:PreToolUse post_edit:PostToolUse; do
   check_eq "${pair%%:*} -> hookSpecificOutput.${pair##*:}" "$(echo '{"message":"x"}' | "${IMPL[@]}" emit "${pair%%:*}" | jq -c '[.hookSpecificOutput.hookEventName,.hookSpecificOutput.additionalContext]')" "[\"${pair##*:}\",\"x\"]"
 done
 check_eq "empty core output -> nothing" "$(printf '' | "${IMPL[@]}" emit turn_end)" ""
@@ -164,7 +164,7 @@ echo "codex hooks snippet (Node)"
 SN="$A/hooks.node.snippet.json"
 check_eq "valid JSON" "$(jq -e . "$SN" >/dev/null && echo ok)" "ok"
 check "no ownership comments in commands" "$(jq -r '.. | .command? // empty' "$SN")" lacks "<!--"
-for c in session-gates prompt-router pre-commit-check post-edit-reminder turn-audit; do
+for c in session-gates prompt-router pre-commit-check pre-edit-skill post-edit-reminder turn-audit; do
   check "wires $c" "$(jq -r '.. | .command? // empty' "$SN")" has "codex hook $c"
 done
 check "commands locate the hooks via .burhan/hooks/node/main.mjs" "$(jq -r '.. | .command? // empty' "$SN")" has "'.burhan','hooks','node','main.mjs'"
@@ -178,4 +178,16 @@ out="$(cd "$(t_tmp)" && echo '{}' | bash -c "$cmd" 2>&1; echo "rc=$?")"
 check_eq "snippet command outside any project -> rc 0, silent (no output at all)" "$out" "rc=0"
 check "no absolute home paths" "$(cat "$SN")" lacks "$HOME/"
 check_eq "no tool matchers (Codex tool names differ; the adapter filters)" "$(jq '[.. | .matcher? // empty] | length' "$SN")" "0"
+echo "codex normalize — pre-write (apply_patch)"
+# a project that turned the skills on: the event is built only for such a project
+PSK="$(t_tmp)"; mkdir -p "$PSK/.burhan"; printf 'WF_SKILLS=superpowers\n' > "$PSK/.burhan/workflow.config"
+normp() { WF_PROJECT_ROOT="$PSK" "${IMPL[@]}" normalize < "$1" 2>/dev/null; }
+check_eq "PreToolUse apply_patch (add) -> pre_edit" "$(normp "$FX/p-pre-patch-add.json" | jq -c '[.event,.file]')" '["pre_edit","/proj/notes.txt"]'
+check_eq "PreToolUse apply_patch (update) -> pre_edit" "$(normp "$FX/p-pre-patch-update.json" | jq -r '.event')" "pre_edit"
+check_eq "PreToolUse apply_patch with the skills off -> nothing" "$(norm "$FX/p-pre-patch-add.json")" ""
+PL="$(t_tmp)"
+jq -c '.tool_input.command = "cat /h/.codex/superpowers/skills/brainstorming/SKILL.md"' "$FX/p-post-bash.json" | WF_CODEX_LEDGER_DIR="$PL" "${IMPL[@]}" hook record >/dev/null 2>&1
+check_eq "a skill read earlier in the turn is carried" "$(WF_CODEX_LEDGER_DIR="$PL" WF_PROJECT_ROOT="$PSK" "${IMPL[@]}" normalize < "$FX/p-pre-patch-add.json" | jq -c '.turn.skills_used')" '["superpowers:brainstorming"]'
+check_eq "no skill read -> none" "$(normp "$FX/p-pre-patch-add.json" | jq -c '.turn.skills_used')" '[]'
+
 t_summary

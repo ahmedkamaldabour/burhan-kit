@@ -10,12 +10,18 @@ import { isAbsoluteOverride } from '../hooks/core/store.mjs';
 
 /** One step of a turn, as the turn-audit hook records it (src/hooks/core/turn-audit.mts). */
 export interface LedgerRecord {
-  ts: string; agent: string; session: string; turn: string; part?: number; seq: number; kind: 'edit' | 'cmd';
-  file?: string; cmd?: string; exit?: number | null; status?: string; item: string | null; project: string;
+  ts: string; agent: string; session: string; turn: string; part?: number; seq: number; kind: 'edit' | 'cmd' | 'skill';
+  file?: string; /** a skill the turn used (kind 'skill') */ skill?: string; cmd?: string; exit?: number | null; status?: string; item: string | null; project: string;
   /** The subagent type that ran the step (a delegated build); absent for the main agent. */
   by?: string;
 }
-export interface LedgerSummary { commands: number; failed: number; evidenceRuns: number; evidencePassed: number; itemsWithPassingEvidence: string[] }
+export interface LedgerSummary {
+  commands: number; failed: number; evidenceRuns: number; evidencePassed: number; itemsWithPassingEvidence: string[];
+  /** skills the turns used, per item (the ledger); `(no item)` when no item applied */
+  skillsUsed?: Record<string, string[]>;
+  /** pre-write skill reminders shown, per item (the session store) */
+  remindersShown?: Record<string, string[]>;
+}
 
 type Env = Record<string, string | undefined>;
 
@@ -80,7 +86,31 @@ export function summarizeLedger(recs: LedgerRecord[], evidenceRegex: string): Le
     evidenceRuns: ev.length,
     evidencePassed: passed.length,
     itemsWithPassingEvidence: [...new Set(passed.map((r) => r.item).filter((i): i is string => !!i))].sort(),
+    skillsUsed: byItem(recs.filter((r) => r.kind === 'skill').map((r) => [r.item ?? '', r.skill ?? ''])),
   };
+}
+
+const NO_ITEM = '(no item)';
+/** [item, skill] pairs -> skills per item, sorted and without repeats; an empty item is `(no item)`. */
+function byItem(pairs: string[][]): Record<string, string[]> {
+  const out: Record<string, Set<string>> = {};
+  for (const [item, skill] of pairs) if (skill !== '') (out[item === '' || item === '-' ? NO_ITEM : item] ??= new Set()).add(skill);
+  return Object.fromEntries(Object.keys(out).sort().map((k) => [k, [...out[k]!].sort()]));
+}
+
+/** The pre-write reminders shown in this project's sessions (`skilltold`: lines `<item>\t<skill>`), per item. */
+export function skillsFromTold(target: string, env: Env = process.env): Record<string, string[]> {
+  const dir = join(evidenceRoot(env, readProjectConfig(target).values.WF_EVIDENCE_DIR), projectKey(target));
+  const pairs: string[][] = [];
+  try {
+    for (const s of readdirSync(dir, { withFileTypes: true })) {
+      if (!s.isDirectory()) continue;
+      let text = '';
+      try { text = readFileSync(join(dir, s.name, 'skilltold'), 'utf8'); } catch { continue; }
+      for (const l of text.split('\n')) { const [item = '', skill = ''] = l.split('\t'); if (skill !== '') pairs.push([item, skill]); }
+    }
+  } catch { /* no store yet */ }
+  return byItem(pairs);
 }
 
 /** True when the command line holds a pipeline: a `|` outside quotes that is not `||`. A shell reports the
@@ -103,7 +133,7 @@ export function isPiped(cmd: string): boolean {
 
 const line = (r: LedgerRecord): string =>
   `${r.ts}  ${r.agent}  ${r.session}/${r.turn}${r.part ? `.${r.part}` : ''} #${r.seq}  ` +
-  (r.kind === 'edit' ? `edit  ${r.file ?? ''}` : `cmd  exit ${r.exit ?? '?'}  ${r.status ?? 'unknown'}  ${r.cmd ?? ''}${r.kind === 'cmd' && isPiped(r.cmd ?? '') ? "  (pipeline: exit is the last command's)" : ''}`) +
+  (r.kind === 'edit' ? `edit  ${r.file ?? ''}` : r.kind === 'skill' ? `skill  ${r.skill ?? ''}` : `cmd  exit ${r.exit ?? '?'}  ${r.status ?? 'unknown'}  ${r.cmd ?? ''}${r.kind === 'cmd' && isPiped(r.cmd ?? '') ? "  (pipeline: exit is the last command's)" : ''}`) +
   (r.by ? `  (${r.by})` : '') + (r.item ? `  [${r.item}]` : '');
 
 export function evidence(o: { target: string; item?: string; session?: string; last?: string; json: boolean }, io: Io): number {
@@ -129,5 +159,7 @@ export function evidence(o: { target: string; item?: string; session?: string; l
 /** For `burhan stats`: the ledger summary with the project's own evidence pattern. */
 export function ledgerSummaryFor(target: string): LedgerSummary | null {
   const recs = readLedger(target);
-  return recs.length ? summarizeLedger(recs, readProjectConfig(target).values.WF_EVIDENCE_REGEX ?? '') : null;
+  const told = skillsFromTold(target);
+  if (recs.length === 0 && Object.keys(told).length === 0) return null;
+  return { ...summarizeLedger(recs, readProjectConfig(target).values.WF_EVIDENCE_REGEX ?? ''), remindersShown: told };
 }

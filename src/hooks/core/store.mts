@@ -200,6 +200,57 @@ export function rememberSkills(project: string, session: string, item: string, s
   } catch { /* fail open */ }
 }
 
+// The pre-write check's memory of the phase skills a session used for an item (any turn): lines `<item>\t<skill>` in `phaseskills`.
+const PHASE_SKILLS = /(^|:)(brainstorming|writing-plans|requesting-code-review|test-driven-development|systematic-debugging|verification-before-completion)$/;
+const phaseFile = (project: string, session: string, env: Env): string => {
+  const dir = sessionDir(project, session, env);
+  return dir ? join(dir, 'phaseskills') : '';
+};
+
+/** The phase skills this session used while `item` was its item ([] for no item, or on any error). */
+export function rememberedPhaseSkills(project: string, session: string, item: string, env: Env = process.env): string[] {
+  try {
+    if (!safeId(item)) return [];
+    const file = phaseFile(project, session, env);
+    return file === '' ? [] : skillLines(file).filter((line) => line.startsWith(`${item}\t`)).map((line) => line.slice(item.length + 1));
+  } catch { return []; }
+}
+
+/** Remember the phase skills this turn used for the item; fail open. */
+export function rememberPhaseSkills(project: string, session: string, item: string, skills: string[], env: Env = process.env): void {
+  try {
+    if (!safeId(item)) return;
+    const wanted = skills.filter((skill) => PHASE_SKILLS.test(skill) && !/[\t\n\r]/.test(skill));
+    const file = phaseFile(project, session, env);
+    if (wanted.length === 0 || file === '') return;
+    const lines = [...new Set([...skillLines(file), ...wanted.map((skill) => `${item}\t${skill}`)])].slice(-SKILL_LINES_MAX);
+    atomicPrivateWrite(file, 'phaseskills', `${lines.join('\n')}\n`);
+  } catch { /* fail open */ }
+}
+
+// The pre-write check shows each skill line once per session and item. One file per session (`skilltold`, lines `<item>\t<skill>`).
+const toldFile = (project: string, session: string, env: Env): string => {
+  const dir = sessionDir(project, session, env);
+  return dir ? join(dir, 'skilltold') : '';
+};
+
+/** Was this skill line already shown for the item in this session? false on any error (the line is then shown). */
+export function skillTold(project: string, session: string, item: string, skill: string, env: Env = process.env): boolean {
+  try {
+    const file = toldFile(project, session, env);
+    return file !== '' && skillLines(file).includes(`${item}\t${skill}`);
+  } catch { return false; }
+}
+
+/** Remember that this skill line was shown for the item; fail open. */
+export function markSkillTold(project: string, session: string, item: string, skill: string, env: Env = process.env): void {
+  try {
+    const file = toldFile(project, session, env);
+    if (file === '' || /[\t\n\r]/.test(item + skill)) return;
+    atomicPrivateWrite(file, 'skilltold', `${[...new Set([...skillLines(file), `${item}\t${skill}`])].slice(-SKILL_LINES_MAX).join('\n')}\n`);
+  } catch { /* fail open */ }
+}
+
 /** wf_mtime: whole epoch seconds for a readable path. */
 export function mtime(path: string): number | null {
   try { return Math.floor(statSync(path).mtimeMs / 1000); } catch { return null; }

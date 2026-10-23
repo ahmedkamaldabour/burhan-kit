@@ -1,4 +1,5 @@
 import { alt, idx, rawText, shellText } from '../../core/jq.mjs';
+import { loadHookConfig } from '../../core/config.mjs';
 import { consume, ledgerFile, readCalls } from './ledger.mjs';
 import { patchFiles, skillIds } from './patch.mjs';
 import { rolloutExits, type CommandExit } from './rollout.mjs';
@@ -115,6 +116,22 @@ export function normalizeCodexEvents(stdin: string, env: NodeJS.ProcessEnv): str
         return [encoded(event)];
       }
       case 'PreToolUse': {
+        if (tool === 'apply_patch') {
+          // Before a patch: the files it writes, and the skills read earlier in this turn (from the ledger). Only for a project that
+          // turned the skills on. Codex's pre-tool payload has no assistant text, so the patch lane cannot be seen here.
+          const first = base('pre_edit', payload, env);
+          if (loadHookConfig(first.project_dir.length > 1 && first.project_dir.endsWith('/') ? first.project_dir.slice(0, -1) : first.project_dir, env).WF_SKILLS !== 'superpowers') return [];
+          const calls = readCalls(ledgerFile(env, first.session, first.turn_id));
+          const commands = collect(calls, (call) => {
+            if (call.tool_name !== 'Bash') return [];
+            const value = alt(idx(call.tool_input, 'command'), null);
+            return value === null ? [] : [value];
+          });
+          const skills = skillIds(commands.map(rawText));
+          const patch = (() => { try { return rawText(alt(idx(payload.tool_input, 'command'), null)); } catch { return ''; } })();
+          return patchFiles(patch).filter((file) => nonBlank(file.path)).map((file) =>
+            encoded({ ...first, file: file.path, turn: { ...first.turn, skills_used: skills } }));
+        }
         if (tool !== 'Bash') return [];
         const event = base('pre_shell', payload, env);
         event.command = alt(idx(payload.tool_input, 'command'), '');

@@ -186,3 +186,4 @@ R183|phases/close-out.md|One session per item
 R184|phases/close-out.md|shrinks to one line
 R185|phases/close-out.md|its details stay in the item's files
 R186|phases/close-out.md|fold closed lines into one line per release
+R187|WORKFLOW.md|invoke the matching skill before acting in each phase

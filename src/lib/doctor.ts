@@ -76,7 +76,7 @@ const groups = (v: HookFile, event: string): { hooks?: HookEntry[] }[] => {
   return Array.isArray(list) ? list.filter((g) => g && typeof g === 'object') : [];
 };
 
-const SUBS = /\b(session-gates|prompt-router|pre-commit-check|post-edit-reminder|turn-audit)\b/;
+const SUBS = /\b(session-gates|prompt-router|pre-commit-check|pre-edit-skill|post-edit-reminder|turn-audit)\b/;
 /** Each snippet event with the core hook it runs, and the key that identifies the entry in the agent's file. */
 function wanted(agent: 'claude' | 'codex'): { event: string; sub: string; key: string }[] {
   const s = (readJson(join(kitDir(), HOOKS[agent].snippet)) ?? {}) as Settings;

@@ -204,10 +204,10 @@ export function currentAnswers(target: string): SetupAnswers | null {
 const ROW = (name: string, tail: string): RegExp => new RegExp(`^(\\| \\*\\*${name}\\*\\* \\| )(.*?)( \\| ${tail} \\|)$`);
 const placeholder = (v: string): boolean => /^\*\(.*\)\*$/.test(v.trim());
 
-/** Fill the four rows only while they are still the template's placeholders; null = nothing to change. */
-function planBindings(existing: string | null, kitText: string, docsLabel: string, discoveryLabel: string): string | null {
+/** Fill the rows only while they are still the template's placeholders; null = nothing to change. */
+function planBindings(existing: string | null, kitText: string, docsLabel: string, discoveryLabel: string, skillsLabel: string): string | null {
   const text = existing ?? kitText;
-  const rows: [RegExp, string][] = [[ROW('Work-item docs location', '`WF_DOCS_DIR`'), docsLabel], [ROW('Discovery location', '`WF_DISCOVERY_DIR`'), discoveryLabel], [ROW('Branching rule', '—'), BRANCH_RULE], [ROW('Kit command', '—'), KIT_COMMAND]];
+  const rows: [RegExp, string][] = [[ROW('Work-item docs location', '`WF_DOCS_DIR`'), docsLabel], [ROW('Discovery location', '`WF_DISCOVERY_DIR`'), discoveryLabel], [ROW('Process skills', '`WF_SKILLS`'), skillsLabel], [ROW('Branching rule', '—'), BRANCH_RULE], [ROW('Kit command', '—'), KIT_COMMAND]];
   let changed = existing === null;
   const lines = text.split('\n').map((l) => {
     for (const [re, value] of rows) {
@@ -247,7 +247,7 @@ export function planSetup(target: string, a: SetupAnswers, home: string): SetupP
 
   const bf = join(real, '.burhan/bindings.md');
   const label = a.docs.kind === 'private' ? `\`${docs}/\` (private, git-ignored)` : a.docs.kind === 'shared' ? `\`${docs}/\` (shared in git)` : `\`${docs}/\` (your folder)`;
-  const bindings = planBindings(existsSync(bf) ? readFileSync(bf, 'utf8') : null, readFileSync(join(kit, 'templates/bindings.md'), 'utf8'), label, `\`${values.WF_DISCOVERY_DIR}/\``);
+  const bindings = planBindings(existsSync(bf) ? readFileSync(bf, 'utf8') : null, readFileSync(join(kit, 'templates/bindings.md'), 'utf8'), label, `\`${values.WF_DISCOVERY_DIR}/\``, skills === 'superpowers' ? 'superpowers — invoke the matching skill before each phase (`.burhan/phases/skills.md`)' : 'none');
 
   // setup writes the config and bindings itself (before the install): the install must not create them from the templates.
   const install = planInstall({ mode: existsSync(join(real, '.burhan/WORKFLOW.md')) ? 'upgrade' : 'init', target, agents: a.agents, apply: true, bootstrap: true, keepProjectFiles: true });

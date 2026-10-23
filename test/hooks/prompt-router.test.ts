@@ -22,6 +22,10 @@ async function router(prompt: string, env: NodeJS.ProcessEnv = {}): Promise<stri
   return result.stdout;
 }
 
+const skillNoItem = '⚑ Skill (before a story): invoke superpowers:brainstorming and read its instructions before you start.';
+/** The router block followed by the skill line (its own finding, so a blank line between). */
+const withSkill = (...lines: string[]): string => JSON.stringify({ message: [heading, ...lines].join('\n') + '\n\n' + skillNoItem }) + '\n';
+
 function output(...lines: string[]): string {
   return JSON.stringify({ message: [heading, ...lines].join('\n') }) + '\n';
 }
@@ -54,8 +58,8 @@ test('prompt-router: skips system notifications and an empty prompt', async () =
 });
 
 test('prompt-router: adds skills suffixes and the no-keyword line only when skills are enabled', async () => {
-  assert.equal(await router('the upload is broken', { WF_SKILLS: 'superpowers' }), output(`${bug} Skill: superpowers:systematic-debugging, then superpowers:test-driven-development.`));
-  assert.equal(await router('hello there', { WF_SKILLS: 'superpowers' }), output(noMatch));
+  assert.equal(await router('the upload is broken', { WF_SKILLS: 'superpowers' }), withSkill(`${bug} Skill: superpowers:systematic-debugging, then superpowers:test-driven-development.`));
+  assert.equal(await router('hello there', { WF_SKILLS: 'superpowers' }), withSkill(noMatch));
   assert.equal(await router('hello there'), '');
 });
 

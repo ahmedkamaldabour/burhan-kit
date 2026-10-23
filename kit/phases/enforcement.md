@@ -7,8 +7,9 @@ every supported agent, from one shared core. They are configured only through `w
 | Hook | Moment | What it does |
 |---|---|---|
 | `session-gates` | session start (incl. after compaction) | Re-injects the gates; prints the state file's `Now` section |
-| `prompt-router` | user prompt | Suggests the phase/skill for the request (max 2 lines; matches English and Arabic keywords); a separate baseline reminder (project not understood yet / baseline is a draft) is printed outside that cap |
+| `prompt-router` | user prompt | Suggests the phase/skill for the request (max 2 lines; matches English and Arabic keywords); a separate baseline reminder (project not understood yet / baseline is a draft) is printed outside that cap; with `WF_SKILLS=superpowers` one more line, also outside the cap, names the skill to invoke before the item's next phase (read from the item's story and plan files, not from your words) |
 | `pre-commit-check` | before `git commit` | **Runs** the fast check and reports the measured result + the a/b/c checkpoint |
+| `pre-edit-skill` | before a file write (Claude Code, Codex `apply_patch`) | With `WF_SKILLS=superpowers`: before a new story or plan, a review file or a code file is written without its skill (brainstorming, writing-plans, requesting-code-review, test-driven-development), says so once per session and item; it never blocks and says nothing to a subagent |
 | `post-edit-reminder` | after a file edit | Test-first reminder; sensitive-path note |
 | `turn-audit` | end of turn | Flags: unverified "done" (no passing evidence command after the last code edit), state file not updated, state file over budget, contradictory status in an item file, phase skill not used, code written during read-only work, a QC report without **Performed by** or written in the same turn as code, the BASELINE GATE (a story or code written while a project with code has no Approved or Waived baseline) |
 

@@ -102,6 +102,17 @@ export function prepareClaude(stdin: string, env: NodeJS.ProcessEnv): StopWindow
         return plain(encoded(event));
       }
       case 'PreToolUse': {
+        if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool)) {
+          // Before a write: the file, and what this user turn has used so far (skills, the assistant's own text). Only for a project that
+          // turned the skills on: nothing else reads it, and the transcript is not parsed for nothing on every write.
+          const event = base('pre_edit', payload, env);
+          if (loadHookConfig(plainProject(event.project_dir), env).WF_SKILLS !== 'superpowers') return none;
+          event.file = j(() => alt(idx(payload.tool_input, 'file_path'), idx(payload.tool_input, 'notebook_path')));
+          const { turn_key: _key, ...turn } = { ...event.turn, ...turnOf(j(() => payload.transcript_path), null).turn } as TurnData;
+          event.turn = turn;
+          // Set when the write comes from a subagent: it has no Skill tool, so the check says nothing to it.
+          return plain(encoded({ ...event, agent_id: j(() => payload.agent_id) }));
+        }
         if (tool !== 'Bash') return none;
         const event = base('pre_shell', payload, env);
         event.command = alt(idx(payload.tool_input, 'command'), '');

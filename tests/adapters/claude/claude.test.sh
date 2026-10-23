@@ -20,6 +20,14 @@ check_eq "project_dir falls back to cwd" \
   "$(jq -c '.cwd="/other"' "$FX/p-session.json" | env -u CLAUDE_PROJECT_DIR "${IMPL[@]}" normalize | jq -r .project_dir)" "/other"
 check_eq "UserPromptSubmit -> prompt" "$(norm "$FX/p-prompt.json" | jq -c '[.event,.prompt]')" '["prompt","fix the bug"]'
 check_eq "PreToolUse Bash -> pre_shell" "$(norm "$FX/p-pre-bash.json" | jq -c '[.event,.command]')" '["pre_shell","git commit -m x"]'
+# the pre-write event needs a project that turned the skills on (the transcript is read only then)
+PSK="$(t_tmp)"; mkdir -p "$PSK/.burhan"; printf 'WF_SKILLS=superpowers\n' > "$PSK/.burhan/workflow.config"
+normp() { local tp="${2:-/nonexistent}"; jq -c --arg tp "$tp" '.transcript_path = $tp' "$1" | CLAUDE_PROJECT_DIR="$PSK" "${IMPL[@]}" normalize 2>/dev/null; }
+check_eq "PreToolUse Write -> pre_edit" "$(normp "$FX/p-pre-write.json" | jq -c '[.event,.file]')" '["pre_edit","/proj/src/a.src"]'
+check_eq "PreToolUse Write carries this turn's skills" "$(normp "$FX/p-pre-write.json" "$FX/single-turn.jsonl" | jq -c '.turn.skills_used')" '["superpowers:test-driven-development"]'
+check_eq "PreToolUse Write without a transcript -> no skills" "$(normp "$FX/p-pre-write.json" | jq -c '.turn.skills_used')" '[]'
+check_eq "PreToolUse Write inside a subagent carries agent_id" "$(jq -c '.agent_id="a1"' "$FX/p-pre-write.json" | CLAUDE_PROJECT_DIR="$PSK" "${IMPL[@]}" normalize 2>/dev/null | jq -r '.agent_id')" "a1"
+check_eq "PreToolUse Write with the skills off -> nothing (no transcript is read)" "$(norm "$FX/p-pre-write.json" "$FX/single-turn.jsonl")" ""
 check_eq "PreToolUse other tool -> nothing" "$(norm "$FX/p-pre-read.json")" ""
 check_eq "PostToolUse Edit -> post_edit" "$(norm "$FX/p-post-edit.json" | jq -c '[.event,.file]')" '["post_edit","/proj/src/a.src"]'
 check_eq "PostToolUse NotebookEdit -> notebook path" "$(norm "$FX/p-post-notebook.json" | jq -r .file)" "/proj/nb.ipynb"
@@ -104,7 +112,7 @@ check "turn_key is not leaked into turn" "$(jq -c .turn <<<"$ev")" lacks "turn_k
 echo "claude emit"
 check_eq "Stop output shape" "$(echo '{"message":"x"}' | "${IMPL[@]}" emit turn_end | jq -c .)" \
   '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"x"}}'
-for pair in session_start:SessionStart prompt:UserPromptSubmit pre_shell:PreToolUse post_edit:PostToolUse; do
+for pair in session_start:SessionStart prompt:UserPromptSubmit pre_shell:PreToolUse pre_edit:PreToolUse post_edit:PostToolUse; do
   check_eq "${pair%%:*} -> ${pair##*:}" "$(echo '{"message":"x"}' | "${IMPL[@]}" emit "${pair%%:*}" | jq -r .hookSpecificOutput.hookEventName)" "${pair##*:}"
 done
 check_eq "empty core output -> no output" "$(printf '' | "${IMPL[@]}" emit turn_end)" ""
@@ -257,10 +265,12 @@ check_eq "valid JSON" "$(jq -e . "$SN" >/dev/null && echo ok)" "ok"
 check_eq "every entry runs node" "$(jq -r '[.. | .command? // empty] | unique | join(",")' "$SN")" "node"
 check "entries use the canonical install path" "$(jq -r '.. | .args? // empty | .[0]' "$SN")" has '${CLAUDE_PROJECT_DIR}/.burhan/hooks/node/main.mjs'
 check "no ownership comments in commands" "$(cat "$SN")" lacks "<!--"
-for c in session-gates prompt-router pre-commit-check post-edit-reminder turn-audit; do
+for c in session-gates prompt-router pre-commit-check pre-edit-skill post-edit-reminder turn-audit; do
   check "wires $c" "$(jq -r '.. | .args? // empty | join(" ")' "$SN")" has "claude hook $c"
   check "$c check exists" "$( [ -f "$T_ROOT/src/hooks/core/$c.mts" ] && echo yes)" has yes
 done
 check "paths are project-relative" "$(cat "$SN")" lacks "$HOME/"
 check "pre-commit timeout exceeds the default check timeout" "$(jq '.hooks.PreToolUse[0].hooks[0].timeout > 60' "$SN")" has "true"
+check_eq "the pre-write entry has the write-tool matcher" "$(jq -r '.hooks.PreToolUse[] | select(.hooks[0].args[3] == "pre-edit-skill") | .matcher' "$SN")" "Write|Edit|MultiEdit|NotebookEdit"
+check "the pre-write check never blocks: its timeout is short" "$(jq '.hooks.PreToolUse[] | select(.hooks[0].args[3] == "pre-edit-skill") | .hooks[0].timeout <= 15' "$SN")" has "true"
 t_summary

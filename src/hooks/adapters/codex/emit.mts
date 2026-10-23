@@ -4,6 +4,7 @@ const eventNames: Record<string, string> = {
   session_start: 'SessionStart',
   prompt: 'UserPromptSubmit',
   pre_shell: 'PreToolUse',
+  pre_edit: 'PreToolUse',
   post_edit: 'PostToolUse',
 };
 

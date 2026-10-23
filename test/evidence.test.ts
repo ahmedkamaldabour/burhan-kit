@@ -57,7 +57,7 @@ test('reads what the hook wrote: ordered, with exit codes and the item; summary 
   assert.deepEqual(recs.map((r) => [r.turn, r.seq, r.kind, r.exit ?? null]), [['T1', 1, 'edit', null], ['T1', 2, 'cmd', 3], ['T1', 3, 'cmd', 0], ['T2', 1, 'cmd', 0]]);
   assert.equal(recs[0].file, 'a.src');
   assert.equal(recs[1].item, 'add-export');
-  assert.deepEqual(summarizeLedger(recs, '^verify-it'), { commands: 3, failed: 1, evidenceRuns: 2, evidencePassed: 1, itemsWithPassingEvidence: ['add-export'] });
+  assert.deepEqual(summarizeLedger(recs, '^verify-it'), { commands: 3, failed: 1, evidenceRuns: 2, evidencePassed: 1, itemsWithPassingEvidence: ['add-export'], skillsUsed: {} });
 });
 
 test('CLI evidence: text, --item, --last, --json; a torn line is skipped', async () => {

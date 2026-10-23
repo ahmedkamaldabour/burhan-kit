@@ -1,0 +1,1 @@
+{"session_id":"s","transcript_path":"T","cwd":"/proj","hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":"/proj/src/a.src","content":"x"}}

@@ -109,12 +109,13 @@ worktree or when setup changes hooks during a session, so the new session reads 
 | Hook | Moment | Behaviour |
 |---|---|---|
 | `session-gates` | session start | Re-injects the gates; shows the state file's `Now` section and the item's mode |
-| `prompt-router` | your prompt | Suggests the phase for the request (English and Arabic phrases, max 2 lines; a separate baseline reminder is printed outside that cap) — a suggestion only |
+| `prompt-router` | your prompt | Suggests the phase for the request (English and Arabic phrases, max 2 lines; a separate baseline reminder is printed outside that cap) — a suggestion only. With Superpowers it adds one more line, outside the cap, naming the skill to invoke before the item's next phase |
 | `pre-commit-check` | before `git commit` | **Runs** your fast check and reports the measured result, plus the commit checkpoint |
+| `pre-edit-skill` | before a write | With Superpowers: before a new story, plan or review, or a code file, is written without its skill, says so once per session and item. Never blocks |
 | `post-edit-reminder` | after an edit | Test-first nudge, sensitive-path note |
 | `turn-audit` | end of turn | Flags unverified "done" (no passing evidence after the last code edit), state not updated, state file over budget, contradictory status, skipped process skills, code written during read-only work, QC provenance, the BASELINE GATE (a story or code written while a project with code has no Approved or Waived baseline) |
 
-Every hook **fails open** and **reports** — none blocks. "The turn" means the current turn — from
+The pre-write hook has two limits on Codex: Codex gives it the patch but not your message, so a `patch —` turn is not recognised there; and it cannot tell a subagent's write from yours. Every hook **fails open** and **reports** — none blocks. "The turn" means the current turn — from
 your last real message (compaction summaries, tool results and skill expansions don't count) — never
 a window of recent lines, so an earlier turn's edit can't trigger a false alarm. On Claude Code each Stop of a prompt audits only what is new since the previous Stop of that prompt.
 
@@ -176,7 +177,7 @@ install burhan. The screens below were captured on Codex CLI 0.150.1.
    event with the arrow keys and press Enter.
 4. With the arrow keys, move to the hook whose **Source** is
    `Project config - <your project>/.codex/hooks.json`; its command mentions `session-gates`,
-   `prompt-router`, `pre-commit-check`, `post-edit-reminder` or `turn-audit` — press `t` to trust it,
+   `prompt-router`, `pre-commit-check`, `pre-edit-skill`, `post-edit-reminder` or `turn-audit` — press `t` to trust it (`PreToolUse` has two hooks: trust both),
    then Esc to go back. Do the same for the other four events.
    - **Trust all and continue** (or `t` on the list) also works, but it trusts every listed hook,
      your Codex plugins' hooks included. Use it only if you want that.

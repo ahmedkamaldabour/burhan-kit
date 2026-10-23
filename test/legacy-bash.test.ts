@@ -37,7 +37,7 @@ test('an upgrade interrupted after the bash directories were removed still repla
   applyPlan(plan);
   for (const agent of ['claude', 'codex'] as const) {
     assert.equal(hookCommands(d, agent).filter((c) => c.includes('hook.sh')).length, 0, `${agent}: no bash entry is left beside the Node ones`);
-    assert.equal(hookCommands(d, agent).length, 5, `${agent}: exactly one entry per event`);
+    assert.equal(hookCommands(d, agent).length, 6, `${agent}: exactly one entry per hook`);
   }
 });
 

@@ -53,6 +53,16 @@ export function computeStats(facts: ItemFacts[]): Stats {
   return { items: facts.length, routes, qc, reviews, escaped: [...escaped].sort(), phases, words };
 }
 
+/** Skills per item: those the turns used (ledger) and the pre-write reminders shown (session store). Nothing recorded says so. */
+function skillsLine(e: LedgerSummary | null): string {
+  const used = e?.skillsUsed ?? {};
+  const told = e?.remindersShown ?? {};
+  const items = [...new Set([...Object.keys(used), ...Object.keys(told)])].sort();
+  if (items.length === 0) return 'Skills: none recorded yet';
+  const list = (xs: string[] | undefined): string => (xs && xs.length ? xs.join(', ') : 'none');
+  return ['Skills (used = in a turn the ledger recorded; reminded = pre-write lines shown; the router line is not counted)', ...items.map((i) => `  ${i} — used: ${list(used[i])} · reminded: ${list(told[i])}`)].join('\n');
+}
+
 export function renderStats(s: Stats, docsRel: string): string {
   const routes = Object.entries(s.routes).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const w = Math.max(10, ...routes.map(([r]) => r.length));
@@ -74,6 +84,8 @@ export function renderStats(s: Stats, docsRel: string): string {
       : ['  no Phase log rows yet']),
     '',
     `File size (avg words, caps in phases/files.md): ${(['story', 'plan', 'review', 'qc', 'verification'] as const).map((k) => `${k} ${s.words[k].avg ?? '—'} (n=${s.words[k].n})`).join(' · ')}`,
+    '',
+    skillsLine(s.evidence ?? null),
     '',
     s.evidence
       ? `Evidence ledger: ${s.evidence.commands} commands (${s.evidence.failed} failed) · evidence runs ${s.evidence.evidenceRuns}, passed ${s.evidence.evidencePassed} · items with a passing evidence run: ${s.evidence.itemsWithPassingEvidence.length}`

@@ -25,7 +25,7 @@ const bad = (cs: Check[]) => cs.filter((c) => c.status === 'fail' || c.status ==
 test('a fresh init is healthy: no fail, no warn', () => {
   const cs = runChecks(project(), probe());
   assert.deepEqual(bad(cs), []);
-  for (const t of ['node 24', 'kit', 'workflow.config', '.claude/settings.json: all 5 hooks wired', 'burhan-reviewer', 'local/']) assert.ok(find(cs, 'ok', t), t);
+  for (const t of ['node 24', 'kit', 'workflow.config', '.claude/settings.json: all 6 hooks wired', 'burhan-reviewer', 'local/']) assert.ok(find(cs, 'ok', t), t);
   assert.ok(find(cs, 'skip', 'codex'), 'an agent init did not install is skipped');
 });
 
@@ -133,7 +133,7 @@ const trustTable = (key: string): string => `[hooks.state.${JSON.stringify(key)}
 
 test('codex: wiring checked; hook trust is read only, and an unreadable config is skipped', () => {
   const p = project(['codex'], 'burhan-doctor-synthetic-');
-  assert.ok(find(runChecks(p, probe()), 'ok', '.codex/hooks.json: all 5 hooks wired'));
+  assert.ok(find(runChecks(p, probe()), 'ok', '.codex/hooks.json: all 6 hooks wired'));
   const hf = join(p, '.codex/hooks.json');
   const j = JSON.parse(readFileSync(hf, 'utf8')) as { hooks: Record<string, unknown> };
   delete j.hooks.PreToolUse;
@@ -290,7 +290,7 @@ test('node wiring: an exec-form hook that was removed or changed fails; a user n
   writeFileSync(file, JSON.stringify(s));
   assert.ok(find(runChecks(p, probe()), 'fail', 'Stop (turn-audit)'));
   writeFileSync(file, original);
-  assert.ok(find(runChecks(p, probe()), 'ok', 'all 5 hooks wired'));
+  assert.ok(find(runChecks(p, probe()), 'ok', 'all 6 hooks wired'));
 });
 
 test('claude: the exec form needs Claude Code >= 2.1.139 (0.3.0 has no other hook path)', () => {
@@ -312,7 +312,7 @@ test('node kit files: an edited copy under .burhan/hooks/node warns; a missing e
 
 test('an agent installed under the Node runtime has no adapter directory and is still found from its hook file', () => {
   const cs = runChecks(project(['claude', 'codex']), probe());
-  assert.ok(find(cs, 'ok', '.codex/hooks.json: all 5 hooks wired'));
+  assert.ok(find(cs, 'ok', '.codex/hooks.json: all 6 hooks wired'));
   assert.ok(!find(cs, 'skip', 'codex: not installed'));
 });
 

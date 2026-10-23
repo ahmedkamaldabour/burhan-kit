@@ -1,6 +1,7 @@
 /** User prompt phase suggestions (port of prompt-router.sh). */
 import { ere } from './ere.mjs';
 import type { Check } from './lib.mjs';
+import { skillLine, skillLineText } from './skill-line.mjs';
 import { reminderLine, undecided } from './understanding.mjs';
 
 // Arabic has no \b in grep; bound Arabic words by whitespace/ASCII punctuation instead, so that
@@ -98,5 +99,8 @@ export const promptRouter: Check = (ctx) => {
   if (!m(`burhan:onboard|commands/onboard\\.md|${W}understand (this|the) project${WE}|${AB}(افهم|فهم) المشروع${AE}`)) {
     try { state = undecided(ctx); } catch { state = null; }
   }
-  return state === null ? found : [...found, reminderLine(state)];
+  // The skill line is its own line too, outside the two-line cap: the phase comes from the item's files, not from the words.
+  const sk = skillLine(ctx);
+  const lines = sk === null ? found : [...found, skillLineText(sk)];
+  return state === null ? lines : [...lines, reminderLine(state)];
 };
