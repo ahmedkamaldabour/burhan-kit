@@ -62,6 +62,16 @@ check "upgrading: a section for 0.4.0 installs" "$(cat docs/upgrading.md)" has '
 check "roadmap: Done lists the 0.4.1 fixes" "$(cat ROADMAP.md)" has '(0.4.1)'
 check "changelog: 0.4.0 says how to upgrade from 0.3.0" "$(cat CHANGELOG.md)" has '### Upgrading from 0.3.0'
 
+echo "v050-release: the 0.5.0 notes"
+check "changelog: a 0.5.0 section" "$(cat CHANGELOG.md)" has '## 0.5.0 — 2026-10-24'
+check "changelog: 0.5.0 says how to upgrade from 0.4.1" "$(cat CHANGELOG.md)" has '### Upgrading from 0.4.1'
+check "changelog: 0.5.0 names the sixth hook entry" "$(cat CHANGELOG.md)" has 'sixth hook entry'
+check "changelog: 0.5.0 says what was not measured about the agent" "$(cat CHANGELOG.md)" has 'whether an agent in a real session follows'
+check "changelog: 0.5.0 says saved sources raise no warning" "$(cat CHANGELOG.md)" has 'raises no state or status warning'
+check "upgrading: a section for 0.4.1 installs" "$(cat docs/upgrading.md)" has '## Upgrading from 0.4.1'
+check "upgrading: the 0.4.1 section names the sixth hook entry" "$(cat docs/upgrading.md)" has 'sixth hook entry'
+check "roadmap: Done lists the 0.5.0 items" "$(cat ROADMAP.md)" has '(0.5.0)'
+
 echo "docs-windows-paths: a Windows path with backslashes goes in single quotes"
 check "configuration: a Windows path goes in single quotes" "$cfgdoc" has 'a path with backslashes goes in single quotes'
 check "configuration: the single-quoted example" "$cfgdoc" has "WF_EVIDENCE_DIR='C:\\Users\\me\\ev'"

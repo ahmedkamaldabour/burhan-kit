@@ -18,6 +18,10 @@ npx burhan-kit doctor
 - Your own hooks and settings stay: burhan's hooks run beside them.
 - In Codex, trust the hooks again after an upgrade that changes one (Codex shows it as "Modified since last trusted"; see [Codex: trust the hooks](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks)).
 
+## Upgrading from 0.4.1
+
+`npx burhan-kit upgrade --apply` refreshes the kit files and adds one sixth hook entry: `pre-edit-skill`, a `PreToolUse` entry in `.claude/settings.json` (`Write|Edit|MultiEdit|NotebookEdit`) and in `.codex/hooks.json` (`apply_patch`). Your own hooks are kept, and a second upgrade changes nothing. In Codex, trust the hooks again afterwards (open `/hooks` and trust what it lists as new or modified; the existing entries are byte-identical to 0.4.1's, and Codex itself was not run for this release). The entry is silent unless `WF_SKILLS=superpowers`.
+
 ## Upgrading from 0.4.0
 
 `npx burhan-kit upgrade --apply` refreshes the kit files and creates the empty state file (`.burhan/local/PROGRESS.md`, or the path in `WF_STATE_FILE`) when it is missing; one that exists is never changed. The hook entries it writes to `.claude/settings.json` and `.codex/hooks.json` were byte-identical to 0.4.0's (measured on a 0.4.0 install on Linux), so Codex has nothing new to trust.

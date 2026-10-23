@@ -57,6 +57,9 @@ until you choose.
 - **First-run fixes (0.4.1).** Setup asks where discoveries go and never fails on a missing state file; the first
   message of a new session starts the project setup; the README shows two ways to install.
 
+- **Skill lines and quiet sources (0.5.0).** With Superpowers installed, the router and a pre-write check name the
+  skill to invoke before each phase; a saved source or a raw output raises no state or status warning.
+
 ## Candidates
 
 - **Codex exit codes.** Codex reports a finished command with no exit code, so the main agent's

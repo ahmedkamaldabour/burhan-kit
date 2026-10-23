@@ -1,5 +1,67 @@
 # Changelog
 
+## 0.5.0 — 2026-10-24
+
+With Superpowers installed, burhan now tells the agent which skill to invoke before each phase. Two fixes stop saved
+inputs from raising warnings that nobody can act on.
+
+### Upgrading from 0.4.1
+- Run `npx burhan-kit upgrade --apply` in every project. It refreshes the kit files and adds one **sixth hook entry**
+  (`pre-edit-skill`) to `.claude/settings.json` (a `PreToolUse` entry for `Write|Edit|MultiEdit|NotebookEdit`) and to
+  `.codex/hooks.json` (a `PreToolUse` entry for `apply_patch`). Your own hooks stay; a second upgrade changes nothing.
+  Your `workflow.config` and `bindings.md` are kept; a project that already sets `WF_SKILLS=superpowers` gets the new
+  `Process skills` row only when `setup` is run again.
+- In Codex, trust the hooks again afterwards: the upgrade prints a note, and `/hooks` lists what is new or modified
+  (the existing entries of `.codex/hooks.json` are byte-identical to 0.4.1's; Codex itself was not run, so which
+  entries it asks about is not measured; see [Codex: trust the hooks](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks)).
+- Without `WF_SKILLS=superpowers` nothing in your sessions changes: the new entry stays silent.
+
+### Added
+- **Skill lines (`WF_SKILLS=superpowers`).** The router adds one line before each prompt, read from the item's own
+  files: brainstorming before a story, writing-plans once the story is Approved, test-driven-development while the plan
+  is building, systematic-debugging for a bug or an investigation, and verification before the close. It is silent
+  for a patch-lane item, a paused or superseded plan, and when several items are open and none is linked.
+- **A check before a file is written.** Before a story, plan, review or code file is written without its skill, the
+  `pre-edit-skill` hook says so once per session, item and skill (Claude Code and Codex). It never blocks. It skips the
+  state file, discoveries, test files, patch-lane turns and subagents.
+- **A turn-end check for a completion claim** (`SKILL GATE (verify)`): "done" after work, without the verification
+  skill, is flagged; a turn that only edits the state file or discoveries is not.
+- `setup` writes the `Process skills` row of `bindings.md`; `burhan doctor` counts six hooks; `burhan stats` shows,
+  per item, the skills used in the turns the ledger recorded and the pre-write reminders shown (the router's own skill
+  line is not counted).
+- `phases/files.md` says what `sources/` holds: originals only. Our own scripts and command logs go to `repro/`; a
+  summary of an input is named `<name>-summary` and recorded as a limitation, with the original kept if one exists;
+  the story's Sources section lists the files.
+
+### Changed
+- **A saved source raises no state or status warning.** A file under `<docs>/<slug>/sources/` (any depth) is dropped
+  from the turn's file lists before any turn-end check runs, so it no longer asks for a state-file update, no longer
+  trips the stale-status check by quoting a story, and no longer counts as a story, plan, review or code written. An
+  item whose slug is `sources` and a file named `sources.md` are still checked.
+- **The stale-status check reads only files that carry a status:** markdown directly in the item folder or directly in
+  its `reviews/`, and the discoveries. Command output, logs, scripts and notes saved elsewhere in an item folder are
+  never judged.
+
+### Measured
+- The full test suite on `1c72322`: 793 Node tests (789 pass, 4 skipped, 0 fail) and every shell suite; CI green on
+  Linux, macOS and Windows (no bash).
+- On the packed 0.5.0 tarball, installed with npm (Linux): a fresh install wires six hooks for Claude Code and six
+  for Codex and `burhan doctor` says so; an install made by the published 0.4.1 package, upgraded, gains the one
+  entry in each agent, keeps a hook of your own, leaves `bindings.md` and `workflow.config` byte-identical, and a
+  second upgrade changes no file; `uninstall` removes only burhan's entries. The installed router and pre-write hook,
+  run by hand with `WF_SKILLS=superpowers`, print the skill line once per session, item and skill.
+
+### Known limits
+- Not measured: whether an agent in a real session follows the new skill lines. Codex was not run live; its two
+  limits (a `patch —` turn is not recognised there, and a subagent's write is not told apart) are in
+  `docs/configuration.md`.
+- The skill line repeats on every prompt and overlaps the router's keyword hint.
+- `burhan evidence --last N` and `--item` count skill records as steps; a skill used in a turn without steps is not in the ledger.
+- A relative path in a Codex patch is read against the project root, not Codex's own working directory.
+- An unknown `WF_SKILLS` value counts as off, with no `doctor` warning.
+- A skill used before any item exists is not remembered, so the first story write can still show the pre-write line once.
+- The state-transition warning still fires for any file written in an item folder other than `sources/`.
+
 ## 0.4.1 — 2026-10-23
 
 Fixes from a first trial of 0.4.0 on a real project.
