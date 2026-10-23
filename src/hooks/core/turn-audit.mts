@@ -52,6 +52,8 @@ const completionClaim = (text: string): boolean => {
 const escapeEre = (text: string): string => text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
 const linesIn = (text: string): number => text === '' ? 0 : text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
 const docsRe = (audit: Audit): string => `^${escapeEre(audit.ctx.cfg.WF_DOCS_DIR ?? '')}/[^/]+/`;
+/** A file saved as an original input — `<docs>/<slug>/sources/…` at any depth. It is not work, so no gate looks at it. */
+const sourcesRe = (audit: Pick<Audit, 'ctx'>): string => `^${escapeEre(audit.ctx.cfg.WF_DOCS_DIR ?? '')}/[^/]+/sources/`;
 const discoveryRe = (audit: Audit): string => `^${escapeEre(audit.ctx.cfg.WF_DISCOVERY_DIR ?? '')}/[0-9]{4}-[0-9]{2}-[0-9]{2}-[^/]+\\.md$`;
 const codeInTurn = (audit: Audit): boolean => {
   const code = audit.ctx.cfg.WF_CODE_REGEX ?? '';
@@ -265,14 +267,17 @@ export const turnAudit: Check = (ctx) => {
     const created = [...new Set(auditCtx.ev.list('.turn.files_created').map((file) => relPath(file, auditCtx.project)).filter(Boolean))].sort(codePointCompare);
     const edited = auditCtx.ev.list('.turn.files_edited').map((file) => relPath(file, auditCtx.project)).filter(Boolean);
     const shell = shellWrites(cmds).map((file) => relPath(file, auditCtx.project)).filter(Boolean);
-    const written = [...new Set([...created, ...edited, ...shell])].sort(codePointCompare);
+    const sources = sourcesRe({ ctx: auditCtx });
+    const isSource = (file: string): boolean => ereTest(sources, file);
+    const allWritten = [...new Set([...created, ...edited, ...shell])].sort(codePointCompare);
+    const written = allWritten.filter((file) => !isSource(file));
     const turn = auditCtx.ev.raw.turn;
     const rawSteps = turn !== null && typeof turn === 'object' && !Array.isArray(turn) && Array.isArray((turn as Record<string, unknown>).steps)
       ? (turn as Record<string, unknown>).steps as unknown[] : [];
     const steps = parseSteps(rawSteps, auditCtx.project);
     let item = explicitLink(cmds);
     if (item === '') {
-      const files = steps.length > 0 ? steps.filter((step) => step.kind === 'edit').map((step) => step.file) : written;
+      const files = steps.length > 0 ? steps.filter((step) => step.kind === 'edit').map((step) => step.file) : allWritten; // a saved source is still work on its item
       const prefix = `${auditCtx.cfg.WF_DOCS_DIR ?? ''}/`;
       for (const file of files) {
         if (!file.startsWith(prefix)) continue;
@@ -283,10 +288,10 @@ export const turnAudit: Check = (ctx) => {
       }
     }
     if (item !== '') linkItem(auditCtx.project, auditCtx.ev.get('.session'), item, itemSlugs(stateNow(auditCtx.project, auditCtx.cfg)), auditCtx.env);
-    const subWritten = steps.filter((step) => step.kind === 'edit' && step.by !== '').map((step) => step.file);
+    const subWritten = steps.filter((step) => step.kind === 'edit' && step.by !== '').map((step) => step.file).filter((file) => !isSource(file));
     let skillsBefore: string[] = [];
     try { skillsBefore = rememberedSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.env); } catch { /* fail open */ }
-    const audit: Audit = { ctx: auditCtx, written, created, cmds, skillsUsed: auditCtx.ev.list('.turn.skills_used'), skillsBefore, text: auditCtx.ev.get('.turn.assistant_text'), steps, subWritten };
+    const audit: Audit = { ctx: auditCtx, written, created: created.filter((file) => !isSource(file)), cmds, skillsUsed: auditCtx.ev.list('.turn.skills_used'), skillsBefore, text: auditCtx.ev.get('.turn.assistant_text'), steps: steps.filter((step) => step.kind !== 'edit' || !isSource(step.file)), subWritten };
     const findings: string[] = [];
     for (const gate of gates) try { findings.push(...gate(audit)); } catch { /* independent gates fail open */ }
     remember();

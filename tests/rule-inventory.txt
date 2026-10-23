@@ -187,3 +187,7 @@ R184|phases/close-out.md|shrinks to one line
 R185|phases/close-out.md|its details stay in the item's files
 R186|phases/close-out.md|fold closed lines into one line per release
 R187|WORKFLOW.md|invoke the matching skill before acting in each phase
+R188|phases/files.md|holds originals only
+R189|phases/files.md|go to `repro/`
+R190|phases/files.md|name it `<name>-summary`
+R191|phases/files.md|Sources section lists the files kept there

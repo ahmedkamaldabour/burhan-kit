@@ -12,7 +12,7 @@ slug** — a file opened in an editor tab, pasted into a diff or found by search
 | `reviews/<slug>-review.md` (one per item, a section per sub-unit; older items may have `reviews/<slug>-<sub-unit>.md`) | `templates/review.md` | ⑤ |
 | `reviews/<slug>-verification.md` | `templates/verification.md` | ⑥ |
 | `reviews/<slug>-qc.md` | `templates/qc.md` | ⑦ |
-| `sources/` | — originals, never edited | ① and whenever new input arrives |
+| `sources/` | — originals only, never edited (our scripts and logs: `repro/`) | ① and whenever new input arrives |
 | `<docs>/README.md` (index) | `templates/docs-index.md` | close-out (generated — phases/close-out.md) |
 | `<discovery>/YYYY-MM-DD-<slug>.md` | `templates/discovery.md` | phases/discoveries.md |
 | state file | `templates/progress.md` | every transition (core §5) |
@@ -21,7 +21,10 @@ slug** — a file opened in an editor tab, pasted into a diff or found by search
 **Sources.** A material user input (requirements document, screenshot, spreadsheet) is kept as the
 original file under `sources/` and never edited — a new version is a new file. If it cannot be
 captured (e.g. an image pasted into chat), describe what it showed in the story and record that as
-a limitation. Never claim an input was preserved when it was not.
+a limitation. Never claim an input was preserved when it was not. `sources/` holds originals only:
+our own scripts and command logs go to `repro/`. A summary of an input is not the original: record
+it as a limitation, name it `<name>-summary`, and keep the original if one exists. The story's
+Sources section lists the files kept there (the template has the section).
 
 **Limitations.** What could not be inspected or verified (no production access, not sampled, out of
 scope, runtime unavailable) is recorded in the item's plan/review/QC. A limitation is never a
