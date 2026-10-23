@@ -11,8 +11,8 @@ import { capture, tmpDir } from './helpers.js';
 // Step 3 of the first run: after setup, a NEW agent session runs the project-understanding command. It is its own
 // titled block at the very end of setup, with a ready-to-copy line per selected agent, in the chosen language.
 const STEP = {
-  en: { title: 'Step 3 — understand this project', once: 'once', approved: 'an approved understanding is not repeated', draft: 'a draft is completed', claude: '/burhan:onboard', codex: 'Follow .burhan/commands/onboard.md', session: 'NEW agent session' },
-  ar: { title: 'الخطوة 3 — فهم المشروع', once: 'مرة واحدة', approved: 'الفهم المعتمد مش بيتكرر', draft: 'المسودة بتتكمّل', claude: '/burhan:onboard', codex: 'اتبع .burhan/commands/onboard.md', session: 'جلسة agent جديدة' },
+  en: { title: 'Step 3 — start your first session', anyMessage: 'type any message', checkFirst: 'check command', oneApproval: 'approve it once', conditional: 'if it is not set yet', greets: 'only greets you', direct: 'straight to the understanding step', once: 'once', approved: 'an approved understanding is not repeated', draft: 'a draft is completed', claude: '/burhan:onboard', codex: 'Follow .burhan/commands/onboard.md', session: 'NEW agent session' },
+  ar: { title: 'الخطوة 3 — ابدأ أول جلسة', anyMessage: 'اكتب أي رسالة', checkFirst: 'أمر الفحص', oneApproval: 'بتوافق عليه مرة واحدة', conditional: 'لو لسه مش متظبط', greets: 'رد بتحية بس', direct: 'تروح للفهم على طول', once: 'مرة واحدة', approved: 'الفهم المعتمد مش بيتكرر', draft: 'المسودة بتتكمّل', claude: '/burhan:onboard', codex: 'اتبع .burhan/commands/onboard.md', session: 'جلسة agent جديدة' },
 } as const;
 const home = tmpDir('burhan-onboard-home-');
 const fresh = (): string => { const d = tmpDir('burhan-onboard-'); spawnSync('git', ['init', '-q'], { cwd: d }); return d; };
@@ -25,7 +25,7 @@ function checkBlock(out: string, lang: 'en' | 'ar', agents: readonly string[], d
   assert.ok(at > out.lastIndexOf(done), 'the block comes after the "done" lines');
   const block = out.slice(at);
   assert.ok(block.split('\n')[0].trim() === s.title || block.startsWith(s.title), 'the title is its own line');
-  for (const word of [s.once, s.session, s.approved, s.draft]) assert.ok(block.includes(word), `${lang}: ${word}`);
+  for (const word of [s.once, s.session, s.approved, s.draft, s.anyMessage, s.checkFirst, s.oneApproval, s.direct, s.conditional, s.greets]) assert.ok(block.includes(word), `${lang}: ${word}`);
   assert.equal(block.includes(s.claude), agents.includes('claude'), `${lang}: the Claude line only when Claude is selected`);
   assert.equal(block.includes(s.codex), agents.includes('codex'), `${lang}: the Codex sentence only when Codex is selected`);
 }
@@ -35,7 +35,7 @@ for (const lang of ['en', 'ar'] as const) for (const [choice, agents] of Object.
   test(`${lang}/${choice}: the wizard ends with the step-3 block`, async () => {
     const t = fresh();
     const r = capture(t);
-    const script = ['choose', choice, 'step', 'private', ...(choice === 'both' ? ['same'] : []), 'apply'];
+    const script = ['choose', choice, 'step', 'private', 'beside', ...(choice === 'both' ? ['same'] : []), 'apply'];
     assert.equal(await runWizard(t, r.io, scriptedPrompter(script), lang, home), 0, r.o.err);
     checkBlock(r.o.out, lang, agents, done);
   });
@@ -50,10 +50,11 @@ for (const lang of ['en', 'ar'] as const) for (const [choice, agents] of Object.
   });
 }
 
-test('--agent rules: relay the step-3 block as it appears and tell the person to open a new session', () => {
+test('--agent rules: relay the step-3 block as it appears and tell the person to open a new session and type any message', () => {
   const en = agentInstructions(fresh(), 'en', home);
   assert.match(en, /relay the "Step 3" block .*exactly as it appears/iu);
   assert.match(en, /new agent session/iu);
+  assert.match(en, /types? any message/iu);
   const ar = agentInstructions(fresh(), 'ar', home);
-  assert.ok(ar.includes('الخطوة 3') && ar.includes('جلسة agent جديدة'), ar);
+  assert.ok(ar.includes('الخطوة 3') && ar.includes('جلسة agent جديدة') && ar.includes('أي رسالة'), ar);
 });

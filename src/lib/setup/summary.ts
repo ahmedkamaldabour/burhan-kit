@@ -17,6 +17,7 @@ function describe(f: PlannedFile, m: Messages): string {
     case 'hooks': return m.what.hooks(created, AGENT_OF[f.rel] ?? 'agent');
     case 'bootstrap': return m.what.bootstrap(created);
     case 'gitignore': return m.what.gitignore;
+    case 'state': return m.what.state;
     default: return m.what.managed(created);
   }
 }
@@ -77,6 +78,7 @@ export function renderSummary(p: SetupPlan, lang: 'en' | 'ar', superpowersAgents
     `  ${m.agents(p.answers.agents)}`,
     `  ${m.mode(p.answers.mode)}`,
     `  ${m.docs(docsLabel)}`,
+    `  ${m.discovery(`${cfg.WF_DISCOVERY_DIR}/`)}`,
     ...(p.answers.agents.length > 1 ? [`  ${m.reviewer(p.answers.reviewer ?? 'same')}`] : []),
     `  ${m.models}`,
     `  ${m.branches}`,

@@ -16,6 +16,20 @@ ar_sections=('الـ flow في لمحة' 'شوفه شغّال' 'هتاخد إي�
 # (a hypothesis that fits every number, proved only by macOS CI turning green; macOS CI log 2026-10-22).
 section() { awk -v h="## $2" 'index($0, h) == 1 && length($0) == length(h) { on=1; next } /^## / { on=0 } on' "$1"; }
 step() { awk -v a="$2" -v b="$3" 'index($0, a) == 1 && length($0) == length(a) { on=1; next } b != "" && index($0, b) == 1 && length($0) == length(b) { on=0 } on' "$1"; }
+FENCE_AWK='function lead(l) { sub(/^ ? ? ?/, "", l); return l }
+function fch(l,   t) { t = lead(l); if (index(t, "```") == 1) return "`"; if (index(t, "~~~") == 1) return "~"; return "" }
+function flen(l,   t, c, k) { t = lead(l); c = substr(t, 1, 1); k = 0; while (index(substr(t, k + 1, 1), c) == 1) k++; return k }
+function ftag(l,   t) { t = lead(l); return substr(t, flen(l) + 1) }'
+# Fenced blocks of a text on stdin, "tag<TAB>line count<TAB>first line" (``` or ~~~, any length, up to three leading spaces; an unclosed block is reported as "unclosed"); and the lines of block number N.
+fences() { awk "$FENCE_AWK"'
+{ f = fch($0) }
+inb { if (f != "" && index(f, ch) == 1 && flen($0) >= fl && ftag($0) ~ /^[ \t\r]*$/) { print tag "\t" n "\t" first; inb = 0 } else { n++; if (n == 1) first = $0 } next }
+f != "" { inb = 1; ch = f; fl = flen($0); tag = ftag($0); n = 0; first = "" }
+END { if (inb) print "unclosed\t" n "\t" first }'; }
+block_n() { awk -v want="$1" "$FENCE_AWK"'
+{ f = fch($0) }
+inb { if (f != "" && index(f, ch) == 1 && flen($0) >= fl && ftag($0) ~ /^[ \t\r]*$/) { inb = 0 } else if (k == want) print; next }
+f != "" { inb = 1; ch = f; fl = flen($0); k++ }'; }
 hero() { awk 'NR == 1 { next } /^## / { exit } { print }' "$1" | grep -vF "$GH/README"; }
 markdown_targets() { grep -oE '!{0,1}\[[^]]*\]\([^)]*\)' "$1" 2>/dev/null | sed -E 's/^!?\[[^]]*\]\(([^ )]+).*\)$/\1/'; }
 raw_html_tags() { grep -nE '<[[:alpha:]][[:alnum:]-]*([[:space:]][^>]*)?>|</[[:alpha:]][[:alnum:]-]*[[:space:]]*>' "$1" | grep -vE '<slug>|<name>|<cmd|<re>|<p;q>|<ref>|<id>' || true; }
@@ -33,6 +47,13 @@ feature_count() {
   echo "$n"
 }
 
+echo "the fence helpers see ~~~, long and indented fences, and an unclosed block"
+sample="$(printf 'x\n```bash\nnpx a\n```\ny\n~~~text\nl1\nl2\n~~~\n  ````text\n```\nz\n````\n```bash\nopen\n~~~\nstill open\n')"
+check_eq "fences: four kinds of block, the last unclosed" "$(printf '%s\n' "$sample" | fences | tr '\t\n' ' :')" 'bash 1 npx a:text 2 l1:text 2 ```:unclosed 3 open:'
+crlf="$(printf '```bash\r\nnpx a\r\n```\r\n')"
+check_eq "fences: a CRLF file closes its blocks" "$(printf '%s\n' "$crlf" | fences | cut -f1 | tr -d '\r' | tr '\n' ' ')" 'bash '
+check_eq "block_n: the second block is the ~~~ one" "$(printf '%s\n' "$sample" | block_n 2 | tr '\n' '|')" 'l1|l2|'
+
 echo "structure: same headings in English and Arabic, short, no raw HTML"
 for i in "${!en_sections[@]}"; do
   check "$EN has ## ${en_sections[$i]}" "$(grep -F -x "## ${en_sections[$i]}" $EN)" has "## ${en_sections[$i]}"
@@ -40,8 +61,9 @@ for i in "${!en_sections[@]}"; do
 done
 check_eq "same number of H2 headings (en/ar)" "$(grep -c '^## ' $AR)" "$(grep -c '^## ' $EN)"
 check_eq "same number of H3 headings (en/ar)" "$(grep -c '^### ' $AR)" "$(grep -c '^### ' $EN)"
-check_eq "README.md is at most 150 lines" "$([ "$(wc -l < $EN)" -le 150 ] && echo yes)" yes
-check_eq "README.ar.md is at most 155 lines" "$([ "$(wc -l < $AR)" -le 155 ] && echo yes)" yes
+# The caps were 150 and 155; the install section in two parts (readme-install-split, owner Q-1) brought both files to 198 lines; AC-07 (Step 3 in short paragraphs) made it 202, so 210 and 215.
+check_eq "README.md is at most 210 lines" "$([ "$(wc -l < $EN)" -le 210 ] && echo yes)" yes
+check_eq "README.ar.md is at most 215 lines" "$([ "$(wc -l < $AR)" -le 215 ] && echo yes)" yes
 for f in $EN $AR; do
   check "$f has no raw HTML tags" "$(raw_html_tags "$f")" lacks ':'
   check "$f has no image, GIF or badge" "$(grep -nE '!\[|shields\.io|badge' "$f")" lacks ':'
@@ -257,6 +279,8 @@ for f in $EN $AR; do
   check "$f example: the verification gate message, word for word" "$see" has '⚠ VERIFICATION GATE: completion was claimed, but the last run of `npm test 2>&1 | tail -15` was blocked and never ran. Run it, show the output — or retract the claim.'
   check "$f example: the ledger line of the refused run" "$see" has 'cmd  exit ?  blocked  npm test 2>&1 | tail -15'
   check "$f example: says it is shortened" "$see" has '…'
+  check "$f example: the first-use sentence is conditional on the checks not being set up" "$see" has "$([ "$f" = $EN ] && echo 'as long as the checks are not set up yet' || echo 'طول ما الـ checks لسه مش متظبطة')"
+  check "$f example: the first-use block is now asked for in the first session" "$see" has "$([ "$f" = $EN ] && echo 'in your first session (Step 3)' || echo 'في أول جلسة (الخطوة 3)')"
 done
 check "$EN example: says it is a real run" "$(section $EN 'See it work')" has 'real run'
 check "$AR example: says it is a real run" "$(section $AR 'شوفه شغّال')" has 'run حقيقي'
@@ -276,19 +300,43 @@ echo "install: three headed steps, in order, each ends with what you should see"
 S1='### Step 1 — Superpowers (recommended)'; S2='### Step 2 — Set up burhan'; S3='### Step 3 — Let the agent understand your project'
 A1='### الخطوة 1 — Superpowers (موصى بيه)'; A2='### الخطوة 2 — جهّز burhan'; A3='### الخطوة 3 — خلّي الـ agent يفهم مشروعك'
 for f in $EN $AR; do
-  if [ "$f" = $EN ]; then h=('Install in 3 steps' "$S1" "$S2" "$S3"); else h=('التثبيت في 3 خطوات' "$A1" "$A2" "$A3"); fi
+  if [ "$f" = $EN ]; then
+    h=('Install in 3 steps' "$S1" "$S2" "$S3"); tbl='**Which part do I use?**'; p1='**Part 1 — Manual install (you run the commands)**'
+    p2='**Part 2 — Install through your agent (you copy, the agent runs)**'; codexonly='Codex only —'; approval='my approval'; anymsg='type any message'; maxline=380; t1='Part 1'; t2='Part 2'; bothrev='with both agents, who reviews'
+  else
+    h=('التثبيت في 3 خطوات' "$A1" "$A2" "$A3"); tbl='**أستخدم أنهي جزء؟**'; p1='**الجزء 1 — تثبيت يدوي (إنت اللي بتكتب الأوامر)**'
+    p2='**الجزء 2 — التثبيت عن طريق الـ agent (إنت بتنسخ والـ agent بينفّذ)**'; codexonly='Codex بس —'; approval='موافقتي'; anymsg='اكتب أي رسالة'; maxline=560; t1='الجزء 1'; t2='الجزء 2'; bothrev='ولو بتستخدم الـ agents الاتنين ومين يراجع'
+  fi
   inst="$(section "$f" "${h[0]}")"
-  order="$(printf '%s\n' "$inst" | grep -nxF -e "${h[1]}" -e "${h[2]}" -e "${h[3]}" | cut -d: -f2- | tr '\n' '|')"
-  check_eq "$f three step headings in order" "$order" "${h[1]}|${h[2]}|${h[3]}|"
+  order="$(printf '%s\n' "$inst" | grep -nxF -e "$tbl" -e "$p1" -e "${h[1]}" -e "${h[2]}" -e "${h[3]}" -e "$p2" | cut -d: -f2- | tr '\n' '|')"
+  check_eq "$f table, part 1, the three step headings, part 2: in order" "$order" "$tbl|$p1|${h[1]}|${h[2]}|${h[3]}|$p2|"
   s1="$(printf '%s\n' "$inst" | step /dev/stdin "${h[1]}" "${h[2]}")"
   s2="$(printf '%s\n' "$inst" | step /dev/stdin "${h[2]}" "${h[3]}")"
-  s3="$(printf '%s\n' "$inst" | step /dev/stdin "${h[3]}" "")"
+  s3="$(printf '%s\n' "$inst" | step /dev/stdin "${h[3]}" "$p2")"
+  part1="$(printf '%s\n' "$inst" | step /dev/stdin "$p1" "$p2")"
+  part2="$(printf '%s\n' "$inst" | step /dev/stdin "$p2" "")"
+  table="$(printf '%s\n' "$inst" | step /dev/stdin "$tbl" "$p1")"
   check "$f step 1: the Claude Code command" "$s1" has '/plugin install superpowers@claude-plugins-official'
   check "$f step 1: the conditional Codex route" "$s1" has '`/plugins`'
   check "$f step 2: run it yourself" "$s2" has 'npx burhan-kit'
-  check "$f step 2: or let the agent run it" "$s2" has 'npx burhan-kit setup --agent'
   check "$f step 2: doctor" "$s2" has 'npx burhan-kit doctor'
   check "$f step 2: the Codex trust step" "$s2" has '/hooks'
+  check_eq "$f step 2: the Codex trust is its own line, with the configuration link" "$(printf '%s\n' "$s2" | awk -v c="$codexonly" 'index($0, c) == 1' | grep -c 'configuration.md#codex-trust-the-hooks')" 1
+  check "$f which-part table: names part 1" "$table" has "$t1"
+  check "$f which-part table: names part 2" "$table" has "$t2"
+  check_eq "$f which-part table: header, separator and two rows" "$(printf '%s\n' "$table" | grep -c '^|')" 4
+  check_eq "$f every block in the install section is tagged bash or text" "$(printf '%s\n' "$inst" | fences | cut -f1 | grep -cvxE 'bash|text')" 0
+  check_eq "$f every bash block is one line and starts without \$" "$(printf '%s\n' "$inst" | fences | awk -F'\t' 'index($1, "bash") == 1 && (length($1) != 4 || $2 != 1 || index($3, "$") == 1)' | wc -l | tr -d ' ')" 0
+  check_eq "$f part 1: exactly two bash blocks, the two shell commands" "$(printf '%s\n' "$part1" | fences | awk -F'\t' 'index($1, "bash") == 1 { print $3 }' | tr '\n' '|')" 'npx burhan-kit|npx burhan-kit doctor|'
+  check_eq "$f part 2: exactly two text blocks and no bash block" "$(printf '%s\n' "$part2" | fences | cut -f1 | tr '\n' '|')" 'text|text|'
+  check "$f part 2: prompt 1 runs setup --agent and waits for approval" "$(printf '%s\n' "$part2" | block_n 1)" has 'npx burhan-kit setup --agent'
+  check "$f part 2: prompt 1 asks for approval" "$(printf '%s\n' "$part2" | block_n 1)" has "$approval"
+  check "$f part 2: prompt 2 follows the onboarding command" "$(printf '%s\n' "$part2" | block_n 2)" has '.burhan/commands/onboard.md'
+  check "$f part 2: or type any message" "$part2" has "$anymsg"
+  check_eq "$f step 3: no paragraph over $maxline bytes (short sentences, not one block)" "$(printf '%s\n' "$s3" | awk -v m="$maxline" 'length($0) > m' | wc -l | tr -d ' ')" 0
+  check "$f step 2: the reviewer phrase belongs to the two-agent case" "$s2" has "$bothrev"
+  check_eq "$f part 2: the Codex trust comes after prompt 1 (nothing is installed before it)" "$(printf '%s\n' "$part2" | awk 'index($0, "```") == 1 { f++; next } index($0, "/hooks") { print f }' | tr '\n' ' ')" '2 '
+  check "$f step 3: the commands typed in the agent are text blocks" "$(printf '%s\n' "$s3" | fences | cut -f3 | tr '\n' '|')" has '/burhan:onboard|Follow .burhan/commands/onboard.md|'
   check "$f step 3: the Claude Code command" "$s3" has '/burhan:onboard'
   check "$f step 3: the Codex sentence" "$s3" has 'Follow .burhan/commands/onboard.md'
   for n in 1 2 3; do
@@ -300,10 +348,13 @@ check "$EN step 1: strongly recommended, optional, never installed" "$(cat $EN)"
 check "$AR step 1: strongly recommended, optional, never installed" "$(cat $AR)" has 'اختياري، لكن موصى به بقوة: burhan مش بيسطّبه خالص'
 check "$EN step 1: start at step 2 to try first" "$(cat $EN)" has 'Want to try burhan first? Start at Step 2.'
 check "$AR step 1: start at step 2 to try first" "$(cat $AR)" has 'عايز تجرّب burhan الأول؟ ابدأ من الخطوة 2.'
-check "$EN step 2: the question count" "$(cat $EN)" has 'three questions (four when you use both agents)'
-check "$AR step 2: the question count" "$(cat $AR)" has 'تلات أسئلة (أربعة لو بتستخدم الـ agents الاتنين)'
+check "$EN step 2: the question count" "$(cat $EN)" has 'four questions (five when you use both agents)'
+check "$AR step 2: the question count" "$(cat $AR)" has 'أربع أسئلة (خمسة لو بتستخدم الـ agents الاتنين)'
 check "$EN step 3: a new session" "$(cat $EN)" has 'open a NEW agent session'
+check "$EN step 3: any message" "$(cat $EN)" has 'type any message, for example'
+check "$EN step 3: the check command comes first, only if not set" "$(cat $EN)" has 'tell the agent to set up your project'"'"'s check command first, if it is not set yet'
 check "$AR step 3: a new session" "$(cat $AR)" has 'افتح جلسة agent جديدة'
+check "$AR step 3: any message" "$(cat $AR)" has 'اكتب أي رسالة'
 check "$EN step 3: once" "$(cat $EN)" has 'Run it once'
 check "$AR step 3: once" "$(cat $AR)" has 'شغّله مرة واحدة'
 
@@ -311,6 +362,7 @@ echo "first task and team"
 for f in $EN $AR; do
   first="$(section "$f" "$([ "$f" = $EN ] && echo 'Your first task' || echo 'أول مهمة ليك')")"
   check "$f first task: the command" "$first" has '/burhan:e2e <slug>'
+  check "$f first task: the checks are set up only if they are not yet" "$first" has "$([ "$f" = $EN ] && echo "your project's checks are not set up yet" || echo 'لو checks المشروع لسه مش متظبطة')"
   check "$f first task: the long walkthrough" "$first" has "$GH/docs/first-task.md"
   team="$(section "$f" "$([ "$f" = $EN ] && echo 'Teams and project memory' || echo 'الفرق والذاكرة')")"
   for p in '.burhan/PROJECT.md' '.burhan/context/' '.burhan/local/'; do check "$f team: $p" "$team" has "$p"; done

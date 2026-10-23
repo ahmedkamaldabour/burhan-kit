@@ -15,6 +15,11 @@ if the agent reports them); `burhan stats` averages them.
 - **Pointer-only:** never copy review findings, test output or verification detail into it — link
   the file. The same rule holds for every index (`<docs>/README.md`, the discovery index).
 - Remove a `Waiting on you` / `Commit instructions` line **in the same turn** it is resolved.
+- **One session per item.** Work one item in a session and start the next in a fresh one (it begins by
+  reading the state file). When an item closes, its block in `Now` shrinks to one line — slug, route,
+  result and the path to its files — and its details stay in the item's files, so the file stays under
+  its budget. When the file nears its budget, fold closed lines into one line per release or phase
+  (slugs only; the commit ids stay in the item files).
 
 **Status vocabularies** (use exactly these words):
 - Sub-unit: ⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed
@@ -26,7 +31,7 @@ if the agent reports them); `burhan stats` averages them.
   `Completed` on a route without Q → `Done (no QC)`.
 
 **Close-out** — whenever an item stops being in flight, in the same turn:
-1. Remove its block from `Now`.
+1. Shrink its block in `Now` to one line (a bullet, not a `###` heading: a heading counts as an item in flight).
 2. Regenerate the docs index with the kit's status command (bindings · Kit command, e.g.
    `burhan status --write`); never hand-edit it. A merge conflict in the index is resolved by
    re-running the command. States (derived from the item files): `Draft` · `Spec ready` ·

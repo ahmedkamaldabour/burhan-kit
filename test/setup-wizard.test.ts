@@ -85,9 +85,9 @@ test('fast path: two answers, files written (AC-03)', async () => {
 });
 
 test('choose myself asks four questions with both agents, then the summary choice', async () => {
-  const t = fresh(); const p = scriptedPrompter(['choose', 'both', 'auto', 'shared', 'other', 'apply']); const { io } = capture(t);
+  const t = fresh(); const p = scriptedPrompter(['choose', 'both', 'auto', 'shared', 'beside', 'other', 'apply']); const { io } = capture(t);
   assert.equal(await runWizard(t, io, p, 'en', home), 0);
-  assert.equal(p.asked.length, 6); // use/choose + 4 questions + apply
+  assert.equal(p.asked.length, 7); // use/choose + 5 questions (the reviewer one too) + apply
   assert.equal(cfg(t).WF_MODE_DEFAULT, 'auto');
   assert.equal(cfg(t).WF_DOCS_DIR, 'docs/burhan/work');
   assert.equal(cfg(t).WF_REVIEWER_AGENT, 'other');
@@ -95,10 +95,10 @@ test('choose myself asks four questions with both agents, then the summary choic
 
 test('a legacy reviewer preselects other while Q4 offers only other and same', async () => {
   const t = fresh();
-  const initial = scriptedPrompter(['choose', 'both', 'step', 'private', 'other', 'apply']);
+  const initial = scriptedPrompter(['choose', 'both', 'step', 'private', 'beside', 'other', 'apply']);
   assert.equal(await runWizard(t, capture(t).io, initial, 'en', home), 0);
   writeFileSync(join(t, '.burhan/workflow.config'), "WF_REVIEWER_AGENT='claude'\n");
-  const scripted = scriptedPrompter(['use', 'change', 'both', 'step', 'private', 'other', 'apply']);
+  const scripted = scriptedPrompter(['use', 'change', 'both', 'step', 'private', 'beside', 'other', 'apply']);
   let reviewerChoices: string[] = []; let reviewerInitial = '';
   const p = { ...scripted, select: async <T>(message: string, choices: Choice<T>[], initial: T) => {
     if (/review.*QC/i.test(message)) { reviewerChoices = choices.map((choice) => String(choice.value)); reviewerInitial = String(initial); }
@@ -111,9 +111,9 @@ test('a legacy reviewer preselects other while Q4 offers only other and same', a
 });
 
 test('"change something" goes back to the questions, prefilled', async () => {
-  const t = fresh(); const p = scriptedPrompter(['use', 'change', 'claude', 'step', 'private', 'apply']); const { io } = capture(t);
+  const t = fresh(); const p = scriptedPrompter(['use', 'change', 'claude', 'step', 'private', 'beside', 'apply']); const { io } = capture(t);
   assert.equal(await runWizard(t, io, p, 'en', home), 0);
-  assert.equal(p.asked.length, 6);
+  assert.equal(p.asked.length, 7);
 });
 
 test('cancel anywhere writes nothing and exits 0', async () => {
@@ -138,7 +138,7 @@ test('the summary is shown before anything is written, with the undo and nothing
 test('custom path uses the engine rule (rejects ../x, accepts notes/work)', async () => {
   assert.notEqual(docsPathError('../x'), undefined);
   assert.equal(docsPathError('notes/work'), undefined);
-  const t = fresh(); const p = scriptedPrompter(['choose', 'claude', 'step', 'custom', '../x', 'notes/work', 'apply']); const { io } = capture(t);
+  const t = fresh(); const p = scriptedPrompter(['choose', 'claude', 'step', 'custom', '../x', 'notes/work', 'beside', 'apply']); const { io } = capture(t);
   assert.equal(await runWizard(t, io, p, 'en', home), 0);
   assert.equal(cfg(t).WF_DOCS_DIR, 'notes/work');
   assert.ok(p.shown.some((x) => /leaves this project/.test(x)));
@@ -174,7 +174,7 @@ test('--lang ar shows Arabic and no setting names', async () => {
 
 test('an installed project opens prefilled (AC-17)', async () => {
   const t = fresh(); const { io } = capture(t);
-  await runWizard(t, io, scriptedPrompter(['choose', 'claude', 'auto', 'shared', 'apply']), 'en', home);
+  await runWizard(t, io, scriptedPrompter(['choose', 'claude', 'auto', 'shared', 'beside', 'apply']), 'en', home);
   const p = scriptedPrompter(['use', 'apply']);
   await runWizard(t, io, p, 'en', home);
   assert.match(p.shown.join('\n'), /Current settings of this project/);

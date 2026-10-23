@@ -1,14 +1,15 @@
 import { readFileSync, statSync } from 'node:fs';
 import type { Io } from '../../main.js';
 import { BurhanError } from '../errors.js';
-import { applySetup, currentAnswers, docsPathError, planSetup, recommended, renderSummary, type DocsChoice, type SetupAnswers, type SetupFilesystem } from './engine.js';
+import { applySetup, currentAnswers, discoveryPathError, docsPathError, planSetup, recommended, renderSummary, type DiscoveryChoice, type DocsChoice, type SetupAnswers, type SetupFilesystem } from './engine.js';
 import { superpowersLine } from './summary.js';
 import { messages, QUESTIONS, REVIEWER_QUESTION, type Lang } from './messages.js';
 
 /** `setup --agent`: the rules for the agent, then one json block with the questions and the recommended answers. */
 export function agentInstructions(target: string, lang: Lang, home: string): string {
   const m = messages(lang);
-  const recommendedAnswers = { ...(currentAnswers(target) ?? recommended(target, home)), lang };
+  const base = currentAnswers(target) ?? recommended(target, home);
+  const recommendedAnswers = { ...base, discovery: base.discovery ?? { kind: 'beside' as const }, lang };
   const plan = planSetup(target, recommendedAnswers, home);
   const catalog = recommendedAnswers.agents.length > 1 ? [...QUESTIONS[lang], REVIEWER_QUESTION[lang]] : QUESTIONS[lang];
   const questions: { id: string; text: string; choices: { value: string; label: string; hint: string }[] }[] = catalog.map((q) => ({ id: q.id, text: q.ask, choices: q.options.map((o) => ({ value: o.value, label: o.label, hint: o.hint ?? '' })) }));
@@ -43,7 +44,7 @@ export function readAnswers(file: string, lang: Lang): SetupAnswers {
   try { v = JSON.parse(text); } catch { throw new BurhanError(m.notJson(file)); }
   if (typeof v !== 'object' || v === null || Array.isArray(v)) throw new BurhanError(m.notObject);
   const o = v as Record<string, unknown>;
-  rejectUnknownFields(o, ['agents', 'mode', 'docs', 'lang', 'reviewer'], m.unknownField);
+  rejectUnknownFields(o, ['agents', 'mode', 'docs', 'discovery', 'lang', 'reviewer'], m.unknownField);
   const suppliedAgents = typeof o.agents === 'string' ? [o.agents] : o.agents;
   const agents = Array.isArray(suppliedAgents) ? suppliedAgents.flatMap((agent) => agent === 'both' ? ['claude', 'codex'] : [agent]) : suppliedAgents;
   if (!Array.isArray(agents) || agents.length === 0 || !agents.every((a) => a === 'claude' || a === 'codex') || new Set(agents).size !== agents.length) throw new BurhanError(m.badAgents);
@@ -61,10 +62,24 @@ export function readAnswers(file: string, lang: Lang): SetupAnswers {
       docs = { kind: 'custom', path: docFields.path };
     } else throw new BurhanError(m.badDocs);
   } else throw new BurhanError(m.badDocs);
+  let discovery: DiscoveryChoice | undefined;
+  const supplied = o.discovery;
+  if (supplied === undefined) discovery = undefined;
+  else if (supplied === 'beside') discovery = { kind: 'beside' };
+  else if (typeof supplied === 'object' && supplied !== null && !Array.isArray(supplied)) {
+    const f = supplied as Record<string, unknown>;
+    rejectUnknownFields(f, ['kind', 'path'], m.unknownField);
+    if (f.kind === 'beside' && f.path === undefined) discovery = { kind: 'beside' };
+    else if (f.kind === 'custom' && typeof f.path === 'string') {
+      const bad = discoveryPathError(f.path, docs);
+      if (bad !== undefined) throw new BurhanError(bad);
+      discovery = { kind: 'custom', path: f.path };
+    } else throw new BurhanError(m.badDiscovery);
+  } else throw new BurhanError(m.badDiscovery);
   if (o.lang !== undefined && o.lang !== 'en' && o.lang !== 'ar') throw new BurhanError(m.badLang);
   if (o.reviewer !== undefined && o.reviewer !== 'other' && o.reviewer !== 'same') throw new BurhanError(m.badReviewer);
   if (agents.length === 1 && o.reviewer !== undefined) throw new BurhanError(m.badReviewer);
-  return { agents: agents as SetupAnswers['agents'], mode: o.mode, docs, lang: (o.lang as Lang | undefined) ?? lang, reviewer: o.reviewer as 'other' | 'same' | undefined };
+  return { agents: agents as SetupAnswers['agents'], mode: o.mode, docs, ...(discovery ? { discovery } : {}), lang: (o.lang as Lang | undefined) ?? lang, reviewer: o.reviewer as 'other' | 'same' | undefined };
 }
 
 /** `setup --answers <file> [--apply]`: the summary, or (with --apply) write it and print the after-apply lines. */

@@ -99,7 +99,7 @@ test('--agent prints rules and one json block: same questions as the wizard, rec
   assert.deepEqual(j.questions.map((q) => q.id), QUESTIONS.en.map((q) => q.id));
   assert.deepEqual(j.questions.map((q) => q.text), QUESTIONS.en.map((q) => q.ask));
   assert.deepEqual(j.questions.map((q) => q.choices.map((c) => c.value)), QUESTIONS.en.map((q) => q.options.map((c) => c.value)));
-  assert.deepEqual(j.recommended, recommended(t, home));
+  assert.deepEqual(j.recommended, { ...recommended(t, home), discovery: { kind: 'beside' } });
 });
 
 test('--agent includes Q4 only when both agents are selected, with other as its default', () => {
@@ -147,8 +147,8 @@ test('--agent --lang ar uses the Arabic question texts', async () => {
 });
 
 const SETS: { name: string; a: SetupAnswers; script: string[] }[] = [
-  { name: 'private/step/claude', a: { agents: ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en' }, script: ['choose', 'claude', 'step', 'private', 'apply'] },
-  { name: 'shared/auto/claude+codex', a: { agents: ['claude', 'codex'], mode: 'auto', docs: { kind: 'shared' }, lang: 'en', reviewer: 'same' }, script: ['choose', 'both', 'auto', 'shared', 'same', 'apply'] },
+  { name: 'private/step/claude', a: { agents: ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en' }, script: ['choose', 'claude', 'step', 'private', 'beside', 'apply'] },
+  { name: 'shared/auto/claude+codex', a: { agents: ['claude', 'codex'], mode: 'auto', docs: { kind: 'shared' }, lang: 'en', reviewer: 'same' }, script: ['choose', 'both', 'auto', 'shared', 'beside', 'same', 'apply'] },
 ];
 for (const s of SETS) {
   test(`parity: wizard and --answers --apply write identical trees, ${s.name} (AC-10)`, async () => {
@@ -164,11 +164,11 @@ for (const s of SETS) {
   });
 }
 
-const printableAnswers = (lang: 'en' | 'ar'): Record<'agents' | 'mode' | 'docs', string>[] => {
-  const printedChoices = Object.fromEntries(QUESTIONS[lang].map((q) => [q.id, q.options.map((o) => o.value)])) as Record<'agents' | 'mode' | 'docs', string[]>;
+const printableAnswers = (lang: 'en' | 'ar'): Record<'agents' | 'mode' | 'docs' | 'discovery', string>[] => {
+  const printedChoices = Object.fromEntries(QUESTIONS[lang].map((q) => [q.id, q.options.map((o) => o.value)])) as Record<'agents' | 'mode' | 'docs' | 'discovery', string[]>;
   return printedChoices.agents.flatMap((agents) =>
     printedChoices.mode.flatMap((mode) =>
-      printedChoices.docs.filter((docs) => docs !== 'custom').map((docs) => ({ agents, mode, docs }))));
+      printedChoices.docs.filter((docs) => docs !== 'custom').map((docs) => ({ agents, mode, docs, discovery: 'beside' }))));
 };
 
 for (const lang of ['en', 'ar'] as const) {
@@ -210,7 +210,7 @@ test('the existing arrays and docs-kind answers shape remains accepted (AC-11)',
   const A = repo(); const B = repo();
   const answers = { agents: ['codex'], mode: 'auto', docs: { kind: 'custom', path: 'notes/work' } };
   const { io: wizardIo } = capture(A);
-  assert.equal(await runWizard(A, wizardIo, scriptedPrompter(['choose', 'codex', 'auto', 'custom', 'notes/work', 'apply']), 'en', home), 0);
+  assert.equal(await runWizard(A, wizardIo, scriptedPrompter(['choose', 'codex', 'auto', 'custom', 'notes/work', 'beside', 'apply']), 'en', home), 0);
   const { o, io } = capture(B);
   assert.equal(await runCli(['setup', B, '--answers', answersFile(answers), '--apply'], io), 0, o.err);
   assert.deepEqual(currentAnswers(B), currentAnswers(A));
@@ -277,12 +277,12 @@ test('bad input: a missing file exits 2 with "burhan: ..."', async () => {
 
 test('installed project: "recommended" is the current answers (AC-17)', async () => {
   const t = repo(); const { io: wio } = capture(t);
-  assert.equal(await runWizard(t, wio, scriptedPrompter(['choose', 'both', 'auto', 'shared', 'same', 'apply']), 'en', home), 0);
+  assert.equal(await runWizard(t, wio, scriptedPrompter(['choose', 'both', 'auto', 'shared', 'beside', 'same', 'apply']), 'en', home), 0);
   const cur = currentAnswers(t);
   assert.ok(cur);
   const { o, io } = capture(t);
   assert.equal(await runCli(['setup', t, '--agent'], io), 0);
-  assert.deepEqual(agentJson(o.out).recommended, cur);
+  assert.deepEqual(agentJson(o.out).recommended, { ...cur, discovery: { kind: 'beside' } });
   assert.equal(cur.mode, 'auto');
 });
 

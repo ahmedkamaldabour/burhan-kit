@@ -1,18 +1,18 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { applyPlan, KIT_COMMAND, planInstall, type InstallPlan, type PlannedFile } from '../install.js';
 import { BurhanError } from '../errors.js';
 import { parseConfig, TEAM_CONFIG } from '../config.js';
 import { cfgPath } from '../../hooks/core/config.mjs';
-import { putFile, realTarget } from '../fs-safe.js';
+import { putFile, realTarget, resolveWritePath } from '../fs-safe.js';
 import { kitDir, nodeHooksDir } from '../kit.js';
 import { readExistingHooks, type ExistingHook } from '../hooks-merge.js';
-import { PRIVATE_DISCOVERY, PRIVATE_DOCS, SHARED_DISCOVERY, SHARED_DOCS, type SetupAnswers } from './answers.js';
+import { currentAnswers as installedAnswers, PRIVATE_DISCOVERY, PRIVATE_DOCS, SHARED_DISCOVERY, SHARED_DOCS, type DocsChoice, type SetupAnswers } from './answers.js';
 import { assertWritable, setConfigKeys } from './config-write.js';
 
-export { recommended, currentAnswers } from './answers.js';
-export type { DocsChoice, SetupAnswers } from './answers.js';
+export { recommended } from './answers.js';
+export type { DiscoveryChoice, DocsChoice, SetupAnswers } from './answers.js';
 export { renderSummary } from './summary.js';
 
 export interface SetupPlan {
@@ -53,7 +53,7 @@ function filesBelow(target: string, rel: string): string[] {
 function committedSetupFiles(target: string, planned?: readonly PlannedFile[]): string[] {
   const privateFile = (rel: string): boolean => /^\.burhan\/(local|work|discovery)(\/|$)/.test(rel);
   if (planned) return planned.flatMap((file) => {
-    if (file.action === 'remove' || privateFile(file.rel)) return [];
+    if (file.action === 'remove' || file.kind === 'state' || privateFile(file.rel)) return [];
     if (!file.rel.endsWith('/')) return [file.rel];
     const kitRel = file.rel.replace(/^\.burhan\//, '').replace(/\/$/, '');
     if (kitRel === 'hooks/node') return filesBelow(nodeHooksDir(), '').map((rel) => `.burhan/hooks/node${rel}`);
@@ -106,38 +106,108 @@ function superpowersPresent(home: string): boolean {
   return walk(join(home, '.claude', 'plugins'), 1);
 }
 
-/** The folder rule. Custom: the docs folder is the path; discovery files go beside it in `<path>-discovery`
- *  (never inside it, so a work item can never collide with the discovery folder). Always project-relative. */
-function folders(a: SetupAnswers): { docs: string; discovery: string } {
-  const d = a.docs;
-  if (d.kind === 'private') return { docs: PRIVATE_DOCS, discovery: PRIVATE_DISCOVERY };
-  if (d.kind === 'shared') return { docs: SHARED_DOCS, discovery: SHARED_DISCOVERY };
-  const path = d.path.trim().replace(/^(\.\/)+/, '').replace(/\/+$/, '');
-  const bad = (why: string): never => { throw new BurhanError(`the work files folder "${d.path}" ${why} — type a folder inside this project, like docs/work`); };
+/** The project-relative folder rule, one for the work files and for the discovery folder; `kind` names it in the message. */
+function cleanFolder(kind: string, raw: string, example: string, root?: string): string {
+  const path = raw.trim().replace(/^(\.\/)+/, '').replace(/\/+$/, '');
+  const bad = (why: string): never => { throw new BurhanError(`the ${kind} folder "${raw}" ${why} — type a folder inside this project, like ${example}`); };
   if (path === '') bad('is empty');
   if (/^\/|^[A-Za-z]:|\\|^~/.test(path)) bad('is not a path inside this project');
   if (path.split('/').some((s) => s === '..' || s === '')) bad('leaves this project');
-  if (path.split('/').some((s) => s === '.')) bad('has a "." step — type the folder plainly, like docs/work');
+  if (path.split('/').some((s) => s === '.')) bad('has a "." step');
   // Never the project root itself, git's internals or burhan's own folder.
-  if (/^\.?$|^\.git(\/|$)|^\.burhan(\/|$)/.test(path)) bad('is a folder burhan or git keeps for itself');
+  if (/^\.?$|^\.burhan(\/|$)|(^|\/)\.git(\/|$)/i.test(path)) bad('is a folder burhan or git keeps for itself');
   if (/[$`"]/.test(path)) bad('has a character that cannot be saved');
-  assertWritable('the work files folder', path);
-  return { docs: path, discovery: `${path}-discovery` };
+  assertWritable(`the ${kind} folder`, path);
+  if (root !== undefined) {
+    // A link in the path (or the folder itself) must not lead out of the project.
+    const top = realTarget(root);
+    const landing = resolveWritePath(join(top, path));
+    if (landing === null || !(landing === top || landing.startsWith(top + sep))) bad('is, or runs through, a link that leaves this project');
+  }
+  return path;
+}
+const cleanDocs = (raw: string, root?: string): string => cleanFolder('work files', raw, 'docs/work', root);
+const cleanDiscovery = (raw: string, root?: string): string => cleanFolder('discovery', raw, 'docs/discovery', root);
+const overlaps = (a: string, b: string): boolean => a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+
+function docsFolder(d: DocsChoice, root?: string): string {
+  return d.kind === 'private' ? PRIVATE_DOCS : d.kind === 'shared' ? SHARED_DOCS : cleanDocs(d.path, root);
+}
+
+/** A real directory (not a link) inside the project root, or false. */
+function realDirInside(root: string, rel: string): boolean {
+  try {
+    const abs = join(root, rel);
+    if (!lstatSync(abs).isDirectory()) return false;
+    const top = realpathSync(root);
+    const real = realpathSync(abs);
+    return real === top || real.startsWith(top + sep);
+  } catch { return false; }
+}
+
+/** What "next to the work files" means: the fixed folders for private/shared; for a custom docs folder an existing
+ *  `discovery` folder in the same parent, else `<docs>-discovery` (beside it, never inside it). `root` unset = no look at the disk. */
+function besideDiscovery(d: DocsChoice, root?: string): string {
+  if (d.kind === 'private') return PRIVATE_DISCOVERY;
+  if (d.kind === 'shared') return SHARED_DISCOVERY;
+  const docs = cleanDocs(d.path);
+  const slash = docs.lastIndexOf('/');
+  const found = slash < 0 ? 'discovery' : `${docs.slice(0, slash)}/discovery`;
+  if (root !== undefined && found !== docs && realDirInside(root, found)) return found;
+  return `${docs}-discovery`;
+}
+
+/** The folder rule. Custom: the docs folder is the path; discovery files go beside it (see besideDiscovery) or where the
+ *  person says. Always project-relative. */
+function folders(a: SetupAnswers, root?: string): { docs: string; discovery: string } {
+  const docs = docsFolder(a.docs, root);
+  if (a.discovery?.kind === 'custom') {
+    const discovery = cleanDiscovery(a.discovery.path, root);
+    if (overlaps(discovery, docs)) throw new BurhanError(`the discovery folder "${a.discovery.path}" overlaps the work files folder "${docs}" — type a different folder, like docs/discovery`);
+    return { docs, discovery };
+  }
+  return { docs, discovery: besideDiscovery(a.docs, root) };
 }
 
 /** The one folder rule, for a prompt to check a typed path with (undefined = fine). */
-export function docsPathError(path: string): string | undefined {
-  try { folders({ agents: [], mode: 'step', lang: 'en', docs: { kind: 'custom', path } }); return undefined; }
+export function docsPathError(path: string, root?: string): string | undefined {
+  try { folders({ agents: [], mode: 'step', lang: 'en', docs: { kind: 'custom', path } }, root); return undefined; }
   catch (e) { if (e instanceof BurhanError) return e.message; throw e; }
+}
+
+/** The same rule for the discovery folder, given the work files choice it must not overlap. */
+export function discoveryPathError(path: string, docs: DocsChoice, root?: string): string | undefined {
+  try { folders({ agents: [], mode: 'step', lang: 'en', docs, discovery: { kind: 'custom', path } }, root); return undefined; }
+
+  catch (e) { if (e instanceof BurhanError) return e.message; throw e; }
+}
+
+/** The folder "next to the work files" means for these work files, for a prompt to show (needs valid work files). */
+export function discoveryBeside(target: string, docs: DocsChoice): string {
+  return besideDiscovery(docs, realTarget(target));
+}
+
+/** The answers an existing install stands for, plus a custom discovery answer when its saved folder is not the `beside` one. */
+export function currentAnswers(target: string): SetupAnswers | null {
+  const a = installedAnswers(target);
+  if (a === null) return null;
+  const saved = (existsSync(join(target, TEAM_CONFIG)) ? parseConfig(readFileSync(join(target, TEAM_CONFIG), 'utf8')).values : {}).WF_DISCOVERY_DIR ?? '';
+  if (saved === '') return a;
+  const dir = cfgPath(saved);
+  let beside: string;
+  try { beside = besideDiscovery(a.docs, realTarget(target)); } catch { return a; }
+  // A saved folder today's rules refuse is left to the saved config (kept as before), not turned into an answer.
+  if (dir !== beside && discoveryPathError(dir, a.docs, target) !== undefined) return a;
+  return dir === beside ? a : { ...a, discovery: { kind: 'custom', path: dir } };
 }
 
 const ROW = (name: string, tail: string): RegExp => new RegExp(`^(\\| \\*\\*${name}\\*\\* \\| )(.*?)( \\| ${tail} \\|)$`);
 const placeholder = (v: string): boolean => /^\*\(.*\)\*$/.test(v.trim());
 
-/** Fill the three rows only while they are still the template's placeholders; null = nothing to change. */
-function planBindings(existing: string | null, kitText: string, docsLabel: string): string | null {
+/** Fill the four rows only while they are still the template's placeholders; null = nothing to change. */
+function planBindings(existing: string | null, kitText: string, docsLabel: string, discoveryLabel: string): string | null {
   const text = existing ?? kitText;
-  const rows: [RegExp, string][] = [[ROW('Work-item docs location', '`WF_DOCS_DIR`'), docsLabel], [ROW('Branching rule', '—'), BRANCH_RULE], [ROW('Kit command', '—'), KIT_COMMAND]];
+  const rows: [RegExp, string][] = [[ROW('Work-item docs location', '`WF_DOCS_DIR`'), docsLabel], [ROW('Discovery location', '`WF_DISCOVERY_DIR`'), discoveryLabel], [ROW('Branching rule', '—'), BRANCH_RULE], [ROW('Kit command', '—'), KIT_COMMAND]];
   let changed = existing === null;
   const lines = text.split('\n').map((l) => {
     for (const [re, value] of rows) {
@@ -156,7 +226,7 @@ export function planSetup(target: string, a: SetupAnswers, home: string): SetupP
   const configPath = join(real, TEAM_CONFIG);
   const existingConfig = existsSync(configPath) ? readFileSync(configPath, 'utf8') : null;
   const have = parseConfig(existingConfig ?? '').values;
-  const { docs, discovery } = folders(a);
+  const { docs, discovery } = folders(a, real);
 
   const superpowersAvailable = superpowersPresent(home);
   const superpowersDisabled = have.WF_SKILLS === 'none';
@@ -167,7 +237,8 @@ export function planSetup(target: string, a: SetupAnswers, home: string): SetupP
     WF_REVIEWER_AGENT: a.agents.length > 1 ? (a.reviewer ?? have.WF_REVIEWER_AGENT ?? 'same') : 'same',
   };
   values.WF_DOCS_DIR = docs;
-  values.WF_DISCOVERY_DIR = cfgPath(have.WF_DOCS_DIR || PRIVATE_DOCS) === docs && (have.WF_DISCOVERY_DIR ?? '') !== '' ? have.WF_DISCOVERY_DIR : discovery;
+  const keepSaved = a.discovery === undefined && cfgPath(have.WF_DOCS_DIR || PRIVATE_DOCS) === docs && (have.WF_DISCOVERY_DIR ?? '') !== '';
+  values.WF_DISCOVERY_DIR = keepSaved ? have.WF_DISCOVERY_DIR : discovery;
   if (!(existingConfig !== null && (have.WF_SKILLS ?? '') !== '')) values.WF_SKILLS = skills === 'superpowers' ? 'superpowers' : 'none';
   else values.WF_SKILLS = have.WF_SKILLS;
   const checkEmpty = (have.WF_CHECK_CMD ?? '') === '';
@@ -176,7 +247,7 @@ export function planSetup(target: string, a: SetupAnswers, home: string): SetupP
 
   const bf = join(real, '.burhan/bindings.md');
   const label = a.docs.kind === 'private' ? `\`${docs}/\` (private, git-ignored)` : a.docs.kind === 'shared' ? `\`${docs}/\` (shared in git)` : `\`${docs}/\` (your folder)`;
-  const bindings = planBindings(existsSync(bf) ? readFileSync(bf, 'utf8') : null, readFileSync(join(kit, 'templates/bindings.md'), 'utf8'), label);
+  const bindings = planBindings(existsSync(bf) ? readFileSync(bf, 'utf8') : null, readFileSync(join(kit, 'templates/bindings.md'), 'utf8'), label, `\`${values.WF_DISCOVERY_DIR}/\``);
 
   // setup writes the config and bindings itself (before the install): the install must not create them from the templates.
   const install = planInstall({ mode: existsSync(join(real, '.burhan/WORKFLOW.md')) ? 'upgrade' : 'init', target, agents: a.agents, apply: true, bootstrap: true, keepProjectFiles: true });

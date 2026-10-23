@@ -82,7 +82,7 @@ holds personal overrides, read after the team file, key by key.
 
 | Key | Purpose |
 |---|---|
-| `WF_DOCS_DIR`, `WF_DISCOVERY_DIR`, `WF_STATE_FILE`, `WF_STATE_BUDGET` | where work items, discoveries and the live state file live |
+| `WF_DOCS_DIR`, `WF_DISCOVERY_DIR`, `WF_STATE_FILE`, `WF_STATE_BUDGET` | where work items, discoveries and the live state file live; setup asks for the discovery folder (recommending a `discovery` folder already next to the work files) and creates the state file empty when it is missing, never overwriting one |
 | `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` | the fast, non-mutating check run before every commit |
 | `WF_CODE_REGEX`, `WF_TEST_REGEX` | which paths are code / tests; with `WF_CODE_REGEX` empty the "done without proof" warning stays off |
 | `WF_EVIDENCE_REGEX` | which commands count as verification evidence |

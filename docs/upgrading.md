@@ -14,6 +14,7 @@ npx burhan-kit doctor
 
 - `upgrade` refreshes the kit-owned files (`.burhan/WORKFLOW.md`, `phases/`, `templates/`, `commands/`, `hooks/`, the Claude commands and agents) and the hook entries of the agents already installed. It is safe to repeat.
 - It never rewrites `.burhan/bindings.md` or `.burhan/workflow.config`. `doctor` lists keys a newer version added; copy them from `kit/workflow.config.example` when you want them.
+- It creates the empty state file (`.burhan/local/PROGRESS.md`, or the path in `WF_STATE_FILE`) when it is missing, and never changes one that exists.
 - Your own hooks and settings stay: burhan's hooks run beside them.
 - In Codex, trust the hooks again after an upgrade that changes one (Codex shows it as "Modified since last trusted"; see [Codex: trust the hooks](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks)).
 

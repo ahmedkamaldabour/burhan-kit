@@ -5,16 +5,16 @@ import type { Agent } from '../bootstrap.js';
 import { parseConfig, TEAM_CONFIG } from '../config.js';
 import { realTarget } from '../fs-safe.js';
 import { runCheck } from '../../hooks/core/run-check.mjs';
-import { applySetup, currentAnswers, docsPathError, planSetup, recommended, renderSummary, type SetupAnswers } from './engine.js';
+import { applySetup, currentAnswers, discoveryBeside, discoveryPathError, docsPathError, planSetup, recommended, renderSummary, type SetupAnswers } from './engine.js';
 import { PRIVATE_DOCS, SHARED_DOCS } from './answers.js';
 import { messages, QUESTIONS, REVIEWER_QUESTION, type Lang } from './messages.js';
 import { CANCEL, type Prompter } from './prompter.js';
 
 const agentValue = (a: SetupAnswers): string => (a.agents.length > 1 ? 'both' : a.agents[0]);
 
-/** AC-04: exactly the three questions, sequentially, each starting on the current answer (the recommended one on a fresh project). */
-async function ask(p: Prompter, a: SetupAnswers, lang: Lang): Promise<SetupAnswers | typeof CANCEL> {
-  const [qa, qm, qd] = QUESTIONS[lang];
+/** AC-04: exactly the four questions (five with two agents), sequentially, each starting on the current answer (the recommended one on a fresh project). */
+async function ask(p: Prompter, a: SetupAnswers, lang: Lang, target: string): Promise<SetupAnswers | typeof CANCEL> {
+  const [qa, qm, qd, qv] = QUESTIONS[lang];
   const choices = (q: typeof qa) => q.options.map((o) => ({ value: o.value, label: o.label, hint: o.hint }));
   const ag = await p.select(qa.ask, choices(qa), agentValue(a));
   if (ag === CANCEL) return CANCEL;
@@ -24,10 +24,21 @@ async function ask(p: Prompter, a: SetupAnswers, lang: Lang): Promise<SetupAnswe
   if (kind === CANCEL) return CANCEL;
   let docs: SetupAnswers['docs'];
   if (kind === 'custom') {
-    const path = await p.text(messages(lang).wizard.customPath, a.docs.kind === 'custom' ? a.docs.path : 'docs/work', docsPathError);
+    const path = await p.text(messages(lang).wizard.customPath, a.docs.kind === 'custom' ? a.docs.path : 'docs/work', (v) => docsPathError(v, target));
     if (path === CANCEL) return CANCEL;
     docs = { kind: 'custom', path };
   } else docs = { kind: kind === 'shared' ? 'shared' : 'private' };
+  // Name the folder "beside" means for the work files just chosen.
+  const folder = discoveryBeside(target, docs);
+  const dchoices = qv.options.map((o) => ({ value: o.value, label: o.label, hint: o.value === 'beside' ? `${o.hint ?? ''} · ${folder}/`.trim() : o.hint }));
+  const dkind = await p.select(qv.ask, dchoices, a.discovery?.kind ?? 'beside');
+  if (dkind === CANCEL) return CANCEL;
+  let discovery: NonNullable<SetupAnswers['discovery']>;
+  if (dkind === 'custom') {
+    const path = await p.text(messages(lang).wizard.customDiscoveryPath, a.discovery?.kind === 'custom' ? a.discovery.path : 'docs/discovery', (v) => discoveryPathError(v, docs, target));
+    if (path === CANCEL) return CANCEL;
+    discovery = { kind: 'custom', path };
+  } else discovery = { kind: 'beside' };
   const agents = (ag === 'both' ? ['claude', 'codex'] : [ag]) as Agent[];
   let reviewer: SetupAnswers['reviewer'] = 'same';
   if (agents.length > 1) {
@@ -36,7 +47,7 @@ async function ask(p: Prompter, a: SetupAnswers, lang: Lang): Promise<SetupAnswe
     if (selected === CANCEL) return CANCEL;
     reviewer = selected as SetupAnswers['reviewer'];
   }
-  return { ...a, agents, mode: mode as 'step' | 'auto', docs, reviewer, lang };
+  return { ...a, agents, mode: mode as 'step' | 'auto', docs, discovery, reviewer, lang };
 }
 
 /** AC-01–03, 04, 06: what you get → recommended or choose → summary → apply / change / cancel. Cancel anywhere writes nothing and exits 0. */
@@ -50,7 +61,8 @@ export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' 
   const cfg = a.docs.kind === 'private' ? PRIVATE_DOCS : a.docs.kind === 'shared' ? SHARED_DOCS : a.docs.path;
   const docsKind = a.docs.kind === 'private' ? m.docsPrivate : a.docs.kind === 'shared' ? m.docsShared : m.docsCustom;
   p.note([...w.what, '', w.scope].join('\n'));
-  p.note([installed ? w.current : w.recommended, `  ${m.agents(a.agents)}`, `  ${m.mode(a.mode)}`, `  ${m.docs(`${cfg}/ (${docsKind})`)}`,
+  const found = parseConfig(planSetup(target, a, home).config).values.WF_DISCOVERY_DIR ?? '';
+  p.note([installed ? w.current : w.recommended, `  ${m.agents(a.agents)}`, `  ${m.mode(a.mode)}`, `  ${m.docs(`${cfg}/ (${docsKind})`)}`, `  ${m.discovery(`${found}/`)}`,
     ...(installed ? [] : [`  ${m.check(true, '')}`])].join('\n'));
   const first = await p.select(w.useOrChoose, [{ value: 'use', label: w.use }, { value: 'choose', label: w.choose }], 'use');
   if (first === CANCEL) return cancelled();
@@ -58,7 +70,7 @@ export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' 
   let asking = first === 'choose';
   for (;;) {
     if (asking) {
-      const r = await ask(p, a, lang);
+      const r = await ask(p, a, lang, target);
       if (r === CANCEL) return cancelled();
       a = r;
     }

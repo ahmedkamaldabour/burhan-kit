@@ -182,3 +182,7 @@ R179|agents/claude/burhan-reviewer.md|reads only the fix diff and the findings l
 R180|commands/qc.md|confirmation round
 R181|commands/e2e.md|review group
 R182|templates/plan.md|Review group
+R183|phases/close-out.md|One session per item
+R184|phases/close-out.md|shrinks to one line
+R185|phases/close-out.md|its details stay in the item's files
+R186|phases/close-out.md|fold closed lines into one line per release

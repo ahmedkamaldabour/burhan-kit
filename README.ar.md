@@ -60,6 +60,8 @@ agent  **Route:** feature / bounded. It's one pure function with no scope escala
        **Waiting on you:** reply "approved" to approve both the story and the plan … I won't write code before then.
 ```
 
+الـ block بتاع `Check before commit` فوق طلع في run بدأ بـ `/burhan:e2e`؛ وبعد خطوات التثبيت اللي تحت، تنبيه بداية الـ session بيطلبه من الـ agent في أول جلسة (الخطوة 3)، طول ما الـ checks لسه مش متظبطة.
+
 الـ **hook** سكريبت صغير الـ agent بيشغّله في لحظات محددة (بداية الـ session، رسالتك، قبل الـ commit، بعد تعديل، نهاية الـ turn). في run تاني الـ agent عدّل ملف، ما قدرش يشغّل الـ check، وقال “Done.” الـ hook اللي في نهاية الـ turn رد، والـ agent سحب كلامه. والـ **ledger** هو السجل الخاص بكل تعديل وأمر؛ و`npx burhan-kit evidence` بيطبعه، وهنا `npm test` بتاع الـ run ده — اترفض من الـ permission prompt بتاع الـ agent نفسه، مش من burhan — متعلّم `blocked`:
 
 ```text
@@ -89,29 +91,86 @@ agent  **Route:** feature / bounded. It's one pure function with no scope escala
 
 ## التثبيت في 3 خطوات
 
+**أستخدم أنهي جزء؟**
+
+| عايز… | استخدم |
+|---|---|
+| تكتب الأوامر بنفسك في terminal | الجزء 1 |
+| تنسخ برومت والـ agent يشغّل الـ setup | الجزء 2 |
+
+**الجزء 1 — تثبيت يدوي (إنت اللي بتكتب الأوامر)**
+
 ### الخطوة 1 — Superpowers (موصى بيه)
 
 Superpowers اختياري، لكن موصى به بقوة: burhan مش بيسطّبه خالص. لو موجود، burhan بيستخدم الـ skills بتاعته في كل مرحلة (brainstorming قبل الـ story، وTDD وإنت بتبني، وتأكيد قبل “done”). عايز تجرّب burhan الأول؟ ابدأ من الخطوة 2.
 
-- Claude Code: `/plugin install superpowers@claude-plugins-official` · Codex، لو لسه مش متسطّب: شغّل `/plugins`، دوّر على `superpowers`، واختار Install Plugin.
+Claude Code — اكتب ده جوّه Claude Code:
+
+```text
+/plugin install superpowers@claude-plugins-official
+```
+
+Codex — لو لسه مش متسطّب: شغّل `/plugins`، دوّر على `superpowers`، واختار Install Plugin.
 
 المفروض تشوف: في ملخص الخطوة 2 جملة “Superpowers found” (Claude Code بس؛ الـ setup مش بيدوّر في Codex).
 
 ### الخطوة 2 — جهّز burhan
 
-في مشروعك، بـ Node 22 أو أحدث، شغّل `npx burhan-kit`. هيسألك تلات أسئلة (أربعة لو بتستخدم الـ agents الاتنين): أنهي agents، والـ agent يرجعلك إمتى، وملفات المهام تتحفظ فين (ومين يراجع). وبيوريك ملخص ومش بيكتب حاجة قبل ما تأكد. أو اطلب من الـ agent يشغّل `npx burhan-kit setup --agent`. الـ setup بيضيف hooks لإعدادات الـ agent وبيسيب اللي عندك. في Codex، وثّق hooks بتاعت burhan في `/hooks` وإلا مش هتشتغل ([الخطوات](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks))؛ و`npx burhan-kit doctor` بيحذّرك لو مش موثّقة.
+في مشروعك، بـ Node 22 أو أحدث، شغّل الأمر ده في terminal. هيسألك أربع أسئلة (خمسة لو بتستخدم الـ agents الاتنين): أنهي agents، والـ agent يرجعلك إمتى، وملفات المهام تتحفظ فين، والملاحظات الجانبية (discoveries) تتحفظ فين، ولو بتستخدم الـ agents الاتنين ومين يراجع. وبيوريك ملخص ومش بيكتب حاجة قبل ما تأكد. الـ setup بيضيف hooks لإعدادات الـ agent وبيسيب اللي عندك.
+
+```bash
+npx burhan-kit
+```
+
+وبعدين اتأكد من الـ setup:
+
+```bash
+npx burhan-kit doctor
+```
+
+Codex بس — وثّق hooks بتاعت burhan في `/hooks` وإلا مش هتشتغل ([الخطوات](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks))؛ و`doctor` بيحذّرك لو مش موثّقة.
 
 المفروض تشوف: قايمة الملفات اللي اتعملت، و`npx burhan-kit doctor` بيطبع آخر سطر فيه بيبدأ بـ `0 fail`.
 
 ### الخطوة 3 — خلّي الـ agent يفهم مشروعك
 
-مرة واحدة، افتح جلسة agent جديدة (الـ **session** يعني محادثة واحدة مع الـ agent) في المشروع، وبعدين: Claude Code: `/burhan:onboard`؛ Codex: قول `Follow .burhan/commands/onboard.md`. الـ agent بيقرا المشروع كله، وبيوريك مسودة وإيه اللي ما قدرش يفحصه، وبيحفظها بس بعد موافقتك: الـ **baseline** بتاعك. شغّله مرة واحدة: الفهم المعتمد مش بيتكرر، والمسودة بتتكمّل.
+مرة واحدة، افتح جلسة agent جديدة (الـ **session** يعني محادثة واحدة مع الـ agent) في المشروع واكتب أي رسالة، مثلًا `ابدأ`.
+
+تنبيهات burhan بتقول للـ agent يظبط الأول أمر الفحص بتاع مشروعك لو لسه مش متظبط (بتوافق عليه مرة واحدة). وبعدين الـ agent يقرا المشروع كله، ويوريك مسودة وإيه اللي ما قدرش يفحصه، ومش بيحفظها غير بعد موافقتك: الـ **baseline** بتاعك.
+
+ولو الـ agent رد بتحية بس، أو عايز تروح للفهم على طول، اكتب الأمر ده بدل الرسالة. Claude Code:
+
+```text
+/burhan:onboard
+```
+
+Codex:
+
+```text
+Follow .burhan/commands/onboard.md
+```
+
+شغّله مرة واحدة: الفهم المعتمد مش بيتكرر، والمسودة بتتكمّل.
 
 المفروض تشوف: مسودة بتقول المشروع ده إيه وبيعمل إيه، والأسئلة اللي الـ agent معرفش يجاوبها. مفيش حاجة بتتحفظ قبل ما تقرر.
 
+**الجزء 2 — التثبيت عن طريق الـ agent (إنت بتنسخ والـ agent بينفّذ)**
+
+انسخ ده للـ agent بتاعك، في مشروعك.
+
+```text
+شغّل `npx burhan-kit setup --agent` وامشي على اللي بيطبعه. اسألني الأسئلة اللي بيدّيهالك، سؤال سؤال، وبعدين وريني الملخص. متطبّقش حاجة غير بعد موافقتي.
+```
+
+ولما الـ setup يخلص: لو بتستخدم Codex، وثّق hooks بتاعت burhan الأول في `/hooks` (زي الخطوة 2). وبعدين انسخ ده في جلسة agent جديدة في المشروع، أو اكتب أي رسالة هناك وخلاص:
+
+```text
+اظبط أمر الفحص بتاع المشروع ده لو لسه مش متظبط، وبعدين اتبع `.burhan/commands/onboard.md`: وريني المسودة وإيه اللي ما قدرتش تفحصه، ومتحفظش حاجة غير بعد موافقتي.
+```
+
 ## أول مهمة ليك
 
-ابدأ تغيير صغير بـ `/burhan:e2e <slug>` (عنوان قصير يكفي). أول مرة الـ agent بيجهّز checks المشروع (block واحد بتوافق عليه)، وبعدين بيكتب story وخطة ويقف عند “approved” بتاعك. بترد على أسئلته القليلة، وهو بيبني test-first، وreviewer جديد بيراجع الشغل، وبيسألك قبل ما يعمل commit. ولو عندك أكتر من مهمة مفتوحة، `npx burhan-kit use <slug>` بيربط الـ session بواحدة. الـ run المسجّل كله، كل رسالة وكل تحذير، في [docs/first-task.md](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md).
+ابدأ تغيير صغير بـ `/burhan:e2e <slug>` (عنوان قصير يكفي). لو checks المشروع لسه مش متظبطة، الـ agent بيجهّزها الأول (block واحد بتوافق عليه). وبعدين بيكتب story وخطة ويقف عند “approved” بتاعك. بترد على أسئلته القليلة، وهو بيبني test-first، وreviewer جديد بيراجع الشغل، وبيسألك قبل ما يعمل commit. ولو عندك أكتر من مهمة مفتوحة، `npx burhan-kit use <slug>` بيربط الـ session بواحدة. الـ run المسجّل كله، كل رسالة وكل تحذير، في [docs/first-task.md](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md).
 
 ## الفرق والذاكرة
 

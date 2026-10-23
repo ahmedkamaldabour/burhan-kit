@@ -3,9 +3,9 @@ import type { ExistingHook } from '../hooks-merge.js';
 
 export type Lang = 'en' | 'ar';
 export interface Option { value: string; label: string; hint?: string }
-export interface Question<I extends string = 'agents' | 'mode' | 'docs'> { id: I; ask: string; options: Option[] }
+export interface Question<I extends string = 'agents' | 'mode' | 'docs' | 'discovery'> { id: I; ask: string; options: Option[] }
 
-/** The three install questions (AC-04). Plain words only: no setting names, patterns or internal terms. */
+/** The install questions (AC-04). Plain words only: no setting names, patterns or internal terms. */
 export const QUESTIONS: Record<Lang, Question[]> = {
   en: [
     { id: 'agents', ask: 'Which coding agents do you use in this project?', options: [
@@ -22,6 +22,10 @@ export const QUESTIONS: Record<Lang, Question[]> = {
       { value: 'private', label: 'Only on my machine — .burhan/work/ (not in git)' },
       { value: 'custom', label: 'A folder I choose' },
     ] },
+    { id: 'discovery', ask: 'Where should burhan save side findings it notices mid-task?', options: [
+      { value: 'beside', label: 'Next to the work files — a discovery folder already there, else a new one', hint: 'recommended' },
+      { value: 'custom', label: 'A folder I choose' },
+    ] },
   ],
   ar: [
     { id: 'agents', ask: 'بتستخدم أنهي أدوات AI للبرمجة في المشروع ده؟', options: [
@@ -36,6 +40,10 @@ export const QUESTIONS: Record<Lang, Question[]> = {
     { id: 'docs', ask: 'burhan يحفظ الـ story والخطة والـ reviews بتاعة كل مهمة فين؟', options: [
       { value: 'shared', label: 'في git للفريق — docs/burhan/work/', hint: 'مقترح' },
       { value: 'private', label: 'على جهازي بس — .burhan/work/ (بره git)' },
+      { value: 'custom', label: 'فولدر أختاره أنا' },
+    ] },
+    { id: 'discovery', ask: 'burhan يحفظ الملاحظات الجانبية اللي بيلاحظها أثناء الشغل فين؟', options: [
+      { value: 'beside', label: 'جنب ملفات الشغل — فولدر discovery لو موجود هناك، وإلا فولدر جديد', hint: 'مقترح' },
       { value: 'custom', label: 'فولدر أختاره أنا' },
     ] },
   ],
@@ -67,6 +75,7 @@ export interface Messages {
   agents(list: Agent[]): string;
   mode(m: 'step' | 'auto'): string;
   docs(label: string): string;
+  discovery(label: string): string;
   reviewer(value: 'other' | 'same' | 'claude' | 'codex'): string;
   docsPrivate: string; docsShared: string; docsCustom: string;
   models: string;
@@ -87,7 +96,7 @@ export interface Messages {
     what: string[]; scope: string; recommended: string; current: string;
     useOrChoose: string; use: string; choose: string;
     applyOrChange: string; apply: string; change: string; cancel: string;
-    customPath: string; cancelled: string;
+    customPath: string; customDiscoveryPath: string; cancelled: string;
     done: string; askAgent: string; runCheck(cmd: string): string; runYes: string; runNo: string;
     terminalOnly: string;
   };
@@ -103,6 +112,7 @@ export interface Messages {
     badAgents: string;
     badMode: string;
     badDocs: string;
+    badDiscovery: string;
     badLang: string;
     badReviewer: string;
   };
@@ -123,6 +133,7 @@ export interface Messages {
     bootstrap(created: boolean): string;
     managed(created: boolean): string;
     gitignore: string;
+    state: string;
     removed: string;
   };
 }
@@ -136,6 +147,7 @@ const en: Messages = {
     use: "Use these settings (you'll see the full summary before anything is written)", choose: 'Let me choose myself',
     applyOrChange: 'What now?', apply: 'Apply', change: 'Change something', cancel: 'Cancel',
     customPath: 'Type the folder for the work files, inside this project (for example docs/work):',
+    customDiscoveryPath: 'Type the folder for the side findings, inside this project (for example docs/discovery):',
     cancelled: 'Cancelled. Nothing was changed.',
     done: 'Done. burhan is set up in this project.',
     askAgent: 'To change settings later, run npx burhan-kit setup, or ask your agent: change burhan settings',
@@ -148,6 +160,7 @@ const en: Messages = {
   agents: (l) => `Agents: ${l.join(', ')}`,
   mode: (m) => m === 'step' ? 'Pauses: show the plan, then pause after each part' : "Pauses: show the plan once, then continue until it's ready to commit",
   docs: (l) => `Work files: ${l}`,
+  discovery: (l) => `Discoveries: ${l}`,
   reviewer: (v) => v === 'other' ? 'Review and QC: the other agent' : v === 'claude' || v === 'codex' ? `Review and QC: ${v === 'claude' ? 'Claude' : 'Codex'} (kept from your existing settings)` : 'Review and QC: the same agent in a fresh context',
   docsPrivate: 'private, not in git', docsShared: 'shared in git', docsCustom: 'your folder',
   models: 'Models: same as your session',
@@ -167,11 +180,12 @@ const en: Messages = {
   codexTrust: "Codex: first-use setup starts after you trust burhan's hooks in Codex (open Codex in this project and review them).",
   newAgentSession: (target) => `Start a new agent session in ${target} for burhan's hooks to take effect.`,
   onboardStep: (agents) => [
-    'Step 3 — understand this project (once, in a NEW agent session)',
-    'Open a NEW agent session inside this project, then:',
+    'Step 3 — start your first session (once, in a NEW agent session)',
+    'Open a NEW agent session inside this project and type any message — for example: start.',
+    "burhan's reminders tell the agent to set up the project's check command first, if it is not set yet (you approve it once), then to read the whole project and understand it. It shows you a draft and what it could not examine, and saves it in the repo only after you approve. Run once: an approved understanding is not repeated, and a draft is completed. If the agent only greets you, use the direct line below.",
+    'To go straight to the understanding step instead:',
     ...(agents.includes('claude') ? ['  Claude Code — type: /burhan:onboard'] : []),
     ...(agents.includes('codex') ? ['  Codex — say: Follow .burhan/commands/onboard.md'] : []),
-    'The agent reads the whole project, shows you a draft and what it could not examine, and saves it in the repo only after you approve. Run it once: an approved understanding is not repeated, and a draft is completed.',
   ],
   ignoredCommittedFiles: (lines) => ['Warning: these files are ignored by this project’s .gitignore. Add these exact lines; burhan did not edit it:', ...lines],
   outsideSettings: (paths) => ['Warning: these settings files are symlinks to real files outside this project:', ...paths.map((path) => `  ${path.rel} → ${path.real} — outside this project`)],
@@ -190,7 +204,8 @@ const en: Messages = {
       '- Show its summary to the person. Run it again with --apply only after the user says yes.',
       '- Relay the Superpowers line below exactly as it appears. Do not paraphrase or omit it.',
       '- Under Q3, if CLAUDE.md, AGENTS.md, or project commands name a stories/specs folder, offer: A folder I choose — <path> (already used by this project). Never guess or select that folder.',
-      '- After --apply, relay the "Step 3" block it prints exactly as it appears, as its own part of your reply (not folded into the closing report): the person opens a NEW agent session in the project and runs it there.',
+      '- For the discovery question, recommend "beside" and tell the person which folder "beside" means: a `discovery` folder next to the work files folder they chose if one exists there, else `<work files folder>-discovery` (the summary names it); if the person names their own folder, put {"kind":"custom","path":"<folder>"} under "discovery".',
+      '- After --apply, relay the "Step 3" block it prints exactly as it appears, as its own part of your reply (not folded into the closing report): the person opens a NEW agent session in the project and types any message there.',
       "- End with a closing report in the user's writing language: at most six short lines; say what changed, what remains open, and how to undo. No table and no setting names.",
     ],
     readFailed: (f, w) => `cannot read the answers file ${f}: ${w}`,
@@ -203,6 +218,7 @@ const en: Messages = {
     badAgents: 'agents must be "claude", "codex", or "both", or a non-empty list of "claude" and/or "codex"',
     badMode: 'mode must be "step" or "auto"',
     badDocs: 'docs must be "private" or "shared", {"kind":"private"} or {"kind":"shared"}, or {"kind":"custom","path":"<folder inside the project>"}',
+    badDiscovery: 'discovery must be "beside", {"kind":"beside"}, or {"kind":"custom","path":"<folder inside the project>"}',
     badLang: 'lang must be "en" or "ar"',
     badReviewer: 'reviewer must be "other" or "same", and is allowed only when both agents are selected',
   },
@@ -238,6 +254,7 @@ const en: Messages = {
     bootstrap: (c) => c ? 'a short pointer to the working agreement' : 'a short block at the end, your text untouched',
     managed: (c) => c ? 'managed by burhan' : 'refreshed (managed by burhan)',
     gitignore: 'scoped rules keep local state, private work and discoveries out of git; kit, config and memory stay trackable',
+    state: 'an empty state file for the agent to read first and keep up to date',
     removed: 'no longer needed with these settings',
   },
 };
@@ -251,6 +268,7 @@ const ar: Messages = {
     use: 'استخدم الإعدادات دي (هتشوف الملخص كله قبل ما أي حاجة تتكتب)', choose: 'هختار بنفسي',
     applyOrChange: 'نعمل إيه دلوقتي؟', apply: 'نفّذ', change: 'غيّر حاجة', cancel: 'إلغاء',
     customPath: 'اكتب فولدر ملفات الشغل جوّه المشروع ده (مثلًا docs/work):',
+    customDiscoveryPath: 'اكتب فولدر الملاحظات الجانبية جوّه المشروع ده (مثلًا docs/discovery):',
     cancelled: 'اتلغى. مفيش حاجة اتغيّرت.',
     done: 'خلاص. burhan جاهز في المشروع ده.',
     askAgent: 'عشان تغيّر الإعدادات بعدين: شغّل npx burhan-kit setup، أو قول للـ agent بتاعك: غيّر إعدادات burhan',
@@ -263,6 +281,7 @@ const ar: Messages = {
   agents: (l) => `الـ agents: ${l.join('، ')}`,
   mode: (m) => m === 'step' ? 'الوقفات: يوريك الخطة، وبعدين يستنّى بعد كل جزء' : 'الوقفات: يوريك الخطة مرة واحدة، وبعدين يكمّل لحد ما الشغل يبقى جاهز للـ commit',
   docs: (l) => `ملفات الشغل: ${l}`,
+  discovery: (l) => `الـ discoveries: ${l}`,
   reviewer: (v) => v === 'other' ? 'المراجعة والـ QC: الـ agent التاني' : v === 'claude' || v === 'codex' ? `المراجعة والـ QC: ${v === 'claude' ? 'Claude' : 'Codex'} (متسابة زي ما هي من إعداداتك)` : 'المراجعة والـ QC: نفس الـ agent في context جديد',
   docsPrivate: 'خاصة بيك، بره git', docsShared: 'مشتركة في git', docsCustom: 'الفولدر بتاعك',
   models: 'الموديلات: نفس موديل الـ session بتاعتك',
@@ -282,11 +301,12 @@ const ar: Messages = {
   codexTrust: 'Codex: الـ setup بتاع أول استخدام بيبدأ بعد ما توافق على الـ hooks بتاعة burhan جوّه Codex (افتح Codex في المشروع ده وراجعها).',
   newAgentSession: (target) => `ابدأ session جديدة للـ agent جوّه ${target} عشان hooks burhan تشتغل.`,
   onboardStep: (agents) => [
-    'الخطوة 3 — فهم المشروع (مرة واحدة، في جلسة agent جديدة)',
-    'افتح جلسة agent جديدة جوّه المشروع ده، وبعدين:',
+    'الخطوة 3 — ابدأ أول جلسة (مرة واحدة، في جلسة agent جديدة)',
+    'افتح جلسة agent جديدة جوّه المشروع ده واكتب أي رسالة — مثلًا: ابدأ.',
+    'تنبيهات burhan بتقول للـ agent يظبط الأول أمر الفحص بتاع المشروع لو لسه مش متظبط (بتوافق عليه مرة واحدة)، وبعدين يقرا المشروع كله ويفهمه. بيوريك مسودة وإيه اللي ما قدرش يفحصه، ومش بيحفظها في الريبو غير بعد موافقتك. الفهم المعتمد مش بيتكرر، والمسودة بتتكمّل. ولو الـ agent رد بتحية بس، استخدم السطر المباشر تحت.',
+    'ولو عايز تروح للفهم على طول:',
     ...(agents.includes('claude') ? ['  Claude Code — اكتب: /burhan:onboard'] : []),
     ...(agents.includes('codex') ? ['  Codex — قول: اتبع .burhan/commands/onboard.md'] : []),
-    'الـ agent بيقرا المشروع كله، ويوريك مسودة وإيه اللي ما قدرش يفحصه، ومش بيحفظها في الريبو غير بعد موافقتك. شغّله مرة واحدة: الفهم المعتمد مش بيتكرر، والمسودة بتتكمّل.',
   ],
   ignoredCommittedFiles: (lines) => ['تحذير: الـ .gitignore بتاع المشروع مخبّي الملفات دي. ضيف السطور دي زي ما هي؛ burhan ماعدّلهاش:', ...lines],
   outsideSettings: (paths) => ['تحذير: ملفات الإعدادات دي symlink لملفات حقيقية برّه المشروع:', ...paths.map((path) => `  ${path.rel} → ${path.real} — دي برّه المشروع`)],
@@ -304,7 +324,8 @@ const ar: Messages = {
       '- حط الإجابات في ملف JSON بنفس شكل "recommended" اللي تحت، وبعدين شغّل: npx burhan-kit setup --answers <file>',
       '- وري الشخص الملخص. ومتشغّلوش بـ --apply غير لما المستخدم يقول أيوه.',
       '- وصّل سطر Superpowers اللي تحت زي ما هو بالظبط. متعيدش صياغته ومتسيبهوش.',
-      '- بعد --apply، وصّل بلوك "الخطوة 3" اللي بيطبعه زي ما هو بالظبط، كجزء لوحده في ردّك (مش جوّه التقرير الختامي): الشخص يفتح جلسة agent جديدة جوّه المشروع ويشغّله هناك.',
+      '- في سؤال الـ discovery، رشّح "beside" وقول للشخص "beside" يعني أنهي فولدر: فولدر `discovery` جنب فولدر ملفات الشغل اللي اختاره لو موجود هناك، وإلا `<فولدر ملفات الشغل>-discovery` (الملخص بيذكره)؛ ولو الشخص سمّى فولدر بنفسه حط {"kind":"custom","path":"<folder>"} تحت "discovery".',
+      '- بعد --apply، وصّل بلوك "الخطوة 3" اللي بيطبعه زي ما هو بالظبط، كجزء لوحده في ردّك (مش جوّه التقرير الختامي): الشخص يفتح جلسة agent جديدة جوّه المشروع ويكتب أي رسالة هناك.',
       '- تحت السؤال التالت، لو CLAUDE.md أو AGENTS.md أو أوامر المشروع مسمّيين فولدر stories/specs، اعرض: فولدر أختاره — <path> (المشروع ده بيستخدمه بالفعل). متخمنش أو تختار الفولدر ده.',
       '- اختم بتقرير بلغة كتابة المستخدم: ستة سطور قصيرة بالكتير؛ قول إيه اتغيّر، وإيه لسه مفتوح، وإزاي يرجع. من غير جدول ولا أسماء إعدادات.',
     ],
@@ -318,6 +339,7 @@ const ar: Messages = {
     badAgents: 'agents لازم تبقى "claude" أو "codex" أو "both"، أو list مش فاضية فيها "claude" و/أو "codex"',
     badMode: 'mode لازم يبقى "step" أو "auto"',
     badDocs: 'docs لازم يبقى "private" أو "shared"، أو {"kind":"private"} أو {"kind":"shared"}، أو {"kind":"custom","path":"<فولدر جوّه المشروع>"}',
+    badDiscovery: 'discovery لازم يبقى "beside" أو {"kind":"beside"} أو {"kind":"custom","path":"<فولدر جوّه المشروع>"}',
     badLang: 'lang لازم يبقى "en" أو "ar"',
     badReviewer: 'reviewer لازم يبقى "other" أو "same"، ومسموح بيه بس لما تختار الـ agents الاتنين',
   },
@@ -353,6 +375,7 @@ const ar: Messages = {
     bootstrap: (c) => c ? 'إشارة قصيرة لاتفاق الشغل' : 'block قصير في الآخر، والنص بتاعك زي ما هو',
     managed: (c) => c ? 'burhan هو اللي بيديره' : 'متحدّث (burhan بيديره)',
     gitignore: 'قواعد للفولدرات الخاصة بس: الحالة والشغل والاكتشافات بره git؛ والـ kit والإعدادات والذاكرة ينفع يتسجّلوا',
+    state: 'ملف حالة فاضي الـ agent بيقراه الأول وبيحدّثه',
     removed: 'مبقاش له لازمة بالإعدادات دي',
   },
 };

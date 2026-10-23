@@ -60,6 +60,8 @@ agent  **Route:** feature / bounded. It's one pure function with no scope escala
        **Waiting on you:** reply "approved" to approve both the story and the plan … I won't write code before then.
 ```
 
+The `Check before commit` block above came from a run that started with `/burhan:e2e`; after the install steps below, the session-start reminder asks the agent for it in your first session (Step 3), as long as the checks are not set up yet.
+
 A **hook** is a small script the agent runs at set moments (session start, your prompt, before a commit, after an edit, end of turn). In another run an agent edited a file, could not run the check, and said “Done.” The end-of-turn hook answered, and the agent took the claim back. The **ledger** is the private record of every edit and command; `npx burhan-kit evidence` prints it, here with that run's `npm test` — refused by the agent's own permission prompt, not by burhan — marked `blocked`:
 
 ```text
@@ -89,29 +91,86 @@ A **hook** is a small script the agent runs at set moments (session start, your 
 
 ## Install in 3 steps
 
+**Which part do I use?**
+
+| You want to… | Use |
+|---|---|
+| type the commands yourself in a terminal | Part 1 |
+| copy a prompt and let your agent run the setup | Part 2 |
+
+**Part 1 — Manual install (you run the commands)**
+
 ### Step 1 — Superpowers (recommended)
 
 Superpowers is optional, but strongly recommended: burhan never installs it. With it, burhan uses its skills at each phase (brainstorming before a story, test-driven development while building, verification before “done”). Want to try burhan first? Start at Step 2.
 
-- Claude Code: `/plugin install superpowers@claude-plugins-official` · Codex, if it is not installed yet: run `/plugins`, search `superpowers`, choose Install Plugin.
+Claude Code — type this inside Claude Code:
+
+```text
+/plugin install superpowers@claude-plugins-official
+```
+
+Codex — if it is not installed yet: run `/plugins`, search `superpowers`, choose Install Plugin.
 
 You should see: in Step 2's summary, “Superpowers found” (Claude Code only; setup does not look in Codex).
 
 ### Step 2 — Set up burhan
 
-In your project, with Node 22 or newer, run `npx burhan-kit`. It asks three questions (four when you use both agents): which agents, when the agent comes back to you, where the task files live (and who reviews). It shows a summary and writes nothing until you confirm. Or ask your agent to run `npx burhan-kit setup --agent`. Setup adds hooks to your agent's settings and keeps the ones you have. In Codex, trust burhan's hooks in `/hooks` or they will not run ([the steps](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks)); `npx burhan-kit doctor` warns when they are not trusted.
+In your project, with Node 22 or newer, run this in a terminal. It asks four questions (five when you use both agents): which agents, when the agent comes back to you, where the task files live, where side findings (discoveries) go, and, with both agents, who reviews. It shows a summary and writes nothing until you confirm. Setup adds hooks to your agent's settings and keeps the ones you have.
+
+```bash
+npx burhan-kit
+```
+
+Then check the setup:
+
+```bash
+npx burhan-kit doctor
+```
+
+Codex only — trust burhan's hooks in `/hooks` or they will not run ([the steps](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks)); `doctor` warns when they are not trusted.
 
 You should see: the list of files created, and `npx burhan-kit doctor` printing a last line that starts with `0 fail`.
 
 ### Step 3 — Let the agent understand your project
 
-Once, open a NEW agent session (a **session** is one conversation with the agent) in the project, then: Claude Code: `/burhan:onboard`; Codex: say `Follow .burhan/commands/onboard.md`. The agent reads the whole project, shows a draft and what it could not examine, and keeps it only after you approve: your **baseline**. Run it once: an approved understanding is not repeated, and a draft is completed.
+Once, open a NEW agent session (a **session** is one conversation with the agent) in the project and type any message, for example `start`.
+
+burhan's reminders tell the agent to set up your project's check command first, if it is not set yet (you approve it once). Then the agent reads the whole project, shows a draft and what it could not examine, and keeps it only after you approve: your **baseline**.
+
+If the agent only greets you, or to go straight to the understanding step, type this instead. Claude Code:
+
+```text
+/burhan:onboard
+```
+
+Codex:
+
+```text
+Follow .burhan/commands/onboard.md
+```
+
+Run it once: an approved understanding is not repeated, and a draft is completed.
 
 You should see: a draft of what the project is and does, and the questions the agent could not answer. Nothing is saved until you decide.
 
+**Part 2 — Install through your agent (you copy, the agent runs)**
+
+Copy this into your agent, in your project.
+
+```text
+Run `npx burhan-kit setup --agent` and follow what it prints. Ask me the questions it gives you, one question per message, then show me the summary. Apply nothing until you have my approval.
+```
+
+When setup has finished: with Codex, first trust burhan's hooks in `/hooks` (as in Step 2). Then copy this into a NEW agent session in the project, or just type any message there:
+
+```text
+Set up this project's check command if it is not set yet, then follow `.burhan/commands/onboard.md`: show me the draft and what you could not examine, and save nothing until I approve.
+```
+
 ## Your first task
 
-Start a small change with `/burhan:e2e <slug>` (a short title works too). The first time, the agent sets up your project's checks (one block you approve), then writes a story and a plan and stops for your “approved”. You answer its few questions, it builds test-first, a fresh reviewer checks the work, and it asks before it commits. With several tasks open, `npx burhan-kit use <slug>` links the session to one. The whole recorded run, every message and warning, is in [docs/first-task.md](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md).
+Start a small change with `/burhan:e2e <slug>` (a short title works too). If your project's checks are not set up yet, the agent sets them up first (one block you approve). Then it writes a story and a plan and stops for your “approved”. You answer its few questions, it builds test-first, a fresh reviewer checks the work, and it asks before it commits. With several tasks open, `npx burhan-kit use <slug>` links the session to one. The whole recorded run, every message and warning, is in [docs/first-task.md](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md).
 
 ## Teams and project memory
 

@@ -52,6 +52,7 @@ check "configuration: no stale CI Node 22 and 24 claim" "$cfgdoc" lacks 'CI runs
 
 echo "v04-release: the upgrade from 0.3.0 is documented"
 check "upgrading: a section for 0.3.0 installs" "$(cat docs/upgrading.md)" has '## Upgrading from 0.3.0'
+check "upgrading: upgrade creates the empty state file when it is missing" "$(cat docs/upgrading.md)" has 'creates the empty state file'
 check "upgrading: the hook entries are unchanged since 0.3.0" "$(cat docs/upgrading.md)" has 'byte-identical'
 check "changelog: 0.4.0 says how to upgrade from 0.3.0" "$(cat CHANGELOG.md)" has '### Upgrading from 0.3.0'
 

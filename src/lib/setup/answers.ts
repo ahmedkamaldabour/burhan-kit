@@ -6,8 +6,10 @@ import { parseConfig, TEAM_CONFIG } from '../config.js';
 import { agentInstalled } from '../hooks-merge.js';
 
 export type DocsChoice = { kind: 'private' } | { kind: 'shared' } | { kind: 'custom'; path: string };
+/** Where side findings go: `beside` = a `discovery` folder next to the work files if one exists, else today's default; or a folder the person names. */
+export type DiscoveryChoice = { kind: 'beside' } | { kind: 'custom'; path: string };
 export interface SetupAnswers {
-  agents: Agent[]; mode: 'step' | 'auto'; docs: DocsChoice; lang: 'en' | 'ar'; reviewer?: 'other' | 'same' | 'claude' | 'codex';
+  agents: Agent[]; mode: 'step' | 'auto'; docs: DocsChoice; discovery?: DiscoveryChoice; lang: 'en' | 'ar'; reviewer?: 'other' | 'same' | 'claude' | 'codex';
 }
 
 /** Where work files go for each choice. Private is invisible to git (R-5); shared keeps the example defaults. */

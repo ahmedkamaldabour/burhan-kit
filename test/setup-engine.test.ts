@@ -288,9 +288,9 @@ test('Q3 names each task artifact and presents path-labelled private, shared, an
   }
 });
 
-test('question texts: three questions, no internal terms other than Q3 task artifacts', () => {
-  assert.equal(QUESTIONS.en.length, 3);
-  assert.equal(QUESTIONS.ar.length, 3);
+test('question texts: four questions, no internal terms other than Q3 task artifacts', () => {
+  assert.equal(QUESTIONS.en.length, 4);
+  assert.equal(QUESTIONS.ar.length, 4);
   const banned = /WF_|\bQC\b|evidence|\bgate|superpowers|regex/i;
   for (const lang of ['en', 'ar'] as const)
     for (const q of QUESTIONS[lang]) {

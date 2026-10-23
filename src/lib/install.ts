@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import type { Io } from '../main.js';
@@ -71,7 +71,7 @@ function nodeRuntimeProblem(): string | null {
 
 /** A file the plan writes or removes; `rel` is project-relative, forward slashes. Kit files are listed at
  *  directory level (trailing `/`, e.g. `.burhan/hooks/core/`) because the whole directory is replaced. */
-export interface PlannedFile { rel: string; existed: boolean; action: 'create' | 'modify' | 'remove'; kind: 'kit' | 'config' | 'hooks' | 'bootstrap' | 'managed' | 'gitignore' }
+export interface PlannedFile { rel: string; existed: boolean; action: 'create' | 'modify' | 'remove'; kind: 'kit' | 'config' | 'hooks' | 'bootstrap' | 'managed' | 'gitignore' | 'state' }
 /** A hooks file whose real path is outside the project: a write would edit someone else's file. */
 export interface OutsideFile { rel: string; real: string }
 export interface InstallPlan { version: string; target: string; blocked: string[]; outside: OutsideFile[]; steps: { say: string; run?: () => void }[]; files: PlannedFile[]; agents: Agent[] }
@@ -268,11 +268,34 @@ export function planInstall(o: InstallOptions): InstallPlan {
   const state = cfg.values.WF_STATE_FILE;
   if (state !== undefined && !state.replace(/^(\.\/)+/, '').startsWith('.burhan/local/'))
     step(`NOTE: WF_STATE_FILE is "${state}" — shared by everyone who commits it. For team use, delete that line from .burhan/workflow.config (the default is .burhan/local/PROGRESS.md, git-ignored) and move your current file there.`);
+  // The state file the bootstrap tells the agent to read first: created empty when absent, never changed when present.
+  const stateRel = (state ?? DEFAULT_STATE).replace(/^(\.\/)+/, '');
+  const stateAbs = join(target, stateRel);
+  const unusable = /^\/|^[A-Za-z]:|\\|(^|\/)\.\.(\/|$)|\/$|^\.git(\/|$)|^\.burhan\/(hooks|phases|templates|commands)(\/|$)/.test(stateRel);
+  const stateLanding = unusable ? null : resolveWritePath(stateAbs);
+  if (existsSync(stateAbs) || isSymlink(stateAbs)) { /* present (or a link we never write through): leave it */ }
+  else if (files.some((f) => f.rel === stateRel)) step(`NOTE: the state file "${stateRel}" is a file burhan writes itself, so it did not create it as a state file — change WF_STATE_FILE`);
+  else if (stateLanding === null || !(stateLanding === target || stateLanding.startsWith(target + sep)) || !isWritable(nearestExisting(dirname(stateAbs)))) step(`NOTE: the state file "${stateRel}" is not a file inside this project that burhan can create (or cannot write to), so it did not — create it yourself or change WF_STATE_FILE`);
+  else {
+    file(stateRel, 'state');
+    // 'wx' fails if anything (a file made since the plan, by another step, or a link) is there: never overwrite.
+    step(`state file ← ${stateRel} (empty; the agent reads it first and keeps it up to date)`, () => {
+      try { mkdirSync(dirname(stateAbs), { recursive: true }); writeFileSync(stateAbs, STATE_TEXT, { flag: 'wx' }); } catch (e) { if (!['EEXIST', 'EACCES', 'EPERM', 'EROFS'].includes((e as NodeJS.ErrnoException).code ?? '')) throw e; }
+    });
+  }
   const problem = nodeRuntimeProblem();
   if (problem) step(`NOTE: the hooks run on Node ≥ 22 — ${problem}. Install a current Node and put it first on PATH: the agent runs the \`node\` it finds there.`);
 
   return { version, target, blocked, outside, steps, files, agents };
 }
+
+const DEFAULT_STATE = '.burhan/local/PROGRESS.md';
+const STATE_TEXT = [
+  '# PROGRESS — current state (per developer, git-ignored · read first · budget: WF_STATE_BUDGET lines, default 80 · rules: WORKFLOW.md §5)',
+  '', '## Now', '', '## Waiting on you', '', '## Commit instructions', '', '## Standing facts', '',
+].join('\n');
+const nearestExisting = (p: string): string => { let d = p; while (!existsSync(d) && dirname(d) !== d) d = dirname(d); return d; };
+const isSymlink = (p: string): boolean => { try { return lstatSync(p).isSymbolicLink(); } catch { return false; } };
 
 function runStep(s: { say: string; run?: () => void }): void {
   if (s.run) {

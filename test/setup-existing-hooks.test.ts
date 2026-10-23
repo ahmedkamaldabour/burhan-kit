@@ -116,7 +116,7 @@ test('the setup summary names each existing command per event in English and Egy
 });
 
 for (const lang of ['en', 'ar'] as const) {
-  test(`${lang}: existing hooks stay listed without a fourth question or removal instructions`, async () => {
+  test(`${lang}: existing hooks stay listed without an extra question or removal instructions`, async () => {
     const target = project();
     const file = writeClaudeHooks(target, { SessionStart: [{ hooks: [{ type: 'command', command: USER_COMMAND }] }] });
     const before = userEntryBytes(file);
@@ -127,7 +127,7 @@ for (const lang of ['en', 'ar'] as const) {
     assert.deepEqual(userEntryBytes(file), before);
     const output = agentInstructions(target, lang, home);
     const protocol = JSON.parse(output.match(/```json\n([\s\S]*?)\n```/)![1]);
-    assert.deepEqual(protocol.questions.map((question: { id: string }) => question.id), ['agents', 'mode', 'docs']);
+    assert.deepEqual(protocol.questions.map((question: { id: string }) => question.id), ['agents', 'mode', 'docs', 'discovery']);
     assert.equal('existingHooks' in protocol.recommended, false);
     assert.match(output, /SessionStart[\s\S]*echo my-own-reminder/);
     for (const text of [output, ...prompter.shown])

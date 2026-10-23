@@ -70,12 +70,12 @@ for (const lang of ['en', 'ar'] as const) {
     }
   });
 
-  test(`${lang}: shared setup has only the three questions and no move prompt`, async () => {
+  test(`${lang}: shared setup has only the four questions and no move prompt`, async () => {
     const target = tmpDir('burhan-folders-');
     applySetup(planSetup(target, standardAnswers({ kind: 'shared' }), home));
     const output = agentInstructions(target, lang, home);
     const protocol = JSON.parse(output.match(/```json\n([\s\S]*?)\n```/)![1]);
-    assert.deepEqual(protocol.questions.map((question: { id: string }) => question.id), ['agents', 'mode', 'docs']);
+    assert.deepEqual(protocol.questions.map((question: { id: string }) => question.id), ['agents', 'mode', 'docs', 'discovery']);
     assert.equal('moveDocs' in protocol.recommended, false);
     const prompter = scriptedPrompter(['use', 'apply']);
     assert.equal(await runWizard(target, capture(target).io, prompter, lang, home), 0);

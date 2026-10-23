@@ -107,6 +107,7 @@ The audit also warns when a work-item file changed but the state file did not (`
 - **What it is:** `npx burhan-kit use <slug>` validates an in-flight item, and the session is linked when the turn ends, so gates and the ledger use the right one; a session start lists the items in flight when it is not linked. The state file (`.burhan/local/PROGRESS.md`) is a short per-developer snapshot of where you are, kept under `WF_STATE_BUDGET` lines (default 80); removing an item block that another session is working on is warned.
 - **When it shows up:** at session start and at the end of turns.
 - **Example:** `⚑ ITEMS IN FLIGHT: a, b — this session isn't linked to one yet — say which, or run /burhan:e2e <slug>.`
+- **Close-out:** one session per item; when an item closes, its block shrinks to one line and its details stay in the item folder, so the file stays under its budget.
 - **Limit:** the state file is local and git-ignored; the durable record is the item folder.
 
 ### Team sharing
@@ -130,7 +131,7 @@ The audit also warns when a work-item file changed but the state file did not (`
 - **Arabic setup:** `npx burhan-kit setup --lang ar` asks its questions in Arabic, and the prompt router understands Arabic phrases.
 
 ### Setup, doctor, upgrade
-- **What it is:** `npx burhan-kit` in a terminal asks three questions (four when you use both agents), shows a summary and writes nothing until you confirm; `setup --agent` prints the same questions for an agent to ask. `init`, `upgrade` and `uninstall` are dry runs until `--apply`. `doctor` is a read-only health check: runtime, kit version, config, hooks wired, Claude Code version, Codex trust, memory baseline, state file size.
+- **What it is:** `npx burhan-kit` in a terminal asks four questions (five when you use both agents), shows a summary and writes nothing until you confirm; `setup --agent` prints the same questions for an agent to ask. `init`, `upgrade` and `uninstall` are dry runs until `--apply`. `doctor` is a read-only health check: runtime, kit version, config, hooks wired, Claude Code version, Codex trust, memory baseline, state file size.
 - **When it shows up:** at install and whenever you want a check.
 - **Example:** `0 fail · 0 warn · 14 ok · 1 skip`
 - **Limit:** see [upgrading and rollback](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/upgrading.md) and [CI and Windows](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/ci-and-windows.md).
