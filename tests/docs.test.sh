@@ -54,6 +54,12 @@ echo "v04-release: the upgrade from 0.3.0 is documented"
 check "upgrading: a section for 0.3.0 installs" "$(cat docs/upgrading.md)" has '## Upgrading from 0.3.0'
 check "upgrading: upgrade creates the empty state file when it is missing" "$(cat docs/upgrading.md)" has 'creates the empty state file'
 check "upgrading: the hook entries are unchanged since 0.3.0" "$(cat docs/upgrading.md)" has 'byte-identical'
+check "changelog: a 0.4.1 section" "$(cat CHANGELOG.md)" has '## 0.4.1 — 2026-10-23'
+check "changelog: 0.4.1 says how to upgrade from 0.4.0" "$(cat CHANGELOG.md)" has '### Upgrading from 0.4.0'
+check "changelog: 0.4.1 names the state file it creates" "$(cat CHANGELOG.md)" has 'creates the empty state file'
+check "changelog: 0.4.1 says the first-use start was measured once" "$(cat CHANGELOG.md)" has 'measured once'
+check "upgrading: a section for 0.4.0 installs" "$(cat docs/upgrading.md)" has '## Upgrading from 0.4.0'
+check "roadmap: Done lists the 0.4.1 fixes" "$(cat ROADMAP.md)" has '(0.4.1)'
 check "changelog: 0.4.0 says how to upgrade from 0.3.0" "$(cat CHANGELOG.md)" has '### Upgrading from 0.3.0'
 
 echo "docs-windows-paths: a Windows path with backslashes goes in single quotes"

@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.4.1 — 2026-10-23
+
+Fixes from a first trial of 0.4.0 on a real project.
+
+### Upgrading from 0.4.0
+- Run `npx burhan-kit upgrade --apply`. It refreshes the kit files and creates the empty state file
+  `.burhan/local/PROGRESS.md` when it is missing; one that exists is never changed. Your `workflow.config` and
+  `bindings.md` are kept. The hook entries in `.claude/settings.json` and `.codex/hooks.json` were byte-identical
+  before and after the upgrade (measured on a 0.4.0 install made by the published 0.4.0 package, on Linux), so
+  Codex has nothing new to trust; its `/hooks` screen is the reference.
+
+### Added
+- **The discovery folder is asked.** `npx burhan-kit` and `setup --agent` ask where side findings (discoveries) go.
+  The recommended choice uses a `discovery` folder that already sits next to the work files, else
+  `<work files>-discovery`; the wizard names the folder. The answer is saved to `WF_DISCOVERY_DIR` and to the
+  discovery row of `bindings.md`. A folder that is, or runs through, a link leaving the project is refused, for the
+  work files folder too, and `.git` and `.burhan` are refused in any letter case.
+- **The state file always exists.** `init`, `upgrade` and `setup` create `.burhan/local/PROGRESS.md` (or the path in
+  `WF_STATE_FILE`) with the four empty sections when it is missing, so "read the state file first" never fails; it is
+  git-ignored. When the path cannot be created (outside the project, behind a link, an unwritable folder, or a file
+  burhan writes itself) a NOTE says so and nothing is written.
+- Close-out rule: one session per item, and a closed item's block in the state file shrinks to one line.
+- Review rules: a review starts from the diff, the plan and the ledger; a re-review after findings reads only the
+  fix and the findings; a QC re-run after a FAIL is a confirmation round; small short-lane sub-units can share one
+  review group.
+
+### Changed
+- Setup's final "Step 3" and the first-use reminder say that any first message in a new session starts the project
+  setup: the reminder tells the agent to set up the check command first (if it is not set yet), then to present the
+  onboarding in the same session. It is a reminder, not a lock. The start was measured once, on Claude Code, with a
+  build of this code (the agent began the first-use setup on "hi"); Codex and the published package were not
+  measured.
+- README: the install section is two parts, one where you run the commands and one where you copy a prompt for your
+  agent. The configuration docs say how to write a Windows path in `workflow.config`.
+
+### Known limits
+- The limits of 0.4.0 still apply.
+- `init --no-bootstrap` also creates the state file.
+- Nothing prunes the one-line closed items in the state file except the fold rule in the close-out text.
+- The new setup question and the state file were checked on Linux only; Codex and Windows were not run for them.
+
 ## 0.4.0 — 2026-10-22
 
 burhan now learns your project once, and the first run is three steps. Versions before 0.4.0 are deprecated:

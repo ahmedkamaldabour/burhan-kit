@@ -54,6 +54,9 @@ until you choose.
   baseline reminder and gate; first-use setup saves what counts as code and proof; a guard against hook files that
   resolve outside the project; Codex hook trust read per event.
 
+- **First-run fixes (0.4.1).** Setup asks where discoveries go and never fails on a missing state file; the first
+  message of a new session starts the project setup; the README shows two ways to install.
+
 ## Candidates
 
 - **Codex exit codes.** Codex reports a finished command with no exit code, so the main agent's
