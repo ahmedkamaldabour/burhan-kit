@@ -98,9 +98,10 @@ test('the gate itself is unchanged: no skill at all fires the same message; an u
   } finally { chmodSync(dir, 0o700); }
 });
 
-test('only the code gate reads the memory: a story created later without brainstorming still fires', async () => {
+test('the code-skill memory does not stand in for brainstorming: a story created later without brainstorming still fires', async () => {
+  // skills-gates-align: brainstorming run in an earlier turn now counts for the story (test/hooks/skills-gates-align.test.ts); a code skill alone does not.
   const s = setup(ONE);
-  await stop(s, 'S1', { skills: ['superpowers:brainstorming', TDD] });
+  await stop(s, 'S1', { skills: [TDD] });
   const story = join(s.project, '.burhan/work/alpha/alpha-story.md');
   mkdirSync(join(s.project, '.burhan/work/alpha'), { recursive: true });
   writeFileSync(story, '# s\n');

@@ -111,7 +111,7 @@ worktree or when setup changes hooks during a session, so the new session reads 
 | `session-gates` | session start | Re-injects the gates; shows the state file's `Now` section and the item's mode |
 | `prompt-router` | your prompt | Suggests the phase for the request (English and Arabic phrases, max 2 lines; a separate baseline reminder is printed outside that cap) — a suggestion only. With Superpowers it adds one more line, outside the cap, naming the skill to invoke before the item's next phase |
 | `pre-commit-check` | before `git commit` | **Runs** your fast check and reports the measured result, plus the commit checkpoint |
-| `pre-edit-skill` | before a write | With Superpowers: before a new story, plan or review, or a code file, is written without its skill, says so once per session and item. Never blocks |
+| `pre-edit-skill` | before a write | With Superpowers: before a new story, plan or review, or a code file, is written without its skill, says so once per session and item. A skill run earlier in the session, or before any item existed, counts here and in the turn-end story, plan and review checks; the completion check still needs the verification skill in the same turn. Never blocks |
 | `post-edit-reminder` | after an edit | Test-first nudge, sensitive-path note |
 | `turn-audit` | end of turn | Flags unverified "done" (no passing evidence after the last code edit), state not updated, state file over budget, contradictory status, skipped process skills, code written during read-only work, QC provenance, the BASELINE GATE (a story or code written while a project with code has no Approved or Waived baseline) |
 

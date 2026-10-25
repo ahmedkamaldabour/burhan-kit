@@ -200,7 +200,9 @@ export function rememberSkills(project: string, session: string, item: string, s
   } catch { /* fail open */ }
 }
 
-// The pre-write check's memory of the phase skills a session used for an item (any turn): lines `<item>\t<skill>` in `phaseskills`.
+// The memory of the phase skills a session used for an item (any turn): lines `<item>\t<skill>` in `phaseskills`. A skill run while no item
+// was resolved is kept under `*` (not a slug) and counts for the session's item. It answers "was the skill invoked", never "was the work done".
+const NO_ITEM = '*';
 const PHASE_SKILLS = /(^|:)(brainstorming|writing-plans|requesting-code-review|test-driven-development|systematic-debugging|verification-before-completion)$/;
 const phaseFile = (project: string, session: string, env: Env): string => {
   const dir = sessionDir(project, session, env);
@@ -210,20 +212,23 @@ const phaseFile = (project: string, session: string, env: Env): string => {
 /** The phase skills this session used while `item` was its item ([] for no item, or on any error). */
 export function rememberedPhaseSkills(project: string, session: string, item: string, env: Env = process.env): string[] {
   try {
-    if (!safeId(item)) return [];
+    if (item !== '' && !safeId(item)) return [];
     const file = phaseFile(project, session, env);
-    return file === '' ? [] : skillLines(file).filter((line) => line.startsWith(`${item}\t`)).map((line) => line.slice(item.length + 1));
+    if (file === '') return [];
+    const keys = item === '' ? [NO_ITEM] : [item, NO_ITEM];
+    return skillLines(file).flatMap((line) => keys.filter((key) => line.startsWith(`${key}\t`)).map((key) => line.slice(key.length + 1)));
   } catch { return []; }
 }
 
 /** Remember the phase skills this turn used for the item; fail open. */
 export function rememberPhaseSkills(project: string, session: string, item: string, skills: string[], env: Env = process.env): void {
   try {
-    if (!safeId(item)) return;
+    if (item !== '' && !safeId(item)) return;
+    const key = item === '' ? NO_ITEM : item;
     const wanted = skills.filter((skill) => PHASE_SKILLS.test(skill) && !/[\t\n\r]/.test(skill));
     const file = phaseFile(project, session, env);
     if (wanted.length === 0 || file === '') return;
-    const lines = [...new Set([...skillLines(file), ...wanted.map((skill) => `${item}\t${skill}`)])].slice(-SKILL_LINES_MAX);
+    const lines = [...new Set([...skillLines(file), ...wanted.map((skill) => `${key}\t${skill}`)])].slice(-SKILL_LINES_MAX);
     atomicPrivateWrite(file, 'phaseskills', `${lines.join('\n')}\n`);
   } catch { /* fail open */ }
 }

@@ -6,7 +6,7 @@ import { ere, ereTest } from './ere.mjs';
 import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stateNow, type Check, type Ctx } from './lib.mjs';
 import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
-import { evidenceRoot, fingerprintRefresh, linkedItem, linkItem, mtime, projectKey, rememberedSkills, rememberPhaseSkills, rememberSkills, safeId, stateSnapshotFile } from './store.mjs';
+import { evidenceRoot, fingerprintRefresh, linkedItem, linkItem, mtime, projectKey, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, safeId, stateSnapshotFile } from './store.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
 import { gateLine, undecided } from './understanding.mjs';
 
@@ -29,6 +29,8 @@ interface Audit {
   skillsUsed: string[];
   /** Code-gate skills remembered for this item from earlier turns of this session (store.mts). */
   skillsBefore: string[];
+  /** Phase skills this session used in earlier turns for the item, or before any item existed (store.mts). Answers "was it invoked", never "was the work done". */
+  skillsEarlier: string[];
   text: string;
   steps: Step[];
   subWritten: string[];
@@ -158,8 +160,10 @@ const gateF: Gate = (audit) => {
   const out: string[] = [];
   const docs = docsRe(audit);
   const used = (pattern: string): boolean => ereTest(pattern, audit.skillsUsed.join('\n'));
-  if (ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && !used('brainstorming')) out.push('⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.');
-  if (ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && !used('writing-plans')) out.push('⚠ SKILL GATE (plan): a plan was CREATED this turn without superpowers:writing-plans.');
+  // The story, plan and review checks read the same memory as the pre-write check: this turn plus the session's earlier turns.
+  const usedEver = (pattern: string): boolean => ereTest(pattern, [...audit.skillsUsed, ...audit.skillsEarlier].join('\n'));
+  if (ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && !usedEver('brainstorming')) out.push('⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.');
+  if (ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && !usedEver('writing-plans')) out.push('⚠ SKILL GATE (plan): a plan was CREATED this turn without superpowers:writing-plans.');
   const patch = patchTurn(audit);
   const usedForCode = ereTest('test-driven-development|systematic-debugging', [...audit.skillsUsed, ...audit.skillsBefore].join('\n'));
   if (matches(audit.ctx.cfg.WF_CODE_REGEX ?? '', audit.written.join('\n')) && !patch && !usedForCode) out.push('⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.');
@@ -171,7 +175,7 @@ const gateF: Gate = (audit) => {
     || audit.steps.some((step) => step.kind === 'edit' && step.by === '' && step.file === file && step.performedBy)
     || audit.cmds.some((cmd) => performedBy(cmd) && shellWrites([cmd]).map((f) => relPath(f, audit.ctx.project)).includes(file));
   const reviews = audit.written.filter((file) => ereTest('/reviews/[^/]+\\.md$', file) && !ereTest('-(qc|verification)(-r[0-9]+)?\\.md$', file) && (!claude || addsReview(file)));
-  if (reviews.length > 0 && !used('requesting-code-review')) out.push('⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review.');
+  if (reviews.length > 0 && !usedEver('requesting-code-review')) out.push('⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review.');
   // "After work": a file other than the state file and the discoveries, outside the patch lane (a state-only "✅" is bookkeeping, not a claim).
   const state = audit.ctx.cfg.WF_STATE_FILE ?? '';
   const discovery = audit.ctx.cfg.WF_DISCOVERY_DIR ?? '\u0000';
@@ -293,7 +297,9 @@ export const turnAudit: Check = (ctx) => {
     const subWritten = steps.filter((step) => step.kind === 'edit' && step.by !== '').map((step) => step.file).filter((file) => !isSource(file));
     let skillsBefore: string[] = [];
     try { skillsBefore = rememberedSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.env); } catch { /* fail open */ }
-    const audit: Audit = { ctx: auditCtx, written, created: created.filter((file) => !isSource(file)), cmds, skillsUsed: auditCtx.ev.list('.turn.skills_used'), skillsBefore, text: auditCtx.ev.get('.turn.assistant_text'), steps: steps.filter((step) => step.kind !== 'edit' || !isSource(step.file)), subWritten };
+    let skillsEarlier: string[] = [];
+    try { skillsEarlier = rememberedPhaseSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.env); } catch { /* fail open */ }
+    const audit: Audit = { ctx: auditCtx, written, created: created.filter((file) => !isSource(file)), cmds, skillsUsed: auditCtx.ev.list('.turn.skills_used'), skillsBefore, skillsEarlier, text: auditCtx.ev.get('.turn.assistant_text'), steps: steps.filter((step) => step.kind !== 'edit' || !isSource(step.file)), subWritten };
     const findings: string[] = [];
     for (const gate of gates) try { findings.push(...gate(audit)); } catch { /* independent gates fail open */ }
     remember();

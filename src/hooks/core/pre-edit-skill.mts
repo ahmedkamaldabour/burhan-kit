@@ -18,8 +18,8 @@ export const preEditSkill: Check = (ctx) => {
   if (outside(rel) || rel === (cfg.WF_STATE_FILE ?? '') || rel.startsWith(`${cfg.WF_DISCOVERY_DIR ?? '\u0000'}/`)) return [];
   const used = ev.list('.turn.skills_used');
   const { now, item } = currentItem(ctx);
-  // This turn's skills and those this session used earlier for the same item.
-  const earlier = item === '' ? [] : rememberedPhaseSkills(project, ev.get('.session'), item, storeEnv(ctx));
+  // This turn's skills and those this session used earlier for the same item (or before any item existed).
+  const earlier = rememberedPhaseSkills(project, ev.get('.session'), item, storeEnv(ctx));
   const has = (names: string): boolean => [...used, ...earlier].some((s) => new RegExp(`(^|:)(${names})$`).test(s));
   let label = '';
   let skill = '';
