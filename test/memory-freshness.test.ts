@@ -83,6 +83,34 @@ test('memory status: counts per state, lists the facts that are not fresh, says 
   assert.match(o.out, /changed does not mean false/);
 });
 
+// Item memory-refresh-noise: a fact changed only through a release file (version bump, notes) is tagged, never hidden or recounted.
+const statusOf = async (p: string): Promise<string> => { const { o, io } = capture(p); assert.equal(await runCli(['memory', 'status', p], io), 0, o.err); return o.out; };
+const REL_FILES = { 'package.json': '{"version":"2"}\n', 'CHANGELOG.md': 'new\n', 'src/a.ts': 'A2\n', 'packages/a/package.json': '{"v":2}\n' };
+test('memory status: a fact whose only changed evidence is a release file is tagged and counted apart', async () => {
+  const p = project(REL_FILES, `| DATA-v | V. | confirmed | \`package.json\` sha256:${h('old')} \`CHANGELOG.md\` sha256:${h('old')} | 2026-10-19 |\n`);
+  const out = await statusOf(p);
+  assert.match(out, /^CHANGED +DATA-v +\.burhan\/context\/data\.md:4 +package\.json CHANGELOG\.md +\(release file only\)$/m);
+  assert.match(out, /memory status: 1 facts · 0 fresh · 1 changed \(1 only through release files\) · 0 missing · 0 unchecked/);
+});
+test('memory status: one other changed file, a missing file, or a nested package.json leaves the fact untagged', async () => {
+  const p = project(REL_FILES, [
+    `| DATA-mix | M. | confirmed | \`package.json\` sha256:${h('old')} \`src/a.ts\` sha256:${h('old')} | 2026-10-19 |`,
+    `| DATA-miss | X. | confirmed | \`package.json\` sha256:${h('old')} \`src/gone.ts\` sha256:${h('old')} | 2026-10-19 |`,
+    `| DATA-nest | N. | confirmed | \`packages/a/package.json\` sha256:${h('old')} | 2026-10-19 |`, ''].join('\n'));
+  const out = await statusOf(p);
+  assert.match(out, /^CHANGED +DATA-mix +\S+ +package\.json src\/a\.ts$/m);
+  assert.match(out, /^MISSING +DATA-miss +\S+ +src\/gone\.ts$/m);
+  assert.match(out, /^CHANGED +DATA-nest +\S+ +packages\/a\/package\.json$/m);
+  assert.ok(!out.includes('release file'), out);
+  assert.match(out, /memory status: 3 facts · 0 fresh · 2 changed · 1 missing · 0 unchecked/);
+});
+test('memory status: a release file that did not change adds no tag', async () => {
+  const p = project({ 'package.json': 'P\n' }, `| DATA-v | V. | confirmed | \`package.json\` sha256:${h('P\n')} | 2026-10-19 |\n`);
+  const out = await statusOf(p);
+  assert.ok(!out.includes('release file'), out);
+  assert.match(out, /memory status: 1 facts · 1 fresh · 0 changed · 0 missing · 0 unchecked/);
+});
+
 test('memory status: no project memory is not an error', async () => {
   const { o, io } = capture();
   assert.equal(await runCli(['memory', 'status', tmpDir('burhan-fresh-none-')], io), 0);
@@ -104,6 +132,31 @@ test('memory affected --since: lists the facts touched by changed files (Git)', 
   assert.match(o.out, /^src\/a\.ts: DATA-a$/m);
   assert.ok(!o.out.includes('DATA-b'));
   assert.match(o.out, /memory affected: 1 changed file cited by 1 fact/);
+});
+
+test('memory affected: facts reached only through a release file are named apart, never dropped', async () => {
+  const files = { 'package.json': '{"v":1}\n', 'CHANGELOG.md': 'a\n', 'src/a.ts': 'A\n', 'src/b.ts': 'B\n' };
+  const p = project(files, [
+    `| DATA-v | V. | confirmed | \`package.json\` sha256:${h('{"v":1}\n')} \`CHANGELOG.md\` sha256:${h('a\n')} | 2026-10-19 |`,
+    `| DATA-m | M. | confirmed | \`package.json\` sha256:${h('{"v":1}\n')} \`src/a.ts\` sha256:${h('A\n')} | 2026-10-19 |`,
+    `| DATA-b | B. | confirmed | \`src/b.ts\` sha256:${h('B\n')} | 2026-10-19 |`, ''].join('\n'));
+  git(p, 'init', '-q'); git(p, 'add', '-A'); git(p, 'commit', '-qm', 'one');
+  writeFileSync(join(p, 'package.json'), '{"v":2}\n'); writeFileSync(join(p, 'CHANGELOG.md'), 'b\n');
+  let { o, io } = capture(p);
+  assert.equal(await runCli(['memory', 'affected', '--since', 'HEAD', p], io), 0, o.err);
+  assert.match(o.out, /^package\.json: DATA-v DATA-m$/m);
+  assert.match(o.out, /^CHANGELOG\.md: DATA-v$/m);
+  assert.match(o.out, /^of these, 2 facts are affected only through release files: DATA-v DATA-m$/m); // src/a.ts has not changed yet
+  assert.match(o.out, /memory affected: 2 changed files cited by 2 facts/);
+  writeFileSync(join(p, 'src/a.ts'), 'A2\n'); // DATA-m is now also reached through a source file
+  ({ o, io } = capture(p));
+  await runCli(['memory', 'affected', '--since', 'HEAD', p], io);
+  assert.match(o.out, /^of these, 1 fact is affected only through release files: DATA-v$/m);
+  ({ o, io } = capture(p));
+  git(p, 'add', '-A'); git(p, 'commit', '-qm', 'two');
+  writeFileSync(join(p, 'src/b.ts'), 'B2\n');
+  await runCli(['memory', 'affected', '--since', 'HEAD', p], io);
+  assert.ok(!o.out.includes('release files'), 'no release file changed: no extra line');
 });
 
 test('memory affected: clear errors — no --since, a ref that looks like an option, an unknown ref, no Git repository', async () => {

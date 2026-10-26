@@ -37,7 +37,9 @@ Never approve it yourself; an unapproved draft is not memory.
 - **Coverage:** PROJECT.md lists what the agent inspected, sampled and did not inspect — in the agent's own words,
   since burhan cannot check what was read. Every topic gets an answer, even when the answer is "not applicable".
 - **Freshness:** the evidence hash covers the whole file, so an edit anywhere marks the fact `changed`; `changed` does
-  not mean false — re-check it, then reconfirm or supersede.
+  not mean false — re-check it, then reconfirm or supersede. A release file (`package.json`, `CHANGELOG.md`,
+  `ROADMAP.md`) changes at every version bump, so cite one as evidence only when nothing else proves the fact;
+  `memory status` marks a fact changed through release files alone with `(release file only)`.
 - **Team:** one file per area, one fact per row. Two people adding facts to the same area can get a text conflict:
   keep both rows (different slugs never collide; the same slug added twice is caught by `burhan memory check`) and
   never use `merge=union`, which hides duplicates.

@@ -175,6 +175,10 @@ export function factFreshness(fact: Fact, project: string, cache?: Map<string, s
   return items.map((i) => itemFreshness(project, i, cache)).reduce((a, b) => (RANK[b] > RANK[a] ? b : a), 'fresh' as Freshness);
 }
 
+/** Files that change at every release (a version bump, notes): a fact cited through them alone is "changed" without anything about it moving. Root paths only. */
+export const RELEASE_FILES: readonly string[] = ['package.json', 'CHANGELOG.md', 'ROADMAP.md'];
+const isReleaseFile = (path: string): boolean => RELEASE_FILES.includes(gitForm(path));
+
 const pad = (s: string, n: number): string => s + ' '.repeat(Math.max(1, n - s.length));
 
 export function memoryStatus(target: string, io: Io): number {
@@ -182,15 +186,18 @@ export function memoryStatus(target: string, io: Io): number {
   if (!r.present) { io.stdout('memory status: no project memory (.burhan/PROJECT.md, .burhan/context/) — nothing to check\n'); return 0; }
   const live = r.facts.filter((f) => f.state !== 'superseded');
   const count: Record<Freshness, number> = { fresh: 0, changed: 0, missing: 0, unchecked: 0 };
+  let releaseOnly = 0;
   const cache = new Map<string, string>();
   for (const f of live) {
     const state = factFreshness(f, target, cache);
     count[state]++;
     if (state === 'fresh') continue;
     const paths = state === 'unchecked' ? [] : evidenceItems(f.evidence).filter((i) => itemFreshness(target, i, cache) === state).map((i) => i.path);
-    io.stdout(`${pad(state.toUpperCase(), 10)}${pad(f.id, 24)}${f.file}:${f.line}${paths.length ? `  ${paths.join(' ')}` : ''}\n`);
+    const releaseFilesOnly = state === 'changed' && paths.length > 0 && paths.every(isReleaseFile); // a hint where to look second, never a state
+    if (releaseFilesOnly) releaseOnly++;
+    io.stdout(`${pad(state.toUpperCase(), 10)}${pad(f.id, 24)}${f.file}:${f.line}${paths.length ? `  ${paths.join(' ')}` : ''}${releaseFilesOnly ? '  (release file only)' : ''}\n`);
   }
-  io.stdout(`memory status: ${live.length} facts · ${count.fresh} fresh · ${count.changed} changed · ${count.missing} missing · ${count.unchecked} unchecked\n`);
+  io.stdout(`memory status: ${live.length} facts · ${count.fresh} fresh · ${count.changed} changed${releaseOnly > 0 ? ` (${releaseOnly} only through release files)` : ''} · ${count.missing} missing · ${count.unchecked} unchecked\n`);
   if (count.unchecked > 0) io.stdout('unchecked = no hash in the evidence (a fact written before hashes, or runtime/person evidence), or a path that is not a regular file inside the project\n');
   if (count.changed + count.missing > 0) io.stdout('changed does not mean false: re-check those facts, then reconfirm or supersede each (the refresh section of .burhan/commands/onboard.md)\n');
   const fails = r.problems.filter((p) => p.level === 'fail').length;
@@ -234,6 +241,10 @@ export function memoryAffected(target: string, since: string | undefined, io: Io
   const live = r.facts.filter((f) => f.state !== 'superseded');
   const hits = affectedBy(live, changedPaths);
   for (const h of hits) io.stdout(`${h.path}: ${h.facts.map((f) => f.id).join(' ')}\n`);
+  // A fact reached only through release files (a version bump, notes) is the first to re-read last; it stays in the lines above.
+  const viaOther = new Set(hits.filter((h) => !isReleaseFile(h.path)).flatMap((h) => h.facts.map((f) => f.id)));
+  const releaseOnly = [...new Set(hits.flatMap((h) => h.facts.map((f) => f.id)))].filter((id) => !viaOther.has(id));
+  if (releaseOnly.length > 0) io.stdout(`of these, ${releaseOnly.length} fact${releaseOnly.length === 1 ? ' is' : 's are'} affected only through release files: ${releaseOnly.join(' ')}\n`);
   const n = new Set(hits.flatMap((h) => h.facts.map((f) => f.id))).size;
   io.stdout(`memory affected: ${hits.length} changed file${hits.length === 1 ? '' : 's'} cited by ${n} fact${n === 1 ? '' : 's'} (since ${since}; ${changedPaths.length} files changed; untracked files are not included)\n`);
   return 0;

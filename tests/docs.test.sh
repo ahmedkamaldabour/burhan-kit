@@ -29,6 +29,13 @@ check "configuration: a piped run records the last command's exit" "$cfgdoc" has
 check "configuration: the Kit command row" "$cfgdoc" has 'Kit command'
 check "enforcement: the ledger cleanup rule is the real one" "$(cat kit/phases/enforcement.md)" has 'holds only ledger files'
 check "ledger cleanup: folders with session files stay until you delete them (enforcement, configuration, features, config example)" "$(cat kit/phases/enforcement.md docs/configuration.md docs/features.md kit/workflow.config.example | grep -c 'until you delete')" has '4'
+echo "memory-refresh-noise: release files are tagged, and cited only when nothing else proves a fact"
+check "memory phase: cite a release file only when nothing else proves the fact" "$(cat kit/phases/memory.md)" has 'only when nothing else proves the fact'
+check "area template: cite a release file only when nothing else proves the fact" "$(cat kit/templates/context-area.md)" has 'only when nothing else proves the fact'
+check "configuration: memory status tags a change through release files only" "$cfgdoc" has '(release file only)'
+check "configuration: memory affected adds a line before the summary for release-file-only facts" "$cfgdoc" has 'an extra `of these, …` line before the summary'
+check "configuration: the release files are matched by root path only" "$cfgdoc" has 'root path only'
+check "features: memory status tags a change through release files only" "$(cat docs/features.md)" has '(release file only)'
 check "enforcement: no blanket 30-day claim" "$(cat kit/phases/enforcement.md)" lacks 'pruned after 30 days'
 check "enforcement: a piped run records the last command's exit" "$(cat kit/phases/enforcement.md)" has "exit of its last command"
 

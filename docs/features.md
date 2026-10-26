@@ -98,7 +98,7 @@ The audit also warns when a work-item file changed but the state file did not (`
 - **Limit:** the agent never writes Approved or Waived itself; burhan checks the form of the line, not who wrote it. Until it is decided, a project with code gets a short reminder on each prompt and a warning at the end of a turn that wrote a story or code — guidance, never a block.
 
 ### Project memory and its freshness
-- **What it is:** one fact per row, with confidence and evidence (a file path and the first 16 characters of its SHA-256, never content). `npx burhan-kit memory check` finds malformed rows, duplicate IDs, merge markers and secret-looking text; `memory status` marks each fact `fresh`, `changed`, `missing` or `unchecked`; `memory affected --since <ref>` lists the facts whose files changed (needs Git); `npx burhan-kit inspect` is a names-only look at the tree.
+- **What it is:** one fact per row, with confidence and evidence (a file path and the first 16 characters of its SHA-256, never content). `npx burhan-kit memory check` finds malformed rows, duplicate IDs, merge markers and secret-looking text; `memory status` marks each fact `fresh`, `changed`, `missing` or `unchecked` (a change through `package.json`, `CHANGELOG.md` or `ROADMAP.md` alone is tagged `(release file only)`, still counted as changed); `memory affected --since <ref>` lists the facts whose files changed (needs Git); `npx burhan-kit inspect` is a names-only look at the tree.
 - **When it shows up:** `status` after a large change or release; `check` in CI.
 - **Example:** `memory check: no project memory (.burhan/PROJECT.md, .burhan/context/) — nothing to check`
 - **Limit:** a changed hash means the file moved on, not that the fact is false; the hash covers the whole file.
