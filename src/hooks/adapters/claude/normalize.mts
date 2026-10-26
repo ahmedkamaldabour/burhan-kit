@@ -116,6 +116,17 @@ export function prepareClaude(stdin: string, env: NodeJS.ProcessEnv): StopWindow
         if (tool !== 'Bash') return none;
         const event = base('pre_shell', payload, env);
         event.command = alt(idx(payload.tool_input, 'command'), '');
+        // A shell write of a story, plan or review is reminded like an edit-tool write: the transcript is read only then (a text test first,
+        // so an ordinary command costs nothing), and only for a project that turned the skills on.
+        const command = String(event.command);
+        if (/>|\btee\b/u.test(command)) {
+          const cfg = loadHookConfig(plainProject(event.project_dir), env);
+          const docs = cfg.WF_DOCS_DIR ?? '';
+          if (cfg.WF_SKILLS === 'superpowers' && docs !== '' && command.includes(docs)) {
+            const { turn_key: _key, ...turn } = { ...event.turn, ...turnOf(j(() => payload.transcript_path), null).turn } as TurnData;
+            return plain(encoded({ ...event, turn, agent_id: j(() => payload.agent_id) }));
+          }
+        }
         return plain(encoded(event));
       }
       case 'PostToolUse': {

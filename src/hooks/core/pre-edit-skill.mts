@@ -3,17 +3,34 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ereTest } from './ere.mjs';
-import { itemBlock, itemRoute, relPath, type Check } from './lib.mjs';
+import { itemBlock, itemRoute, relPath, type Check, type Ctx } from './lib.mjs';
+import { shellWrites } from './shell-writes.mjs';
 import { currentItem, skillLineText, storeEnv } from './skill-line.mjs';
 import { markSkillTold, rememberedPhaseSkills, rememberedSkills, skillTold } from './store.mjs';
 
 const outside = (rel: string): boolean => rel.startsWith('/') || rel.startsWith('../') || rel === '..' || /^[A-Za-z]:/.test(rel);
 
+/** The edit tools: the file comes with the event. */
 export const preEditSkill: Check = (ctx) => {
+  if (ctx.cfg.WF_SKILLS !== 'superpowers') return [];
+  const raw = ctx.ev.get('.file');
+  if (raw === '' || ctx.ev.get('.agent_id') !== '') return [];
+  return lineFor(ctx, raw, false);
+};
+
+/** A shell command that writes a story, plan or review (`>`, `>>`, `tee`): the same line, once per session, item and skill. Code files are not
+ *  covered here (a redirect is not a build step). The adapter attaches the turn's skills only for such a command. */
+export const preShellSkill: Check = (ctx) => {
+  if (ctx.cfg.WF_SKILLS !== 'superpowers' || ctx.ev.get('.agent_id') !== '') return [];
+  for (const target of shellWrites([ctx.ev.get('.command')])) {
+    const line = lineFor(ctx, target, true);
+    if (line.length > 0) return line;
+  }
+  return [];
+};
+
+function lineFor(ctx: Ctx, raw: string, workFilesOnly: boolean): string[] {
   const { ev, cfg, project } = ctx;
-  if (cfg.WF_SKILLS !== 'superpowers') return [];
-  const raw = ev.get('.file');
-  if (raw === '' || ev.get('.agent_id') !== '') return [];
   const rel = relPath(raw, project).replace(/\\/g, '/');
   if (outside(rel) || rel === (cfg.WF_STATE_FILE ?? '') || rel.startsWith(`${cfg.WF_DISCOVERY_DIR ?? '\u0000'}/`)) return [];
   const used = ev.list('.turn.skills_used');
@@ -31,7 +48,7 @@ export const preEditSkill: Check = (ctx) => {
     else if (parts[1] === `${parts[0]}-implementation-plan.md` && !has('writing-plans')) { label = 'plan'; skill = 'superpowers:writing-plans'; }
   } else if (parts.length === 3 && parts[1] === 'reviews' && /\.md$/.test(parts[2]) && !/-(qc|verification)(-r[0-9]+)?\.md$/.test(parts[2]) && !has('requesting-code-review')) {
     label = 'review'; skill = 'superpowers:requesting-code-review';
-  } else if (parts.length === 0 && ereTest(cfg.WF_CODE_REGEX ?? '', rel) && !ereTest(cfg.WF_TEST_REGEX ?? '', rel)) {
+  } else if (!workFilesOnly && parts.length === 0 && ereTest(cfg.WF_CODE_REGEX ?? '', rel) && !ereTest(cfg.WF_TEST_REGEX ?? '', rel)) {
     const remembered = item === '' ? [] : rememberedSkills(project, ev.get('.session'), item, storeEnv(ctx));
     const done = has('test-driven-development|systematic-debugging') || remembered.length > 0;
     let patch = ereTest('^[[:space:]>*_-]*patch\\**[[:space:]]*(—|–)', ev.get('.turn.assistant_text'), { i: true });
@@ -44,4 +61,4 @@ export const preEditSkill: Check = (ctx) => {
   if (skillTold(project, session, item || '-', skill, storeEnv(ctx))) return [];
   markSkillTold(project, session, item || '-', skill, storeEnv(ctx));
   return [skillLineText({ label, skill })];
-};
+}

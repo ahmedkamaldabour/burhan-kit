@@ -87,7 +87,7 @@ A `spike` is exploratory: only an investigation or a bug diagnosis may be one, a
 - **Limit:** reports are built only from the item files; a missing part is said to be missing.
 
 ### Other end-of-turn checks
-The audit also warns when a work-item file changed but the state file did not (`STATE-TRANSITION`), when the state file is over its budget (`STATE-SIZE`), when a file says both pending and done (`STALE-STATUS`; only the item's own markdown files — in the item folder and its `reviews/` — and the discovery files are judged, never command output, logs or notes saved elsewhere), when a QC report has no **Performed by** (`QC PROVENANCE`) or was written with the code (`QC INDEPENDENCE`), and when a project with code has no decided baseline (`BASELINE GATE`). Each fires only on its exact condition.
+The audit also warns when a work-item file changed but the state file did not (`STATE-TRANSITION`, which also says when the item has no block in the state file, so burhan cannot link the session to it), when the state file is over its budget (`STATE-SIZE`), when a file says both pending and done (`STALE-STATUS`; only the item's own markdown files — in the item folder and its `reviews/` — and the discovery files are judged, never command output, logs or notes saved elsewhere), when a QC report has no **Performed by** (`QC PROVENANCE`) or was written with the code (`QC INDEPENDENCE`), and when a project with code has no decided baseline (`BASELINE GATE`). Each fires only on its exact condition.
 
 ## Memory and team
 

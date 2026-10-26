@@ -102,6 +102,17 @@ const stop = (payload: Payload, env: NodeJS.ProcessEnv): string => {
   return encoded(event);
 };
 
+/** The skills the turn has read so far (SKILL.md reads in its Bash calls, from the per-turn ledger). */
+function ledgerSkills(event: { session: string; turn_id: string }, env: NodeJS.ProcessEnv): string[] {
+  const calls = readCalls(ledgerFile(env, event.session, event.turn_id));
+  const commands = collect(calls, (call) => {
+    if (call.tool_name !== 'Bash') return [];
+    const value = alt(idx(call.tool_input, 'command'), null);
+    return value === null ? [] : [value];
+  });
+  return skillIds(commands.map(rawText));
+}
+
 /** Codex hook payload -> normalized core events, one line each (a multi-file patch gives one per file). */
 export function normalizeCodexEvents(stdin: string, env: NodeJS.ProcessEnv): string[] {
   try {
@@ -121,13 +132,7 @@ export function normalizeCodexEvents(stdin: string, env: NodeJS.ProcessEnv): str
           // turned the skills on. Codex's pre-tool payload has no assistant text, so the patch lane cannot be seen here.
           const first = base('pre_edit', payload, env);
           if (loadHookConfig(first.project_dir.length > 1 && first.project_dir.endsWith('/') ? first.project_dir.slice(0, -1) : first.project_dir, env).WF_SKILLS !== 'superpowers') return [];
-          const calls = readCalls(ledgerFile(env, first.session, first.turn_id));
-          const commands = collect(calls, (call) => {
-            if (call.tool_name !== 'Bash') return [];
-            const value = alt(idx(call.tool_input, 'command'), null);
-            return value === null ? [] : [value];
-          });
-          const skills = skillIds(commands.map(rawText));
+          const skills = ledgerSkills(first, env);
           const patch = (() => { try { return rawText(alt(idx(payload.tool_input, 'command'), null)); } catch { return ''; } })();
           return patchFiles(patch).filter((file) => nonBlank(file.path)).map((file) =>
             encoded({ ...first, file: file.path, turn: { ...first.turn, skills_used: skills } }));
@@ -135,6 +140,14 @@ export function normalizeCodexEvents(stdin: string, env: NodeJS.ProcessEnv): str
         if (tool !== 'Bash') return [];
         const event = base('pre_shell', payload, env);
         event.command = alt(idx(payload.tool_input, 'command'), '');
+        // A shell write of a story, plan or review is reminded like a patch: the skills read earlier in this turn come from the ledger, read only
+        // for such a command (a text test first) and only for a project that turned the skills on.
+        const command = String(event.command);
+        if (/>|\btee\b/u.test(command)) {
+          const cfg = loadHookConfig(event.project_dir.length > 1 && event.project_dir.endsWith('/') ? event.project_dir.slice(0, -1) : event.project_dir, env);
+          const docs = cfg.WF_DOCS_DIR ?? '';
+          if (cfg.WF_SKILLS === 'superpowers' && docs !== '' && command.includes(docs)) return [encoded({ ...event, turn: { ...event.turn, skills_used: ledgerSkills(event, env) } })];
+        }
         return [encoded(event)];
       }
       case 'PostToolUse': {
