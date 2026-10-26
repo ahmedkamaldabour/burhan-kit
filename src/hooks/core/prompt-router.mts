@@ -2,6 +2,7 @@
 import { ere } from './ere.mjs';
 import type { Check } from './lib.mjs';
 import { skillLine, skillLineText } from './skill-line.mjs';
+import { clearStateSnapshot } from './store.mjs';
 import { reminderLine, undecided } from './understanding.mjs';
 
 // Arabic has no \b in grep; bound Arabic words by whitespace/ASCII punctuation instead, so that
@@ -20,6 +21,8 @@ function sedGlobal(text: string, src: string, replacement: string): string {
 
 export const promptRouter: Check = (ctx) => {
   const { ev, cfg } = ctx;
+  // A new turn starts: a state-file baseline left by an interrupted turn (no Stop ran) must not carry over (multi-session-safety).
+  clearStateSnapshot(ctx.project, ev.get('.session'), { ...ctx.env, ...cfg });
   const raw = ev.get('.prompt');
   if (raw === '') return [];
   if (raw.includes('SYSTEM NOTIFICATION') || raw.includes('task-notification') || raw.includes('local-command-caveat')) return [];

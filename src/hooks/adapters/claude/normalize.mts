@@ -1,6 +1,7 @@
 import { statSync } from 'node:fs';
 import { JqError, alt, idx, rawText, shellText } from '../../core/jq.mjs';
 import { loadHookConfig } from '../../core/config.mjs';
+import { relPath } from '../../core/lib.mjs';
 import { readAuditMark, type AuditMark } from '../../core/store.mjs';
 import { readRecords, turnWindow, type TurnData } from './transcript.mjs';
 import { withSubagentSteps } from './subagents.mjs';
@@ -103,15 +104,21 @@ export function prepareClaude(stdin: string, env: NodeJS.ProcessEnv): StopWindow
       }
       case 'PreToolUse': {
         if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool)) {
-          // Before a write: the file, and what this user turn has used so far (skills, the assistant's own text). Only for a project that
-          // turned the skills on: nothing else reads it, and the transcript is not parsed for nothing on every write.
+          // Before a write: the file, and what this user turn has used so far (skills, the assistant's own text). The transcript is parsed only
+          // for a project that turned the skills on; a write of the state file is always passed on (the core takes its baseline).
           const event = base('pre_edit', payload, env);
-          if (loadHookConfig(plainProject(event.project_dir), env).WF_SKILLS !== 'superpowers') return none;
+          const project = plainProject(event.project_dir);
+          const cfg = loadHookConfig(project, env);
           event.file = j(() => alt(idx(payload.tool_input, 'file_path'), idx(payload.tool_input, 'notebook_path')));
+          const state = cfg.WF_STATE_FILE ?? '';
+          const writesState = state !== '' && event.file !== '' && relPath(event.file, project).replace(/\\/g, '/') === state;
+          // A whole-file Write of the state file carries its new content (the core checks it against the live blocks); nothing else does.
+          const content = tool === 'Write' && writesState ? { content: j(() => idx(payload.tool_input, 'content')) } : {};
+          if (cfg.WF_SKILLS !== 'superpowers') return writesState ? plain(encoded({ ...event, ...content, agent_id: j(() => payload.agent_id) })) : none;
           const { turn_key: _key, ...turn } = { ...event.turn, ...turnOf(j(() => payload.transcript_path), null).turn } as TurnData;
           event.turn = turn;
           // Set when the write comes from a subagent: it has no Skill tool, so the check says nothing to it.
-          return plain(encoded({ ...event, agent_id: j(() => payload.agent_id) }));
+          return plain(encoded({ ...event, ...content, agent_id: j(() => payload.agent_id) }));
         }
         if (tool !== 'Bash') return none;
         const event = base('pre_shell', payload, env);

@@ -78,10 +78,8 @@ export function relPath(p: string, project: string, win = process.platform === '
   return (abs ? '/' : '') + st.join('/');
 }
 
-/** wf_state_now: the "## Now" section of the state file ('' if absent). */
-export function stateNow(project: string, cfg: HookConfig): string {
-  let text: string;
-  try { text = readFileSync(join(project, cfg.WF_STATE_FILE ?? ''), 'utf8'); } catch { return ''; }
+/** The "## Now" section of a state file's text ('' if absent). */
+export function nowSection(text: string): string {
   const lines = text.split('\n');
   if (lines[lines.length - 1] === '') lines.pop();
   const out: string[] = [];
@@ -91,6 +89,13 @@ export function stateNow(project: string, cfg: HookConfig): string {
     if (on) out.push(l);
   }
   return chomp(out.join('\n'));
+}
+
+/** wf_state_now: the "## Now" section of the state file ('' if absent). */
+export function stateNow(project: string, cfg: HookConfig): string {
+  let text: string;
+  try { text = readFileSync(join(project, cfg.WF_STATE_FILE ?? ''), 'utf8'); } catch { return ''; }
+  return nowSection(text);
 }
 
 // glibc [[:space:]] under a UTF-8 locale (not JS \s: NBSP and U+FEFF are no space there).

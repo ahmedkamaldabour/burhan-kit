@@ -81,6 +81,7 @@ For the next unimplemented sub-unit only:
 - **Scope discipline:** build exactly what the item asks; anything extra is surfaced, not baked in.
 - **Test first:** write the failing test, run it, see it fail for the right reason → smallest change
   → green → the fast check.
+- **Which tests to run:** after each sub-unit run only that sub-unit's test files, then the fast check; run the full suite at QC and before a commit, or when a fix lands outside the files those tests cover.
 - A failure you didn't expect: before calling it a regression, stash the change and re-run the same
   check on a clean baseline.
 - Update the sub-unit status (🔵 → 🟢) in the plan and the state file — every transition, as it
@@ -100,7 +101,7 @@ For the next unimplemented sub-unit only:
   checklist when it touches nothing sensitive and no scope escalator, the **full** review otherwise
   (`.burhan/phases/review.md` · Sized by risk).
 - Fix in-scope findings; carry the rest forward (`.burhan/phases/discoveries.md` for anything out of scope).
-- Re-run the affected tests and the fast check after fixes. Show the output.
+- Re-run the affected tests (that sub-unit's test files; the full suite too when a fix lands outside the files those tests cover) and the fast check after fixes. Show the output.
 
 ## 5) Between sub-units
 

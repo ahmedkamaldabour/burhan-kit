@@ -1,12 +1,13 @@
 /** Whole-turn audit (ported from the 0.2 bash turn-audit.sh). */
 import { evidenceRecord } from './ledger.mjs';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ere, ereTest } from './ere.mjs';
 import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stateNow, type Check, type Ctx } from './lib.mjs';
 import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
-import { evidenceRoot, fingerprintRefresh, linkedItem, linkItem, mtime, projectKey, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, safeId, stateSnapshotFile } from './store.mjs';
+import { agoText, liveOwnerAge, slugText } from './state-blocks.mjs';
+import { clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, stateAfterSlugs, stateSnapshotFile } from './store.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
 import { gateLine, undecided } from './understanding.mjs';
 
@@ -219,34 +220,23 @@ const gateG: Gate = (audit) => {
 };
 
 // ---- I ---------------------------------------------------------------------
+// Compared with the Now list taken just before this session's own first write of the state file in the turn (the pre-write hook), never with
+// the list from the start of the session: a block another session removed, or added, meanwhile is not this session's doing. No baseline: silent.
 const gateI: Gate = (audit) => {
   const state = audit.ctx.cfg.WF_STATE_FILE ?? '';
   if (!audit.written.includes(state)) return [];
   try {
-    const snap = stateSnapshotFile(audit.ctx.project, audit.ctx.ev.get('.session'), audit.ctx.env);
-    if (snap === '') return [];
-    const root = join(evidenceRoot(audit.ctx.env), projectKey(audit.ctx.project));
     const mine = audit.ctx.ev.get('.session');
-    const nowSlugs = new Set(itemSlugs(stateNow(audit.ctx.project, audit.ctx.cfg)));
-    const now = Math.floor(Date.now() / 1000);
+    const snap = stateSnapshotFile(audit.ctx.project, mine, audit.ctx.env);
+    if (snap === '') return [];
+    // The list right after this session's last edit-tool write of the state file, unless a shell write of it came in the turn (no post event
+    // for a shell): then the file at the turn end, as before.
+    const after = audit.shellWritten.includes(state) ? null : stateAfterSlugs(audit.ctx.project, mine, audit.ctx.env);
+    const nowSlugs = new Set(after ?? itemSlugs(stateNow(audit.ctx.project, audit.ctx.cfg)));
     for (const removed of readFileSync(snap, 'utf8').split('\n')) {
       if (removed === '' || nowSlugs.has(removed)) continue;
-      for (const entry of readdirSync(root, { withFileTypes: true })) {
-        if (!entry.isDirectory() || entry.name === mine || !safeId(entry.name)) continue;
-        const dir = join(root, entry.name);
-        try {
-          if ((readFileSync(join(dir, 'item'), 'utf8').split('\n')[0] ?? '') !== removed) continue;
-          for (const ledger of readdirSync(dir)) {
-            if (!ledger.endsWith('.jsonl')) continue;
-            const then = mtime(join(dir, ledger));
-            if (then === null) continue;
-            const age = Math.max(0, now - then);
-            if (age >= 86400) continue;
-            const ago = age < 60 ? `${age}s ago` : age < 3600 ? `${Math.floor(age / 60)}m ago` : `${Math.floor(age / 3600)}h ago`;
-            return [`⚠ You removed the \`${removed}\` block — another session (active ${ago}) is working on it. Put it back.`];
-          }
-        } catch { /* one malformed foreign session cannot hide another */ }
-      }
+      const age = liveOwnerAge(audit.ctx.project, mine, removed, audit.ctx.env);
+      if (age !== null) return [`⚠ You removed the \`${slugText(removed)}\` block — another session (active ${agoText(age)}) is working on it. Put it back.`];
     }
   } catch { /* store failures stay silent */ }
   return [];
@@ -292,7 +282,7 @@ export const turnAudit: Check = (ctx) => {
   const auditCtx = { ...ctx, env: { ...ctx.env, ...ctx.cfg } };
   try {
     const remember = (): void => { try { rememberSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); rememberPhaseSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); } catch { /* fail open */ } };
-    if (auditCtx.ev.get('.reentrant') === 'true') { remember(); evidenceRecord(auditCtx); return []; }
+    if (auditCtx.ev.get('.reentrant') === 'true') { clearStateSnapshot(auditCtx.project, auditCtx.ev.get('.session'), auditCtx.env); remember(); evidenceRecord(auditCtx); return []; }
     const cmds = auditCtx.ev.list('.turn.shell_commands');
     const created = [...new Set(auditCtx.ev.list('.turn.files_created').map((file) => relPath(file, auditCtx.project)).filter(Boolean))].sort(codePointCompare);
     const edited = auditCtx.ev.list('.turn.files_edited').map((file) => relPath(file, auditCtx.project)).filter(Boolean);
@@ -326,10 +316,12 @@ export const turnAudit: Check = (ctx) => {
     const audit: Audit = { ctx: auditCtx, written, created: created.filter((file) => !isSource(file)), cmds, skillsUsed: auditCtx.ev.list('.turn.skills_used'), skillsBefore, skillsEarlier, shellWritten: shell.filter((file) => !isSource(file)), text: auditCtx.ev.get('.turn.assistant_text'), steps: steps.filter((step) => step.kind !== 'edit' || !isSource(step.file)), subWritten };
     const findings: string[] = [];
     for (const gate of gates) try { findings.push(...gate(audit)); } catch { /* independent gates fail open */ }
+    clearStateSnapshot(auditCtx.project, auditCtx.ev.get('.session'), auditCtx.env); // this audit judged every write since the last one
     remember();
     evidenceRecord(auditCtx);
     return findings;
   } catch {
+    clearStateSnapshot(auditCtx.project, auditCtx.ev.get('.session'), auditCtx.env); // a baseline must never outlive its turn, whatever failed
     try { evidenceRecord(auditCtx); } catch { /* recording is independently fail-open */ }
     return [];
   }

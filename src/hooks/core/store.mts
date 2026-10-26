@@ -1,6 +1,6 @@
 /** Private, fail-open session state (ported from the 0.2 bash lib.sh). */
 import { createHash, randomBytes } from 'node:crypto';
-import { chmodSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { isAbsolute, join, win32 } from 'node:path';
 
@@ -118,12 +118,41 @@ export function linkItem(project: string, session: string, item: string, nowSlug
   } catch { /* fail open */ }
 }
 
-/** wf_state_snapshot: atomically save this session's Now slug list. */
+/** The Now slug list just before this session's first write of the state file in a turn. Written only when absent: a second write of the
+ *  same turn must not hide what the first one removed. The turn-end audit clears it (`clearStateSnapshot`). */
 export function stateSnapshot(project: string, session: string, nowSlugs: string[], env: Env = process.env): void {
   try {
     const file = stateSnapshotFile(project, session, env);
-    if (file) atomicPrivateWrite(file, 'now', `${nowSlugs.join('\n')}\n`);
+    if (file && !existsSync(file)) atomicPrivateWrite(file, 'now', `${nowSlugs.join('\n')}\n`);
   } catch { /* fail open */ }
+}
+
+/** The Now slug list right after this session's last write of the state file through an edit tool (`after-slugs`; overwritten each time).
+ *  Gate I compares the baseline with it instead of the file at the Stop, so a removal by another session after this session's last write is
+ *  not blamed on it. */
+export function stateAfterSnapshot(project: string, session: string, nowSlugs: string[], env: Env = process.env): void {
+  try {
+    const dir = sessionDir(project, session, env);
+    if (dir) atomicPrivateWrite(join(dir, 'after-slugs'), 'after', `${nowSlugs.join('\n')}\n`);
+  } catch { /* fail open */ }
+}
+
+/** The list saved by `stateAfterSnapshot`, or null when none was taken this turn. */
+export function stateAfterSlugs(project: string, session: string, env: Env = process.env): string[] | null {
+  try {
+    const dir = sessionDir(project, session, env);
+    return dir ? readFileSync(join(dir, 'after-slugs'), 'utf8').split('\n').filter((slug) => slug !== '') : null;
+  } catch { return null; }
+}
+
+/** Forget the baseline and the list after the write (end of an audit, a new prompt, SessionStart). */
+export function clearStateSnapshot(project: string, session: string, env: Env = process.env): void {
+  for (const name of ['now-slugs', 'after-slugs']) {
+    try {
+      const dir = sessionDir(project, session, env);
+      if (dir) unlinkSync(join(dir, name));
+    } catch { /* fail open */ }
+  }
 }
 
 /** wf_state_fingerprint: hash the configured state file, or report it missing/unreadable. */

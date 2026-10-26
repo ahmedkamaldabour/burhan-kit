@@ -1,5 +1,6 @@
 import { alt, idx, rawText, shellText } from '../../core/jq.mjs';
 import { loadHookConfig } from '../../core/config.mjs';
+import { relPath } from '../../core/lib.mjs';
 import { consume, ledgerFile, readCalls } from './ledger.mjs';
 import { patchFiles, skillIds } from './patch.mjs';
 import { rolloutExits, type CommandExit } from './rollout.mjs';
@@ -128,14 +129,19 @@ export function normalizeCodexEvents(stdin: string, env: NodeJS.ProcessEnv): str
       }
       case 'PreToolUse': {
         if (tool === 'apply_patch') {
-          // Before a patch: the files it writes, and the skills read earlier in this turn (from the ledger). Only for a project that
-          // turned the skills on. Codex's pre-tool payload has no assistant text, so the patch lane cannot be seen here.
+          // Before a patch: the files it writes, and the skills read earlier in this turn (from the ledger). The ledger is read only for a
+          // project that turned the skills on; a patch of the state file is always passed on (the core takes its baseline). Codex's pre-tool
+          // payload has no assistant text, so the patch lane cannot be seen here.
           const first = base('pre_edit', payload, env);
-          if (loadHookConfig(first.project_dir.length > 1 && first.project_dir.endsWith('/') ? first.project_dir.slice(0, -1) : first.project_dir, env).WF_SKILLS !== 'superpowers') return [];
-          const skills = ledgerSkills(first, env);
+          const project = first.project_dir.length > 1 && first.project_dir.endsWith('/') ? first.project_dir.slice(0, -1) : first.project_dir;
+          const cfg = loadHookConfig(project, env);
+          const skillsOn = cfg.WF_SKILLS === 'superpowers';
+          const state = cfg.WF_STATE_FILE ?? '';
+          const skills = skillsOn ? ledgerSkills(first, env) : [];
           const patch = (() => { try { return rawText(alt(idx(payload.tool_input, 'command'), null)); } catch { return ''; } })();
-          return patchFiles(patch).filter((file) => nonBlank(file.path)).map((file) =>
-            encoded({ ...first, file: file.path, turn: { ...first.turn, skills_used: skills } }));
+          return patchFiles(patch).filter((file) => nonBlank(file.path))
+            .filter((file) => skillsOn || (state !== '' && relPath(file.path, project).replace(/\\/g, '/') === state))
+            .map((file) => encoded({ ...first, file: file.path, turn: { ...first.turn, skills_used: skills } }));
         }
         if (tool !== 'Bash') return [];
         const event = base('pre_shell', payload, env);

@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, stateNow, type Check } from './lib.mjs';
-import { fingerprintSnapshot, linkedItem, stateSnapshot } from './store.mjs';
+import { clearStateSnapshot, fingerprintSnapshot, linkedItem } from './store.mjs';
 
 const STATE_LINES_MAX = 30;
 const STATE_LINE_CHARS = 300;
@@ -38,7 +38,7 @@ export const sessionGates: Check = ({ cfg, project, ev, env }) => {
   const slugs = itemSlugs(now);
   const storeEnv = { ...env, ...cfg };
   const item = itemResolved(now, linkedItem(project, ev.get('.session'), slugs, storeEnv));
-  stateSnapshot(project, ev.get('.session'), slugs, storeEnv);
+  clearStateSnapshot(project, ev.get('.session'), storeEnv);
   fingerprintSnapshot(project, ev.get('.session'), cfg.WF_STATE_FILE ?? '', storeEnv);
   const active = item ? itemBlock(now, item) : now;
   // Autonomy mode: the item's **Mode:**, else WF_MODE_<TYPE>_<SCOPE> for its route, else WF_MODE_DEFAULT,

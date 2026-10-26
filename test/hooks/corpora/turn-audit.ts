@@ -60,6 +60,8 @@ export async function runCorpus(driver: Driver): Promise<void> {
     }
     if (c.sessionStart) {
       await driver(['core', 'session-gates'], JSON.stringify({ event: 'session_start', project_dir: project, session: event.session }), { WF_EVIDENCE_DIR: evidence });
+      // The Now list gate I compares with is taken just before the session's own write (multi-session-safety), here: the state as it stands before `stateAfter`.
+      await driver(['core', 'pre-edit-skill'], JSON.stringify({ event: 'pre_edit', project_dir: project, session: event.session, file: join(project, '.burhan/local/PROGRESS.md') }), { WF_EVIDENCE_DIR: evidence });
     }
     if (c.stateAfter !== undefined) {
       const statePath = join(project, '.burhan/local/PROGRESS.md');

@@ -22,7 +22,8 @@ steps apply.
                         ⛔ STOP — explicit approval
                               │
   ④  BUILD  (T)  Re-validate the plan against current code before the first sub-unit.
-                 Per sub-unit: failing test → smallest change → green → fast check.
+                 Per sub-unit: failing test → smallest change → green → fast check. After each sub-unit
+                 run only that sub-unit's test files, then the fast check; run the full suite at QC and before a commit, or when a fix lands outside the files those tests cover.
                  Never build the whole item in one go. Pause between sub-units (`step` mode; Modes below).
                  A plan that no longer matches the code is worse than none — update it.
                               │

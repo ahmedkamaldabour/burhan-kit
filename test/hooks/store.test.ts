@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, readdirSync, realpathSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpDir } from '../helpers.js';
 import { projectKey as cliProjectKey } from '../../src/lib/evidence.js';
 import {
-  evidenceRoot, projectKey, safeId, linkFile, linkedItem, linkItem, stateSnapshot,
+  evidenceRoot, projectKey, safeId, linkFile, linkedItem, linkItem, stateSnapshot, clearStateSnapshot,
   stateFingerprint, fingerprintSnapshot, fingerprintChanged, fingerprintRefresh, mtime,
 } from '../../src/hooks/core/store.mjs';
 
@@ -17,7 +17,8 @@ import {
  * linkFile(project, session, env) => string | ''
  * linkedItem(project, session, nowSlugs, env) => string
  * linkItem(project, session, item, nowSlugs, env) => void
- * stateSnapshot(project, session, nowSlugs, env) => void
+ * stateSnapshot(project, session, nowSlugs, env) => void   (only when absent)
+ * clearStateSnapshot(project, session, env) => void
  * stateFingerprint(project, stateFile) => 'missing' | `file:${string}`
  * fingerprintSnapshot(project, session, stateFile, env) => void
  * fingerprintChanged(project, session, stateFile, env) => boolean
@@ -89,6 +90,20 @@ test('now-slug snapshots are private and leave no temporary file', () => {
   assertPrivate(file);
   if (process.platform !== 'win32') assert.equal(statSync(dir).mode & 0o777, 0o700);
   assert.deepEqual(temps(dir), [], 'rename leaves no now temp file behind');
+});
+
+test('the now-slug baseline is written only when absent, and clearing it removes it', () => {
+  const p = project();
+  const root = tmpDir('burhan-store-now-once-');
+  const file = join(sessionDir(p, 'S1', root), 'now-slugs');
+  stateSnapshot(p, 'S1', ['alpha'], envAt(root));
+  stateSnapshot(p, 'S1', ['alpha', 'beta'], envAt(root));
+  assert.equal(readFileSync(file, 'utf8'), 'alpha\n', 'the first write of the turn wins');
+  clearStateSnapshot(p, 'S1', envAt(root));
+  assert.equal(existsSync(file), false);
+  clearStateSnapshot(p, 'S1', envAt(root));
+  stateSnapshot(p, 'S1', ['beta'], envAt(root));
+  assert.equal(readFileSync(file, 'utf8'), 'beta\n');
 });
 
 test('state fingerprints hash the configured file and report missing files', () => {

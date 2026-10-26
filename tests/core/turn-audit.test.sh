@@ -313,6 +313,7 @@ printf '%s\n' '## Now' '### alpha' '### beta' > "$P/.burhan/local/PROGRESS.md"
 EVD="$(t_tmp)/session-link-removed"; export WF_EVIDENCE_DIR="$EVD"
 KEY="$(cd "$P" && pwd -P | tr -d '\n' | t_sha | cut -c1-16)"; mkdir -p "$EVD/$KEY/other"; printf '%s\n' beta > "$EVD/$KEY/other/item"; : > "$EVD/$KEY/other/recent.jsonl"
 core session-gates "$(ev '{"event":"session_start","session":"remover"}')" >/dev/null
+core pre-edit-skill "$(ev '{"event":"pre_edit","session":"remover","file":".burhan/local/PROGRESS.md"}')" >/dev/null
 printf '%s\n' '## Now' '### alpha' > "$P/.burhan/local/PROGRESS.md"
 out="$(a "$(jq -cn --arg p "$P" '{event:"turn_end",agent:"claude",project_dir:$p,session:"remover",turn_id:"T-removed",turn:{files_created:[],files_edited:[".burhan/local/PROGRESS.md"],shell_commands:[],skills_used:[],assistant_text:"",steps:[]}}')")"
 check "removing a recently active foreign linked block warns" "$out" has 'You removed the `beta` block — another session (active'
@@ -328,6 +329,7 @@ for silence in own stale unchanged unsafe; do
   : > "$EVD/$KEY/$other/recent.jsonl" 2>/dev/null || true
   [ "$silence" = stale ] && t_age 2 "$EVD/$KEY/$other/recent.jsonl"
   core session-gates "$(ev '{"event":"session_start","session":"remover"}')" >/dev/null
+  core pre-edit-skill "$(ev '{"event":"pre_edit","session":"remover","file":".burhan/local/PROGRESS.md"}')" >/dev/null
   [ "$silence" = unchanged ] || printf '%s\n' '## Now' '### alpha' > "$P/.burhan/local/PROGRESS.md"
   out="$(a "$(jq -cn --arg p "$P" '{event:"turn_end",agent:"claude",project_dir:$p,session:"remover",turn_id:"T-removed",turn:{files_created:[],files_edited:[".burhan/local/PROGRESS.md"],shell_commands:[],skills_used:[],assistant_text:"",steps:[]}}')")"
   check "removed-block warning is silent for $silence fixture" "$out" lacks 'You removed the `beta` block'

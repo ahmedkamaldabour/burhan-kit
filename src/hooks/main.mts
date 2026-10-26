@@ -6,8 +6,8 @@ import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { loadHookConfig } from './core/config.mjs';
 import { emit, parseEvent, type Check } from './core/lib.mjs';
-import { preEditSkill } from './core/pre-edit-skill.mjs';
-import { postEditReminder } from './core/post-edit-reminder.mjs';
+import { preEdit } from './core/pre-edit.mjs';
+import { postEdit } from './core/post-edit.mjs';
 import { preShell } from './core/pre-shell.mjs';
 import { sessionGates } from './core/session-gates.mjs';
 import { promptRouter } from './core/prompt-router.mjs';
@@ -22,7 +22,7 @@ import { normalizeCodex } from './adapters/codex/normalize.mjs';
 
 export type Registry = Record<string, Record<string, Check>>;
 export const REGISTRY: Registry = {
-  core: { 'post-edit-reminder': postEditReminder, 'pre-edit-skill': preEditSkill, 'pre-commit-check': preShell, 'session-gates': sessionGates, 'prompt-router': promptRouter, 'turn-audit': turnAudit },
+  core: { 'post-edit-reminder': postEdit, 'pre-edit-skill': preEdit, 'pre-commit-check': preShell, 'session-gates': sessionGates, 'prompt-router': promptRouter, 'turn-audit': turnAudit },
 };
 
 export interface RunResult { stdout: string; debug: string }
