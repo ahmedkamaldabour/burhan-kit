@@ -191,7 +191,7 @@ R188|phases/files.md|holds originals only
 R189|phases/files.md|go to `repro/`
 R190|phases/files.md|name it `<name>-summary`
 R191|phases/files.md|Sources section lists the files kept there
-R192|commands/e2e.md|run only that sub-unit's test files
-R193|phases/lifecycle.md|run only that sub-unit's test files
-R194|templates/plan.md|that sub-unit's test files
+R192|commands/e2e.md|the tests that relate to the part you changed
+R193|phases/lifecycle.md|the tests that relate to the part you changed
+R194|templates/plan.md|the tests that relate to the part you changed
 R195|phases/enforcement.md|just before this session's own first write of the turn

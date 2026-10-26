@@ -23,7 +23,7 @@ steps apply.
                               │
   ④  BUILD  (T)  Re-validate the plan against current code before the first sub-unit.
                  Per sub-unit: failing test → smallest change → green → fast check. After each sub-unit
-                 run only that sub-unit's test files, then the fast check; run the full suite at QC and before a commit, or when a fix lands outside the files those tests cover.
+                 run the tests that relate to the part you changed, which you pick from the diff and name with the reason, then the fast check; never the whole suite by default (a large project's suite can take hours: the project's own full-suite command in `bindings.md`, or its CI, covers it). A fix that lands outside those tests adds the tests of the area it touches.
                  Never build the whole item in one go. Pause between sub-units (`step` mode; Modes below).
                  A plan that no longer matches the code is worse than none — update it.
                               │

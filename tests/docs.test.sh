@@ -80,10 +80,10 @@ check "configuration: a double-quoted one is refused and ignored" "$cfgdoc" has 
 check "ci and windows: a Windows path goes in single quotes" "$(cat docs/ci-and-windows.md)" has 'with backslashes in single quotes'
 
 echo "multi-session-safety: two sessions on one state file, and when to run which tests"
-check "e2e: the full suite is for QC and before a commit" "$(cat kit/commands/e2e.md)" has 'the full suite at QC and before a commit'
-check "lifecycle: the full suite is for QC and before a commit" "$(cat kit/phases/lifecycle.md)" has 'the full suite at QC and before a commit'
-check "plan template: the full suite is for QC and before a commit" "$(cat kit/templates/plan.md)" has 'the full suite at QC and before a commit'
-check "e2e: a fix outside the covered files brings the full suite back" "$(cat kit/commands/e2e.md)" has 'a fix lands outside the files those tests cover'
+check "e2e: run the tests that relate to the part you changed" "$(cat kit/commands/e2e.md)" has 'the tests that relate to the part you changed'
+check "lifecycle: run the tests that relate to the part you changed" "$(cat kit/phases/lifecycle.md)" has 'the tests that relate to the part you changed'
+check "plan template: run the tests that relate to the part you changed" "$(cat kit/templates/plan.md)" has 'the tests that relate to the part you changed'
+check "e2e: never the whole suite by default" "$(cat kit/commands/e2e.md)" has 'never the whole suite'
 check "enforcement: the removed-block check compares with the list before this session's own write" "$(cat kit/phases/enforcement.md)" has 'is not blamed on this session'
 check "enforcement: the warning before a whole-file write" "$(cat kit/phases/enforcement.md)" has 'drops a block of another session'
 check "enforcement: the list right after the last edit-tool write" "$(cat kit/phases/enforcement.md)" has 'right after its last write through an edit tool'
@@ -101,8 +101,8 @@ check "configuration: the pre-write hook warns before a whole-file write of the 
 check "configuration: what it does not see" "$cfgdoc" has '`cp`, `sed -i` or a script writing the state file is not seen'
 check "configuration: an Edit gets the baseline and no warning before it" "$cfgdoc" has 'an `Edit` gets the Now list and the turn-end check but no warning before it'
 check "enforcement: an Edit gets the baseline and no warning before it" "$(cat kit/phases/enforcement.md)" has 'takes the baseline and is checked at the turn end, but gets no warning'
-check "lifecycle: a fix outside the covered files brings the full suite back" "$(cat kit/phases/lifecycle.md)" has 'a fix lands outside the files those tests cover'
-check "plan template: a fix outside the covered files brings the full suite back" "$(cat kit/templates/plan.md)" has 'a fix lands outside the files those tests cover'
-check "e2e: the review step says it too" "$(cat kit/commands/e2e.md)" has 'the full suite too when a fix lands outside the files those tests cover'
+check "lifecycle: never the whole suite by default" "$(cat kit/phases/lifecycle.md)" has 'never the whole suite'
+check "plan template: never the whole suite by default" "$(cat kit/templates/plan.md)" has 'never the whole suite'
+check "e2e: the review step re-runs the tests of the part it fixed" "$(cat kit/commands/e2e.md)" has 'the tests that relate to the part you fixed'
 
 t_summary

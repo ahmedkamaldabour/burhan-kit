@@ -33,7 +33,7 @@ A re-review after findings reads only the fix diff and the findings list: each f
 open or replaced. It widens to a full review of any part of the fix outside the findings, of anything
 matching `WF_SENSITIVE_REGEX`, and of anything that touches path handling or a function a finding names.
 A QC re-run after a FAIL is a confirmation round (`reviews/<slug>-qc-r<N>.md`): the findings list, the fix
-diff and a full test run from the ledger, widened to a full pass when the fix is outside the findings.
+diff and a run of the tests for the changed areas from the ledger, widened to a full pass when the fix is outside the findings.
 This is for re-runs only: the first QC is never shortened.
 
 ## Review groups
