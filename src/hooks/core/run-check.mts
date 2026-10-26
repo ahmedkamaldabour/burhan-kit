@@ -34,12 +34,16 @@ export function bashesOnPath(env: NodeJS.ProcessEnv): string[] {
   return out;
 }
 
-function head(file: string, n: number): string {
+/** The last n bytes of the file — a failing check prints its error last — never starting inside a UTF-8 character. */
+function tail(file: string, n: number): string {
   const fd = openSync(file, 'r');
   try {
+    const start = Math.max(0, statSync(file).size - n);
     const buf = Buffer.alloc(n);
-    const got = readSync(fd, buf, 0, n, 0);
-    return buf.subarray(0, got).toString('utf8');
+    const got = readSync(fd, buf, 0, n, start);
+    let from = 0;
+    if (start > 0) while (from < got && (buf[from] & 0xc0) === 0x80) from++; // a continuation byte: skip to the next character
+    return buf.subarray(from, got).toString('utf8');
   } finally { closeSync(fd); }
 }
 
@@ -69,15 +73,21 @@ export async function runCheck(cmd: string, cwd: string, timeoutSec: number, env
       const soft = timeoutSec > 0
         ? setTimeout(() => { timedOut = true; kill('SIGTERM'); hard = setTimeout(() => kill('SIGKILL'), KILL_AFTER_MS); }, Math.min(timeoutSec * 1000, MAX_TIMER_MS))
         : undefined;
-      child.on('error', () => { if (soft) clearTimeout(soft); if (hard) clearTimeout(hard); resolve(127); });
+      // The agent may stop the hook (its own timeout): stop the check with it, as at the timeout, so no check
+      // outlives the hook. The child's exit then ends the hook as usual.
+      const stop = (): void => { timedOut = true; kill('SIGTERM'); hard ??= setTimeout(() => kill('SIGKILL'), KILL_AFTER_MS); };
+      const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT', 'SIGHUP'];
+      if (!win) for (const s of signals) process.once(s, stop);
+      const done = (): void => { if (soft) clearTimeout(soft); if (hard) clearTimeout(hard); for (const s of signals) process.removeListener(s, stop); };
+      child.on('error', () => { done(); resolve(127); });
       child.on('exit', (c, sig) => {
-        if (soft) clearTimeout(soft); if (hard) clearTimeout(hard);
+        done();
         if (timedOut) resolve(124);
         else resolve(c ?? 128 + ((sig && constants.signals[sig]) || 0));
       });
     });
     closeSync(fd);
-    const output = head(outFile, OUTPUT_BYTES);
+    const output = tail(outFile, OUTPUT_BYTES);
     if (code === 0) return { kind: 'pass', code, output };
     if (code === 124 || code === 137) return { kind: 'timeout', code, output };
     return { kind: 'fail', code, output };

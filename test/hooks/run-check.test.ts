@@ -96,3 +96,34 @@ test('timeout: the whole process tree is stopped — a grandchild started by the
   await new Promise((res) => setTimeout(res, 300));
   assert.throws(() => process.kill(pid, 0), /ESRCH/, `grandchild ${pid} still alive`);
 });
+// commit-gate-and-check-output SU2: the error of a failing check is at the end of its output, and a hook stopped by
+// the agent must not leave the check running.
+test('output keeps the LAST 4000 bytes (the error is at the end)', async () => {
+  const r = await runCheck('node -e "process.stdout.write(\'A\'.repeat(6000)+\'REAL-ERROR\');process.exit(1)"', dir(), 10, process.env);
+  assert.equal(r.output.length, 4000);
+  assert.ok(r.output.endsWith('REAL-ERROR'), `ends with ${JSON.stringify(r.output.slice(-20))}`);
+});
+test('a cut never starts inside a UTF-8 character', async () => {
+  // 3000 × 'é' + 'a' = 6001 bytes: the last 4000 start on the second byte of an 'é' (a naive cut decodes it as U+FFFD).
+  const r = await runCheck('node -e "process.stdout.write(\'é\'.repeat(3000)+\'a\');process.exit(1)"', dir(), 10, process.env);
+  assert.ok(!r.output.includes('\uFFFD'), 'no replacement character');
+  assert.ok(r.output.startsWith('é') && r.output.endsWith('éa'));
+});
+test('the hook stopped by SIGTERM stops the running check too', { skip: notOnWindows('POSIX signals and process groups; Windows has no SIGTERM to forward') }, async () => {
+  const d = dir();
+  const mod = new URL('../../src/hooks/core/run-check.mjs', import.meta.url).href;
+  writeFileSync(join(d, 'hook.mjs'), `import { runCheck } from ${JSON.stringify(mod)}; await runCheck('echo $$ > check.pid; exec sleep 30', process.cwd(), 60, process.env);`);
+  const { spawn } = await import('node:child_process');
+  const hook = spawn(process.execPath, ['hook.mjs'], { cwd: d, stdio: 'ignore' });
+  const pidFile = join(d, 'check.pid');
+  for (let i = 0; i < 100; i++) { try { if (readFileSync(pidFile, 'utf8').trim()) break; } catch { /* not yet */ } await new Promise((res) => setTimeout(res, 50)); }
+  const pid = Number(readFileSync(pidFile, 'utf8'));
+  const alive = (): boolean => { try { process.kill(pid, 0); return true; } catch { return false; } };
+  try {
+    hook.kill('SIGTERM');
+    for (let i = 0; i < 60 && alive(); i++) await new Promise((res) => setTimeout(res, 50)); // up to 3 s
+    assert.ok(!alive(), `check ${pid} still alive after the hook was stopped`);
+  } finally {
+    if (alive()) process.kill(pid, 'SIGKILL');
+  }
+});
