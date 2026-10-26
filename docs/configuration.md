@@ -141,7 +141,8 @@ and QC reports to cite.
 
 A command line with a pipe (`npm test | head`) records the exit of its last command, so a failing first
 command can show as `exit 0`; `burhan evidence` marks those lines (`--json` adds `"piped": true`). A session
-folder older than 30 days that holds only ledger files is removed; one that also holds session files stays.
+folder older than 30 days that holds only ledger files is removed; one that also holds session files stays until you delete it
+(in practice nearly every folder does, so the ledger grows until you do).
 
 ## Independent QC and model per phase
 

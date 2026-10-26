@@ -79,7 +79,7 @@ WF_REVIEWER_AGENT="same"
 
 # ---- Evidence ledger (WORKFLOW: enforcement) ------------------------------------------------
 # Each turn's edits and commands (with exit codes) are recorded outside the project, under
-# ${XDG_STATE_HOME:-~/.local/state}/burhan/evidence (private; old session folders that hold only ledger files are removed after 30 days). Command LINES are
+# ${XDG_STATE_HOME:-~/.local/state}/burhan/evidence (private; old session folders that hold only ledger files are removed after 30 days; folders with session files stay until you delete them). Command LINES are
 # stored — not their output — so a token typed on a command line would be stored too. "off" disables it.
 WF_EVIDENCE_LEDGER="on"
 # Where the ledger lives: an absolute LITERAL path (no $HOME, no ~ — the CLI reads literal values only).

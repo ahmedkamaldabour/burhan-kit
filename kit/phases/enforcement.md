@@ -42,7 +42,8 @@ transcript, Codex in its rollout. On Claude Code a subagent's steps (a delegated
 recorded in place of its call (a background one by time, or after the turn), marked with the
 subagent's name. `burhan evidence` reads it. The ledger is private to the user
 (directories 700) and turned off with `WF_EVIDENCE_LEDGER=off`. A session folder older than 30 days
-that holds only ledger files is removed; one that also holds session files stays. It stores
+that holds only ledger files is removed; one that also holds session files stays until you delete it
+(in practice that is nearly every folder, so the ledger grows until you do). It stores
 command **lines** — never output — so a secret typed on a command line would be stored too. A command
 line with a pipe (`cmd | head`) records the exit of its last command, so a failing first command can show
 as `exit 0`; `burhan evidence` marks such lines.

@@ -28,6 +28,7 @@ check "configuration: doctor says when the code pattern is empty" "$cfgdoc" has 
 check "configuration: a piped run records the last command's exit" "$cfgdoc" has "records the exit of its last command"
 check "configuration: the Kit command row" "$cfgdoc" has 'Kit command'
 check "enforcement: the ledger cleanup rule is the real one" "$(cat kit/phases/enforcement.md)" has 'holds only ledger files'
+check "ledger cleanup: folders with session files stay until you delete them (enforcement, configuration, features, config example)" "$(cat kit/phases/enforcement.md docs/configuration.md docs/features.md kit/workflow.config.example | grep -c 'until you delete')" has '4'
 check "enforcement: no blanket 30-day claim" "$(cat kit/phases/enforcement.md)" lacks 'pruned after 30 days'
 check "enforcement: a piped run records the last command's exit" "$(cat kit/phases/enforcement.md)" has "exit of its last command"
 
