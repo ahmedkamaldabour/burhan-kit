@@ -285,6 +285,38 @@ export function markSkillTold(project: string, session: string, item: string, sk
   } catch { /* fail open */ }
 }
 
+// The story and plan files a shell command CREATED in this session's current turn: the Bash pre-write hook sees that the file does not exist yet,
+// the turn end (where the file always exists) cannot. One file per session (`shellcreated`, one relative path per line), spent by the audit.
+const createdFile = (project: string, session: string, env: Env): string => {
+  const dir = sessionDir(project, session, env);
+  return dir ? join(dir, 'shellcreated') : '';
+};
+
+/** The paths the pre-write hook saw a shell command create since the last audit ([] on any error). */
+export function shellCreated(project: string, session: string, env: Env = process.env): string[] {
+  try {
+    const file = createdFile(project, session, env);
+    return file === '' ? [] : skillLines(file);
+  } catch { return []; }
+}
+
+/** Remember a path a shell command is about to create; fail open. */
+export function rememberShellCreated(project: string, session: string, rel: string, env: Env = process.env): void {
+  try {
+    const file = createdFile(project, session, env);
+    if (file === '' || /[\t\n\r]/.test(rel)) return;
+    atomicPrivateWrite(file, 'shellcreated', `${[...new Set([...skillLines(file), rel])].slice(-SKILL_LINES_MAX).join('\n')}\n`);
+  } catch { /* fail open */ }
+}
+
+/** Forget the created paths once the audit has judged them. */
+export function clearShellCreated(project: string, session: string, env: Env = process.env): void {
+  try {
+    const file = createdFile(project, session, env);
+    if (file !== '') unlinkSync(file);
+  } catch { /* fail open */ }
+}
+
 /** wf_mtime: whole epoch seconds for a readable path. */
 export function mtime(path: string): number | null {
   try { return Math.floor(statSync(path).mtimeMs / 1000); } catch { return null; }

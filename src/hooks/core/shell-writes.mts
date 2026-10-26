@@ -7,6 +7,22 @@ const G = '\x02'; // a `>` inside quotes
 // awk's global set by token_at.
 let TOKEN_END = 0;
 
+/** Index of the first `<<` on a line that is outside quotes and is not a here-string `<<<`, or -1. */
+function heredocAt(line: string): number {
+  let q = '';
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q !== '') { if (c === '\\' && q === '"') i++; else if (c === q) q = ''; continue; }
+    if (c === '\\') { i++; continue; }
+    if (c === "'" || c === '"') { q = c; continue; }
+    if (c === '<' && line[i + 1] === '<') {
+      if (line[i + 2] === '<') { i += 2; continue; }
+      return i;
+    }
+  }
+  return -1;
+}
+
 /** awk: drop_heredocs */
 function drop_heredocs(s: string): string {
   const line = s.split('\n');
@@ -23,19 +39,14 @@ function drop_heredocs(s: string): string {
     }
 
     out = out === '' ? line[i] : out + '\n' + line[i];
-    let h = line[i].indexOf('<<');
-    while (h >= 0 && line[i][h + 2] === '<') { // here-string <<< : not a heredoc
-      const rest = line[i].slice(h + 3);
-      const j = rest.indexOf('<<');
-      h = j >= 0 ? h + 3 + j : -1;
-    }
+    const h = heredocAt(line[i]);
     if (h >= 0) {
       let rest = line[i].slice(h + 2);
       strip = false;
       if (rest[0] === '-') { strip = true; rest = rest.slice(1); }
-      rest = rest.replace(/^[ \t]*/, '').replace(/["']/g, '');
-      const m = /^[A-Za-z_][A-Za-z0-9_]*/.exec(rest);
-      if (m) delim = m[0];
+      // The delimiter word runs to whitespace or an operator; its quotes and backslashes are not part of it. A shift (`1<<3`) is no heredoc.
+      const word = /^[^\s;|&<>()]*/.exec(rest.replace(/^[ \t]*/, ''))?.[0].replace(/["'\\]/g, '') ?? '';
+      if (/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(word)) delim = word;
     }
   }
   return out;
@@ -86,7 +97,7 @@ function restore(t: string): string {
 
 /** awk: emit */
 function emit(t: string, writes: string[]): void {
-  t = restore(t);
+  t = restore(t).replace(/\r+$/, '');
   if (t === '' || t.startsWith('/dev/') || /^[0-9]+$/.test(t) || t.startsWith('&')) return;
   writes.push(t);
 }
@@ -97,7 +108,7 @@ function token_at(s: string, j: number): string {
   let k = j;
   while (k < s.length) {
     const c = s[k];
-    if (c === ' ' || c === '\t' || c === '\n' || ';|&<>()'.includes(c)) break;
+    if (c === ' ' || c === '\t' || c === '\n' || c === '`' || ';|&<>()'.includes(c)) break;
     k++;
   }
   TOKEN_END = k;
@@ -127,8 +138,11 @@ export function shellWrites(cmds: string[]): string[] {
         let j = i + 1;
         if (s[j] === '>') j++;
         if (s[j] === '|') j++;
-        if (s[j] === '&') continue;                              // >&2 duplication
-        emit(token_at(s, j), writes);
+        if (s[j] === '&') {                                      // >&2, >&- and >&$fd duplicate a descriptor; >& file writes both streams
+          const word = token_at(s, j + 1);
+          if (/^([0-9]*-?|\$.*)$/.test(word)) continue;                // a descriptor number, `-`, or a variable holding one
+        }
+        emit(token_at(s, s[j] === '&' ? j + 1 : j), writes);
         i = TOKEN_END - 1;
       }
 

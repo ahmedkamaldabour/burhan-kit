@@ -161,18 +161,20 @@ test('codex: with the skills off nothing extra is attached', async () => {
 // ---- turn-end: a story or plan written through the shell is checked like one written with the edit tools (AC-05) ----
 const endTurn = async (s: Scene, commands: string[], skills: string[] = [], extra: Record<string, unknown> = {}): Promise<string> =>
   (await run(['core', 'turn-audit'], JSON.stringify({ event: 'turn_end', session: 'S', project_dir: s.project, ...extra, turn: { skills_used: skills, assistant_text: 'written', files_created: [], files_edited: [], shell_commands: commands, steps: [] } }), s.env)).stdout;
+// A shell write is judged "created" by the Bash pre-write hook (the file did not exist yet); the turn end reads that marker (item shell-writes-followup).
+const shellTurn = async (s: Scene, command: string, skills: string[] = []): Promise<string> => { await core(s, command, skills); return endTurn(s, [command], skills); };
 test('turn end: a heredoc story with brainstorming never run → the story warning, worded for the shell', async () => {
-  const out = await endTurn(scene(), [STORY_CMD]);
+  const out = await shellTurn(scene(), STORY_CMD);
   assert.match(out, /⚠ SKILL GATE \(story\): a story was written through the shell this turn without superpowers:brainstorming\. Invoke it now if it was skipped, or say when it ran\./u);
 });
 test('turn end: a heredoc plan with writing-plans never run → the plan warning, worded for the shell', async () => {
-  assert.match(await endTurn(scene(), [PLAN_CMD]), /⚠ SKILL GATE \(plan\): a plan was written through the shell this turn without superpowers:writing-plans\./u);
+  assert.match(await shellTurn(scene(), PLAN_CMD), /⚠ SKILL GATE \(plan\): a plan was written through the shell this turn without superpowers:writing-plans\./u);
 });
 test('turn end: the skill used in this turn or in an earlier turn → silent', async () => {
-  assert.doesNotMatch(await endTurn(scene(), [STORY_CMD], [BRAIN]), /SKILL GATE/u);
+  assert.doesNotMatch(await shellTurn(scene(), STORY_CMD, [BRAIN]), /SKILL GATE/u);
   const s = scene();
   await used(s, [PLANS]);
-  assert.doesNotMatch(await endTurn(s, [PLAN_CMD]), /SKILL GATE/u);
+  assert.doesNotMatch(await shellTurn(s, PLAN_CMD), /SKILL GATE/u);
 });
 test('turn end: a redirect to a non-work file, a source or the state file raises no skill gate', async () => {
   for (const command of ['echo x > notes.txt', `echo x > ${D}/foo/sources/old-story.md`, 'echo x >> .burhan/local/PROGRESS.md', `echo x > ${D}/foo/foo-notes.md`]) {
@@ -187,4 +189,48 @@ test('turn end: a story created with the edit tool keeps its old wording', async
   const file = join(s.project, D, 'foo/foo-story.md'); mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, '# s\n');
   const out = (await run(['core', 'turn-audit'], JSON.stringify({ event: 'turn_end', session: 'S', project_dir: s.project, turn: { skills_used: [], assistant_text: 'x', files_created: [file], files_edited: [], shell_commands: [], steps: [] } }), s.env)).stdout;
   assert.match(out, /a story was CREATED this turn without superpowers:brainstorming/u);
+});
+
+// ---- created-only: an append or an overwrite of a story that already existed is not "written without the skill" (AC-01..AC-03) ----
+const existing = (s: Scene, name: string): void => { const file = join(s.project, D, 'foo', name); mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, '# old\n'); };
+const STORY_GATE = /SKILL GATE \(story\)/u;
+const PLAN_GATE = /SKILL GATE \(plan\)/u;
+test('turn end: `cat >>` onto a story that existed → no story gate', async () => {
+  const s = scene(); existing(s, 'foo-story.md');
+  assert.doesNotMatch(await shellTurn(s, `cat >> ${D}/foo/foo-story.md <<'EOF'\nmore\nEOF`), STORY_GATE);
+});
+test('turn end: `tee -a` onto a plan that existed → no plan gate', async () => {
+  const s = scene(); existing(s, 'foo-implementation-plan.md');
+  assert.doesNotMatch(await shellTurn(s, `echo x | tee -a ${D}/foo/foo-implementation-plan.md`), PLAN_GATE);
+});
+test('turn end: `>` over a story that existed → no story gate', async () => {
+  const s = scene(); existing(s, 'foo-story.md');
+  assert.doesNotMatch(await shellTurn(s, STORY_CMD), STORY_GATE);
+});
+test('turn end: a story the command created still warns, also when the pre-write line was already shown', async () => {
+  const s = scene();
+  await core(s, STORY_CMD); // shows the line once; the marker must be kept all the same
+  assert.match(await shellTurn(s, STORY_CMD), STORY_GATE);
+});
+test('turn end: no pre-write call for the command (no marker) → silent', async () => {
+  assert.doesNotMatch(await endTurn(scene(), [STORY_CMD]), STORY_GATE);
+  assert.doesNotMatch(await endTurn(scene(), [PLAN_CMD]), PLAN_GATE);
+});
+test('turn end: the marker is spent by the audit — an append in a later turn to the file created earlier stays silent', async () => {
+  const s = scene();
+  assert.match(await shellTurn(s, STORY_CMD), STORY_GATE);
+  const file = join(s.project, D, 'foo/foo-story.md'); mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, '# s\n');
+  assert.doesNotMatch(await shellTurn(s, `echo more >> ${D}/foo/foo-story.md`), STORY_GATE);
+});
+test('a subagent leaves no marker, so its turn-end check stays silent', async () => {
+  const s = scene();
+  await core(s, STORY_CMD, [], { agent_id: 'a1' });
+  assert.doesNotMatch(await endTurn(s, [STORY_CMD]), STORY_GATE);
+});
+test('with the skills off the pre-write hook leaves no marker', async () => {
+  const s = scene(); const cfg = join(s.project, '.burhan/workflow.config');
+  writeFileSync(cfg, `WF_DOCS_DIR=${D}\nWF_SKILLS=none\nWF_EVIDENCE_DIR='${s.store}'\n`);
+  await core(s, STORY_CMD);
+  writeFileSync(cfg, `WF_DOCS_DIR=${D}\nWF_SKILLS=superpowers\nWF_EVIDENCE_DIR='${s.store}'\n`);
+  assert.doesNotMatch(await endTurn(s, [STORY_CMD]), STORY_GATE);
 });

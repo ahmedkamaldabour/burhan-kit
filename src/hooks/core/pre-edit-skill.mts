@@ -6,7 +6,7 @@ import { ereTest } from './ere.mjs';
 import { itemBlock, itemRoute, relPath, type Check, type Ctx } from './lib.mjs';
 import { shellWrites } from './shell-writes.mjs';
 import { currentItem, skillLineText, storeEnv } from './skill-line.mjs';
-import { markSkillTold, rememberedPhaseSkills, rememberedSkills, skillTold } from './store.mjs';
+import { markSkillTold, rememberedPhaseSkills, rememberedSkills, rememberShellCreated, skillTold } from './store.mjs';
 
 const outside = (rel: string): boolean => rel.startsWith('/') || rel.startsWith('../') || rel === '..' || /^[A-Za-z]:/.test(rel);
 
@@ -22,12 +22,26 @@ export const preEditSkill: Check = (ctx) => {
  *  covered here (a redirect is not a build step). The adapter attaches the turn's skills only for such a command. */
 export const preShellSkill: Check = (ctx) => {
   if (ctx.cfg.WF_SKILLS !== 'superpowers' || ctx.ev.get('.agent_id') !== '') return [];
-  for (const target of shellWrites([ctx.ev.get('.command')])) {
+  const targets = shellWrites([ctx.ev.get('.command')]);
+  // The turn end cannot tell a new story from an appended one; only here, before the command runs, is that known.
+  for (const target of targets) {
+    const rel = relPath(target, ctx.project).replace(/\\/g, '/');
+    if (isNewStoryOrPlan(ctx, rel)) rememberShellCreated(ctx.project, ctx.ev.get('.session'), rel, storeEnv(ctx));
+  }
+  for (const target of targets) {
     const line = lineFor(ctx, target, true);
     if (line.length > 0) return line;
   }
   return [];
 };
+
+/** `<docs>/<slug>/<slug>-story.md` or `-implementation-plan.md` that does not exist yet. */
+function isNewStoryOrPlan(ctx: Ctx, rel: string): boolean {
+  const docs = ctx.cfg.WF_DOCS_DIR ?? '';
+  if (outside(rel) || docs === '' || !rel.startsWith(`${docs}/`)) return false;
+  const parts = rel.slice(docs.length + 1).split('/');
+  return parts.length === 2 && (parts[1] === `${parts[0]}-story.md` || parts[1] === `${parts[0]}-implementation-plan.md`) && !existsSync(join(ctx.project, rel));
+}
 
 function lineFor(ctx: Ctx, raw: string, workFilesOnly: boolean): string[] {
   const { ev, cfg, project } = ctx;

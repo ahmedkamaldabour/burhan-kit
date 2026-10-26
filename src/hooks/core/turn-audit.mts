@@ -7,7 +7,7 @@ import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stat
 import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
 import { agoText, liveOwnerAge, slugText } from './state-blocks.mjs';
-import { clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, stateAfterSlugs, stateSnapshotFile } from './store.mjs';
+import { clearShellCreated, clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, shellCreated, stateAfterSlugs, stateSnapshotFile } from './store.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
 import { gateLine, undecided } from './understanding.mjs';
 
@@ -186,9 +186,12 @@ const gateF: Gate = (audit) => {
   const usedEver = (pattern: string): boolean => ereTest(pattern, [...audit.skillsUsed, ...audit.skillsEarlier].join('\n'));
   if (ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && !usedEver('brainstorming')) out.push('⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.');
   if (ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && !usedEver('writing-plans')) out.push('⚠ SKILL GATE (plan): a plan was CREATED this turn without superpowers:writing-plans.');
-  // The same two checks for a story or plan written through the shell: a redirection cannot tell a new file from an overwritten one, so the wording differs.
-  if (!ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && ereTest(`${docs}.*-story\\.md$`, audit.shellWritten.join('\n')) && !usedEver('brainstorming')) out.push('⚠ SKILL GATE (story): a story was written through the shell this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.');
-  if (!ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && ereTest(`${docs}.*-implementation-plan\\.md$`, audit.shellWritten.join('\n')) && !usedEver('writing-plans')) out.push('⚠ SKILL GATE (plan): a plan was written through the shell this turn without superpowers:writing-plans.');
+  // The same two checks for a story or plan CREATED through the shell. The turn end cannot tell a new file from an appended one; the Bash pre-write hook
+  // measured it before the command ran and left a marker. No marker (the hook did not run) → silent. The wording differs from the edit-tool one.
+  const marked = shellCreated(audit.ctx.project, audit.ctx.ev.get('.session'), audit.ctx.env);
+  const shellNew = audit.shellWritten.filter((file) => marked.includes(file));
+  if (!ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && ereTest(`${docs}.*-story\\.md$`, shellNew.join('\n')) && !usedEver('brainstorming')) out.push('⚠ SKILL GATE (story): a story was written through the shell this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.');
+  if (!ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && ereTest(`${docs}.*-implementation-plan\\.md$`, shellNew.join('\n')) && !usedEver('writing-plans')) out.push('⚠ SKILL GATE (plan): a plan was written through the shell this turn without superpowers:writing-plans.');
   const patch = patchTurn(audit);
   const usedForCode = ereTest('test-driven-development|systematic-debugging', [...audit.skillsUsed, ...audit.skillsBefore].join('\n'));
   if (matches(audit.ctx.cfg.WF_CODE_REGEX ?? '', audit.written.join('\n')) && !patch && !usedForCode) out.push('⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.');
@@ -317,11 +320,13 @@ export const turnAudit: Check = (ctx) => {
     const findings: string[] = [];
     for (const gate of gates) try { findings.push(...gate(audit)); } catch { /* independent gates fail open */ }
     clearStateSnapshot(auditCtx.project, auditCtx.ev.get('.session'), auditCtx.env); // this audit judged every write since the last one
+    clearShellCreated(auditCtx.project, auditCtx.ev.get('.session'), auditCtx.env); // the created paths were judged with it
     remember();
     evidenceRecord(auditCtx);
     return findings;
   } catch {
     clearStateSnapshot(auditCtx.project, auditCtx.ev.get('.session'), auditCtx.env); // a baseline must never outlive its turn, whatever failed
+    clearShellCreated(auditCtx.project, auditCtx.ev.get('.session'), auditCtx.env);
     try { evidenceRecord(auditCtx); } catch { /* recording is independently fail-open */ }
     return [];
   }

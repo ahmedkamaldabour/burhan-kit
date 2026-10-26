@@ -21,6 +21,17 @@ const CASES: Case[] = [
   { name: 'repeated raw targets are not deduplicated', cmds: ['echo x > same.txt', 'echo y >> same.txt'], want: ['same.txt', 'same.txt'] },
   { name: 'an empty command list writes nothing', cmds: [], want: [] },
 
+  // Item shell-writes-followup (H7): the write after an unusual heredoc delimiter, a `<<` inside quotes, `>&` to a file, a trailing carriage return.
+  { name: 'a heredoc delimiter with a dash: the later write is seen', cmds: ["cat > a.md <<'END-DOC'\nx\nEND-DOC\necho y > real.md"], want: ['a.md', 'real.md'] },
+  { name: 'a heredoc delimiter with a dot: the later write is seen', cmds: ['cat > a.md <<EOF.X\nx\nEOF.X\necho y > real.md'], want: ['a.md', 'real.md'] },
+  { name: 'a double-quoted delimiter with a dash and a digit: the later write is seen', cmds: ['cat > a.md <<"E-1"\nx\nE-1\necho y > real.md'], want: ['a.md', 'real.md'] },
+  { name: 'a backslash-quoted and a spaced delimiter still work', cmds: ['cat > a.md <<\\EOF\nx\nEOF\necho y > b.md', 'cat > c.md << EOF\nx\nEOF\necho y > d.md'], want: ['a.md', 'b.md', 'c.md', 'd.md'] },
+  { name: 'a << inside quotes is text, not a heredoc', cmds: ['echo "x << y"\necho done > real.md', "echo 'a <<EOF'\necho done > real.md"], want: ['real.md', 'real.md'] },
+  { name: 'a shift inside arithmetic is not a heredoc', cmds: ['echo $((1<<3))\necho done > real.md'], want: ['real.md'] },
+  { name: '>& to a file is a write; >&2 and >&- are not', cmds: ['echo hi >& real.md', 'echo hi >&real2.md', 'run >&2', 'run 1>&2', 'run >&-', 'run 2>&1'], want: ['real.md', 'real2.md'] },
+  { name: '>& followed by a variable is a descriptor, not a file', cmds: ['run >&$fd', 'run >&${fd}', 'run >&"$fd"'], want: [] },
+  { name: 'a trailing carriage return is not part of the target', cmds: ['echo x > real.md\r', 'echo x | tee t.md\r'], want: ['real.md', 't.md'] },
+
   // Every command in tests/core/turn-audit.test.sh's shell-write section.
   { name: 'turn-audit: printf append to a story', cmds: ['printf %s\\n note >> .burhan/work/foo/foo-story.md && tail -3 .burhan/work/foo/foo-story.md'], want: ['.burhan/work/foo/foo-story.md'] },
   { name: 'turn-audit: tee append to the state file', cmds: ['echo x | tee -a .burhan/local/PROGRESS.md'], want: ['.burhan/local/PROGRESS.md'] },
