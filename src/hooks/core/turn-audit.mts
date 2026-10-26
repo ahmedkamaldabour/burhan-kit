@@ -8,6 +8,7 @@ import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
 import { agoText, liveOwnerAge, slugText } from './state-blocks.mjs';
 import { clearShellCreated, clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, shellCreated, stateAfterSlugs, stateSnapshotFile } from './store.mjs';
+import { evidenceMatches } from './evidence-cmd.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
 import { gateLine, undecided } from './understanding.mjs';
 
@@ -85,7 +86,7 @@ const gateA: Gate = ({ ctx, written, cmds, text, steps }) => {
   if (!(ownCode || codeEdit !== null) || !completionClaim(text)) return [];
   const evidence = ctx.cfg.WF_EVIDENCE_REGEX ?? '';
   if (evidence === '') return ["⚠ VERIFICATION GATE: code changed and completion was claimed, but no evidence pattern configured (WF_EVIDENCE_REGEX), so this turn's verification cannot be checked. Show the command output that proves the claim, or retract it."];
-  if (steps.length === 0) return matches(evidence, cmds.join('\n')) ? [] : ["⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim."];
+  if (steps.length === 0) return cmds.some((cmd) => evidenceMatches(ere(evidence) ?? /$a/, cmd)) ? [] : ["⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim."];
   const runs = evidenceRuns(steps, ere(evidence) ?? /$a/);
   if (runs.length === 0) return ["⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim."];
   const last = codeEdit ?? { seq: 0, file: '' };
@@ -99,6 +100,9 @@ const gateA: Gate = ({ ctx, written, cmds, text, steps }) => {
   const pending = finals.find((run) => run.status === 'blocked' || run.status === 'background');
   if (pending?.status === 'blocked') return [`⚠ VERIFICATION GATE: completion was claimed, but the last run of \`${pending.cmd}\` was blocked and never ran. Run it, show the output — or retract the claim.`];
   if (pending?.status === 'background') return [`⚠ VERIFICATION GATE: completion was claimed, but the last run of \`${pending.cmd}\` was in the background — its result is unknown. Run it in the foreground and show the output.`];
+  // A run whose result was never recorded (Codex: no item or no exit code; Claude: no result yet) is not a pass; one passing run is enough.
+  const unknown = finals.find((run) => run.status === 'unknown');
+  if (unknown && !finals.some((run) => run.status === 'ok')) return [`⚠ VERIFICATION GATE: completion was claimed, but the result of \`${unknown.cmd}\` is unknown — no exit code was recorded for it. Run it in the foreground and show the output.`];
   return [];
 };
 

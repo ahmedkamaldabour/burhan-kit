@@ -62,9 +62,8 @@ until you choose.
 
 ## Candidates
 
-- **Codex exit codes.** Codex reports a finished command with no exit code, so the main agent's
-  `unknown` result counts as passing evidence. The fix is to read the exit codes from Codex's session
-  record.
+- **Codex results not yet written.** A command whose result is not in Codex's session record when the turn ends
+  counts as not a pass. How often that happens on real Codex is not measured.
 - **Content hashes in the ledger.** The ledger cannot tell whether an edited file was later reverted.
   Recording a hash with each edit would let it.
 - **Ordered shell writes.** The main agent's shell writes (`>`, `>>`, `tee`) carry no position in the
@@ -81,6 +80,10 @@ These are by design, and listed so nobody mistakes them for guarantees:
 
 - **The prompt router.** Its mode and "plan only" hints come from matching phrases, so it can miss
   or misfire on some wordings. It only suggests. The mode the hooks act on is the exact `Mode` field.
+- **What counts as evidence.** The evidence pattern is matched on the commands a line runs, with quoted text
+  masked and printing or searching commands (`echo`, `grep`…) left out. A tool that only mentions the words
+  (`git grep`, `xargs echo`) can still count, and a run hidden in a variable or `eval` is missed. A Codex
+  patch path is resolved against the session folder only when that is inside the project.
 - **`Accepted by`.** The field checks its form (`<name> · YYYY-MM-DD`), not who the name belongs to.
   The working agreement forbids the agent from writing it.
 - **Codex trust in `burhan doctor`.** The doctor reads only the table names under `[hooks.state."…"]`

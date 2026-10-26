@@ -49,6 +49,15 @@ test('stats reads POSIX classes in WF_EVIDENCE_REGEX the way the hook (grep -E) 
   assert.equal(summarizeLedger(recs, '^npm[[:space:][:digit:]]+test').evidenceRuns, 1);
 });
 
+test('stats counts an evidence run by the command it ran, not by words it echoed (item evidence-honesty)', () => {
+  const rec = (seq: number, cmd: string) => ({ ts: 't', agent: 'a', session: 's', turn: 't', seq, kind: 'cmd', cmd, exit: 0, status: 'ok', item: 'x', project: '/p' });
+  const recs = [rec(1, 'echo "npm test"'), rec(2, 'grep -n "npm test" README.md'), rec(3, 'cd app && npm test | tail -3')] as never;
+  const summary = summarizeLedger(recs, 'npm test');
+  assert.equal(summary.commands, 3);
+  assert.equal(summary.evidenceRuns, 1);
+  assert.equal(summary.evidencePassed, 1);
+});
+
 test('reads what the hook wrote: ordered, with exit codes and the item; summary counts evidence', () => {
   const p = project(); const ev = tmp('burhan-evd-');
   audit(p, ev, 'S1', 'T1', [{ kind: 'edit', file: join(p, 'a.src'), seq: 1 }, { kind: 'cmd', cmd: 'verify-it a', exit: 3, status: 'failed', seq: 2 }, { kind: 'cmd', cmd: 'verify-it a', exit: 0, status: 'ok', seq: 3 }]);

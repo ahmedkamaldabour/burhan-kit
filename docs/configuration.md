@@ -85,7 +85,7 @@ holds personal overrides, read after the team file, key by key.
 | `WF_DOCS_DIR`, `WF_DISCOVERY_DIR`, `WF_STATE_FILE`, `WF_STATE_BUDGET` | where work items, discoveries and the live state file live; setup asks for the discovery folder (recommending a `discovery` folder already next to the work files) and creates the state file empty when it is missing, never overwriting one |
 | `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` | the fast, non-mutating check run before every commit |
 | `WF_CODE_REGEX`, `WF_TEST_REGEX` | which paths are code / tests; with `WF_CODE_REGEX` empty the "done without proof" warning stays off |
-| `WF_EVIDENCE_REGEX` | which commands count as verification evidence |
+| `WF_EVIDENCE_REGEX` | which commands count as verification evidence; it is matched against each command the line runs, not against words that only appear in it (quoted text is masked, so `echo "npm test"` does not count), and a run with no recorded result is not a pass |
 | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` | access-control paths and the reminder after editing one |
 | `WF_STACK_SETUP` | `pending` = the agent sets up the project checks on first use (`setup --stack`); empty or `done` = nothing to do |
 | `WF_SKILLS` | `superpowers` to bind the process-skill mapping, or `none` (see below) |

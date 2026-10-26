@@ -1,3 +1,4 @@
+import { isAbsolute, resolve, sep } from 'node:path';
 import { alt, idx, rawText, shellText } from '../../core/jq.mjs';
 import { loadHookConfig } from '../../core/config.mjs';
 import { relPath } from '../../core/lib.mjs';
@@ -37,6 +38,15 @@ const encoded = (value: unknown): string => JSON.stringify(value)!.replace(/\x7f
 const tostring = (value: unknown): string => (typeof value === 'string' ? value : JSON.stringify(value));
 
 /** The text of a record's `.tool_input.command` as `jq -r '… // empty'` prints it ('' for null/false). */
+/** A patch path is relative to the folder the session runs in. When that folder is a subfolder of the project, resolve the path against it
+ *  (item evidence-honesty); a path already absolute, a folder that is the project root, outside it, or unknown is left as written. */
+export function rebasePath(path: string, cwd: unknown, project: string): string {
+  if (path === '' || project === '' || typeof cwd !== 'string' || cwd === '' || isAbsolute(path) || !isAbsolute(cwd)) return path;
+  const root = resolve(project);
+  const dir = resolve(cwd);
+  return dir !== root && dir.startsWith(root + sep) ? resolve(dir, path) : path;
+}
+
 const commandText = (record: Payload): string => rawText(alt(idx(record.tool_input, 'command'), null));
 
 interface Step { kind: string; [key: string]: unknown }
@@ -50,13 +60,13 @@ const statusText = (status: unknown): string => {
 
 /** The turn's steps, in call order: edits from applied patches (a patch whose response was "Exit code: N", N != 0,
  *  changed nothing) and commands with the exit code the rollout recorded for their tool_use_id. */
-function orderedSteps(calls: Payload[], exits: Map<string, CommandExit>): Step[] {
+function orderedSteps(calls: Payload[], exits: Map<string, CommandExit>, project: string): Step[] {
   const steps: Step[] = [];
   for (const call of calls) {
     if (call.tool_name === 'apply_patch') {
       if (alt(call.patch_exit, 0) !== 0) continue;
       const text = tostring(alt(idx(call.tool_input, 'command'), ''));
-      const files = [...new Set(patchFiles(text).map((file) => file.path))];
+      const files = [...new Set(patchFiles(text).map((file) => rebasePath(file.path, call.cwd ?? project, project)))];
       for (const file of files) steps.push({ kind: 'edit', file, seq: 0 });
     } else if (call.tool_name === 'Bash') {
       const cmd = alt(idx(call.tool_input, 'command'), '');
@@ -83,8 +93,16 @@ const collect = <T,>(calls: Payload[], each: (call: Payload) => T[]): T[] =>
 const stop = (payload: Payload, env: NodeJS.ProcessEnv): string => {
   const event = base('turn_end', payload, env);
   const calls = readCalls(ledgerFile(env, j(() => payload.session_id), j(() => payload.turn_id)));
-  const patches = collect(calls, (call) => (call.tool_name === 'apply_patch' ? [commandText(call)] : [])).filter((text) => text !== '');
-  const files = patchFiles(patches.join('\n'));
+  const project = String(event.project_dir);
+  const files: ReturnType<typeof patchFiles> = [];
+  for (const call of calls) {
+    if (call.tool_name !== 'apply_patch') continue;
+    const text = (() => { try { return commandText(call); } catch { return ''; } })();
+    for (const file of patchFiles(text)) {
+      const path = rebasePath(file.path, call.cwd ?? project, project);
+      if (!files.some((seen) => seen.kind === file.kind && seen.path === path)) files.push({ kind: file.kind, path });
+    }
+  }
   const commands = collect(calls, (call) => {
     if (call.tool_name !== 'Bash') return [];
     const value = alt(idx(call.tool_input, 'command'), null);
@@ -97,7 +115,7 @@ const stop = (payload: Payload, env: NodeJS.ProcessEnv): string => {
     shell_commands: commands,
     skills_used: skillIds(commands.map(rawText)),
     assistant_text: rawText(alt(payload.last_assistant_message, '')),
-    steps: (() => { try { return orderedSteps(calls, exits); } catch { return []; } })(), // one jq program: any error gives []
+    steps: (() => { try { return orderedSteps(calls, exits, project); } catch { return []; } })(), // one jq program: any error gives []
   };
   event.reentrant = payload.stop_hook_active === true;
   return encoded(event);
@@ -139,9 +157,9 @@ export function normalizeCodexEvents(stdin: string, env: NodeJS.ProcessEnv): str
           const state = cfg.WF_STATE_FILE ?? '';
           const skills = skillsOn ? ledgerSkills(first, env) : [];
           const patch = (() => { try { return rawText(alt(idx(payload.tool_input, 'command'), null)); } catch { return ''; } })();
-          return patchFiles(patch).filter((file) => nonBlank(file.path))
-            .filter((file) => skillsOn || (state !== '' && relPath(file.path, project).replace(/\\/g, '/') === state))
-            .map((file) => encoded({ ...first, file: file.path, turn: { ...first.turn, skills_used: skills } }));
+          return patchFiles(patch).filter((file) => nonBlank(file.path)).map((file) => rebasePath(file.path, payload.cwd, project))
+            .filter((path) => skillsOn || (state !== '' && relPath(path, project).replace(/\\/g, '/') === state))
+            .map((path) => encoded({ ...first, file: path, turn: { ...first.turn, skills_used: skills } }));
         }
         if (tool !== 'Bash') return [];
         const event = base('pre_shell', payload, env);
@@ -159,7 +177,9 @@ export function normalizeCodexEvents(stdin: string, env: NodeJS.ProcessEnv): str
       case 'PostToolUse': {
         if (tool !== 'apply_patch') return [];
         const text = (() => { try { return rawText(alt(idx(payload.tool_input, 'command'), null)); } catch { return ''; } })();
-        return patchFiles(text).map((file) => encoded({ ...base('post_edit', payload, env), file: file.path }));
+        const event = base('post_edit', payload, env);
+        const project = String(event.project_dir);
+        return patchFiles(text).map((file) => encoded({ ...event, file: rebasePath(file.path, payload.cwd, project) }));
       }
       case 'Stop': return [stop(payload, env)];
       default: return [];

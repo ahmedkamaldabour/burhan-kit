@@ -183,7 +183,7 @@ Follow .burhan/commands/onboard.md
 - burhan بيبلّغ ويوجّه ومبيمنعش. الموافقات والـ test-first قواعد الـ agent مطلوب منه يمشي عليها.
 - بيشوف بس التعديلات والأوامر اللي الـ agent بيبلّغ بيها؛ وتعديل الـ shell بيظهر بس من خلال `>` و`>>` و`tee`.
 - تحذير “done” محتاج `WF_CODE_REGEX` و`WF_EVIDENCE_REGEX` (إعدادات في `.burhan/workflow.config`)؛ الـ agent بيقترحهم أول استخدام، وبعد ما أول استخدام يخلص `doctor` بيحذّر لو الـ code pattern فاضي.
-- Codex بيشغّل hooks المشروع بعد ما توثّقها في `/hooks` بس، ومبيقولش حاجة لو مش موثّقة. وعلى Codex ممكن الأمر اللي خلص يبقى من غير exit code متسجّل، وده بيتحسب دليل ناجح ([فجوة معروفة](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md)).
+- Codex بيشغّل hooks المشروع بعد ما توثّقها في `/hooks` بس، ومبيقولش حاجة لو مش موثّقة. وعلى Codex الأمر اللي خلص ونتيجته مش موجودة في سجل الـ session بيتحسب مش ناجح، ومتقاسش بيحصل قد إيه ([الـ roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md)).
 - Windows: الـ hooks بتشتغل على Node والـ CI بيغطي `windows-latest`. لسه مش متحقق منه: Windows بـ PowerShell بس، وجلسة Claude Code أو Codex حقيقية على Windows.
 
 ## الأوامر واللينكات

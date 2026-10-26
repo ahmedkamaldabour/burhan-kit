@@ -1,4 +1,5 @@
 /** Ordered turn steps used by turn-audit gate A (ports turn-audit.sh's jq/awk stream). */
+import { evidenceMatches } from './evidence-cmd.mjs';
 import { relPath } from './lib.mjs';
 import type { Matcher } from './ere.mjs';
 
@@ -52,7 +53,7 @@ export function lastCodeEdit(steps: Step[], code: Matcher | RegExp): Step | null
 
 /** Evidence commands, except result-less subagent commands which Bash intentionally drops. */
 export function evidenceRuns(steps: Step[], evidence: Matcher | RegExp): Step[] {
-  return steps.filter((step) => step.kind === 'cmd' && (evidence instanceof RegExp ? evidence.test(step.cmd) : evidence.test(step.cmd))
+  return steps.filter((step) => step.kind === 'cmd' && evidenceMatches(evidence, step.cmd)
     && !(step.by !== '' && ['blocked', 'background', 'unknown'].includes(step.status)));
 }
 

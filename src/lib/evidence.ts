@@ -6,6 +6,7 @@ import type { Io } from '../main.js';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { realTarget } from './fs-safe.js';
+import { evidenceMatches } from '../hooks/core/evidence-cmd.mjs';
 import { isAbsoluteOverride } from '../hooks/core/store.mjs';
 
 /** One step of a turn, as the turn-audit hook records it (src/hooks/core/turn-audit.mts). */
@@ -78,7 +79,7 @@ export function summarizeLedger(recs: LedgerRecord[], evidenceRegex: string): Le
   let re: RegExp | null = null;
   try { re = evidenceRegex ? new RegExp(ereToJs(evidenceRegex)) : null; } catch { re = null; }
   const cmds = recs.filter((r) => r.kind === 'cmd');
-  const ev = re ? cmds.filter((r) => re!.test(r.cmd ?? '')) : [];
+  const ev = re ? cmds.filter((r) => evidenceMatches(re!, r.cmd ?? '')) : [];
   const passed = ev.filter((r) => r.status === 'ok');
   return {
     commands: cmds.length,

@@ -183,7 +183,7 @@ Start a small change with `/burhan:e2e <slug>` (a short title works too). If you
 - burhan reports and guides — it does not block. Approvals and test-first are rules the agent is told to follow.
 - It only sees the edits and commands the agent reports; a shell edit shows up only through `>`, `>>` and `tee`.
 - The “done” warning needs `WF_CODE_REGEX` and `WF_EVIDENCE_REGEX` (settings in `.burhan/workflow.config`); the agent proposes them on first use, and once first use is done `doctor` warns when the code pattern is empty.
-- Codex runs project hooks only after you trust them in `/hooks`, and says nothing when they are untrusted. On Codex a finished command may also have no recorded exit code, and that counts as passing evidence ([a known gap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md)).
+- Codex runs project hooks only after you trust them in `/hooks`, and says nothing when they are untrusted. On Codex a finished command whose result is missing from the session record counts as not passing; how often that happens is not measured ([the roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md)).
 - Windows: the hooks run on Node and CI covers `windows-latest`. Not verified yet: Windows with PowerShell only, and a real Claude Code or Codex session on Windows.
 
 ## Commands and links

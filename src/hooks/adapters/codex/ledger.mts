@@ -34,7 +34,9 @@ export function recordCall(env: NodeJS.ProcessEnv, session: string, turn: string
     const root = ledgerDir(env);
     if (!existsSync(root)) { mkdirSync(root, { recursive: true, mode: 0o700 }); writeFileSync(join(root, MARKER), '', { mode: 0o600 }); }
     mkdirSync(join(root, session), { recursive: true, mode: 0o700 });
-    const record = { tool_name: payload.tool_name ?? null, tool_input: payload.tool_input ?? null, tool_use_id: payload.tool_use_id ?? null, patch_exit: payloadExit(payload) };
+    // A patch names files relative to the session folder; keep that folder only when it is not the project root (the common case stays unchanged).
+    const patchCwd = payload.tool_name === 'apply_patch' && typeof payload.cwd === 'string' && payload.cwd !== '' && (env.WF_PROJECT_ROOT ?? '') !== '' && payload.cwd !== env.WF_PROJECT_ROOT ? { cwd: payload.cwd } : {};
+    const record = { tool_name: payload.tool_name ?? null, tool_input: payload.tool_input ?? null, tool_use_id: payload.tool_use_id ?? null, patch_exit: payloadExit(payload), ...patchCwd };
     appendFileSync(file, JSON.stringify(record).replace(/\x7f/gu, '\\u007f') + '\n', { mode: 0o600 });
   } catch { /* no ledger, never a broken hook */ }
 }

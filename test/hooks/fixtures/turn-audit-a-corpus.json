@@ -1586,7 +1586,7 @@
    "linked": null
   },
   {
-   "name": "A unknown exit after code is accepted",
+   "name": "A unknown exit after code is not a pass",
    "config": [
     "WF_CODE_REGEX='\\.src$'",
     "WF_EVIDENCE_REGEX='^verify-it'"
@@ -1624,7 +1624,7 @@
      ]
     }
    },
-   "expected": "",
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: completion was claimed, but the result of `verify-it a` is unknown — no exit code was recorded for it. Run it in the foreground and show the output.\"}\n",
    "linked": null
   },
   {

@@ -112,4 +112,13 @@ check "lifecycle: never the whole suite by default" "$(cat kit/phases/lifecycle.
 check "plan template: never the whole suite by default" "$(cat kit/templates/plan.md)" has 'never the whole suite'
 check "e2e: the review step re-runs the tests of the part it fixed" "$(cat kit/commands/e2e.md)" has 'the tests that relate to the part you fixed'
 
+echo "evidence-honesty: what counts as evidence"
+check "enforcement: an evidence pattern is tested on the commands a line runs, not on words that only appear in it" "$(cat kit/phases/enforcement.md)" has 'tested on the commands the line runs'
+check "enforcement: echo, grep and a comment do not count" "$(cat kit/phases/enforcement.md)" has '`echo "npm test"`'
+check "enforcement: a run with no recorded result is not a pass" "$(cat kit/phases/enforcement.md)" has 'run with no recorded result is not a pass'
+check "configuration: WF_EVIDENCE_REGEX is matched per command with quoted text masked" "$cfgdoc" has 'quoted text is masked'
+check "features: the ledger limit no longer says unknown counts as passing" "$(cat docs/features.md)" lacks 'an unknown result counts as passing evidence'
+check "features: a Codex patch path is resolved against the session folder" "$(cat docs/features.md)" has 'resolved against the folder the session runs in'
+check "roadmap: the Codex exit codes candidate is gone" "$(cat ROADMAP.md)" lacks 'Codex exit codes'
+
 t_summary

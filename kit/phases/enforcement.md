@@ -48,6 +48,8 @@ command **lines** — never output — so a secret typed on a command line would
 line with a pipe (`cmd | head`) records the exit of its last command, so a failing first command can show
 as `exit 0`; `burhan evidence` marks such lines.
 
+**What counts as evidence.** `WF_EVIDENCE_REGEX` is tested on the commands the line runs: the line is split into its simple commands (at `;`, `&&`, `||`, `|`, a newline), text in quotes is masked, a `bash -c '…'` string is read as a line of its own, and a comment, a heredoc body and a command that only prints or searches (`echo`, `printf`, `grep`, `cat`…) are left out. So, e.g., `npm test`, `cd app && npm test` and `npx jest "a b"` count, and `echo "npm test"` or `grep -n npm test README.md` do not. A run with no recorded result is not a pass (Codex: no item or no exit code in the session record; Claude Code: no result in the transcript): the "done" check says its result is unknown and asks for a run with shown output. It is a heuristic: a tool that only mentions the words (`git grep`, `xargs echo`) can still count, a run hidden in a variable or `eval` is not seen, and a pattern that spans an operator (`cd web && npm test`) no longer matches.
+
 **Design principles for the hooks** (keep them when adding a check):
 - **Fail open.** A broken check never breaks the agent.
 - **Report facts, don't ask nicely.** Where a check can be *run*, run it and state the real result.

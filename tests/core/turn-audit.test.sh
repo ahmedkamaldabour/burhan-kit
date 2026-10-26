@@ -270,7 +270,7 @@ check "evidence BEFORE the last code edit -> fires" "$out" has "before the last 
 check "...names the file edited after it" "$out" has "a.src"
 out="$(a "$(st "[$E1,{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":3,\"status\":\"failed\",\"seq\":2}]")")"
 check "failed evidence -> fires with the exit code" "$out" has "failed (exit 3)"
-check "unknown exit (agent did not report) -> accepted" "$(a "$(st "[$E1,{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":null,\"status\":\"unknown\",\"seq\":2}]")")" lacks "VERIFICATION GATE"
+check "unknown exit (no result recorded) -> not a pass" "$(a "$(st "[$E1,{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":null,\"status\":\"unknown\",\"seq\":2}]")")" has "is unknown"
 check "a non-code edit after the evidence does not count" "$(a "$(st "[$E1,{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":0,\"status\":\"ok\",\"seq\":2},{\"kind\":\"edit\",\"file\":\"notes.md\",\"seq\":3}]")")" lacks "VERIFICATION GATE"
 check "fail then pass after the edit -> silent" "$(a "$(st "[$E1,{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":1,\"status\":\"failed\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":0,\"status\":\"ok\",\"seq\":3}]")")" lacks "VERIFICATION GATE"
 check "no claim -> silent even with failed evidence" "$(a "$(st "[$E1,{\"kind\":\"cmd\",\"cmd\":\"verify-it a\",\"exit\":3,\"status\":\"failed\",\"seq\":2}]" 'still working')")" lacks "VERIFICATION GATE"
