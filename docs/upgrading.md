@@ -18,6 +18,10 @@ npx burhan-kit doctor
 - Your own hooks and settings stay: burhan's hooks run beside them.
 - In Codex, trust the hooks again after an upgrade that changes one (Codex shows it as "Modified since last trusted"; see [Codex: trust the hooks](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks)).
 
+## Upgrading from 0.5.0
+
+`npx burhan-kit upgrade --apply` refreshes the kit files; your `workflow.config` and `bindings.md` are kept. One thing can change for you: if a project links part of `.claude/`, `.burhan/`, `CLAUDE.md` or `AGENTS.md` to a place outside the project, `init`, `upgrade` and `setup` now stop before writing and list each file; pass `--allow-outside-links` (the 0.5.0 name `--allow-outside-settings` still works) or remove the link. Without such a link nothing changes. See [Files that are symbolic links](#files-that-are-symbolic-links).
+
 ## Upgrading from 0.4.1
 
 `npx burhan-kit upgrade --apply` refreshes the kit files and adds one sixth hook entry: `pre-edit-skill`, a `PreToolUse` entry in `.claude/settings.json` (`Write|Edit|MultiEdit|NotebookEdit`) and in `.codex/hooks.json` (`apply_patch`). Your own hooks are kept, and a second upgrade changes nothing. In Codex, trust the hooks again afterwards (open `/hooks` and trust what it lists as new or modified; the existing entries are byte-identical to 0.4.1's, and Codex itself was not run for this release). The entry is silent unless `WF_SKILLS=superpowers`.

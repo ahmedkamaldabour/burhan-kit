@@ -60,6 +60,11 @@ until you choose.
 - **Skill lines and quiet sources (0.5.0).** With Superpowers installed, the router and a pre-write check name the
   skill to invoke before each phase; a saved source or a raw output raises no state or status warning.
 
+- **Outside links refused, proof by command (0.6.0).** Every writer of the installer refuses a write that lands
+  outside the project through a link unless `--allow-outside-links` is passed; the "done needs proof" check counts
+  only a command the line runs; the commit and shell-write checks read commands; a tag-triggered release workflow
+  with SHA-pinned actions.
+
 ## Candidates
 
 - **Codex results not yet written.** A command whose result is not in Codex's session record when the turn ends

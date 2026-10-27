@@ -80,6 +80,21 @@ check "upgrading: a section for 0.4.1 installs" "$(cat docs/upgrading.md)" has '
 check "upgrading: the 0.4.1 section names the sixth hook entry" "$(cat docs/upgrading.md)" has 'sixth hook entry'
 check "roadmap: Done lists the 0.5.0 items" "$(cat ROADMAP.md)" has '(0.5.0)'
 
+echo "v060-release: the 0.6.0 notes"
+check "changelog: a 0.6.0 section" "$(cat CHANGELOG.md)" has '## 0.6.0 — 2026-10-27'
+check "changelog: 0.6.0 says how to upgrade from 0.5.0" "$(cat CHANGELOG.md)" has '### Upgrading from 0.5.0'
+check "changelog: 0.6.0 names the flag that lets a write through an outside link" "$(cat CHANGELOG.md)" has '`--allow-outside-links`'
+check "changelog: 0.6.0 says the old flag name still works" "$(cat CHANGELOG.md)" has '`--allow-outside-settings` flag of 0.5.0 still works'
+check "changelog: 0.6.0 says an echoed test command is no longer proof" "$(cat CHANGELOG.md)" has 'no longer passes as a test run'
+check "changelog: 0.6.0 states the Windows limit of the outside-writes guard" "$(cat CHANGELOG.md)" has 'Windows reads `..` after a folder link'
+check "changelog: 0.6.0 says what was not measured" "$(cat CHANGELOG.md)" has 'a live agent session on 0.6.0'
+check "changelog: 0.6.0 says the upgrade adds no hook entry and leaves the hook files unchanged" "$(cat CHANGELOG.md)" has '`.claude/settings.json`, `.codex/hooks.json`, `workflow.config` and `bindings.md` byte-identical'
+check "changelog: 0.6.0 says a second upgrade changes no file" "$(cat CHANGELOG.md)" has 'upgrade changes no file; `uninstall` removes only burhan'"'"'s entries'
+check "changelog: 0.6.0 says what init does with an outside link" "$(cat CHANGELOG.md)" has 'refused by `init` (exit 2, nothing created, the outside file untouched)'
+check "upgrading: a section for 0.5.0 installs" "$(cat docs/upgrading.md)" has '## Upgrading from 0.5.0'
+check "upgrading: the 0.5.0 section names the outside-link refusal" "$(cat docs/upgrading.md)" has '`--allow-outside-links`'
+check "roadmap: Done lists the 0.6.0 items" "$(cat ROADMAP.md)" has '(0.6.0)'
+
 echo "docs-windows-paths: a Windows path with backslashes goes in single quotes"
 check "configuration: a Windows path goes in single quotes" "$cfgdoc" has 'a path with backslashes goes in single quotes'
 check "configuration: the single-quoted example" "$cfgdoc" has "WF_EVIDENCE_DIR='C:\\Users\\me\\ev'"

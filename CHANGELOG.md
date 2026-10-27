@@ -1,5 +1,88 @@
 # Changelog
 
+## 0.6.0 — 2026-10-27
+
+The installer now refuses to write through a link that leaves your project, and the "done needs proof" check no longer
+accepts a command that is only mentioned. Several checks that read a shell command now read the commands it runs, not
+the words in it.
+
+### Upgrading from 0.5.0
+- Run `npx burhan-kit upgrade --apply` in every project. It refreshes the kit files (the commands, the phase files and
+  the hook scripts) and adds no hook entry. Your `workflow.config` and `bindings.md` are kept. Codex was not run: whether
+  it asks you to trust the changed hook scripts again is not measured.
+- **If a project links part of `.claude/`, `.burhan/`, `CLAUDE.md` or `AGENTS.md` to a place outside the project** (a
+  shared settings file, a dotfiles repository), `init`, `upgrade` and `setup` now stop before they write anything and
+  list each such file. Pass `--allow-outside-links` to let them write through the link, or remove the link. The
+  `--allow-outside-settings` flag of 0.5.0 still works. Without such a link nothing changes.
+- A turn that ends with "done" after `echo "npm test"`, or after a verification run with no recorded result, now gets a
+  warning. Run the command and show its output.
+
+### Changed
+- **Outside links are refused, for every writer.** Before its first write, `init`, `upgrade`, `setup --answers --apply`,
+  `setup --set` and the setup wizard check every file they would write, not only the two hooks files as before: the
+  hooks files, `CLAUDE.md` and `AGENTS.md` and their backup copies, the managed commands, agents and skills, the files
+  of `.burhan` and `.burhan/hooks`, and `.gitignore`. The test is where the write lands, not the link's name; a link
+  that stays inside the project needs nothing. The setup summary names these files (English and Arabic) and no longer
+  says that nothing outside the project changes. `uninstall` is not changed.
+- **A mention is not proof.** The "done needs proof" check tests your evidence pattern against the commands a line
+  runs: `echo "npm test"`, a `grep` for those words, a comment or a heredoc body no longer passes as a test run, and
+  `burhan evidence` uses the same rule. A command with no recorded result (on Codex: no item in the session record, or no
+  exit code) is no longer taken as a pass unless another evidence run passed.
+- **A Codex patch path** is resolved against the folder the session runs in when that is a subfolder of the project.
+- **The commit check reads commands.** It runs only when `git commit` is a command, not text that mentions it
+  (`grep "git commit"`, `echo`, a PR title); it also catches `/usr/bin/git commit`, backticks, `sudo`, `env` and `nice`
+  prefixes, shell keywords and a shell's `-c` string. A failing check shows the end of its output, where the error is,
+  and stopping the hook stops the check too. A commit hidden behind an alias, a function, `xargs` or `ssh` is not seen.
+- **A story, plan or review written through the shell** (`cat > file <<EOF`, `>`, `>>`, `tee`) gets the same skill
+  reminder and turn-end check as one written with the edit tools, carried by the Bash hook that is already installed. For a story or plan,
+  it warns only when the command created the file, so an append or an overwrite of an existing one does not. The shell-write
+  parser keeps reading after a heredoc delimiter with a dash or a dot, ignores a `<<` inside quotes, sees `>& file`, and
+  drops a trailing carriage return.
+- **The skill check before a write and the one after it read the same memory:** a skill run in an earlier turn, or
+  before any item existed, counts, so the turn-end warning no longer blames a skill the agent already used. The
+  completion check still needs the verification skill in the same turn. The state-transition warning says when the item
+  has no block in the state file.
+- **The "you removed a block" check judges only this session's own write of the state file.** A block another session
+  removed or added meanwhile is no longer blamed on it, and a whole-file write that would drop a block of a session
+  active in the last 24 hours is warned about before it happens.
+- **`burhan memory status` and `memory affected` say when a fact is "changed" only because a release file moved**
+  (`package.json`, `CHANGELOG.md` or `ROADMAP.md` at the project root): the line ends with `(release file only)`. Nothing
+  is hidden and the counts are the same.
+- **The kit tells the agent which tests to run:** the ones that relate to the part it changed, chosen from the diff and
+  named with the reason, never the whole suite by default; a fix outside those tests adds the tests of its area.
+- The docs say plainly that an evidence-ledger session folder holding session files stays until you delete it.
+
+### Measured
+- The full test suite on the release candidate (`878e2f9` plus the version and the notes): 1069 Node tests (1065 pass, 4
+  skipped, 0 fail) and every shell suite (2047 checks, 0 failed); CI green on Linux, macOS and Windows (no bash) on
+  `878e2f9`.
+- On the packed 0.6.0 tarball, installed with npm (Linux): `burhan --version` prints 0.6.0; a fresh `init` for both
+  agents wires six hooks for each and `burhan doctor` reports 0 fail (one warning: the Codex hooks to trust). A project
+  made by the published 0.5.0 package and upgraded keeps its six entries and a hook of your own, and the upgrade leaves
+  `.claude/settings.json`, `.codex/hooks.json`, `workflow.config` and `bindings.md` byte-identical; it rewrote 33 other
+  files (the commands, the phase files, the hook scripts, the two bootstrap blocks and the version stamp), and a second
+  upgrade changes no file; `uninstall` removes only burhan's entries. A `CLAUDE.md` that links outside the project is
+  refused by `init` (exit 2, nothing created, the outside file untouched), and written with `--allow-outside-links` or
+  with the older `--allow-outside-settings`.
+
+### For maintainers (not in the package)
+- A release is one workflow started by a pushed `v*` tag: a guard (tag, branch, not published), the tests on Node 22 and
+  24, a pack-and-install check, then publish with npm provenance after an approval. Every GitHub Action is pinned to a
+  commit SHA. `docs/releasing.md` in the repository says what stays with the maintainer. The Windows job of CI now also
+  runs the guard's link tests where the runner can create a symlink.
+
+### Known limits
+- **On Windows, the outside-writes guard may miss a case.** Windows reads `..` after a folder link inside a link target
+  as plain text; the guard walks it the way a POSIX system does. In one measured case the guard refuses more than it
+  must; a case in which it misses a write that leaves the project is derived from that, not measured. One test of it is
+  skipped on Windows for that reason.
+- The "done needs proof" match is a heuristic: `git grep`, `xargs echo`, `ssh host npm test`, `tee` and `command -v` still count, a run hidden behind a variable
+  or `eval` is missed, and a pattern that spans an operator no longer matches. Codex was checked only against the
+  maintainer's own recordings, how often a Codex result is missing at the end of a turn is not measured, and the
+  patch-path rule comes from reading the code: no recording shows a patch from a subfolder.
+- Not measured: a live agent session on 0.6.0, Codex live, macOS and Windows beyond CI, and the release workflow's first
+  real run.
+
 ## 0.5.0 — 2026-10-24
 
 With Superpowers installed, burhan now tells the agent which skill to invoke before each phase. Two fixes stop saved
