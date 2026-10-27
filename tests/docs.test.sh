@@ -132,4 +132,18 @@ check "upgrading: the new flag name" "$(cat docs/upgrading.md)" has '--allow-out
 check "upgrading: the old hooks-only limit is gone" "$(cat docs/upgrading.md)" lacks 'still write through an outside link'
 check "configuration: an apply refusal is an error, the dry run prints the OUTSIDE lines and exits 1" "$cfgdoc" has 'the dry run prints'
 
+echo "release docs (release-pipeline SU4)"
+reldoc="$(cat docs/releasing.md 2>/dev/null)"
+check "releasing: the environment that holds the approval" "$reldoc" has '`npm-release`'
+check "releasing: the workflow file npm trusted publishing is bound to" "$reldoc" has '`release.yml`'
+check "releasing: what stays yours, the tag push" "$reldoc" has 'You push the tag'
+check "releasing: no token is stored" "$reldoc" has 'No npm token is stored'
+check "releasing: the environment is limited to v* tags" "$reldoc" has 'only `v*` tags'
+check "releasing: the pins are bumped by hand" "$reldoc" has 'bumped by hand'
+check "releasing: the trusted publisher must allow npm publish" "$reldoc" has 'Allow npm publish'
+check "releasing: the first publish must happen before npm's validation deadline" "$reldoc" has 'Pending validation'
+check "releasing: without the required reviewer the publish job runs with no pause" "$reldoc" has 'with no pause'
+check "roadmap: the pin candidate is replaced by keeping the pins current" "$(cat ROADMAP.md)" has 'Keep the action pins current'
+check "roadmap: the old pin candidate is gone" "$(cat ROADMAP.md)" lacks 'Pin GitHub Actions by commit SHA'
+
 t_summary

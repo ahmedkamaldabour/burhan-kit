@@ -1,0 +1,83 @@
+name: release
+
+# Runs only when a v* tag is pushed. Nothing is published unless every earlier job passed; the npm-release
+# environment's required reviewer is the approval, and it exists only if you set that reviewer up (docs/releasing.md). Publishing uses npm trusted publishing (OIDC): no token is stored anywhere.
+# docs/releasing.md says what you set up once on npmjs.com and in the repository settings.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+      - name: tag, branch and npm checks
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release-guard.mjs --tag "$TAG"
+
+  # Both supported Node versions, on the same commit that will be published (engines is >=22).
+  verify:
+    needs: guard
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: true
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      # The repo's own shell suites use jq; the product does not.
+      - run: command -v jq || sudo apt-get install -y jq
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  pack:
+    needs: verify
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: pack once, install that tarball, run its bin
+        run: node scripts/pack-smoke.mjs --out pack
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-tarball
+          path: pack/package.tgz
+          if-no-files-found: error
+
+  publish:
+    needs: pack
+    runs-on: ubuntu-24.04
+    # A required reviewer on this environment is the approval click (repository settings → Environments).
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-tarball
+          path: pack
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # The file the pack job installed and ran, not a fresh build.
+      - run: npm publish ./pack/package.tgz --provenance --access public
