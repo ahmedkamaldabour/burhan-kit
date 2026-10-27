@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isWritable, putFile, replaceDir, resolveWritePath } from '../src/lib/fs-safe.js';
-import { posixOnly, tmpDir } from './helpers.js';
+import { posixOnly, symlinkSkip, tmpDir } from './helpers.js';
 
 const tmp = () => tmpDir('burhan-fs-');
 
@@ -39,7 +39,7 @@ test('isWritable', () => {
   assert.equal(isWritable(d), true);
 });
 
-test('resolveWritePath: where a write to the path would land', { skip: process.platform === 'win32' ? 'symlinks need privileges on Windows' : false }, () => {
+test('resolveWritePath: where a write to the path would land', { skip: symlinkSkip }, () => {
   const d = tmp(); const away = tmp();
   writeFileSync(join(away, 'real.json'), '{}');
   mkdirSync(join(d, 'dir'));
@@ -54,7 +54,7 @@ test('resolveWritePath: where a write to the path would land', { skip: process.p
   assert.equal(resolveWritePath(join(d, 'dir')), real(join(d, 'dir')));
 });
 
-test('resolveWritePath takes `..` after a folder link in the link target, as the kernel does (review I-1)', { skip: process.platform === 'win32' ? 'symlinks need privileges on Windows' : false }, () => {
+test('resolveWritePath takes `..` after a folder link in the link target, as the kernel does (review I-1)', { skip: symlinkSkip }, () => {
   const d = tmp(); const away = tmp();
   mkdirSync(join(away, 'deep'));
   writeFileSync(join(away, 'x.json'), '{}');
@@ -63,10 +63,10 @@ test('resolveWritePath takes `..` after a folder link in the link target, as the
   mkdirSync(join(d, '.claude'));
   symlinkSync('../evil/../x.json', join(d, '.claude/settings.json'));
   assert.equal(resolveWritePath(join(d, '.claude/settings.json')), join(realpathSync(away), 'x.json'));
-  assert.equal(realpathSync.native(join(d, '.claude/settings.json')), join(realpathSync(away), 'x.json'), 'same as the kernel (Node\'s JS realpathSync takes `..` in the text)');
+  assert.equal(realpathSync.native(join(d, '.claude/settings.json')), join(realpathSync.native(away), 'x.json'), 'same as the kernel (Node\'s JS realpathSync takes `..` in the text)');
 });
 
-test('resolveWritePath: relative link chains, and a link loop is null', { skip: process.platform === 'win32' ? 'symlinks need privileges on Windows' : false }, () => {
+test('resolveWritePath: relative link chains, and a link loop is null', { skip: symlinkSkip }, () => {
   const d = tmp();
   mkdirSync(join(d, 'a')); writeFileSync(join(d, 'a/real.json'), '{}');
   symlinkSync('real.json', join(d, 'a/one.json'));
@@ -76,7 +76,7 @@ test('resolveWritePath: relative link chains, and a link loop is null', { skip: 
   assert.equal(resolveWritePath(join(d, 'loop-a')), null);
 });
 
-test('resolveWritePath: `..` after a part that does not exist is null (the kernel refuses it; the walk must not guess) (review C-1)', { skip: process.platform === 'win32' ? 'symlinks need privileges on Windows' : false }, () => {
+test('resolveWritePath: `..` after a part that does not exist is null (the kernel refuses it; the walk must not guess) (review C-1)', { skip: symlinkSkip }, () => {
   const d = tmp(); const away = tmp();
   mkdirSync(join(d, '.claude'));
   symlinkSync(away, join(d, '.claude/evil'));

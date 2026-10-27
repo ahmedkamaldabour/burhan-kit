@@ -1,5 +1,5 @@
 import type { Io } from '../src/main.js';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 
@@ -38,3 +38,20 @@ export const notOnWindows = (reason: string): string | false => (process.platfor
 
 /** `skip` option for tests whose subject is a POSIX permission bit (chmod, mode): Windows has no such bits, so the test says nothing there. */
 export const posixOnly: string | false = process.platform === 'win32' ? 'POSIX permission bits do not exist on Windows' : false;
+
+/** Why a test that needs a symlink cannot run here, or false when it can: tries to create one once. Windows allows it only with the privilege
+ *  (a developer-mode or administrator account does, a hosted CI runner usually does), so the tests run where it works and say why where not. */
+export function symlinkSkipReason(create: (target: string, path: string) => void = symlinkSync): string | false {
+  const dir = mkdtempSync(join(tmpdir(), 'burhan-symlink-probe-'));
+  try {
+    create(dir, join(dir, 'link'));
+    return false;
+  } catch (error) {
+    return `this machine cannot create symlinks (${(error as NodeJS.ErrnoException).code ?? 'error'})`;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** `skip` option for tests that need a symlink. */
+export const symlinkSkip: string | false = symlinkSkipReason();

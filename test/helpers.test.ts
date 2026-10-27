@@ -1,10 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdtempSync, readdirSync, rmSync, symlinkSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import { symlinkSkipReason } from './helpers.js';
 
 const helperUrl = new URL('./helpers.js', import.meta.url).href;
 
@@ -54,4 +55,18 @@ test('three migrated test files leave no temp directory behind', () => {
   } finally {
     rmSync(own, { recursive: true, force: true });
   }
+});
+
+test('symlinkSkipReason: false when a link can be created, a reason with the error code when it cannot', () => {
+  assert.equal(symlinkSkipReason(() => undefined), false);
+  const denied = (): never => { throw Object.assign(new Error('operation not permitted'), { code: 'EPERM' }); };
+  assert.equal(symlinkSkipReason(denied), 'this machine cannot create symlinks (EPERM)');
+  assert.equal(symlinkSkipReason(() => { throw new Error('no code'); }), 'this machine cannot create symlinks (error)');
+});
+
+test('symlinkSkipReason with the real symlinkSync cleans up after itself', () => {
+  let made = '';
+  assert.equal(symlinkSkipReason((target, path) => { made = dirname(path); symlinkSync(target, path); }), false);
+  assert.notEqual(made, '');
+  assert.equal(existsSync(made), false);
 });

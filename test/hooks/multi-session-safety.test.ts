@@ -6,7 +6,9 @@ import { run } from '../../src/hooks/main.mjs';
 import { normalizeClaude } from '../../src/hooks/adapters/claude/normalize.mjs';
 import { normalizeCodexEvents } from '../../src/hooks/adapters/codex/normalize.mjs';
 import { projectKey } from '../../src/hooks/core/store.mjs';
-import { tmpDir } from '../helpers.js';
+import { relPath } from '../../src/hooks/core/lib.mjs';
+import { shellWrites } from '../../src/hooks/core/shell-writes.mjs';
+import { slashes, tmpDir } from '../helpers.js';
 
 // Two sessions on one state file (item multi-session-safety, sub-unit 1): gate I compares the Now list taken just before THIS session's
 // own write with the file after it, never the list taken when the session started.
@@ -278,12 +280,19 @@ test('AC-04 shell: a heredoc written to the state file with > that drops a live 
 });
 test('AC-04 shell: the absolute path, tee, a quoted path and <<- all count', async () => {
   const variants: ((s: Scene) => string)[] = [
-    (s) => heredoc(s.state, file('foo')),
+    (s) => heredoc(slashes(s.state), file('foo')),   // the form a bash command has on Windows: `C:\Users\x` written unquoted would lose its backslashes in bash itself
     () => `tee ${STATE} <<EOF\n${file('foo')}EOF\n`,
     () => `cat > "${STATE}" <<"EOF"\n${file('foo')}EOF\n`,
     () => `cat > ${STATE} <<-EOF\n\t${file('foo')}\tEOF\n`,
   ];
   for (const make of variants) { const s = live(); const command = make(s); assert.match(warned(await shellOf(s, command)), DROPS, command); }
+});
+test('AC-04 shell, Windows form: a drive path with forward slashes resolves to the state file; with backslashes bash drops them', () => {
+  const project = 'C:\\Users\\RUNNER~1\\p';
+  const slashed = shellWrites([`cat > C:/Users/RUNNER~1/p/${STATE} <<'EOF'\nx\nEOF\n`]);
+  assert.deepEqual(slashed.map((target) => relPath(target, project, true)), [STATE]);
+  const backslashed = shellWrites([`cat > C:\\Users\\RUNNER~1\\p\\.burhan\\local\\PROGRESS.md <<'EOF'\nx\nEOF\n`]);
+  assert.deepEqual(backslashed, ['C:UsersRUNNER~1p.burhanlocalPROGRESS.md']);
 });
 test('AC-04 shell: a heredoc that keeps the block → silent', async () => {
   assert.equal(await shellOf(live(), heredoc(STATE, file('foo', 'bar'))), '');

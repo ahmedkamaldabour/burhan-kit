@@ -89,3 +89,20 @@ test('every action in both workflows is pinned to a 40-hex commit, with its tag 
     for (const line of uses) assert.match(line, /uses: [\w.-]+\/[\w./-]+@[0-9a-f]{40} # v\d+(\.\d+){0,2}$/, `${name}: ${line.trim()}`);
   }
 });
+
+/** The steps of a workflow text: each starts at a `      - ` line. */
+const steps = (text: string): string[] => text.split(/\n(?=      - )/);
+
+test('every checkout in both workflows drops the git credentials after checking out (no job pushes)', () => {
+  for (const [name, text] of [['release.yml', release], ['ci.yml', ci]] as const) {
+    const checkouts = steps(text).filter((step) => /uses: actions\/checkout@/.test(step));
+    assert.ok(checkouts.length > 0, `${name} has no checkout step`);
+    for (const step of checkouts) assert.match(step, /persist-credentials: false/, `${name}: ${step.split('\n')[0]}`);
+  }
+});
+
+test('the artifact upload overwrites: "re-run all jobs" of one run must not clash on the artifact name', () => {
+  const uploads = steps(release).filter((step) => /uses: actions\/upload-artifact@/.test(step));
+  assert.equal(uploads.length, 1);
+  assert.match(uploads[0]!, /overwrite: true/);
+});

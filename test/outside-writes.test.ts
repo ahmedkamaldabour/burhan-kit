@@ -4,10 +4,9 @@ import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { install, planInstall, type OutsideFile } from '../src/lib/install.js';
 import { readFileSync } from 'node:fs';
-import { capture } from './helpers.js';
-import { notOnWindows, tmpDir } from './helpers.js';
+import { capture, symlinkSkip, tmpDir } from './helpers.js';
 
-const skip = notOnWindows('symlinks need privileges on Windows');
+const skip = symlinkSkip;
 
 // outside-writes-guard SU1: the plan lists EVERY write that would land outside the project, not only the hooks files (AC-01, AC-05).
 interface Scene { project: string; away: string }

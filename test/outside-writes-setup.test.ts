@@ -7,9 +7,9 @@ import { spawnSync } from 'node:child_process';
 import { runCli } from '../src/main.js';
 import { runWizard } from '../src/lib/setup/wizard.js';
 import { scriptedPrompter } from '../src/lib/setup/prompter.js';
-import { capture, notOnWindows, tmpDir } from './helpers.js';
+import { capture, symlinkSkip, tmpDir } from './helpers.js';
 
-const skip = notOnWindows('symlinks need privileges on Windows');
+const skip = symlinkSkip;
 const home = tmpDir('burhan-owgs-home-');
 
 // outside-writes-guard SU2: every writer refuses to write through a link that leaves the project, before its first write, unless allowed.
@@ -114,7 +114,7 @@ test('the wizard refuses at the apply step without the flag, and writes with it'
 
 // review C-1: the verify skill appears (check set) or is removed (check none) only AFTER the config is saved, so the plan made before the save
 // does not list it; a link at the skill's folder must still be refused before the config is written.
-for (const where of ['.claude/skills/burhan-verify', '.claude/skills'] as const) for (const check of ['true', 'none'] as const) {
+for (const where of ['.claude/skills/burhan-verify', '.claude/skills'] as const) for (const check of ['node -v', 'none'] as const) {
   test(`setup --set check=${check} with an outside link at ${where}: refused, config untouched, nothing written outside`, { skip }, async () => {
     const s = fresh();
     assert.equal((await runWriter('init', s)).code, 0);
@@ -140,9 +140,9 @@ test('setup --set with the allow flag saves the config and writes the verify ski
   mkdirSync(join(s.project, '.claude/skills'), { recursive: true });
   symlinkSync(s.away, join(s.project, '.claude/skills/burhan-verify'));
   const c = capture(s.project);
-  assert.equal(await runCli(['setup', s.project, '--set', 'check=true', '--force', '--allow-outside-links'], c.io), 0, c.o.out + c.o.err);
-  assert.match(readFileSync(join(s.project, '.burhan/workflow.config'), 'utf8'), /WF_CHECK_CMD='?true/u);
-  assert.match(readFileSync(join(s.away, 'SKILL.md'), 'utf8'), /true/u);
+  assert.equal(await runCli(['setup', s.project, '--set', 'check=node -v', '--force', '--allow-outside-links'], c.io), 0, c.o.out + c.o.err);
+  assert.match(readFileSync(join(s.project, '.burhan/workflow.config'), 'utf8'), /WF_CHECK_CMD='node -v'/u);
+  assert.match(readFileSync(join(s.away, 'SKILL.md'), 'utf8'), /node -v/u);
 });
 
 test('setup --set check=none with a link at the skills folder and no skill behind it writes nothing outside, so it is not refused', { skip }, async () => {

@@ -20,7 +20,7 @@ function scene(extra: string[] = []): Scene {
   const project = tmpDir('burhan-shellw-project-');
   const store = tmpDir('burhan-shellw-store-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
-  writeFileSync(join(project, '.burhan/workflow.config'), [`WF_DOCS_DIR=${D}`, 'WF_DISCOVERY_DIR=AI_SPEC/discovery', 'WF_STATE_FILE=.burhan/local/PROGRESS.md', 'WF_SKILLS=superpowers', 'WF_CHECK_CMD=true', `WF_EVIDENCE_DIR='${store}'`, ...extra].join('\n') + '\n');
+  writeFileSync(join(project, '.burhan/workflow.config'), [`WF_DOCS_DIR=${D}`, 'WF_DISCOVERY_DIR=AI_SPEC/discovery', 'WF_STATE_FILE=.burhan/local/PROGRESS.md', 'WF_SKILLS=superpowers', "WF_CHECK_CMD='node -v'", `WF_EVIDENCE_DIR='${store}'`, ...extra].join('\n') + '\n');
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), '# s\n## Now\n## Waiting on you\n');
   return { project, store, env: { ...process.env, WF_EVIDENCE_DIR: store } };
 }

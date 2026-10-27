@@ -4,9 +4,9 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, rmSync, s
 import { join } from 'node:path';
 import { install } from '../src/lib/install.js';
 import { BurhanError } from '../src/lib/errors.js';
-import { capture, notOnWindows, tmpDir } from './helpers.js';
+import { capture, symlinkSkip, tmpDir } from './helpers.js';
 
-const skip = notOnWindows('symlinks need privileges on Windows');
+const skip = symlinkSkip;
 const OUTSIDE_JSON = '{"theme":"dark"}\n';
 
 interface Scene { project: string; real: string; outside: string }

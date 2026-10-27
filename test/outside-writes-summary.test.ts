@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { planSetup, renderSummary, type SetupAnswers } from '../src/lib/setup/engine.js';
-import { notOnWindows, tmpDir } from './helpers.js';
+import { symlinkSkip, tmpDir } from './helpers.js';
 
-const skip = notOnWindows('symlinks need privileges on Windows');
+const skip = symlinkSkip;
 const home = tmpDir('burhan-owgsum-home-');
 const answers: SetupAnswers = { agents: ['claude'], mode: 'step', docs: { kind: 'private' }, lang: 'en' };
 const project = (): string => tmpDir('burhan-owgsum-p-');
