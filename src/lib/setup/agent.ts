@@ -83,13 +83,13 @@ export function readAnswers(file: string, lang: Lang): SetupAnswers {
 }
 
 /** `setup --answers <file> [--apply]`: the summary, or (with --apply) write it and print the after-apply lines. */
-export function runAnswers(target: string, file: string, apply: boolean, io: Io, lang: Lang, home: string, fs?: SetupFilesystem): number {
+export function runAnswers(target: string, file: string, apply: boolean, io: Io, lang: Lang, home: string, fs?: SetupFilesystem, o: { allowOutside?: boolean } = {}): number {
   const a = readAnswers(file, lang);
   const m = messages(a.lang);
   const plan = planSetup(target, a, home);
-  io.stdout(renderSummary(plan, a.lang) + '\n');
+  io.stdout(renderSummary(plan, a.lang, undefined, o.allowOutside === true) + '\n');
   if (!apply) return 0;
-  applySetup(plan, fs);
+  applySetup(plan, fs, o);
   io.stdout(`\n${m.wizard.done}\n${m.changeUndo}\n${m.wizard.askAgent}\n`);
   io.stdout(`\n${m.onboardStep(a.agents).join('\n')}\n`);
   return 0;

@@ -37,9 +37,9 @@ export interface Io { stdout(s: string): void; stderr(s: string): void; cwd: str
 
 export const USAGE = `usage: burhan <command> [options]
 
-  init [dir] --agents claude[,codex] [--apply] [--no-bootstrap] [--allow-outside-settings]
+  init [dir] --agents claude[,codex] [--apply] [--no-bootstrap] [--allow-outside-links]
                        install the kit into a project (dir defaults to the current directory)
-  upgrade [dir] [--agents …] [--apply] [--no-bootstrap] [--allow-outside-settings]
+  upgrade [dir] [--agents …] [--apply] [--no-bootstrap] [--allow-outside-links]
                        refresh an installed project (agents default to the installed ones)
   status [dir] [--write] [--force] [--docs <path>]
                        list work items; --write regenerates <docs>/README.md
@@ -51,14 +51,14 @@ export const USAGE = `usage: burhan <command> [options]
                        the evidence ledger: every command with its exit code, in order, per turn
   pr-body [dir] --item <slug> [--docs <path>]
                        a pull-request description from the item's files (read-only; for gh pr create --body-file)
-  setup [dir] [--lang en|ar]
+  setup [dir] [--lang en|ar] [--allow-outside-links]
                        guided setup in a terminal (also: no command at all); shows a summary before writing anything
   setup [dir] --agent [--lang en|ar]
                        print the questions and rules for an AI agent to ask, with the recommended answers
-  setup [dir] --answers <file> [--apply]
+  setup [dir] --answers <file> [--apply] [--allow-outside-links]
                        show (or, with --apply, write) the setup for the answers in a JSON file
   setup [dir] --stack  print the first-use instructions for an AI agent
-  setup [dir] --set check=<cmd|none> [code=<re>] [test=<re>] [evidence=<re>] [sensitive=<p;q>] [--force]
+  setup [dir] --set check=<cmd|none> [code=<re>] [test=<re>] [evidence=<re>] [sensitive=<p;q>] [--force] [--allow-outside-links]
                        save the project's check command (runs it once first) and, if given, what counts as code, tests and proof
   uninstall [dir] [--apply] [--all]
                        remove burhan from a project; keeps workflow.config, bindings.md, local/ and your work files unless --all
@@ -84,14 +84,14 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
       case 'init': case 'upgrade': {
         const { values, positionals } = parseArgs({
           args: rest, allowPositionals: true, strict: true,
-          options: { agents: { type: 'string' }, apply: { type: 'boolean' }, 'no-bootstrap': { type: 'boolean' }, 'allow-outside-settings': { type: 'boolean' } },
+          options: { agents: { type: 'string' }, apply: { type: 'boolean' }, 'no-bootstrap': { type: 'boolean' }, 'allow-outside-links': { type: 'boolean' }, 'allow-outside-settings': { type: 'boolean' } },
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         if (cmd === 'init' && values.agents === undefined) { io.stderr('burhan: init needs --agents claude[,codex]\n'); io.stdout(USAGE); return 2; }
         return install({
           mode: cmd, target: positionals[0] ?? io.cwd,
           agents: values.agents === undefined ? null : parseAgents(values.agents),
-          apply: values.apply === true, bootstrap: values['no-bootstrap'] !== true, allowOutsideSettings: values['allow-outside-settings'] === true,
+          apply: values.apply === true, bootstrap: values['no-bootstrap'] !== true, allowOutsideSettings: values['allow-outside-links'] === true || values['allow-outside-settings'] === true,
         }, io);
       }
       case 'status': {
@@ -169,8 +169,9 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
       case 'setup': {
         const { values, positionals } = parseArgs({
           args: rest, allowPositionals: true, strict: true,
-          options: { lang: { type: 'string' }, stack: { type: 'boolean' }, set: { type: 'boolean' }, force: { type: 'boolean' }, agent: { type: 'boolean' }, answers: { type: 'string' }, apply: { type: 'boolean' } },
+          options: { lang: { type: 'string' }, stack: { type: 'boolean' }, set: { type: 'boolean' }, force: { type: 'boolean' }, agent: { type: 'boolean' }, answers: { type: 'string' }, apply: { type: 'boolean' }, 'allow-outside-links': { type: 'boolean' }, 'allow-outside-settings': { type: 'boolean' } },
         });
+        const allowOutside = values['allow-outside-links'] === true || values['allow-outside-settings'] === true;
         const lang = values.lang ?? 'en';
         if (lang !== 'en' && lang !== 'ar') throw new BurhanError(`--lang must be en or ar, not "${lang}"`);
         const setupFlags = {
@@ -191,18 +192,18 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         if (dirs.length > 1) throw new BurhanError(`unexpected argument: ${dirs[1]}`);
         const target = dirs[0] ?? io.cwd;
         if (values.agent) { io.stdout(agentInstructions(target, lang, homedir())); return 0; }
-        if (values.answers !== undefined) return runAnswers(target, values.answers, values.apply === true, io, lang, homedir(), setupFilesystem);
+        if (values.answers !== undefined) return runAnswers(target, values.answers, values.apply === true, io, lang, homedir(), setupFilesystem, { allowOutside });
         if (values.apply) throw new BurhanError('--apply needs --answers <file>');
         if (values.stack) { io.stdout(stackInstructions(lang) + '\n'); return 0; }
-        if (values.set) return await setStack(target, parseSetArgs(pairs), { force: values.force === true }, io);
-        return await setupWizard(target, io, lang);
+        if (values.set) return await setStack(target, parseSetArgs(pairs), { force: values.force === true, allowOutside }, io);
+        return await setupWizard(target, io, lang, allowOutside);
       }
       case '--version': case '-v':
         io.stdout(readVersion() + '\n'); return 0;
       case '--help': case '-h': case 'help':
         io.stdout(USAGE); return 0;
       case undefined:
-        if (io.interactive) return await setupWizard(io.cwd, io, 'en');
+        if (io.interactive) return await setupWizard(io.cwd, io, 'en', false);
         io.stdout(USAGE); return 2;
       default:
         io.stderr(`burhan: unknown command: ${cmd}\n`); io.stdout(USAGE); return 2;
@@ -215,11 +216,11 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
 }
 
 /** The terminal wizard: clack when it loads, numbered lists when it does not or breaks mid-way (AC-08). */
-async function setupWizard(target: string, io: Io, lang: 'en' | 'ar'): Promise<number> {
+async function setupWizard(target: string, io: Io, lang: 'en' | 'ar', allowOutside: boolean): Promise<number> {
   if (!io.interactive) { io.stderr(messages(lang).wizard.terminalOnly + '\n'); return 2; }
   const numbered = (): ReturnType<typeof numberedPrompter> => numberedPrompter(process.stdin, process.stdout);
   const clack = await clackPrompter();
   const p = clack ? withFallback(clack, numbered) : numbered();
-  try { return await runWizard(target, io, p, lang, homedir()); }
+  try { return await runWizard(target, io, p, lang, homedir(), allowOutside); }
   finally { p.close?.(); }
 }

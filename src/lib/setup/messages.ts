@@ -85,12 +85,13 @@ export interface Messages {
   check(pending: boolean, cmd: string): string;
   changeUndo: string;
   nothingCommitted: string;
+  nothingCommittedOutside(allowed: boolean): string;
   codexTrust: string;
   newAgentSession(target: string): string;
   /** Step 3 of the first run, the last block setup prints: a ready-to-copy line per selected agent. */
   onboardStep(agents: readonly Agent[]): string[];
   ignoredCommittedFiles(lines: readonly string[]): string[];
-  outsideSettings(paths: readonly { rel: string; real: string }[]): string[];
+  outsideWrites(paths: readonly { rel: string; real: string }[], allowed: boolean): string[];
   existingHooks(hooks: readonly ExistingHook[]): string[];
   wizard: {
     what: string[]; scope: string; recommended: string; current: string;
@@ -177,6 +178,7 @@ const en: Messages = {
   check: (p, c) => p ? 'Check before commit: your agent sets this up on first use' : `Check before commit: ${c} (kept)`,
   changeUndo: 'Change anytime: npx burhan-kit setup · Undo: npx burhan-kit uninstall',
   nothingCommitted: 'Nothing is committed · nothing outside this project changes',
+  nothingCommittedOutside: (allowed) => (allowed ? 'Nothing is committed · the files listed above are outside this project and WILL change' : 'Nothing is committed · the files listed above are outside this project (nothing changes unless you allow it)'),
   codexTrust: "Codex: first-use setup starts after you trust burhan's hooks in Codex (open Codex in this project and review them).",
   newAgentSession: (target) => `Start a new agent session in ${target} for burhan's hooks to take effect.`,
   onboardStep: (agents) => [
@@ -188,7 +190,7 @@ const en: Messages = {
     ...(agents.includes('codex') ? ['  Codex — say: Follow .burhan/commands/onboard.md'] : []),
   ],
   ignoredCommittedFiles: (lines) => ['Warning: these files are ignored by this project’s .gitignore. Add these exact lines; burhan did not edit it:', ...lines],
-  outsideSettings: (paths) => ['Warning: these settings files are symlinks to real files outside this project:', ...paths.map((path) => `  ${path.rel} → ${path.real} — outside this project`)],
+  outsideWrites: (paths, allowed) => ['Warning: writing these would change files outside this project (they are links that lead out of it):', ...paths.map((path) => `  ${path.rel} → ${path.real} — outside this project`), allowed ? '  They will be written because of --allow-outside-links.' : '  setup will refuse to write them, and change nothing, unless you pass --allow-outside-links.'],
   existingHooks: (hooks) => [
     'Your existing hooks',
     ...hooks.map((hook) => `  ${hook.agent} — ${hook.event}${hook.matcher === undefined ? '' : ` (${hook.matcher})`}: ${hook.command}`),
@@ -298,6 +300,7 @@ const ar: Messages = {
   check: (p, c) => p ? 'الفحص قبل الـ commit: الـ agent بتاعك هيظبطه أول ما يشتغل' : `الفحص قبل الـ commit: ${c} (زي ما هو)`,
   changeUndo: 'تغيّر في أي وقت: npx burhan-kit setup · ترجع في كلامك: npx burhan-kit uninstall',
   nothingCommitted: 'مفيش حاجة بتتعمل لها commit · ومفيش حاجة بتتغيّر بره المشروع ده',
+  nothingCommittedOutside: (allowed) => (allowed ? 'مفيش حاجة بتتعمل لها commit · بس الملفات المذكورة فوق برّه المشروع ده وهتتغيّر' : 'مفيش حاجة بتتعمل لها commit · والملفات المذكورة فوق برّه المشروع ده (مفيش حاجة بتتغيّر إلا لو سمحت)'),
   codexTrust: 'Codex: الـ setup بتاع أول استخدام بيبدأ بعد ما توافق على الـ hooks بتاعة burhan جوّه Codex (افتح Codex في المشروع ده وراجعها).',
   newAgentSession: (target) => `ابدأ session جديدة للـ agent جوّه ${target} عشان hooks burhan تشتغل.`,
   onboardStep: (agents) => [
@@ -309,7 +312,7 @@ const ar: Messages = {
     ...(agents.includes('codex') ? ['  Codex — قول: اتبع .burhan/commands/onboard.md'] : []),
   ],
   ignoredCommittedFiles: (lines) => ['تحذير: الـ .gitignore بتاع المشروع مخبّي الملفات دي. ضيف السطور دي زي ما هي؛ burhan ماعدّلهاش:', ...lines],
-  outsideSettings: (paths) => ['تحذير: ملفات الإعدادات دي symlink لملفات حقيقية برّه المشروع:', ...paths.map((path) => `  ${path.rel} → ${path.real} — دي برّه المشروع`)],
+  outsideWrites: (paths, allowed) => ['تحذير: الكتابة في الملفات دي هتغيّر ملفات برّه المشروع (دي links بتودّي لبرّه):', ...paths.map((path) => `  ${path.rel} → ${path.real} — دي برّه المشروع`), allowed ? '  هتتكتب بسبب --allow-outside-links.' : '  setup هيرفض يكتبها وميغيّرش حاجة إلا لو مررت --allow-outside-links.'],
   existingHooks: (hooks) => [
     'الـ hooks اللي عندك',
     ...hooks.map((hook) => `  ${hook.agent} — ${hook.event}${hook.matcher === undefined ? '' : ` (${hook.matcher})`}: ${hook.command}`),

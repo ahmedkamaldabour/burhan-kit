@@ -121,4 +121,15 @@ check "features: the ledger limit no longer says unknown counts as passing" "$(c
 check "features: a Codex patch path is resolved against the session folder" "$(cat docs/features.md)" has 'resolved against the folder the session runs in'
 check "roadmap: the Codex exit codes candidate is gone" "$(cat ROADMAP.md)" lacks 'Codex exit codes'
 
+echo "outside-writes-guard: links that lead outside the project"
+check "configuration: the rule covers every file the install writes" "$cfgdoc" has 'every file and folder the install writes'
+check "configuration: the new flag name" "$cfgdoc" has '--allow-outside-links'
+check "configuration: the old flag name still works" "$cfgdoc" has '`--allow-outside-settings` still works'
+check "configuration: setup refuses the same way" "$cfgdoc" has 'setup` (the wizard, `--answers --apply` and `--set`) refuses the same way'
+check "configuration: a link that stays inside the project needs nothing" "$cfgdoc" has 'a link whose real file stays inside the project'
+check_eq "help: init, upgrade and the three setup forms list the new flag (exactly 5 lines)" "$(node dist/cli.js 2>&1 | grep -c -- '--allow-outside-links')" 5
+check "upgrading: the new flag name" "$(cat docs/upgrading.md)" has '--allow-outside-links'
+check "upgrading: the old hooks-only limit is gone" "$(cat docs/upgrading.md)" lacks 'still write through an outside link'
+check "configuration: an apply refusal is an error, the dry run prints the OUTSIDE lines and exits 1" "$cfgdoc" has 'the dry run prints'
+
 t_summary

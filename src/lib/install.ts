@@ -76,6 +76,37 @@ export interface PlannedFile { rel: string; existed: boolean; action: 'create' |
 export interface OutsideFile { rel: string; real: string }
 export interface InstallPlan { version: string; target: string; blocked: string[]; outside: OutsideFile[]; steps: { say: string; run?: () => void }[]; files: PlannedFile[]; agents: Agent[] }
 
+/** Every path whose write would land outside the project, as the kernel resolves it (a link to a file, links in parent folders, a dangling
+ *  link, a loop). Several files of one folder that land in one other folder are reported once, as the folder. */
+export function outsideLandings(target: string, paths: { rel: string; abs: string }[]): OutsideFile[] {
+  const found: { rel: string; real: string; landing: string | null }[] = [];
+  for (const { rel, abs } of paths) {
+    const landing = resolveWritePath(abs);
+    if (landing === null) found.push({ rel, real: `${abs} (a link loop)`, landing });
+    else if (landing !== target && !landing.startsWith(target + sep)) found.push({ rel, real: landing, landing });
+  }
+  const out: OutsideFile[] = [];
+  const folderOf = (rel: string): string => rel.slice(0, Math.max(0, rel.lastIndexOf('/')));
+  for (const f of found) {
+    const same = found.filter((g) => g.landing !== null && f.landing !== null && folderOf(g.rel) === folderOf(f.rel) && dirname(g.landing) === dirname(f.landing));
+    if (f.landing !== null && same.length > 1 && folderOf(f.rel) !== '') {
+      const rel = `${folderOf(f.rel)}/`;
+      if (!out.some((o) => o.rel === rel)) out.push({ rel, real: `${dirname(f.landing)}/` });
+    } else out.push({ rel: f.rel, real: f.real });
+  }
+  return out;
+}
+
+/** What setup would write outside the project: the install's own writes, plus the config and bindings it writes itself before the install. */
+export function setupOutside(install: InstallPlan): OutsideFile[] {
+  return [...install.outside, ...outsideLandings(install.target, ['.burhan/workflow.config', '.burhan/bindings.md'].map((rel) => ({ rel, abs: join(install.target, rel) })))];
+}
+
+/** The one refusal for every writer: a plan whose writes land outside the project changes nothing unless the person allowed it. */
+export function assertNoOutside(outside: OutsideFile[], allow: boolean | undefined): void {
+  if (outside.length > 0 && !allow) throw new BurhanError(`${outside[0]!.rel} resolves outside the project (${outside[0]!.real}) — nothing was changed; pass --allow-outside-links (or the older --allow-outside-settings) if you want burhan to edit it`);
+}
+
 /** Validates and plans; prints nothing and writes nothing. Throws BurhanError on invalid input. */
 export function planInstall(o: InstallOptions): InstallPlan {
   const kit = kitDir();
@@ -180,6 +211,15 @@ export function planInstall(o: InstallOptions): InstallPlan {
     }
   }
   for (const m of managed) if (m.text !== null || ownedOld(m.rel)) writes.push(join(target, m.rel));
+  // Every other file the install writes can be a link out of the project too, not only the hooks files (outside-writes-guard).
+  const relOf = (abs: string): string => (abs.startsWith(target + sep) ? abs.slice(target.length + 1) : abs).split(sep).join('/');
+  // The folder the Node hooks are copied into (`.burhan/hooks`) is a parent of what `replaceDir` writes, so a link there leaks the copy; and the
+  // backup of a hand-edited managed block is a file of its own.
+  const targets = [...writes, join(W, dirname(NODE_DIR)),
+    ...[...blocks.keys()].map((a) => join(target, BOOT_FILE[a])),
+    ...[...blocks].filter(([, b]) => b.editedInside).map(([a]) => join(target, BOOT_FILE[a]) + '.burhan-backup')];
+  for (const f of outsideLandings(target, targets.map((abs) => ({ rel: relOf(abs), abs }))))
+    if (!outside.some((o) => o.rel === f.rel)) outside.push(f);
   for (const p of writes) if (!isFileTarget(p)) throw new BurhanError(`${p} is not a regular file`);
   // A file the user owns (no managed marker) is skipped later, so it never needs to be writable.
   const ours = (p: string): boolean => !existsSync(p) || !p.includes(`${sep}.claude${sep}`) || isManagedCommand(readFileSync(p, 'utf8'));
@@ -314,10 +354,10 @@ export function install(o: InstallOptions, io: Io): number {
   // ---------------------------------------------------------------- 3. apply
   if (blocked.length && o.apply) throw new BurhanError(`${blocked[0]} — nothing was changed`);
   const refused = outside.length > 0 && !o.allowOutsideSettings;
-  if (refused && o.apply) throw new BurhanError(`${outside[0]!.rel} resolves outside the project (${outside[0]!.real}) — nothing was changed; pass --allow-outside-settings if you want burhan to edit that file`);
+  if (o.apply) assertNoOutside(outside, o.allowOutsideSettings);
   io.stdout(o.apply ? `burhan ${version} → ${target}\n` : `DRY RUN — burhan ${version} → ${target} (nothing will change; add --apply)\n`);
   for (const b of blocked) io.stdout(`  BLOCKED: ${b} — --apply would stop here and change nothing; make it writable (or run the command outside the agent's sandbox)\n`);
-  for (const f of outside) io.stdout(`  OUTSIDE: ${f.rel} → ${f.real} is outside the project — ${refused ? '--apply would refuse and change nothing (add --allow-outside-settings to write it)' : 'written because of --allow-outside-settings'}\n`);
+  for (const f of outside) io.stdout(`  OUTSIDE: ${f.rel} → ${f.real} is outside the project — ${refused ? '--apply would refuse and change nothing (add --allow-outside-links, or the older --allow-outside-settings, to write it)' : 'written because of --allow-outside-links'}\n`);
   for (const s of steps) {
     io.stdout(`  ${s.say}\n`);
     if (o.apply) runStep(s); // per step, so a failure leaves the same partial output as before

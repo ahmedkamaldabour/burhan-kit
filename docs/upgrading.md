@@ -54,8 +54,8 @@ npx burhan-kit uninstall --apply  # remove the kit-owned files, blocks and hook 
 
 It keeps `workflow.config`, `bindings.md`, `.burhan/local/` and your work and discovery files unless you add `--all`, and never touches project memory, your own files, or anything outside the project.
 
-## Settings files that are symbolic links
+## Files that are symbolic links
 
-A hooks file (`.claude/settings.json`, `.codex/hooks.json`) may be a link. A link to a file inside the project is written as before. If it resolves **outside** the project (a link to the file, to a folder above it, or a dangling link), `init` and `upgrade` print `OUTSIDE:` followed by the file, an arrow and its real path in the plan and with `--apply`, and `--apply` refuses and changes nothing unless you pass `--allow-outside-settings`.
+Any file the install writes may be a link: the hooks files (`.claude/settings.json`, `.codex/hooks.json`), `CLAUDE.md` and `AGENTS.md`, the managed `.claude/` files, `.burhan/` and the folders in it, `.gitignore`. A link whose real file stays inside the project is written as before. If the write would land **outside** the project (a link to the file, to a folder above it, or a dangling link), the dry run of `init` and `upgrade` prints `OUTSIDE:` followed by the file, an arrow and its real path and exits 1, and `--apply` refuses, names the first such file and changes nothing unless you pass `--allow-outside-links` (`--allow-outside-settings` still works as an alias). `setup` (the wizard, `--answers --apply` and `--set`) refuses the same way before its first write and takes the same flag.
 
-**Limit:** this guard covers `init` and `upgrade` and those two hooks files. `setup --set`, `setup --answers --apply`, and the other files `init` writes (`CLAUDE.md`, `AGENTS.md`, the managed `.claude/` files, a linked `.burhan`) still write through an outside link without it.
+`uninstall` is not changed by this rule.

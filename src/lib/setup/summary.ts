@@ -1,7 +1,5 @@
 import type { Agent } from '../bootstrap.js';
-import type { PlannedFile } from '../install.js';
-import { lstatSync, realpathSync } from 'node:fs';
-import { join, sep } from 'node:path';
+import { setupOutside, type PlannedFile } from '../install.js';
 import { parseConfig } from '../config.js';
 import { messages, type Messages } from './messages.js';
 import { ignoredCommittedSetupFiles, type SetupPlan } from './engine.js';
@@ -34,22 +32,6 @@ function collapse(files: PlannedFile[]): PlannedFile[] {
   return out;
 }
 
-/** AC-21: disclose a settings symlink only when its resolved file escapes the project. */
-function outsideSettings(target: string): { rel: string; real: string }[] {
-  let root: string;
-  try { root = realpathSync(target); } catch { return []; }
-  const out: { rel: string; real: string }[] = [];
-  for (const rel of ['.claude/settings.json', '.codex/hooks.json']) {
-    const file = join(root, rel);
-    try {
-      if (!lstatSync(file).isSymbolicLink()) continue;
-      const real = realpathSync(file);
-      if (real !== root && !real.startsWith(root + sep)) out.push({ rel, real });
-    } catch { /* absent or dangling links are handled by the normal install validation */ }
-  }
-  return out;
-}
-
 /**
  * The one setup explanation for Superpowers, shared verbatim by summaries and agent instructions. `agents` defaults to
  * the plan's; `setup --agent` passes both, because it runs before the agents are answered.
@@ -59,7 +41,7 @@ export function superpowersLine(p: SetupPlan, lang: 'en' | 'ar', agents: readonl
 }
 
 /** AC-06 / AC-03a / AC-05 / AC-18: what will change, the editable defaults, how to change or undo. Prints no setting names. */
-export function renderSummary(p: SetupPlan, lang: 'en' | 'ar', superpowersAgents: readonly Agent[] = p.answers.agents): string {
+export function renderSummary(p: SetupPlan, lang: 'en' | 'ar', superpowersAgents: readonly Agent[] = p.answers.agents, allowOutside = false): string {
   const m = messages(lang);
   const files = collapse(p.files);
   const out: string[] = [m.title(p.install.target), ''];
@@ -87,9 +69,9 @@ export function renderSummary(p: SetupPlan, lang: 'en' | 'ar', superpowersAgents
   if (p.existingHooks.length) out.push('', ...m.existingHooks(p.existingHooks));
   const ignored = ignoredCommittedSetupFiles(p.install.target, p.files);
   if (ignored.length) out.push('', ...m.ignoredCommittedFiles(ignored));
-  const outside = outsideSettings(p.install.target);
-  if (outside.length) out.push('', ...m.outsideSettings(outside));
-  out.push('', m.changeUndo, m.nothingCommitted);
+  const outside = setupOutside(p.install);
+  if (outside.length) out.push('', ...m.outsideWrites(outside, allowOutside));
+  out.push('', m.changeUndo, outside.length ? m.nothingCommittedOutside(allowOutside) : m.nothingCommitted);
   if (p.answers.agents.includes('codex')) out.push('', m.codexTrust);
   out.push('', m.newAgentSession(p.install.target));
   return out.join('\n') + '\n';

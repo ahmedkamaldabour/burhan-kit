@@ -37,11 +37,16 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
   included). If you edited text *inside* the block, the file is backed up to `<file>.burhan-backup`
   before the block is refreshed. A file with a broken marker pair is refused, not repaired.
   `--no-bootstrap` skips it.
-- A hooks file (`.claude/settings.json`, `.codex/hooks.json`) may be a symlink — to a file inside the project it is
-  written as before. If it resolves **outside** the project (a link to the file, to a folder above it, or a dangling
-  link), `init`/`upgrade` print `OUTSIDE: <file> → <real path>` in the dry run and with `--apply`, and `--apply`
-  refuses and changes nothing unless you pass `--allow-outside-settings`. (`setup` shows the same link in its summary
-  before you approve.)
+- Any file the install writes may be a symlink — the hooks files (`.claude/settings.json`, `.codex/hooks.json`),
+  `CLAUDE.md` / `AGENTS.md`, the Claude commands and managed files, `.burhan/` and the folders in it, `.gitignore`.
+  The rule looks at where the write **lands**: a link whose real file stays inside the project is written as before
+  (so `CLAUDE.md` ↔ `AGENTS.md` inside the project needs nothing). If the write would land **outside** the project (a
+  link to the file, to a folder above it, or a dangling link), the dry run prints `OUTSIDE: <file> → <real path>` and
+  exits 1, and `--apply` refuses with an error that names the first such file and changes nothing unless you pass
+  `--allow-outside-links` (`--allow-outside-settings` still works, as an alias).
+  `setup` (the wizard, `--answers --apply` and `--set`) refuses the same way, before it writes its first file, and takes
+  the same flag; its summary names every such file and no longer says that nothing outside the project changes. The rule
+  covers every file and folder the install writes; `uninstall` is not changed by it.
 - Claude commands go to `.claude/commands/burhan/` (`/burhan:e2e`, `/burhan:qc`, `/burhan:onboard`). A command file you
   wrote yourself is never overwritten. Codex reads them from `.burhan/commands/` via `AGENTS.md`.
 - **Safety:** everything is validated before the first write — any problem (invalid agent config,

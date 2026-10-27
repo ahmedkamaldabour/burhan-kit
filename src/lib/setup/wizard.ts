@@ -51,7 +51,7 @@ async function ask(p: Prompter, a: SetupAnswers, lang: Lang, target: string): Pr
 }
 
 /** AC-01–03, 04, 06: what you get → recommended or choose → summary → apply / change / cancel. Cancel anywhere writes nothing and exits 0. */
-export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' | 'ar', home: string): Promise<number> {
+export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' | 'ar', home: string, allowOutside = false): Promise<number> {
   const m = messages(lang);
   const w = m.wizard;
   const installed = currentAnswers(target);
@@ -75,11 +75,11 @@ export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' 
       a = r;
     }
     const plan = planSetup(target, a, home);
-    p.note(renderSummary(plan, lang));
+    p.note(renderSummary(plan, lang, undefined, allowOutside));
     const next = await p.select(w.applyOrChange, [{ value: 'apply', label: w.apply }, { value: 'change', label: w.change }, { value: 'cancel', label: w.cancel }], 'apply');
     if (next === CANCEL || next === 'cancel') return cancelled();
     if (next === 'change') { asking = true; continue; }
-    applySetup(plan);
+    applySetup(plan, undefined, { allowOutside });
     break;
   }
 

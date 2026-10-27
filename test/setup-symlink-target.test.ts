@@ -63,7 +63,8 @@ test('AC-21: summaries do not name a plain settings file or a symlink whose real
   }
 });
 
-test('AC-21: apply continues to write through outside settings symlinks without replacing them', () => {
+// outside-writes-guard (AC-07): setup now refuses an outside settings link unless allowed; with the flag the old behaviour holds.
+test('AC-21: apply refuses an outside settings symlink; with the allow flag it writes through without replacing it', () => {
   for (const { agent, rel } of settingsFiles) {
     const target = project();
     const outside = tmpDir('burhan-symlink-target-outside-');
@@ -71,7 +72,10 @@ test('AC-21: apply continues to write through outside settings symlinks without 
     writeFileSync(realFile, '{"hooks":{}}\n');
     const link = linkSettings(target, rel, realFile);
 
-    applySetup(planSetup(target, answers(agent), home));
+    assert.throws(() => applySetup(planSetup(target, answers(agent), home)), /resolves outside the project/u);
+    assert.equal(readFileSync(realFile, 'utf8'), '{"hooks":{}}\n', 'refused: the outside file is untouched');
+
+    applySetup(planSetup(target, answers(agent), home), undefined, { allowOutside: true });
 
     assert.ok(lstatSync(link).isSymbolicLink(), `${rel} remains a symlink`);
     assert.match(readFileSync(realFile, 'utf8'), /"hooks"/);

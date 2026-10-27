@@ -1,7 +1,7 @@
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, sep } from 'node:path';
-import { applyPlan, KIT_COMMAND, planInstall, type InstallPlan, type PlannedFile } from '../install.js';
+import { applyPlan, assertNoOutside, KIT_COMMAND, planInstall, setupOutside, type InstallPlan, type PlannedFile } from '../install.js';
 import { BurhanError } from '../errors.js';
 import { parseConfig, TEAM_CONFIG } from '../config.js';
 import { cfgPath } from '../../hooks/core/config.mjs';
@@ -263,9 +263,11 @@ export function planSetup(target: string, a: SetupAnswers, home: string): SetupP
 }
 
 /** Writes config → bindings → the install, once. A blocked plan is refused before anything is written. */
-export function applySetup(p: SetupPlan, fs: SetupFilesystem = realSetupFilesystem): void {
+export function applySetup(p: SetupPlan, fs: SetupFilesystem = realSetupFilesystem, o: { allowOutside?: boolean } = {}): void {
   const { blocked, target } = p.install;
   if (blocked.length) throw new BurhanError(`${blocked[0]} — nothing was changed`);
+  // The config and bindings are written here, before the install: judge them with the install's own writes, before the first one.
+  assertNoOutside(setupOutside(p.install), o.allowOutside);
   const configPath = join(target, TEAM_CONFIG);
   if (!existsSync(configPath) || readFileSync(configPath, 'utf8') !== p.config) fs.put(configPath, p.config);
   if (p.bindings !== null) putFile(join(target, '.burhan/bindings.md'), p.bindings);

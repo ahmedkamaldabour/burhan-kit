@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { applyPlan, planInstall } from '../install.js';
+import { applyPlan, assertNoOutside, outsideLandings, planInstall } from '../install.js';
 import { BurhanError } from '../errors.js';
 import { parseConfig, TEAM_CONFIG } from '../config.js';
 import { putFile, realTarget } from '../fs-safe.js';
@@ -42,13 +42,24 @@ export function parseSetArgs(args: string[]): StackValues {
 
 /** R-8, AC-14: run the check once (unless 'none'), show it, save only when it passes (or --force), mark first-use done,
  *  then regenerate the files that depend on the check. Returns the exit code. */
-export async function setStack(target: string, v: StackValues, o: { force: boolean }, io: Io): Promise<number> {
+export async function setStack(target: string, v: StackValues, o: { force: boolean; allowOutside?: boolean }, io: Io): Promise<number> {
   const m = messages('en').stack;
   const real = realTarget(target);
   if (!existsSync(join(real, '.burhan/WORKFLOW.md'))) throw new BurhanError(m.notInstalled);
   const configPath = join(real, TEAM_CONFIG);
   const text = existsSync(configPath) ? readFileSync(configPath, 'utf8') : '';
   const have = parseConfig(text).values;
+
+  // Before the check runs and before the config is written: would this save (or the install it triggers) write outside the project?
+  const hasBlock = ['CLAUDE.md', 'AGENTS.md'].some((f) => { try { return /^<!-- burhan:start -->\r?$/m.test(readFileSync(join(target, f), 'utf8')); } catch { return false; } });
+  const preview = planInstall({ mode: 'upgrade', target: real, agents: null, apply: false, bootstrap: hasBlock, keepProjectFiles: true });
+  // The verify skill is planned only after the config is saved (it carries the check command): written when a check is set, removed when it is
+  // cleared and one is there. A link at its folder would send either outside, so it is judged here, before the save.
+  const skill = join(preview.target, '.claude/skills/burhan-verify/SKILL.md');
+  const skillTargets = v.check !== 'none' || existsSync(skill) ? [{ rel: '.claude/skills/burhan-verify/SKILL.md', abs: skill }] : [];
+  const outside = [...preview.outside, ...outsideLandings(preview.target, [{ rel: TEAM_CONFIG, abs: configPath }, ...skillTargets])];
+  assertNoOutside(outside, o.allowOutside);
+  for (const f of outside) io.stdout(`  OUTSIDE: ${f.rel} → ${f.real} is outside the project — written because of --allow-outside-links\n`);
 
   const none = v.check === 'none';
   const check = none ? '' : v.check;
@@ -87,8 +98,9 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
   putFile(configPath, setConfigKeys(text, values));
   // The verify skill carries the check command: regenerate it (and anything else that depends on the config).
   // The bootstrap block only where the project already has it: a --no-bootstrap install stays without one.
-  const hasBlock = ['CLAUDE.md', 'AGENTS.md'].some((f) => { try { return /^<!-- burhan:start -->\r?$/m.test(readFileSync(join(target, f), 'utf8')); } catch { return false; } });
-  applyPlan(planInstall({ mode: 'upgrade', target, agents: null, apply: true, bootstrap: hasBlock, keepProjectFiles: true }));
+  const plan = planInstall({ mode: 'upgrade', target: real, agents: null, apply: true, bootstrap: hasBlock, keepProjectFiles: true });
+  assertNoOutside(plan.outside, o.allowOutside); // a backstop: the preview above already judged what this plan writes
+  applyPlan(plan);
   io.stdout(m.saved(check) + '\n');
   return 0;
 }
