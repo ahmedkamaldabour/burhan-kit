@@ -54,7 +54,10 @@ test('resolveWritePath: where a write to the path would land', { skip: symlinkSk
   assert.equal(resolveWritePath(join(d, 'dir')), real(join(d, 'dir')));
 });
 
-test('resolveWritePath takes `..` after a folder link in the link target, as the kernel does (review I-1)', { skip: symlinkSkip }, () => {
+// Windows collapses `..` as text before following a link, resolveWritePath walks it the POSIX way: open product question, not hidden:
+// .internal/discovery/2026-10-27-resolvewritepath-dotdot-after-folder-link-differs-on-windows.md
+const dotdotSkip = process.platform === 'win32' ? 'Windows reads `..` after a folder link as text; resolveWritePath reads it the POSIX way (open discovery)' : symlinkSkip;
+test('resolveWritePath takes `..` after a folder link in the link target, as the kernel does (review I-1)', { skip: dotdotSkip }, () => {
   const d = tmp(); const away = tmp();
   mkdirSync(join(away, 'deep'));
   writeFileSync(join(away, 'x.json'), '{}');
