@@ -35,9 +35,10 @@ test('the environment is passed unchanged (the user\'s locale)', { skip: posix ?
 });
 test('timeout: a slow check is stopped and reported as timed out', async () => {
   const t0 = process.hrtime.bigint();
-  const r = await runCheck(posix ? 'sleep 5' : 'ping -n 6 127.0.0.1 >nul', dir(), 1, process.env);
+  // a command that would run 20 s, stopped after 1 s: the bound leaves a wide margin for a slow runner (a Windows run took 4.4 s here once, 1.4 s another time)
+  const r = await runCheck(posix ? 'sleep 20' : 'ping -n 21 127.0.0.1 >nul', dir(), 1, process.env);
   assert.equal(r.kind, 'timeout');
-  assert.ok(secs(t0) < 4, `took ${secs(t0)} s`);
+  assert.ok(secs(t0) < 10, `took ${secs(t0)} s`);
 });
 test('timeout: a check that ignores TERM is killed 2 s later', { skip: notOnWindows('POSIX signals: Windows kills the whole tree at once (taskkill), there is no TERM to ignore') }, async () => {
   const t0 = process.hrtime.bigint();

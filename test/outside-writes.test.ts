@@ -53,9 +53,10 @@ test('a dangling link to somewhere outside is listed (a write would create its t
 
 test('a link loop is listed and says so', { skip }, () => {
   const s = scene();
-  symlinkSync('b', join(s.project, 'a'));
-  symlinkSync('a', join(s.project, 'b'));
-  symlinkSync('a', join(s.project, 'CLAUDE.md'));
+  // type 'file': on Windows, symlinkSync with no type stats the target to guess it, and stat on a loop is ELOOP
+  symlinkSync('b', join(s.project, 'a'), 'file');
+  symlinkSync('a', join(s.project, 'b'), 'file');
+  symlinkSync('a', join(s.project, 'CLAUDE.md'), 'file');
   const list = outside(s);
   assert.deepEqual(rels(list), ['CLAUDE.md']);
   assert.match(list[0]!.real, /link loop/u);

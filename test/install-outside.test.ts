@@ -31,7 +31,7 @@ function scene(how: 'file' | 'folder' | 'dangling' | 'inside' | 'none' | 'siblin
   } else if (how === 'absentdotdot') { // review C-1: `..` after a part that does not exist, then a folder link
     mkdirSync(join(project, dir)); mkdirSync(join(away, 'deep'));
     symlinkSync(away, join(project, dir, 'evil')); symlinkSync('absent/../evil/settings.json', join(project, file));
-  } else if (how === 'loop') { mkdirSync(join(project, dir)); symlinkSync('loop-b', join(project, dir, 'loop-a')); symlinkSync('loop-a', join(project, dir, 'loop-b')); symlinkSync('loop-a', join(project, file)); }
+  } else if (how === 'loop') { mkdirSync(join(project, dir)); symlinkSync('loop-b', join(project, dir, 'loop-a'), 'file'); symlinkSync('loop-a', join(project, dir, 'loop-b'), 'file'); symlinkSync('loop-a', join(project, file), 'file'); }
   return { project, real: realpathSync(project), outside };
 }
 const run = (s: Scene, o: { apply: boolean; mode?: 'init' | 'upgrade'; allow?: boolean; agents?: ('claude' | 'codex')[] }) => {
