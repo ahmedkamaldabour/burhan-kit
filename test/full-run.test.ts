@@ -1,6 +1,6 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { evidenceMatches } from '../src/hooks/core/evidence-cmd.mjs';
@@ -122,7 +122,8 @@ test('this repository\'s own pattern counts npm test with a redirect and nothing
   const re = new RegExp(ereToJs(REPO_PATTERN));
   for (const c of ['npm test', 'npm test > /tmp/a.log 2>&1', 'cd /x; npm test > /tmp/f.log 2>&1', 'npm test 2>&1']) assert.equal(evidenceMatches(re, c), true, c);
   for (const c of ['npm test -- test/a.test.ts', 'npm run test:node', 'echo "npm test"', 'node --test test/a.test.js']) assert.equal(evidenceMatches(re, c), false, c);
-  assert.match(readFileSync(join(ROOT, '.burhan/workflow.config'), 'utf8'), /^WF_FULL_TEST_REGEX='\^npm test\( \[0-9\]\*>\.\*\)\?\$'$/m);
+  const own = join(ROOT, '.burhan/workflow.config'); // git-ignored: absent in a clean checkout, so it is pinned only where it exists
+  if (existsSync(own)) assert.match(readFileSync(own, 'utf8'), /^WF_FULL_TEST_REGEX='\^npm test\( \[0-9\]\*>\.\*\)\?\$'$/m);
 });
 
 // ---- through the commands ----

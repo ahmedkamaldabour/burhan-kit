@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { cli, project, STATE, write } from './item-fixture.js';
 import { symlinkSkip, tmpDir } from './helpers.js';
@@ -168,4 +168,15 @@ test('a WF_STATE_FILE that points outside the project is refused', async () => {
   const r = await cli(dir, ['state', 'compact', '--apply']);
   assert.equal(r.code, 2, r.out + r.err);
   assert.equal(readFileSync(out, 'utf8'), OUTSIDE);
+});
+
+test('a project reached through a link gets pointers relative to the project, not a chain of ../', { skip: symlinkSkip }, async () => {
+  const dir = setup();
+  const link = `${dir}-link`;
+  symlinkSync(dir, link, 'dir');
+  const r = await cli(link, ['state', 'compact']);
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /alpha · refactor \/ bounded · Done \(no QC\) · 5ae9a09 · \.burhan\/work\/alpha/);
+  assert.doesNotMatch(r.out, /\.\.\//);
+  unlinkSync(link);
 });

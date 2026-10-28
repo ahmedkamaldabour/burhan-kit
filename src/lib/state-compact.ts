@@ -44,7 +44,7 @@ function commitOf(line: string): string | null {
 /** `burhan state compact [--apply]`: shortens the closed items' old lines in the state file. A dry run unless --apply; never touches a "### " block. */
 export function stateCompact(target: string, io: Io, o: { apply?: boolean; docs?: string } = {}): number {
   const project = realTarget(target);
-  const docs = docsLocation(target, o.docs);
+  const docs = docsLocation(project, o.docs);
   const stateRel = readProjectConfig(project).values.WF_STATE_FILE || '.burhan/local/PROGRESS.md';
   const statePath = join(project, stateRel);
   if (!existsSync(statePath) || !statSync(statePath).isFile()) throw new BurhanError(`there is no state file at ${stateRel}`);
