@@ -1,10 +1,11 @@
 # Verification — <slug>
+- **Contract:** 1
 - **Date:** YYYY-MM-DD
-- **Performed by:** <human / agent — as agreed when asked>
+- **Performed by:** <agent> · <model> · <fresh subagent | other agent | human | same session> (a person has no model: `Name · none · human`)
 - **Identity / environment:** <the verification identity from WORKFLOW §1>
 - **Evidence:** <ledger lines backing the runs below — `burhan evidence --item <slug>` (session/turn #seq, exit code)>
 
-> Delete any section that does not apply — an absent section is never a violation. Length caps: `phases/files.md`.
+> Delete any section that does not apply — an absent section is never a violation.
 
 ## Runs
 Every attempt, including failed ones — never deleted.

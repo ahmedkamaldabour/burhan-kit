@@ -14,7 +14,7 @@
 - **Baseline:** <Approved — <name> · YYYY-MM-DD | Waived — <name> · YYYY-MM-DD | n/a (greenfield)> — from `.burhan/PROJECT.md`; Approved or Waived only as the person decided, with the name they gave
 - **Mode:** <step|auto — exactly one; default from WF_MODE_<TYPE>_<SCOPE>, else WF_MODE_DEFAULT; switch any time — phases/lifecycle.md>
 
-> Delete any section that does not apply — an absent section is never a violation. Length caps: `phases/files.md`.
+> Delete any section that does not apply — an absent section is never a violation.
 
 ## Job story
 > As a <role>, I want to <action>, so that <benefit>.

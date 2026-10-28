@@ -83,6 +83,7 @@ export function loadHookConfig(project: string, env: NodeJS.ProcessEnv): HookCon
   def('WF_STATE_BUDGET', '80');
   def('WF_CHECK_TIMEOUT', '60');
   def('WF_SKILLS', 'none');
+  def('WF_ITEM_CONTRACT', 'off');
   for (const k of ['WF_DOCS_DIR', 'WF_DISCOVERY_DIR', 'WF_STATE_FILE']) c[k] = cfgPath(c[k]!);
   if (!/^[0-9]+$/.test(c.WF_CHECK_TIMEOUT!)) c.WF_CHECK_TIMEOUT = '60';
   if (!/^[0-9]+$/.test(c.WF_STATE_BUDGET!)) c.WF_STATE_BUDGET = '80';

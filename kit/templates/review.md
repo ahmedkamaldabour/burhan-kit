@@ -1,9 +1,10 @@
 # Review — <slug>
+- **Contract:** 1
 One file per item; one section per sub-unit, added as each sub-unit is reviewed. Size each section by
 risk (phases/review.md): **short** when the sub-unit touches nothing matching `WF_SENSITIVE_REGEX` and
 no scope escalator, **full** otherwise.
 
-> Delete any section that does not apply — an absent section is never a violation. Length caps: `phases/files.md`.
+> Delete any section that does not apply — an absent section is never a violation.
 
 ## Sub-unit 1 — <name> · short | full
 (a review group covers several sub-units: `## Sub-units 1–2 — <name> · short (group A)`; phases/review.md · Review groups)

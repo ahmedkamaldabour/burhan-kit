@@ -7,7 +7,8 @@ slug** — a file opened in an editor tab, pasted into a diff or found by search
 | File | Template | Written at |
 |---|---|---|
 | `<slug>-story.md` | `templates/story.md` | ② |
-| `<slug>-implementation-plan.md` | `templates/plan.md` | ③ |
+| `<slug>-implementation-plan.md` (decisions, coverage, rulings, executor rules, deviations) | `templates/plan.md` | ③ |
+| `<slug>-build-spec.md` (the code per sub-unit; approved with the plan) | `templates/build-spec.md` | ③ |
 | `<slug>-findings.md` (read-only routes) | `templates/findings.md` | instead of ②–⑦ |
 | `reviews/<slug>-review.md` (one per item, a section per sub-unit; older items may have `reviews/<slug>-<sub-unit>.md`) | `templates/review.md` | ⑤ |
 | `reviews/<slug>-verification.md` | `templates/verification.md` | ⑥ |
@@ -48,21 +49,13 @@ whole **Now** when there is none).
 | `Accepted by` | `<name> · YYYY-MM-DD` — written only after the human accepts | QC | stats, docs index |
 | `Baseline` | PROJECT.md: `Draft`, `Approved — <name> · YYYY-MM-DD` or `Waived — <name> · YYYY-MM-DD` (the name has a letter and no `<` or `·`); story: the same Approved or Waived form, or `n/a (greenfield)`. Older projects: `Memory status: Approved YYYY-MM-DD` counts as Approved (no name), any other `Memory status:` value counts as `Draft` | `.burhan/PROJECT.md`, story | memory check, reminders, turn-end warning, doctor |
 | `Reopened after PASS` | `YYYY-MM-DD — why`, or `—` | plan | stats (escaped defects) |
-| `Performed by` | `<agent> · <model> · <context>` — context: `fresh subagent`, `other agent`, `human` or `same session` | review, QC | QC provenance check, stats |
+| `Performed by` | `<agent> · <model> · <context>` — context: `fresh subagent`, `other agent`, `human` or `same session` | review, QC, verification | QC provenance check, stats |
 
-## Length — keep files short
+## Files stay readable
 
 Every template is a skeleton: **delete any section that does not apply — an absent section is never a
-violation** (no hook, review or QC treats it as one). Prefer tables to prose. Caps by route (words,
-excluding code blocks and tables):
+violation** (no hook, review or QC treats it as one), except the sections the contract requires: every plan keeps its
+gate checklist, sub-unit breakdown, executor rules and Deviations table, a plan on a route with a story also its AC coverage
+table, and an architectural plan also its security re-read, verification steps, limitations and knowledge review; a build
+spec keeps its "Not verified" list and every part of every sub-unit (`burhan item check` names a missing one). Prefer tables to prose. There is no limit on the size of any file: say what the reader needs to decide or to carry out, and no more. The decision card (phases/lifecycle.md) is short by design.
 
-| File | spike / bounded | architectural |
-|---|---|---|
-| story | ≤ 500 | ≤ 1,000 |
-| plan | ≤ 800 | ≤ 1,600 |
-| review (per sub-unit section) | ≤ 250 | ≤ 500 |
-| verification | ≤ 400 | ≤ 800 |
-| QC | ≤ 700 | ≤ 1,400 |
-
-Over the cap → cut, or split the item (phases/lifecycle.md · Decomposition). `burhan stats` reports
-the average size of each file type.

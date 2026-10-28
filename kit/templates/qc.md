@@ -1,9 +1,10 @@
 # QC — <slug>
+- **Contract:** 1
 - **Date:** YYYY-MM-DD · **Verdict:** PASS | FAIL — N issues
 - **Accepted by:** <exactly "<name> · YYYY-MM-DD", written only after the human accepts the verdict (WORKFLOW §4-D); any other form = not accepted>
 - **Performed by:** <agent> · <model> · <exactly one: fresh subagent | other agent | human | same session — same session is also listed under Limitations>
 
-> Delete any section that does not apply — an absent section is never a violation. Length caps: `phases/files.md`.
+> Delete any section that does not apply — an absent section is never a violation.
 
 ## 1. Convergence matrix
 Every acceptance criterion, business rule and data-dictionary row.

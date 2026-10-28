@@ -8,11 +8,13 @@
 - **Decisions needed from you:** <numbered, or "none — approve as is">
 
 - **Story:** ./<slug>-story.md
+- **Build spec:** ./<slug>-build-spec.md (approved with this plan)
 - **Branch:** <branch>
 - **Overall status:** Draft → Approved → In progress → Completed
 - **Reopened after PASS:** <exactly "YYYY-MM-DD — why", or —> (an item reopened after its QC PASS counts as an escaped defect)
 
-> Delete any section that does not apply — an absent section is never a violation. Length caps: `phases/files.md`.
+> This file holds the decisions and the lines the commands own. The code of every sub-unit is in the build spec (`templates/build-spec.md`). The planner writes no status, result or log text here: the status lines and the gate boxes belong to the commands (`burhan item set`, `gate tick`, `approve`, `item finish`).
+> Delete any section that does not apply, except the ones the contract requires; `burhan item check` names a missing one.
 
 ## Gate checklist
 - [ ] Route stated (type / scope / reason) and the gates it requires known (WORKFLOW §3)
@@ -24,6 +26,7 @@
 - [ ] Per sub-unit: review done → a section in `reviews/<slug>-review.md` (short or full, by risk; one section for a review group)
 - [ ] Security re-read: authorization, record-level visibility, no secrets logged or returned;
       access-rule changes tested for BOTH allowed and denied cases
+- [ ] No open deviation: every row of the Deviations table is approved or rejected by the owner
 - [ ] Every completion claim backed by shown command output
 - [ ] Discoveries handled per phases/discoveries.md
 - [ ] Real verification performed — asked who does it → `reviews/<slug>-verification.md`
@@ -31,47 +34,59 @@
 - [ ] Knowledge review done, or "none" (if the route includes K)
 - [ ] Close-out in the state file
 
-## 1. Context
-Grounded in the real code — cite file:line. Re-verify anything the story assumed.
-
-## 2. Decisions
+## 1. Decisions
 Options considered, with a recommendation. Rejected options stay here as "Alternatives".
 
-## 3. Rulings
+## 2. AC coverage
+Every acceptance criterion of the story, the sub-unit that builds it, and the test that proves it. A route with no story has nothing to cover.
+| AC | Sub-unit | Test (file → test name) |
+|----|----------|--------------------------|
+| AC-01 | 1 | `<test file>` → `<test name>` |
+
+## 3. What the story got wrong
+Corrections from reading the real code, each with file:line. Write "None." when the story held.
+| The story said | The code shows | file:line | Effect on the plan |
+|----------------|----------------|-----------|--------------------|
+
+## 4. Rulings
 | Ruling | Reason | Cost if wrong |
 |--------|--------|---------------|
 
-## 4. Sub-unit breakdown
-Status ladder: ⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed
+## 5. Sub-unit breakdown
+Status ladder: ⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed. Files, tests and code are in the build spec, not here.
 
 ### Sub-unit 1 — <name> · ⬜ Draft
+- **Covers:** <AC ids, e.g. AC-01, AC-02>
 - **Review group:** <letter, or — (phases/review.md · Review groups: decided here, short lane only)>
-- **Files:**
-- **Steps:**
-- **Tests (written first):**
-- **Result:** <exact commands + output summary, link to review>
 
-## 5. Security re-read
+## 6. Security re-read
 
-## 6. Verification steps
+## 7. Verification steps
 
-## 7. Limitations
+## 8. Limitations
 What could not be inspected or verified, and why.
 
-## 8. Impact log
+## 9. Executor rules
+1. Follow this plan and the build spec exactly: the same files, the same code, the same order, the same commands. No improvising, no extra scope, no refactoring.
+2. A step that fails unexpectedly — a RED that does not fail as the spec says, a GREEN that fails, a file that differs from what the spec expects — means STOP. Do not fix it on your own.
+3. Record the deviation in section 10 (what, where, the output), then ask the owner. An approved deviation updates this plan and the spec first, then the code.
+4. The existing brakes stay: a scope escalator, a discovery outside the item, a plan change, the same test failing twice, an irreversible action.
+5. After a sub-unit run only its test files, then the fast check; the full suite at QC, before a commit, or when a fix lands outside the covered tests.
+
+## 10. Deviations
+Empty until a step deviates. Status is open, approved or rejected.
+| # | Sub-unit | What | Where | Output | Status | Decision |
+|---|----------|------|-------|--------|--------|----------|
+
+## 11. Impact log
 Only if the approved intent changed mid-flight (phases/lifecycle.md · intent changes).
 | Date | Change | Phase | Affected? | Reason |
 |------|--------|-------|-----------|--------|
 
-## 9. Knowledge review
+## 12. Knowledge review
 Knowledge review: none <keep this line only after deciding nothing new and durable was learned; otherwise replace it with the table below (phases/memory.md)>
 | Candidate | Evidence | Relation (new / reconfirms / supersedes / disputes) | Decision (promoted / rejected) |
 |-----------|----------|------|----------|
 
-## 10. Out-of-scope changes
+## 13. Out-of-scope changes
 Small, in-scope tweaks made while implementing, not requested. Flagged as such.
-
-## 11. Phase log
-Start/end of each phase as it happens, as `YYYY-MM-DD HH:MM` (a date alone gives no duration); tokens only if the agent reports them.
-| Phase | Start | End | Tokens |
-|-------|-------|-----|--------|

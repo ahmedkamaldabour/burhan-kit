@@ -1,6 +1,6 @@
 # <Area>
 Current knowledge first; superseded facts stay below for history.
-> Delete any section that does not apply — an absent section is never a violation. Length caps: `phases/files.md`.
+> Delete any section that does not apply — an absent section is never a violation.
 
 ## Current
 | ID | Fact | Confidence (confirmed / inferred / unresolved) | Evidence | Verified (date @ commit) |

@@ -2,7 +2,7 @@
 import { ere } from './ere.mjs';
 import type { Check } from './lib.mjs';
 import { skillLine, skillLineText } from './skill-line.mjs';
-import { clearStateSnapshot } from './store.mjs';
+import { clearStateSnapshot, rememberApprovalWord } from './store.mjs';
 import { reminderLine, undecided } from './understanding.mjs';
 
 // Arabic has no \b in grep; bound Arabic words by whitespace/ASCII punctuation instead, so that
@@ -19,6 +19,8 @@ function sedGlobal(text: string, src: string, replacement: string): string {
   return text.replace(new RegExp(src, 'g'), replacement);
 }
 
+const APPROVAL_WORDS = '(^|[^[:alnum:]_])(approve[ds]?|approval|yes|yep|ok|okay|go ahead|lgtm|agreed?)([^[:alnum:]_]|$)|موافق|وافقت|اعتمد|تمام|ماشي|أيوه|ايوه';
+
 export const promptRouter: Check = (ctx) => {
   const { ev, cfg } = ctx;
   // A new turn starts: a state-file baseline left by an interrupted turn (no Stop ran) must not carry over (multi-session-safety).
@@ -27,6 +29,8 @@ export const promptRouter: Check = (ctx) => {
   if (raw === '') return [];
   if (raw.includes('SYSTEM NOTIFICATION') || raw.includes('task-notification') || raw.includes('local-command-caveat')) return [];
   const p = raw.toLowerCase();
+  // The turn audit asks "did the owner say yes?" when the agent runs an approve command: record only whether such wording is here (a heuristic).
+  rememberApprovalWord(ctx.project, ev.get('.session'), ere(APPROVAL_WORDS)?.test(p) ?? false, { ...ctx.env, ...cfg });
   const skills = cfg.WF_SKILLS === 'superpowers';
   let n = 0;
   let out = '';

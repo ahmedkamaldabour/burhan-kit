@@ -1,8 +1,8 @@
 # State transitions and close-out
 > Part of the burhan working agreement (core: `.burhan/WORKFLOW.md`). **Read this when:** you change a status, close an item, or hand off to a fresh session.
 
-**Timing (optional).** Record the start and end of each phase in the plan's *Phase log* (tokens only
-if the agent reports them); `burhan stats` averages them.
+**Timing.** A new plan has no *Phase log*: a log is not written into the plan, and the evidence ledger timestamps every step.
+`burhan stats` still averages the *Phase log* of an older plan.
 
 **A snapshot, not a journal:**
 - A line budget (`WF_STATE_BUDGET`, default 80) — it is read in full at every session start.

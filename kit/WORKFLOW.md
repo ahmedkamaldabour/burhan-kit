@@ -155,7 +155,7 @@ fix a discovery** — document it, get approval, then act (`phases/discoveries.m
 | When | Read |
 |---|---|
 | Intake, story, plan, build, intent change | `phases/lifecycle.md` |
-| Item files, sources, length caps | `phases/files.md` |
+| Item files, sources | `phases/files.md` |
 | Reviewing a diff, QC | `phases/review.md` |
 | A status change, close-out, handoff | `phases/close-out.md` |
 | Something the task did not ask for | `phases/discoveries.md` |

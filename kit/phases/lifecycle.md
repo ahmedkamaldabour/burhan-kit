@@ -16,14 +16,18 @@ steps apply.
                  (file:line), proposed sub-units. Too big for one plan → propose a split (below).
                         ⛔ STOP — explicit approval
                               │
-  ③  PLAN   (P)  templates/plan.md — re-verify the story's facts against the CURRENT code,
-                 options + recommendation, rulings, files to touch, tests per sub-unit,
-                 verification steps. An open material question blocks approval.
+  ③  PLAN   (P)  templates/plan.md and templates/build-spec.md — re-verify the story's facts against the CURRENT code
+                 (what the story got wrong, with file:line), options + recommendation, rulings, the AC → test coverage, the
+                 executor rules; the build spec holds, per sub-unit, the files, the complete test, the RED and GREEN commands
+                 with their expected output, the complete code and the interfaces. An open material question blocks approval. A template placeholder left in the story, the plan or the build spec blocks it too (`approve` names it).
                         ⛔ STOP — explicit approval
                               │
   ④  BUILD  (T)  Re-validate the plan against current code before the first sub-unit.
                  Per sub-unit: failing test → smallest change → green → fast check. After each sub-unit
                  run the tests that relate to the part you changed, which you pick from the diff and name with the reason, then the fast check; never the whole suite by default (a large project's suite can take hours: the project's own full-suite command in `bindings.md`, or its CI, covers it). A fix that lands outside those tests adds the tests of the area it touches.
+                 In short: only its test files, then the fast check; the full suite at QC, before a commit, or when a fix lands outside the covered tests.
+                 Follow the approved plan and build spec exactly. A step that fails unexpectedly means STOP: record it in the plan's Deviations
+                 table (`burhan deviation add`), ask the owner, and only an approved deviation changes the plan and spec first, then the code.
                  Never build the whole item in one go. Pause between sub-units (`step` mode; Modes below).
                  A plan that no longer matches the code is worse than none — update it.
                               │
@@ -48,6 +52,23 @@ steps apply.
 
 **Tests passing is not the finish line.** A happy-path check is the most common way defects reach
 QA — that is why ⑥ and ⑦ exist.
+
+## The commands own the item files
+Make and change an item's files with burhan's commands (the kit command in `.burhan/bindings.md`), so their shape is always the one the checks read:
+
+| Step | Command |
+|------|---------|
+| start an item | `item new <slug> --type <t> --scope <s>`: the story, plan or findings from the templates with `**Contract:** 1`, and the item's block in Now |
+| where am I, what next, may I edit code | `guide [slug]` |
+| the owner approved a story, plan or QC | `approve story\|plan\|qc <slug> --by <owner's name>` (a plan is approved together with its build spec): only after the owner said yes in this conversation, never with your own name |
+| a sub-unit moves on | `item set <slug> unit <N> in-progress\|implemented\|reviewed`: one rung at a time; Reviewed needs its review section |
+| a gate is met | `gate tick <slug> <gate> [--evidence "…"]` |
+| a review, QC or verification | `review add <slug> --kind review\|qc\|verification --by "<agent · model · context>"` (a review needs `--unit <N>`, a QC needs `--verdict`) |
+| a step deviated from the plan | `deviation add <slug> --unit N --what … --where … --output …`: an open row in the plan's Deviations; the executor STOPS. The owner's decision: `deviation resolve <slug> <n> --approved\|--rejected --by <owner's name>` |
+| the plan is done | `item finish <slug>`: every sub-unit Reviewed, the gates before Completed ticked, a passing proof after the last code edit |
+| anything looks off | `item check <slug>` names every fault |
+
+Writing the prose of a story or plan by hand is normal. Creating a file by hand, or editing a status or a gate line by hand, is the fallback: with `WF_ITEM_CONTRACT=on` the turn-end audit flags a file you wrote directly that breaks the contract or was created by hand without `**Contract:** 1`, and code edited while `guide` says "NOT authorized". The commands refuse a wrong step and say why; they never replace the owner's decisions.
 
 ## Read-only work
 
@@ -103,7 +124,7 @@ write no code.
 
 ## Decision card — the first lines of a story and a plan
 
-The first ≤ 10 lines of `<slug>-story.md` and `<slug>-implementation-plan.md` are a **decision card**:
+The first lines of `<slug>-story.md` and `<slug>-implementation-plan.md`, down to the first blank line, are a **decision card**:
 what changes, the files it touches, the risks, the route, and the **decisions needed from the human**.
 Present the card at the ⛔ STOP; **approval is given on the card** — the rest of the file is the
 evidence behind it, read only when the human wants to.

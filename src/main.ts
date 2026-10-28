@@ -10,6 +10,15 @@ import { evidence } from './lib/evidence.js';
 import { stats } from './lib/stats.js';
 import { status } from './lib/status.js';
 import { useItem } from './lib/use.js';
+import { itemCheck } from './lib/item-check.js';
+import { itemNew } from './lib/item-new.js';
+import { itemSet } from './lib/item-set.js';
+import { gateTick } from './lib/gate-tick.js';
+import { reviewAdd } from './lib/review-add.js';
+import { approve } from './lib/approve.js';
+import { deviationAdd, deviationResolve } from './lib/deviation.js';
+import { itemFinish } from './lib/item-finish.js';
+import { guide } from './lib/guide.js';
 import { memoryAffected, memoryCheck, memoryStatus } from './lib/memory.js';
 import { inspectCommand } from './lib/inspect.js';
 import { homedir } from 'node:os';
@@ -72,6 +81,27 @@ export const USAGE = `usage: burhan <command> [options]
                        the facts whose evidence files changed since <ref> (needs Git)
   doctor [dir]         read-only health check: runtime, install, config, hook wiring, state (exit 1 on a fail)
   use <slug>           validate an in-Now item; the turn-end hook links this session
+  item new <slug> --type <t> --scope <s> [--docs <path>]
+                       create an item's files from the templates (by route), with **Contract:** 1, and its block in Now
+  item set <slug> plan <status> [--reopen <why>] | unit <N> <status> | findings concluded
+                       move a plan or sub-unit status one step along its ladder (Reviewed needs a review section; Approved is set by approve;
+                       --reopen reopens a Completed plan whose QC passed and records why)
+  gate tick <slug> <gate> [--evidence <text>]
+                       tick a gate of the plan's checklist when its evidence exists (or is given)
+  guide [slug] [--json]
+                       the item's stage, whether code edits are authorized now, and the next step
+  item finish <slug> [--evidence <text>]
+                       complete the plan: every sub-unit Reviewed, every gate the route needs ticked, a passing proof after the last code edit
+  review add <slug> --kind review|qc|verification --by <who> [--unit N] [--verdict V] [--round N] [--text T]
+                       write a review section or report with Performed by in the exact form
+  approve story|plan|qc <slug> --by <name>
+                       write an approval in the exact form and tick its gate (the approval is a person's)
+  deviation add <slug> --unit N --what <t> --where <w> --output <o>
+                       record a step that did not go as the build spec said: the executor stops until the owner decides
+  deviation resolve <slug> <n> --approved|--rejected --by <name> [--decision <t>]
+                       write the owner's decision on an open deviation (the decision is a person's)
+  item check <slug> [--docs <path>]
+                       check an item's files against the written contract; names every fault (exit 1 only for a file with **Contract:** 1)
   --version | --help
 
 Without --apply, init, upgrade and uninstall are a dry run: they print what they would do and change nothing.
@@ -161,6 +191,47 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         if (sub === 'status') return memoryStatus(dir, io);
         if (sub === 'affected') return memoryAffected(dir, values.since as string | undefined, io);
         return memoryCheck(dir, io);
+      }
+      case 'item': {
+        const [sub, ...args] = rest;
+        if (sub !== 'check' && sub !== 'new' && sub !== 'set' && sub !== 'finish') throw new BurhanError(`item needs a subcommand: check, new, set or finish${sub === undefined ? '' : `, not "${sub}"`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, ...(sub === 'new' ? { type: { type: 'string' }, scope: { type: 'string' } } : {}), ...(sub === 'finish' ? { evidence: { type: 'string' } } : {}), ...(sub === 'set' ? { reopen: { type: 'string' } } : {}) } });
+        if (sub === 'set') return itemSet(io.cwd, positionals[0], positionals.slice(1), io, values.docs, (values as { reopen?: string }).reopen);
+        if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
+        if (sub === 'finish') return itemFinish(io.cwd, positionals[0], io, { evidence: (values as { evidence?: string }).evidence, docs: values.docs });
+        if (sub === 'new') return itemNew(io.cwd, { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io);
+        return itemCheck(io.cwd, positionals[0], io, values.docs);
+      }
+      case 'guide': {
+        const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, json: { type: 'boolean' } } });
+        if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
+        return guide(io.cwd, positionals[0], io, { json: values.json === true, docs: values.docs });
+      }
+      case 'review': {
+        const [sub, ...args] = rest;
+        if (sub !== 'add') throw new BurhanError(`review needs a subcommand: add${sub === undefined ? '' : `, not "${sub}"`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, kind: { type: 'string' }, unit: { type: 'string' }, by: { type: 'string' }, verdict: { type: 'string' }, round: { type: 'string' }, text: { type: 'string' } } });
+        if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
+        return reviewAdd(io.cwd, positionals[0], values, io);
+      }
+      case 'approve': {
+        const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, by: { type: 'string' } } });
+        if (positionals.length > 2) throw new BurhanError(`unexpected argument: ${positionals[2]}`);
+        return approve(io.cwd, positionals[0], positionals[1], values, io);
+      }
+      case 'deviation': {
+        const [sub, ...args] = rest;
+        if (sub !== 'add' && sub !== 'resolve') throw new BurhanError(`deviation needs a subcommand: add or resolve${sub === undefined ? '' : `, not "${sub}"`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, unit: { type: 'string' }, what: { type: 'string' }, where: { type: 'string' }, output: { type: 'string' }, approved: { type: 'boolean' }, rejected: { type: 'boolean' }, by: { type: 'string' }, decision: { type: 'string' } } });
+        if (positionals.length > (sub === 'add' ? 1 : 2)) throw new BurhanError(`unexpected argument: ${positionals[sub === 'add' ? 1 : 2]}`);
+        return sub === 'add' ? deviationAdd(io.cwd, positionals[0], values, io) : deviationResolve(io.cwd, positionals[0], positionals[1], values, io);
+      }
+      case 'gate': {
+        const [sub, ...args] = rest;
+        if (sub !== 'tick') throw new BurhanError(`gate needs a subcommand: tick${sub === undefined ? '' : `, not "${sub}"`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, evidence: { type: 'string' } } });
+        if (positionals.length > 2) throw new BurhanError(`unexpected argument: ${positionals[2]}`);
+        return gateTick(io.cwd, positionals[0], positionals[1], io, { evidence: values.evidence, docs: values.docs });
       }
       case 'use': {
         if (rest.length !== 1) throw new BurhanError('use needs exactly one item slug');

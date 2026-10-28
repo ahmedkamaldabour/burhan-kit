@@ -79,7 +79,7 @@ Record what you exercised and the exact observed result.
 
 ## 4) Regression scan
 
-Tell pre-existing failures apart from new ones by comparing against a clean baseline (stash the change).
+Tell pre-existing failures apart from new ones by comparing against a clean copy of the commit the work started from (`git worktree add <a temporary folder> <that commit>`; install what the check needs there; `git worktree remove` it afterwards; never stash or reset your working tree).
 
 ## 5) Report and proposed verdict
 

@@ -8,7 +8,7 @@ import { runCli } from '../src/main.js';
 import { capture, tmpDir } from './helpers.js';
 
 const f = (o: Partial<ItemFacts> & { slug: string }): ItemFacts =>
-  ({ route: 'unknown', qc: null, qcAccepted: false, qcBy: null, reopenedAfterPass: false, escapes: [], phases: [], reviewBy: null, words: { story: null, plan: null, qc: null, verification: null, review: null }, ...o });
+  ({ route: 'unknown', qc: null, qcAccepted: false, qcBy: null, reopenedAfterPass: false, escapes: [], phases: [], reviewBy: null, ...o });
 
 test('computeStats aggregates routes, QC, independence, escapes and phase timing', () => {
   const s = computeStats([
@@ -22,8 +22,7 @@ test('computeStats aggregates routes, QC, independence, escapes and phase timing
   assert.deepEqual(s.qc, { reports: 3, pass: 1, fail: 1, unrecorded: 1, accepted: 1, self: 1, independent: 1, unknown: 1 });
   assert.deepEqual(s.escaped, ['a', 'b']);
   assert.deepEqual(s.phases, { plan: { n: 2, avgMinutes: 45, avgTokens: 1000 } });
-  const w = computeStats([f({ slug: 'a', words: { story: 100, plan: 300, qc: null, verification: null, review: 80 } }), f({ slug: 'b', words: { story: 200, plan: null, qc: null, verification: null, review: null } })]).words;
-  assert.deepEqual(w, { story: { n: 2, avg: 150 }, plan: { n: 1, avg: 300 }, qc: { n: 0, avg: null }, verification: { n: 0, avg: null }, review: { n: 1, avg: 80 } });
+  assert.equal('words' in computeStats([f({ slug: 'a' })]), false, 'no file size is reported');
   assert.deepEqual(computeStats([f({ slug: 'a', reviewBy: 'independent' }), f({ slug: 'b', reviewBy: 'self' }), f({ slug: 'c' })]).reviews,
     { items: 2, self: 1, independent: 1, unknown: 0 }, 'reviews performed by');
 });

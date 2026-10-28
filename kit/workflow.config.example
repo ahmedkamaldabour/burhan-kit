@@ -52,6 +52,12 @@ WF_SENSITIVE_REGEX=""
 WF_SENSITIVE_NOTE=""
 #   e.g. WF_SENSITIVE_NOTE='Access-control path: re-read authorization and record-level visibility; test allowed AND denied.'
 
+# ---- Item contract (phases/files.md) ----------------------------------------------------------
+# "on": the turn-end audit checks the item files the agent writes against the written contract (burhan item check), and warns when code is edited
+# while the item's stage does not authorize it (burhan guide). "off" (the default when the key is absent, so an existing project is unchanged):
+# neither check runs. A new project from burhan init starts with "on".
+WF_ITEM_CONTRACT="on"
+
 # ---- Process skills (phases/skills.md) -------------------------------------------------------
 # "superpowers" enables skill routing and the skill-usage audit; "none" turns both off.
 WF_SKILLS="none"

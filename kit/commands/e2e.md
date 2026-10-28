@@ -59,11 +59,12 @@ reviewed).
     `<slug>-implementation-plan.md` from their templates (the plan as in the plan step below), present
     them together and stop once. The approval covers both: the story's **Status** and the plan's
     **Overall status** become `Approved`.
-  - Which files an item has, and their length caps: `.burhan/phases/files.md`.
+  - Which files an item has: `.burhan/phases/files.md`.
   - Route starts at **P** (refactor, release) → skip the story; go to the plan step below. Too big for one plan → propose a split into a parent and children
     (.burhan/phases/lifecycle.md · Decomposition). **Present it and STOP for approval.**
 - **Story approved (or no story on this route), no plan** → investigate the real code (cite file:line), re-verify the story's
-  facts, then write `<slug>-implementation-plan.md` from `templates/plan.md`. An open *material*
+  facts, then write `<slug>-implementation-plan.md` from `templates/plan.md` and `<slug>-build-spec.md` from
+  `templates/build-spec.md` (read the real files and base every code block on them; list what you could not verify). An open *material*
   question blocks approval. **Present it and STOP for approval.**
 - **Plan approved** → re-validate it against the current code (facts drift): the kit command's `changed --item
   $ARGUMENTS` (e.g. `npx burhan-kit changed --item $ARGUMENTS`) lists what changed since the story's **Verified at commit**; re-check only those (no
@@ -82,8 +83,10 @@ For the next unimplemented sub-unit only:
 - **Test first:** write the failing test, run it, see it fail for the right reason → smallest change
   → green → the fast check.
 - **Which tests to run:** after each sub-unit run the tests that relate to the part you changed, which you pick from the diff and name with the reason, then the fast check; never the whole suite by default (a large project's suite can take hours: the project's own full-suite command in `bindings.md`, or its CI, covers it). A fix that lands outside those tests adds the tests of the area it touches.
-- A failure you didn't expect: before calling it a regression, stash the change and re-run the same
-  check on a clean baseline.
+- **Follow the plan exactly:** the files, the code, the order and the commands of the approved plan and build spec, nothing more. A step that fails unexpectedly (a RED that does not fail as the spec says, a GREEN that fails, a file that differs from what the spec expects) means STOP: record a row in the plan's Deviations table (`burhan deviation add`), ask the owner, and an approved deviation updates the plan and the spec first, then the code. While a deviation is open, `burhan guide` says code edits are not authorized.
+- **In short:** only its test files, then the fast check; the full suite at QC, before a commit, or when a fix lands outside the covered tests.
+- A failure you didn't expect: before calling it a regression, re-run the same check on a clean copy of the commit your work started from
+  (`git worktree add <a temporary folder> <that commit>`; install what the check needs there; `git worktree remove` it afterwards); never stash, reset or check out over your working tree.
 - Update the sub-unit status (🔵 → 🟢) in the plan and the state file — every transition, as it
   happens.
 

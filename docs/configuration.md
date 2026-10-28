@@ -93,6 +93,7 @@ holds personal overrides, read after the team file, key by key.
 | `WF_EVIDENCE_REGEX` | which commands count as verification evidence; it is matched against each command the line runs, not against words that only appear in it (quoted text is masked, so `echo "npm test"` does not count), and a run with no recorded result is not a pass |
 | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` | access-control paths and the reminder after editing one |
 | `WF_STACK_SETUP` | `pending` = the agent sets up the project checks on first use (`setup --stack`); empty or `done` = nothing to do |
+| `WF_ITEM_CONTRACT` | `on` to check the item files the agent writes against the written contract and to warn when code is edited before the plan is approved; `off` (also when the key is absent) leaves existing projects unchanged |
 | `WF_SKILLS` | `superpowers` to bind the process-skill mapping, or `none` (see below) |
 | `WF_MODE_DEFAULT`, `WF_MODE_<TYPE>_<SCOPE>` | the mode when an item does not set one: `step` (default) or `auto`; any other value = `step`. E.g. `WF_MODE_BUG_BOUNDED=auto` |
 | `WF_MODEL_CLAUDE_REVIEWER` | model for the generated `burhan-reviewer` subagent (team-only); empty = the session's model |
@@ -165,6 +166,23 @@ the agent file, not a sandbox; the hooks still audit what they do. Codex has no 
 field: use Codex profiles in your own `~/.codex/config.toml` (`codex -p <profile>`); burhan never
 writes it. With `WF_REVIEWER_AGENT=codex`, Claude Code runs the QC through `codex exec` (and the
 reverse with `claude -p`), so the reviewer is a different agent altogether.
+
+## Choosing a model for each role (optional)
+
+You do not have to. Leave them empty and nothing changes: every phase runs on the model your terminal session already uses, with the settings you chose there. The only subagent that is always generated is `burhan-reviewer` (the independent QC needs one), and without a model it inherits the session's.
+
+If you want a different model for a role, for the whole project, set these keys in `.burhan/workflow.config` (team-only: the file is committed):
+
+| Key | Role | Example |
+|---|---|---|
+| `WF_MODEL_CLAUDE_PLANNER` | writes the story and the plan | a stronger model: the plan and the build spec are what the builder follows |
+| `WF_MODEL_CLAUDE_BUILDER` | builds one sub-unit at a time | a cheaper model |
+| `WF_MODEL_CLAUDE_EXPLORER` | reads the code, changes nothing | the cheapest |
+| `WF_MODEL_CLAUDE_REVIEWER` | the independent review and QC | a different model from the builder's |
+
+The easy way is to ask your agent to set them for the project: tell it which model you want for which role, it shows you the change to `.burhan/workflow.config` and writes it after you approve, then runs `burhan upgrade` (a dry run, then `--apply`), which generates the subagent files in `.claude/agents/` with a `model:` line. Emptying a key and upgrading again removes that role's file. Only the model is chosen this way: burhan has no effort setting, so for effort or anything beyond the model, tell your agent directly in the session; it stays outside burhan's workflow.
+
+This is for Claude Code. Codex has no per-subagent model: use its own profiles in `~/.codex/config.toml`, which burhan never writes.
 
 ## Codex: trust the hooks
 

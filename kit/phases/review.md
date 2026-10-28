@@ -66,8 +66,8 @@ acceptance criteria? Passing one never answers the others.
 - Failure paths and edge cases: empty, missing, duplicate, oversized, boundary values, very long
   input, concurrent use.
 - What else consumes this code? Callers, jobs, exports, caches, other surfaces.
-- **Pre-existing vs introduced:** before calling a failure a regression, stash the change and re-run
-  the same check on a clean baseline.
+- **Pre-existing vs introduced:** before calling a failure a regression, re-run the same check on a clean copy of the
+  commit the work started from (`git worktree add <a temporary folder> <that commit>`; install what the check needs there; `git worktree remove` it afterwards); never stash or reset your working tree.
 
 **Fidelity to the spec (convergence)**
 - Every acceptance criterion mapped to real code (file:line) — `satisfied` / `partial` / `missing`

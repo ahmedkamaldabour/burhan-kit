@@ -30,4 +30,4 @@ Every `uses:` in `ci.yml` and `release.yml` is a commit SHA with its tag in a co
 
 ## Not verified here
 
-The workflow has not run end to end: a run needs a tag push. The first real release is the proof.
+The workflow ran end to end for v0.6.0 (run 40498521668: the guard, lint and tests on Node 22 and 24, the pack check, and the publish with provenance; npm lists 0.6.0). It has not been run for any other tag yet, and the Windows and macOS jobs of `ci.yml` run on a push and on a pull request.

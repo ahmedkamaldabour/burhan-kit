@@ -18,6 +18,12 @@ npx burhan-kit doctor
 - Your own hooks and settings stay: burhan's hooks run beside them.
 - In Codex, trust the hooks again after an upgrade that changes one (Codex shows it as "Modified since last trusted"; see [Codex: trust the hooks](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks)).
 
+## Upgrading from 0.6.0
+
+`npx burhan-kit upgrade --apply` refreshes the kit files (the phase files, the commands, the templates and the hook scripts); your `workflow.config` and `bindings.md` are kept and no hook entry is added. The new task-file commands (`item new`, `item set`, `item check`, `item finish`, `gate tick`, `review add`, `approve`, `deviation`, `guide`) are available at once. **To switch on the checks that read the task files and the stage, add `WF_ITEM_CONTRACT="on"` to `.burhan/workflow.config`**: without it the contract, stage and deviation checks stay off (a project made by `burhan init` starts with it on). Two things run either way: the approval report, and the prompt hook now records whether your message had approval wording (a small file in the evidence store). A task started before 0.7.0 is checked as advice until its files carry `**Contract:** 1`. The agent reaches the commands through the kit command in `.burhan/bindings.md`; make sure it runs from the agent's shell.
+
+Two things changed that a script could notice: a plan now has a second file, the build spec (`<slug>-build-spec.md`), and `burhan stats --json` no longer has the `words` key (there is no limit on how long a story, plan or review file may be, so there is no file size to report). `approve plan` refuses a plan that has no build spec (or a spec or plan with template placeholders left), whatever `WF_ITEM_CONTRACT` says for a plan made with the contract.
+
 ## Upgrading from 0.5.0
 
 `npx burhan-kit upgrade --apply` refreshes the kit files; your `workflow.config` and `bindings.md` are kept. One thing can change for you: if a project links part of `.claude/`, `.burhan/`, `CLAUDE.md` or `AGENTS.md` to a place outside the project, `init`, `upgrade` and `setup` now stop before writing and list each file; pass `--allow-outside-links` (the 0.5.0 name `--allow-outside-settings` still works) or remove the link. Without such a link nothing changes. See [Files that are symbolic links](#files-that-are-symbolic-links).

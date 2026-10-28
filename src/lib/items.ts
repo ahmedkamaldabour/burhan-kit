@@ -1,3 +1,4 @@
+import { acceptedForm } from '../hooks/core/item-model.mjs';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -31,7 +32,7 @@ export function fieldLine(text: string, label: string): string | null {
 }
 
 /** null when the value is missing or still a template placeholder (`<…>`). */
-export const filled = (v: string | null): string | null => (v === null || v === '' || /<[^>]*>/.test(v) ? null : v);
+export const filled = (v: string | null): string | null => (v === null || v === '' || /<[^>\n]{0,400}>/.test(v) ? null : v);
 /** A status field still listing its alternatives (`Draft | Approved`, `Draft → … → Completed`) is unfilled. */
 export const choice = (v: string | null): string | null => {
   const f = filled(v);
@@ -97,10 +98,7 @@ export const dated = (v: string | null): boolean => {
 };
 
 /** "Accepted by: <name> · YYYY-MM-DD" (exactly; the name has a letter). Anything else = not accepted. */
-export const accepted = (v: string | null): boolean => {
-  const m = /^([^<·]*\p{L}[^<·]*?) · (\d{4}-\d{2}-\d{2})$/u.exec(v?.trim() ?? '');
-  return m !== null && isDate(m[2]);
-};
+export const accepted = (v: string | null): boolean => acceptedForm(v ?? '');
 
 /** "Route: <type> / <scope>" — exactly one listed type and scope, else null. */
 export const ROUTE = /^(feature|bug|investigation|change|refactor|release) \/ (spike|bounded|architectural|patch)$/;

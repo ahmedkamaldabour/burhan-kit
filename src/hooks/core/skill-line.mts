@@ -18,7 +18,7 @@ function status(file: string, label: string): string | null {
   try { text = readFileSync(file, 'utf8'); } catch { return null; }
   const m = new RegExp(`\\*\\*${label}:\\*\\*[ \\t]*([^\\n]*)`).exec(text);
   const v = m ? m[1].replace(/\*/g, '').trim() : '';
-  if (v === '' || /<[^>]*>| \| | → /.test(v)) return null;
+  if (v === '' || /<[^>\n]{0,400}>| \| | → /.test(v)) return null;
   return STATUS_WORDS.find((w) => new RegExp(`^${w}(?=$|[ \\t(,;—])`).test(v)) ?? null;
 }
 

@@ -14,7 +14,6 @@ export interface ItemFacts {
   escapes: string[];
   phases: PhaseSpan[];
   reviewBy: Independence | null;             // null = no review file
-  words: { story: number | null; plan: number | null; qc: number | null; verification: number | null; review: number | null };
 }
 
 export function route(typeScope: string): string {
@@ -29,9 +28,9 @@ export function qcVerdict(text: string): 'PASS' | 'FAIL' | 'unrecorded' {
     const v = choice(raw)?.toUpperCase();
     return v?.startsWith('PASS') ? 'PASS' : v?.startsWith('FAIL') ? 'FAIL' : 'unrecorded';
   }
-  const m = /\bverdict\b[^\n]*\n(?:\s*\n)*\s*\**\s*(PASS|FAIL)\b/i.exec(text)
+  const m = /\bverdict\b[^\n]*\n[\s*]*(PASS|FAIL)\b/i.exec(text)
     ?? /\b(?:verdict|result)\b[^\n]{0,60}?\b(PASS|FAIL)\b/i.exec(text)
-    ?? /^[\s>*-]*\**\s*(PASS|FAIL)\b/m.exec(text);
+    ?? /^[ \t>*-]*(PASS|FAIL)\b/m.exec(text);
   return m ? (m[1].toUpperCase() as 'PASS' | 'FAIL') : 'unrecorded';
 }
 
@@ -96,14 +95,6 @@ export function phaseLog(plan: string): PhaseSpan[] {
   return out;
 }
 
-/** Words in a file (null when the file is absent) — the measure for the length caps (phases/files.md). */
-const wc = (t: string): number | null => {
-  if (t === '') return null;
-  // The caps exclude code blocks and tables (phases/files.md): drop both before counting.
-  const prose = t.replace(/^```[\s\S]*?^```/gm, ' ').split('\n').filter((l) => !/^\s*\|/.test(l)).join('\n');
-  return prose.split(/\s+/).filter(Boolean).length;
-};
-
 /** The item's review files: the single `<slug>-review.md`, else the old per-sub-unit files
  *  (`<slug>-<anything>.md` except the QC and verification reports). */
 export function reviewFiles(dir: string, slug: string): string[] {
@@ -142,7 +133,5 @@ export function readFacts(dir: string, slug: string): ItemFacts {
     escapes: slugs(given(fieldLine(story, 'Escapes')), dir),
     phases: phaseLog(plan),
     reviewBy: reviewIndependence(reviews),
-    words: { story: wc(story), plan: wc(plan), qc: wc(qc), verification: wc(read(join(dir, 'reviews', `${slug}-verification.md`))),
-             review: reviews.length ? reviews.reduce((a, t) => a + (wc(t) ?? 0), 0) : null },
   };
 }

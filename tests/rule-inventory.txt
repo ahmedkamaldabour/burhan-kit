@@ -61,7 +61,7 @@ R59|phases/close-out.md|never hand-edit it
 R60|phases/close-out.md|with the human's own words
 R61|phases/close-out.md|Handoff.
 R62|core|Team use.
-R63|phases/close-out.md|Timing (optional)
+R63|phases/close-out.md|A new plan has no *Phase log*
 R64|phases/review.md|Three different questions
 R65|phases/review.md|Record-level visibility
 R66|phases/review.md|both** allowed and denied cases
@@ -195,3 +195,13 @@ R192|commands/e2e.md|the tests that relate to the part you changed
 R193|phases/lifecycle.md|the tests that relate to the part you changed
 R194|templates/plan.md|the tests that relate to the part you changed
 R195|phases/enforcement.md|just before this session's own first write of the turn
+R196|phases/lifecycle.md|The commands own the item files
+R197|phases/lifecycle.md|the owner said yes in this conversation, never with your own name
+R198|phases/lifecycle.md|Creating a file by hand, or editing a status or a gate line by hand, is the fallback
+R199|phases/review.md|never stash or reset your working tree
+R200|phases/files.md|no limit on the size of any file
+R201|phases/lifecycle.md|only its test files, then the fast check
+R202|phases/lifecycle.md|A step that fails unexpectedly means STOP
+R203|commands/e2e.md|Follow the plan exactly
+R204|templates/plan.md|No open deviation
+R205|phases/lifecycle.md|A template placeholder left in the story, the plan or the build spec blocks it too

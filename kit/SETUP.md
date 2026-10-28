@@ -22,6 +22,8 @@ All together, once: the branch rule, the sensitive paths. For the setup work-fil
 plan and reviews; fresh projects recommend shared `docs/burhan/work/`, while existing saved choices stay unchanged.
 When project evidence (`CLAUDE.md`, `AGENTS.md`, or project commands) names a stories/specs folder, offer it as a folder the person chooses; never guess or select it. There are four questions, or five when both agents are used; for the discovery question recommend "beside" (a `discovery` folder already next to the work files, else a new one).
 ## 5. Write the config — after approval
+When you present the proposal, mention once that a model can be chosen for each role (`WF_MODEL_CLAUDE_PLANNER`, `_BUILDER`, `_EXPLORER`, `_REVIEWER`, in `docs/configuration.md`), that leaving them empty changes nothing, and that you can set them if the human names the models they want. Do not propose models on your own.
+
 The agent may edit .burhan/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files. Show the change as a diff; Write it only after the human approves. If `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` or a `WF_MODEL_*` key changed, run `upgrade` (dry run, then `--apply`).
 ## 6. Prove it works
 Run `WF_CHECK_CMD` once; show the command, its full output and its exit code (not 0: fix the value with the human, never the code). Run the kit's `doctor` (e.g. `npx burhan-kit doctor`); every `fail` is fixed or explained. `.burhan/local/` must be git-ignored.

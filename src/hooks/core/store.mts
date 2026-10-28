@@ -309,6 +309,31 @@ export function rememberShellCreated(project: string, session: string, rel: stri
   } catch { /* fail open */ }
 }
 
+// Did the owner's latest message have approval wording? The prompt hook writes it for every real prompt (a system notification is not one); the turn
+// audit reads it when the agent ran an `approve` command. One file per session, `approvalword`; it says "wording seen", never "approval given".
+const approvalFile = (project: string, session: string, env: Env): string => {
+  const dir = sessionDir(project, session, env);
+  return dir ? join(dir, 'approvalword') : '';
+};
+
+/** Record whether the owner's latest message had approval wording; fail open. */
+export function rememberApprovalWord(project: string, session: string, seen: boolean, env: Env = process.env): void {
+  try {
+    const file = approvalFile(project, session, env);
+    if (file === '') return;
+    if (seen) atomicPrivateWrite(file, 'approvalword', '1\n');
+    else unlinkSync(file);
+  } catch { /* fail open: no file to remove, or no store */ }
+}
+
+/** Did the owner's latest message have approval wording (false on any error)? */
+export function approvalWordSeen(project: string, session: string, env: Env = process.env): boolean {
+  try {
+    const file = approvalFile(project, session, env);
+    return file !== '' && existsSync(file);
+  } catch { return false; }
+}
+
 /** Forget the created paths once the audit has judged them. */
 export function clearShellCreated(project: string, session: string, env: Env = process.env): void {
   try {

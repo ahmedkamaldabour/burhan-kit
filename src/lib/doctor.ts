@@ -164,6 +164,7 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     if (why) add('warn', `${key}: the hooks refuse this pattern (${why}), so its check stays silent — rewrite it`);
   }
   // First-use is done but nothing says what counts as code: the "done without proof" warning and the test-first reminder are off.
+  { const v = cfg.values.WF_ITEM_CONTRACT; if (v !== undefined && v !== '' && v !== 'on' && v !== 'off') add('warn', `WF_ITEM_CONTRACT is "${v}": it must be on or off; any other value turns the task-file checks off`); }
   if (cfg.values.WF_STACK_SETUP === 'done' && !(cfg.values.WF_CODE_REGEX ?? '')) add('warn', 'WF_CODE_REGEX is empty — the "done without proof" warning and the test-first reminder are off; say what counts as code: burhan setup --set check=<command> code=<pattern> test=<pattern> evidence=<pattern>');
   const ev = cfg.values.WF_EVIDENCE_DIR;
   if (ev && !isAbsolute(ev)) add('warn', `WF_EVIDENCE_DIR "${ev}" is not an absolute literal path — it is ignored and the default ledger is used`);

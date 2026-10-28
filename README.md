@@ -183,6 +183,7 @@ Start a small change with `/burhan:e2e <slug>` (a short title works too). If you
 - burhan reports and guides — it does not block. Approvals and test-first are rules the agent is told to follow.
 - It only sees the edits and commands the agent reports; a shell edit shows up only through `>`, `>>` and `tee`.
 - The “done” warning needs `WF_CODE_REGEX` and `WF_EVIDENCE_REGEX` (settings in `.burhan/workflow.config`); the agent proposes them on first use, and once first use is done `doctor` warns when the code pattern is empty.
+- Optional: a model can be chosen for each role (planner, builder, explorer, reviewer) for the whole project. Leave it empty and every phase uses your terminal's model; to set it, ask your agent which `WF_MODEL_CLAUDE_*` keys to set (`docs/configuration.md`).
 - Codex runs project hooks only after you trust them in `/hooks`, and says nothing when they are untrusted. On Codex a finished command whose result is missing from the session record counts as not passing; how often that happens is not measured ([the roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md)).
 - Windows: the hooks run on Node and CI covers `windows-latest`. Not verified yet: Windows with PowerShell only, and a real Claude Code or Codex session on Windows.
 
@@ -195,6 +196,7 @@ Start a small change with `/burhan:e2e <slug>` (a short title works too). If you
 | `npx burhan-kit status` · `npx burhan-kit evidence --item <slug>` | the task index · the ledger for a task |
 | `npx burhan-kit memory check` · `npx burhan-kit inspect` | check the project memory (also for CI) · a names-only look at the project |
 | `npx burhan-kit use <slug>` | validate a task; the session is linked when the turn ends |
+| `npx burhan-kit item new\|set\|check\|finish` · `gate tick` · `review add` · `approve` · `deviation` · `guide` | the agent's commands for a task's files: make, move a status, check, finish · tick a gate · record a review · record your approval · record a step that left the plan (it stops until you decide) · what comes next and whether code is allowed |
 | `npx burhan-kit upgrade` · `npx burhan-kit uninstall` | refresh · remove (a dry run until `--apply`) |
 
 [Configuration](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md) · [Features in detail](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md) · [First task, recorded](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md) · [Upgrading and rollback](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/upgrading.md) · [CI and Windows](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/ci-and-windows.md) · [Changelog](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md) · [Roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md) · [Issues](https://github.com/ahmedkamaldabour/burhan-kit/issues)

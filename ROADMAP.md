@@ -2,50 +2,6 @@
 
 Plans are not promises. Each item is built test-first and lands only with its tests.
 
-## Planned: model tiers per agent
-
-Each role (planner, builder, reviewer, explorer) runs on a fitting model. The tiers are set once per
-agent during setup, and a story overrides them only when it needs to. Nothing changes in behaviour
-until you choose.
-
-- **Config:**
-  - `WF_TIER_<AGENT>_<STRONG|STANDARD|CHEAP>=<model>`, with an optional
-    `WF_TIER_<AGENT>_<TIER>_EFFORT=<low|medium|high>`.
-  - `WF_ROLE_<PLANNER|BUILDER|REVIEWER|EXPLORER>=<tier>`.
-  - Optional: `WF_ROLE_<ROLE>_<SCOPE>=<tier>`, and `WF_ROLE_REVIEWER_SHORT=<tier>`. An empty value
-    means the reviewer's tier, so a short review is never downgraded automatically.
-  - The existing `WF_MODEL_<AGENT>_<ROLE>` keys keep working as explicit models.
-- **Precedence** (highest first):
-  1. the story
-  2. `WF_ROLE_<ROLE>_<SCOPE>`
-  3. `WF_ROLE_REVIEWER_SHORT` (short reviews only)
-  4. `WF_MODEL_<AGENT>_<ROLE>`
-  5. `WF_ROLE_<ROLE>`
-  6. the session model
-
-  A tier that is not defined goes to the next stronger tier, then to the session model. burhan never
-  falls back to a weaker model without saying so.
-- **Story field:** `- **Models:** <role>=<value>, <role>=<value>`, where each value is
-  `strong|standard|cheap|<agent>:<model>`.
-- **`burhan model <role> --item <slug> [--size short|full] [--agent claude|codex] [--json]`:** a
-  deterministic answer naming the model, the effort, the tier and where the decision came from.
-- **Agents:**
-  - Claude Code: the default comes from the agent's frontmatter. The Agent tool's `model` parameter
-    overrides it.
-  - Codex: `codex exec -m <model> [-c model_reasoning_effort=<x>]`, run in the foreground.
-  - burhan never writes `~/.codex/config.toml`.
-- **`kit/models.json`:**
-  - A catalog of aliases, the latest model IDs and retired → replacement, updated with each release.
-    It uses no network and no keys.
-  - Setup in a terminal shows a selection list. Without a terminal, use `burhan models --json` and
-    `burhan config set KEY=value [--local]`.
-- **doctor:** a warning for a pinned model when a newer one exists, an error (with the replacement)
-  for a retired model, and a suggestion to upgrade when the catalog is old. It never changes a pin.
-- **Records:**
-  - `Performed by` keeps its form, with the actual model.
-  - A new `Tier` field: `strong|standard|cheap|explicit`.
-  - `stats` reports findings and escaped defects per tier and per model.
-
 ## Done
 
 - **Hooks without bash (0.3.0).** The hooks run on Node only, with no bash or `jq`, and CI runs them on Windows
@@ -64,6 +20,12 @@ until you choose.
   outside the project through a link unless `--allow-outside-links` is passed; the "done needs proof" check counts
   only a command the line runs; the commit and shell-write checks read commands; a tag-triggered release workflow
   with SHA-pinned actions.
+
+- **Commands that own a task's files, an executable plan, strict execution (0.7.0).** `item new|set|check|finish`, `gate tick`,
+  `review add`, `approve`, `deviation` and `guide` on one written contract that the hooks share; a plan is a decision file plus a
+  build spec the builder follows exactly, a failing step stops the work until the owner decides, and there is no limit
+  on how long a story, plan or review file may be; with `WF_ITEM_CONTRACT=on` the turn-end audit flags a hand-made or misshapen task
+  file, code edited before the plan is approved or outside the spec, and the approval an agent runs is reported.
 
 ## Candidates
 

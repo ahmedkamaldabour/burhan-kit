@@ -1,5 +1,155 @@
 # Changelog
 
+## 0.7.0 — 2026-10-27
+
+An agent no longer writes a task's files from memory, and a plan becomes something a weaker model can follow. New
+commands make the task files from the templates, move their statuses one step at a time, record reviews, approvals
+and deviations in the exact form the checks read, and say what comes next. A plan is now two files: the decisions, and
+a build spec with the complete test and code of every sub-unit; the agent that builds follows them exactly and stops
+when a step fails unexpectedly. The size limits on story, plan and review files are gone. The checks that read the task
+files stay off in a project until you switch them on.
+
+### Upgrading from 0.6.0
+- Run `npx burhan-kit upgrade --apply` in every project. It refreshes the kit files (the phase files, the commands,
+  the templates and the hook scripts) and adds no hook entry. Your `workflow.config` and `bindings.md` are kept.
+- **To switch the new checks on in an existing project, add one line to `.burhan/workflow.config`:
+  `WF_ITEM_CONTRACT="on"`.** Without it the contract check, the stage check and the deviation check stay off; the approval
+  report runs either way, and the prompt hook now records whether your message had approval wording (a small file in
+  the evidence store); a project made by `burhan init` starts with it on. `burhan doctor` names a value that is not
+  `on` or `off`.
+- A task started before 0.7.0 keeps working: its files are checked as advice only, and are judged by the audit only
+  once they carry the line `**Contract:** 1` that `item new` writes. An old plan has no build spec and no Deviations
+  table; `item check` names them as advice.
+- **The word and line limits are gone.** A story, plan, review, QC, verification, findings or discovery file may be any
+  length, and the commands accept any length of text. `burhan stats` no longer prints a "File size" line and
+  `burhan stats --json` no longer has the `words` key: a script that reads it must stop. What stays: no control
+  character in a command argument, the state file's line budget, the router's two lines, and a folder name of at most
+  100 characters.
+- The kit text no longer tells the agent to `git stash`: to tell an old failure from a new one it re-runs the check on
+  a clean copy of the commit the work started from (`git worktree`).
+- Codex was not run: whether it asks you to trust the changed hook scripts again is not measured.
+
+### Added
+- **Commands for a task's files.** `burhan item new <slug> --type <t> --scope <s>` makes the story, plan (and build
+  spec) or findings from the templates, with `**Contract:** 1`, and the task's block in the state file; `item set` moves
+  a plan or a sub-unit status one step along its ladder (Reviewed needs a review section; a Completed plan reopens only after a
+  failed QC, or with `--reopen "<why>"` when its QC passed); `gate tick` ticks a gate of the plan's checklist when its evidence exists, or with `--evidence`;
+  `review add` writes a review, QC or verification with Performed by in the exact form; `approve story|plan|qc` writes
+  your approval and ticks its gate (a plan is approved together with its build spec); `item finish` completes a plan;
+  `item check` names every fault in a task's files; `guide` says the stage, the next step and whether code edits are
+  authorized now.
+- **The plan as an executable spec.** Two files per plan. `<slug>-implementation-plan.md` holds the decision card, the
+  table that maps every acceptance criterion to its sub-unit and test, what the story got wrong (with file:line), the
+  rulings, the gate checklist, the Executor rules and the Deviations table. `<slug>-build-spec.md` holds, per sub-unit,
+  the files, the complete test, the RED command and its expected output, the complete code (or a before and after
+  edit), the GREEN command and its output, the lint command and the interfaces it produces and consumes, and a
+  "Not verified" section where the planner lists what it could not read or run. `item check` names a missing coverage
+  table, a missing build spec or section, an AC with no test, and a sub-unit with no spec.
+- **Strict execution.** The agent that builds follows the plan and the spec exactly. A step that fails unexpectedly
+  (a RED that does not fail as the spec says, a GREEN that fails, a file that differs) means stop: `burhan deviation
+  add` records an open row in the plan's Deviations table, `burhan guide` then says code edits are not authorized, and
+  only the owner's `burhan deviation resolve <slug> <n> --approved|--rejected --by <name>` lets the work go on (an
+  approved deviation updates the plan and the spec first, then the code). The gate "No open deviation" and `item finish`
+  refuse while a row is open. After a sub-unit only its own test files run, then the fast check; the full suite runs at
+  QC, before a commit, or when a fix lands outside the covered tests.
+- **A written contract** for story, plan, build spec, review, QC, verification and findings files, read by one module
+  that the commands and the hooks share (`item-contract.mts`, `item-model.mts`, `item-stage.mts`).
+- **Four turn-end checks.** The contract check flags a task file the agent wrote directly that breaks the contract, or
+  created by hand without the marker; the stage check flags code edited while `guide` says "not authorized"; the
+  deviation check flags a code file the build spec does not list, an edit of the spec, or an edit of the plan's
+  executable parts (the coverage table, the executor rules, the Covers lines) after approval, when no deviation is
+  approved; the approval report names every `approve` and `deviation resolve` command the agent ran and flags it when
+  your latest message had no approval wording. The first three need `WF_ITEM_CONTRACT=on`.
+- **Placeholders.** `approve story` and `approve plan` refuse a story, plan or build spec that still has a line of its
+  template word for word (a `<…>` placeholder, an empty table row) and name it; `item check` names the same once the
+  file is Approved or later (`placeholder-left`). The check is exact: a line `item new` filled in, or an angle bracket in
+  your own text, is not a placeholder; an empty table row is named too. The review, QC and verification templates now carry `**Contract:** 1`.
+- **`WF_ITEM_CONTRACT`** (`on` or `off`; absent means off).
+- **Documentation of the model choice.** `docs/configuration.md` has a section on choosing a model for each role
+  (planner, builder, explorer, reviewer) with the existing `WF_MODEL_CLAUDE_*` keys: it is optional, leaving them empty
+  changes nothing, and you can ask your agent to set them for the project. burhan has no effort setting. This is
+  documentation of what 0.6.0 already did, not a new setting.
+
+- **Review groups and small commands.** `review add --kind review --unit 1-2` writes the group heading
+  (`## Sub-units 1–2 — …`) that `item set unit N reviewed` now reads; `item set <slug> findings concluded` concludes a
+  findings file; `item set <slug> plan in-progress --reopen "<why>"` reopens a Completed plan whose QC passed and records
+  `Reopened after PASS`; `approve qc` ticks the QC gate; `review add` refuses a sub-unit the plan does not have and a QC
+  round that skips one.
+- A plan file that lost its `**Contract:** 1` line while the item's other files still have it is named by the turn-end
+  audit (otherwise every check would treat it as an old file). The approval report also reads Windows launchers
+  (`node dist\cli.js`, `burhan.cmd`) and a quoted slug.
+### Changed
+- `item set <slug> plan completed` is refused: a plan is completed by `item finish`, which checks the sub-units, the gates,
+  the open deviations and the proof. A QC report that has its verdict on the Date line (the template's form) is read by
+  `approve qc`, `gate tick`, `item set` and `guide` like one with the verdict on its own line, and an `Accepted by`
+  line counts only in the form `<name> · YYYY-MM-DD`.
+- `item finish` completes a plan once every sub-unit is Reviewed, every gate before Completed is ticked, no deviation
+  is open and the evidence ledger shows a passing proof after the last code edit. QC, the knowledge review and Close-out
+  follow Completed, as the lifecycle says. The ledger is written at the end of a turn, so a proof run in the same turn
+  is not in it yet: `--evidence "..."` states what shows it, and the plan then says the evidence was stated, not proven.
+- The plan template is rewritten (no status or result text is written by the planner; the commands own those lines) and
+  there is a new build-spec template. `phases/files.md` says there is no limit on the size of any file and names the
+  sections a plan may not delete.
+- The README commands table has a row for the new commands (English and Arabic).
+
+### Measured
+- On the candidate: `npm test` on Linux (Node, this machine): 1325 Node tests, 1321 passed, 0 failed, 4 skipped; 16 bash test files, 0 failed (docs 175, readme 516, rules 235, templates 322, turn-audit 242); `npm run lint` 0 errors. The packed tarball (`scripts/pack-smoke.mjs`: packed once, installed in an empty folder, `--version` prints 0.7.0; by hand, the installed package also ran the new `deviation` command, which the script itself does not check) passed; the Windows and macOS CI runs are not part of this line.
+- Six trials with Haiku on one small task (add `subtract` with a test), three on the 0.6.0 kit and three on this one,
+  counted two ways (the checker and the files are in the work item, not in the package). With the new contract
+  checker, which the new commands satisfy by construction: 0 faults in the three new runs and 1 in each of the three old
+  runs; but two of those three faults are a status word the 0.6.0 template itself gives (`Draft | Approved`), so by the
+  old kit's own wording they are not faults. With a ruler read from the 0.6.0 template: with 0.6.0 two plans stayed
+  `Approved` while their sub-unit was `Reviewed` and the third left its sub-unit unreviewed; with the new kit all three
+  plans were `In progress` with the sub-unit `Reviewed`, and the three runs used 8, 13 and 14 command runs. Against
+  that, the new kit's plans kept more unfilled placeholder lines. Not a rescue: the 0.6.0 kit did not reproduce the
+  large failure of the real Haiku session this work started from.
+- Trials for the executable plan (Haiku and Sonnet were given a plan and a build spec written beforehand for two
+  sub-units, `subtract` and `multiply`, and told to execute them; one small task; the scripts and the raw rows are in the
+  work item, not in the package). Execution as written: Haiku ran it three times; in the first the spec's code was
+  produced exactly, the test was edited before the code in both sub-units, no file outside the spec was touched, no
+  deviation was recorded and `item check` ended with no fault; in the other two Haiku built sub-unit 1 (the
+  diff the reviewer described matched the spec) and stopped before sub-unit 2 because the `burhan-reviewer` subagent it called (the same model) failed the review
+  for want of ledger evidence, which is written only when a turn ends. A Sonnet run was started while the package was being
+  rebuilt by another process, so it could not run the commands and is not counted; run again, Sonnet produced the spec's code exactly, ran 41 burhan
+  commands, reviewed both sub-units, completed the plan and stopped at the owner's acceptance of the QC. The stop path: in the spec's base the function the spec says to add already existed, so the RED could not fail.
+  Haiku twice and Sonnet once stopped, recorded one Deviations row with `deviation add`, left `lib.js` unedited, and
+  `guide` ended on "code edits: NOT authorized"; none of them went on to implement. n is 3 for the stop path and 3 to 4
+  for execution, one task, two models, prompts that said the owner had approved, reviews by the same model.
+
+### For maintainers (not in the package)
+- Each sub-unit that has product code (1 to 7, 10, 11, 12) was reviewed by an independent reviewer; most reviews failed first (prototype keys as statuses, a line
+  break in an argument forging a review, `$` patterns in a replacement, an unknown plan status that authorized code,
+  approval detection that missed most launchers, a regex that hung on a long run of zeros, a link read as a story, a
+  Deviations row that could not be read and so did not stop the work, a QC report in the template's own form that the
+  commands misread) and were fixed test-first; fix rounds were
+  re-checked by the same session, not by a fresh reviewer.
+
+### Known limits
+- A file's `**Contract:** 1` line is what makes the checks judge it: if the line is removed from every file of an item at
+  once, the item looks like an old one and stays quiet.
+- The deviation check is a heuristic: once any deviation of an item is approved it stops judging edits of the spec and of
+  the plan's executable parts for the rest of that item; a plan whose `**Executable parts:**` line was deleted is not
+  judged; a table row changed by hand from open to approved is not seen; a launcher the approval report cannot read
+  (a variable holding the command) is missed; so is a command with more than 2000 characters between the launcher and `approve`.
+- A command can be skipped, and the hooks only warn: a model that ignores the warning is not stopped. Whether Haiku
+  obeys a warning, and whether Codex follows the commands, was not measured; Sonnet followed them in one execution run and
+  one stop-path run.
+- The author of an approval cannot be known. `--by` refuses an agent's name from a list (it also refuses a person
+  called "Claude Monet"; look-alike spellings pass), the wording check on your message is a heuristic, and the approval
+  report sees the usual launchers of the command, not a script file or an alias, nor every order of its arguments (`approve
+  --by A plan x` is missed).
+- The trials are one small task, run with Haiku and Sonnet only (no Codex), and in all of them the prompt said the owner had
+  approved, so the agent ran `approve` itself; what it would do without that sentence was not tested. The stop-and-record
+  path was run by a model three times, always for the same kind of deviation (a spec whose RED cannot fail); a GREEN that
+  fails or a file that differs from the spec were not run.
+- With no size limit a very large task file is read whole: a 50 MB plan made the turn-end audit take about 16 seconds in
+  one measurement, longer than the hook's 15-second timeout, so the audit of that turn is lost (the hooks fail open).
+- Whether the agent can run the commands depends on the kit command in `.burhan/bindings.md` being reachable from the
+  agent's shell (`npx burhan-kit` needs the network the first time); a desktop app that starts with a short PATH was not
+  measured. If the command cannot run, the agent writes the files by hand and the audit flags them.
+- The placeholder check compares a file with the project's own `.burhan/templates` (the kit's own when the project has none), looks at the story, the plan, the build spec and a Concluded findings file, and also names a table row whose cells are all empty. The knowledge-review line of a plan is left out on purpose: it is decided after QC.
+- macOS and Windows ran in CI only; no agent session was run on them.
+
 ## 0.6.0 — 2026-10-27
 
 The installer now refuses to write through a link that leaves your project, and the "done needs proof" check no longer

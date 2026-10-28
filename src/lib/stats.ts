@@ -15,7 +15,6 @@ export interface Stats {
   escaped: string[];
   phases: Record<string, { n: number; avgMinutes: number | null; avgTokens: number | null }>;
   evidence?: LedgerSummary | null;
-  words: Record<'story' | 'plan' | 'qc' | 'verification' | 'review', { n: number; avg: number | null }>;
 }
 
 const avg = (xs: number[]): number | null => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null);
@@ -45,12 +44,7 @@ export function computeStats(facts: ItemFacts[]): Stats {
     }
   }
   const phases = Object.fromEntries(Object.entries(spans).map(([k, v]) => [k, { n: v.n, avgMinutes: avg(v.minutes), avgTokens: avg(v.tokens) }]));
-  const kinds = ['story', 'plan', 'qc', 'verification', 'review'] as const;
-  const words = Object.fromEntries(kinds.map((k) => {
-    const xs = facts.map((f) => f.words[k]).filter((x): x is number => x !== null);
-    return [k, { n: xs.length, avg: avg(xs) }];
-  })) as Stats['words'];
-  return { items: facts.length, routes, qc, reviews, escaped: [...escaped].sort(), phases, words };
+  return { items: facts.length, routes, qc, reviews, escaped: [...escaped].sort(), phases };
 }
 
 /** Skills per item: those the turns used (ledger) and the pre-write reminders shown (session store). Nothing recorded says so. */
@@ -82,8 +76,6 @@ export function renderStats(s: Stats, docsRel: string): string {
     ...(Object.keys(s.phases).length
       ? Object.entries(s.phases).map(([p, v]) => `  ${p.padEnd(12)} rows ${v.n} · avg ${v.avgMinutes ?? '—'} min · avg ${v.avgTokens ?? '—'} tokens`)
       : ['  no Phase log rows yet']),
-    '',
-    `File size (avg words, caps in phases/files.md): ${(['story', 'plan', 'review', 'qc', 'verification'] as const).map((k) => `${k} ${s.words[k].avg ?? '—'} (n=${s.words[k].n})`).join(' · ')}`,
     '',
     skillsLine(s.evidence ?? null),
     '',

@@ -1,16 +1,19 @@
 /** Whole-turn audit (ported from the 0.2 bash turn-audit.sh). */
 import { evidenceRecord } from './ledger.mjs';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ere, ereTest } from './ere.mjs';
 import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stateNow, type Check, type Ctx } from './lib.mjs';
 import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
 import { agoText, liveOwnerAge, slugText } from './state-blocks.mjs';
-import { clearShellCreated, clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, shellCreated, stateAfterSlugs, stateSnapshotFile } from './store.mjs';
+import { approvalWordSeen, rememberApprovalWord, clearShellCreated, clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, shellCreated, stateAfterSlugs, stateSnapshotFile } from './store.mjs';
 import { evidenceMatches } from './evidence-cmd.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
 import { gateLine, undecided } from './understanding.mjs';
+import { checkText, hasContractMarker, kindOf } from './item-contract.mjs';
+import { deviations, executableHash, openDeviations, overallStatus, recordedHash } from './item-model.mjs';
+import { routeOf, stageOf } from './item-stage.mjs';
 
 const CLAIM = '(^|[^[:alnum:]_])(done|fixed|passing|passes|complete|completed|works now)([^[:alnum:]_]|$)|✅|(^|[[:space:][:punct:]])(خلص|خلصت|اتصلح)([[:space:][:punct:]]|$)';
 const PERFORMED = '[^·<>]*[^·<>[:space:]] · [^·<>]*[^·<>[:space:]] · (fresh subagent|other agent|human|same session)';
@@ -157,6 +160,7 @@ const gateE: Gate = (audit) => {
   for (const file of audit.written) {
     try {
       if (file.endsWith('/README.md') || file === 'README.md' || /\.log$/i.test(file) || !ereTest(eligible, file)) continue; // a raw command log is not a status file
+      if (!lstatSync(join(audit.ctx.project, file)).isFile()) continue; // a folder, a link or a FIFO is not read (a FIFO would block the hook)
       const text = readFileSync(join(audit.ctx.project, file), 'utf8');
       let fenced = false;
       const states = text.split('\n').filter((line) => {
@@ -283,7 +287,167 @@ const gateBaseline: Gate = (audit) => {
   return [gateLine(story && code ? 'a story was written and code was edited' : story ? 'a story was written' : 'code was edited', state)];
 };
 
-const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateH, gateBaseline];
+// ---- Item files, stage and approvals (workflow-engine) ---------------------
+/** A plain file's text under the project, or null (a missing file, a folder, a link: a link could lead outside the project). */
+const plainText = (project: string, rel: string): string | null => {
+  try { const path = join(project, rel); const st = lstatSync(path); return st.isFile() ? readFileSync(path, 'utf8') : null; } catch { return null; }
+};
+/** A file the shell wrote that looks new: made and last written within two seconds (an old file that was appended to has a long gap). A guess, used only
+ *  where the pre-write marker (which exists only with the skills setting) is missing. */
+const looksNew = (project: string, rel: string): boolean => {
+  try { const st = statSync(join(project, rel)); return st.birthtimeMs > 0 && st.mtimeMs - st.birthtimeMs < 2000; } catch { return false; }
+};
+/** The text of the item's latest QC report: `<slug>-qc-rN.md` with the highest N, else `<slug>-qc.md`. */
+const latestQcText = (project: string, dir: string, slug: string): string | null => {
+  try {
+    const re = new RegExp(`^${escapeEre(slug)}-qc(?:-r(\\d+))?\\.md$`);
+    const best = readdirSync(join(project, dir, 'reviews')).map((name) => ({ name, n: re.exec(name) })).filter((x) => x.n !== null).sort((a, b) => Number(b.n![1] ?? 1) - Number(a.n![1] ?? 1))[0];
+    return best === undefined ? null : plainText(project, `${dir}/reviews/${best.name}`);
+  } catch { return null; }
+};
+const MAX_FAULTS = 5;
+
+/** J: an item file the agent wrote directly must follow the contract. A file only edited is judged when it carries `**Contract:** 1` (a legacy file stays
+ *  quiet); a file created by hand is judged whatever it carries and is told which command makes it. */
+const gateContract: Gate = (audit) => {
+  const docs = audit.ctx.cfg.WF_DOCS_DIR ?? '';
+  if (docs === '' || audit.ctx.cfg.WF_ITEM_CONTRACT !== 'on') return [];
+  const marked = shellCreated(audit.ctx.project, audit.ctx.ev.get('.session'), audit.ctx.env);
+  const made = new Set([...audit.created, ...audit.shellWritten.filter((file) => marked.includes(file) || looksNew(audit.ctx.project, file))]);
+  const out: string[] = [];
+  for (const file of [...new Set(audit.written)]) {
+    if (!ereTest(itemFileRe(audit), file)) continue;
+    const kind = kindOf(file);
+    const text = kind === null ? null : plainText(audit.ctx.project, file);
+    if (kind === null || text === null) continue;
+    const byHand = made.has(file);
+    const marked = hasContractMarker(text);
+    if (!byHand && !marked) {
+      // An item file that lost its marker while a sibling still has it was most likely rewritten whole: say so, or every check would go quiet for it.
+      const slugOf = file.slice(docs.length + 1).split('/')[0] ?? '';
+      const sibling = ['story', 'implementation-plan', 'build-spec'].map((k) => `${docs}/${slugOf}/${slugOf}-${k}.md`).filter((f) => f !== file).some((f) => { const t = plainText(audit.ctx.project, f); return t !== null && hasContractMarker(t); });
+      if (sibling && kind !== 'review' && kind !== 'qc' && kind !== 'verification') out.push(`⚠ CONTRACT GATE: \`${file}\` (${kind}) lost its **Contract:** 1 line while the item's other files still have it: the checks treat it as an old file. Put the line back (burhan item check ${slugOf} lists what else differs).`);
+      continue;
+    }
+    const faults = checkText(kind, text);
+    if (faults.length === 0 && (marked || !byHand)) continue;
+    const slug = file.slice(docs.length + 1).split('/')[0] ?? '';
+    const shown = faults.slice(0, MAX_FAULTS).map((f) => `${f.code}: ${f.message}`).join('; ');
+    const rest = faults.length > MAX_FAULTS ? `; and ${faults.length - MAX_FAULTS} more` : '';
+    const what = faults.length > 0 ? `breaks the contract (${shown}${rest})` : 'has no **Contract:** 1';
+    out.push(`⚠ CONTRACT GATE: \`${file}\` (${kind}) was ${byHand ? 'created by hand' : 'edited'} and ${what}. ${byHand ? (kind === 'review' || kind === 'qc' || kind === 'verification' ? `burhan review add ${slug} --kind ${kind} --by "<agent · model · context>" writes it in the exact form. ` : 'burhan item new <slug> --type … --scope … makes it from the template. ') : ''}burhan item check ${slug} lists every fault.`);
+  }
+  return out;
+};
+
+/** K: code edited while the item's stage does not authorize it (the plan is not approved, or the route is read-only). The patch lane and an item with no
+ *  files or no link stay silent: the hook cannot judge what it cannot read. */
+const gateStage: Gate = (audit) => {
+  if (audit.ctx.cfg.WF_ITEM_CONTRACT !== 'on' || !codeInTurn(audit) || patchTurn(audit)) return [];
+  const slug = resolvedSlug(audit);
+  const docs = audit.ctx.cfg.WF_DOCS_DIR ?? '';
+  if (slug === '' || docs === '') return [];
+  const blockRoute = itemRoute(resolvedItemNow(audit));
+  if (blockRoute.endsWith(' / patch')) return [];
+  const dir = `${docs}/${slug}`;
+  const story = plainText(audit.ctx.project, `${dir}/${slug}-story.md`);
+  const plan = plainText(audit.ctx.project, `${dir}/${slug}-implementation-plan.md`);
+  const findings = plainText(audit.ctx.project, `${dir}/${slug}-findings.md`);
+  if (story === null && plan === null && findings === null) return [];
+  // Only an item made with the contract is judged: an old item stays quiet (AC-08); a hand-made file is the contract gate's business.
+  if (![story, plan, findings].some((text) => text !== null && hasContractMarker(text))) return [];
+  const stage = stageOf({ slug, route: routeOf(story, plan, findings) || blockRoute, story, plan, findings, qc: latestQcText(audit.ctx.project, dir, slug) });
+  return stage.authorized ? [] : [`⚠ STAGE GATE: code was edited but ${slug} is "${stage.stage}" (${stage.why}). Next: ${stage.next}`];
+};
+
+/** The paths the build spec's "### Files" tables list (the first cell, in backticks; a `<placeholder>` is not a path). */
+const specFiles = (spec: string): string[] => {
+  const out: string[] = [];
+  let inFiles = false;
+  for (const raw of spec.split('\n')) {
+    const l = raw.replace(/\r$/, '');
+    if (/^#{2,4}[ \t]/.test(l)) inFiles = /^###[ \t]+files\b/i.test(l);
+    else if (inFiles) {
+      const cell = firstCell(l);
+      if (cell !== null && !/^(path|-+|:?-+:?)$/i.test(cell) && !/^[<>]/.test(cell)) out.push(normPath(cell));
+    }
+  }
+  return out;
+};
+/** The first cell of a table row (text between the first two pipes, backticks and spaces dropped); null when the line is no row or has no closing pipe. */
+const firstCell = (line: string): string | null => {
+  if (!line.startsWith('|')) return null;
+  const end = line.indexOf('|', 1);
+  if (end === -1) return null;
+  const cell = line.slice(1, end).trim().replace(/^`|`$/g, '').trim();
+  return cell === '' ? null : cell;
+};
+/** A path as the spec and the audit compare it: forward slashes, no leading `./`. */
+const normPath = (file: string): string => file.trim().replace(/\\/g, '/').replace(/^(\.\/)+/, '');
+
+/** M: while the plan is Approved or In progress the executor follows the build spec: a code file the spec's Files tables do not list, or an edit of the spec
+ *  itself, needs an approved deviation first (`burhan deviation add`, the owner's `deviation resolve`). With a deviation open the stage gate speaks instead. */
+const gateDeviation: Gate = (audit) => {
+  if (audit.ctx.cfg.WF_ITEM_CONTRACT !== 'on') return [];
+  const slug = resolvedSlug(audit);
+  const docs = audit.ctx.cfg.WF_DOCS_DIR ?? '';
+  if (slug === '' || docs === '') return [];
+  const dir = `${docs}/${slug}`;
+  const plan = plainText(audit.ctx.project, `${dir}/${slug}-implementation-plan.md`);
+  if (plan === null || !hasContractMarker(plan)) return [];
+  const status = overallStatus(plan);
+  if (status !== 'Approved' && status !== 'In progress') return [];
+  if (openDeviations(plan).length > 0) return [];
+  const out: string[] = [];
+  const how = `Record it with burhan deviation add ${slug} --unit N --what … --where … --output …, STOP, and ask the owner; an approved deviation updates the plan and the build spec first, then the code.`;
+  const specRel = `${dir}/${slug}-build-spec.md`;
+  const written = [...new Set(audit.written)];
+  if (written.includes(specRel) && !deviations(plan).some((d) => d.status === 'approved')) out.push(`⚠ DEVIATION GATE: the build spec of ${slug} was edited after its plan was approved and no deviation is approved. ${how}`);
+  const planRel = `${dir}/${slug}-implementation-plan.md`;
+  const fingerprint = recordedHash(plan);
+  if (written.includes(planRel) && fingerprint !== null && fingerprint !== executableHash(plan) && !deviations(plan).some((d) => d.status === 'approved')) out.push(`⚠ DEVIATION GATE: the executable parts of the plan of ${slug} (AC coverage, executor rules, a sub-unit's Covers line) were edited after approval and no deviation is approved. ${how}`);
+  const spec = plainText(audit.ctx.project, specRel);
+  const listed = spec === null ? [] : specFiles(spec);
+  if (listed.length > 0) {
+    const code = audit.ctx.cfg.WF_CODE_REGEX ?? '';
+    const inside = (file: string): boolean => !/^([A-Za-z]:|\/|\.\.\/)/.test(normPath(file)); // a path outside the project is not judged
+    const off = written.map(normPath).filter((file) => inside(file) && file !== specRel && !file.startsWith(`${docs}/`) && !file.startsWith('.burhan/') && matches(code, file) && !listed.includes(file));
+    if (off.length > 0) out.push(`⚠ DEVIATION GATE: ${off.join(', ')} ${off.length === 1 ? 'was' : 'were'} edited but the build spec of ${slug} does not list ${off.length === 1 ? 'it' : 'them'}. ${how}`);
+  }
+  return out;
+};
+
+/** `approve story|plan|qc <slug>` behind any launcher (burhan, burhan-kit, node …/cli.js, npx, npm exec, pnpm dlx, bash -c, an env prefix, a sub-shell). A segment that
+ *  only shows text (echo, printf, grep, git, cat …) is not a command. Forms it cannot see (a script file, an alias) are missed: the gate reports what it recognises. */
+const APPROVE_CMD = /(?:^|[\s/\\'"=(])(?:burhan(?:-kit)?|cli\.js)(?![\w/\\-])[^\n]{0,2000}?\b(?:approve\s+(story|plan|qc)|deviation\s+(resolve))(?:\s+--?[A-Za-z][\w-]*(?:[ =][^\s-][^\s]*)?){0,6}\s+['"]?([A-Za-z0-9._][A-Za-z0-9._-]*(?:['"]?\s+\d+)?)/;
+/** The command without the bodies of its here-documents: text a command only carries (a note, a commit message) is not a command it runs. */
+const stripHeredocs = (cmd: string): string => {
+  const out: string[] = [];
+  let end: string | null = null;
+  for (const line of cmd.split('\n')) {
+    if (end !== null) { if (line.trim() === end) end = null; continue; }
+    out.push(line);
+    const m = /(?<![\w<])<<(?!<)-?[ \t]*['"]?([A-Za-z_][A-Za-z0-9_]*)['"]?/.exec(line);
+    if (m) end = m[1]!;
+  }
+  return out.join('\n');
+};
+const TEXT_ONLY_CMD = /^\s*(?:echo|printf|grep|egrep|rg|cat|head|tail|less|man|git|gh|curl|wget|sed|awk)\b/;
+/** L: the agent ran `burhan approve` this turn. An approval is the owner's, so the run is always reported, and flagged when the owner's message had no
+ *  approval wording (a heuristic: it shows wording, not consent). The wording is spent by the report: the next approve needs the owner's next message. */
+const gateApproval: Gate = (audit) => {
+  const ran = audit.cmds.flatMap((cmd) => stripHeredocs(cmd.replace(/\\\r?\n/g, ' ')).split(/&&|\|\||;|\||\n/)).filter((part) => !TEXT_ONLY_CMD.test(part)).map((part) => APPROVE_CMD.exec(part)).filter((m): m is RegExpExecArray => m !== null);
+  if (ran.length === 0) return [];
+  const list = [...new Set(ran.map((m) => (m[1] !== undefined ? `approve ${m[1]} ${m[3]}` : `deviation resolve ${m[3]}`)))].join(', ');
+  const session = audit.ctx.ev.get('.session');
+  const said = approvalWordSeen(audit.ctx.project, session, audit.ctx.env);
+  rememberApprovalWord(audit.ctx.project, session, false, audit.ctx.env);
+  return said
+    ? [`ℹ APPROVAL: the agent ran ${list} this turn; the owner's message had approval wording. Confirm it is what they approved.`]
+    : [`⚠ APPROVAL GATE: the agent ran ${list} this turn but the owner's message had no approval wording. An approval is the owner's: if they did not say yes, set the status back and ask.`];
+};
+
+const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateH, gateBaseline, gateContract, gateStage, gateDeviation, gateApproval];
 
 export const turnAudit: Check = (ctx) => {
   const auditCtx = { ...ctx, env: { ...ctx.env, ...ctx.cfg } };

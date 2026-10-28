@@ -3,10 +3,10 @@
 . "$(dirname "$0")/lib.sh"
 cd "$T_KIT" || exit 1
 
-EXPECTED="bindings story plan findings discovery progress review qc verification docs-index project context-area"
+EXPECTED="bindings story plan build-spec findings discovery progress review qc verification docs-index project context-area"
 KEYS="WF_DOCS_DIR WF_DISCOVERY_DIR WF_STATE_FILE WF_STATE_BUDGET WF_CHECK_CMD WF_CHECK_TIMEOUT
 WF_EVIDENCE_REGEX WF_CODE_REGEX WF_TEST_REGEX WF_SENSITIVE_REGEX WF_SENSITIVE_NOTE
-WF_SKILLS WF_MODEL_CLAUDE_REVIEWER WF_EVIDENCE_LEDGER WF_EVIDENCE_DIR WF_MODE_DEFAULT WF_REVIEWER_AGENT WF_MODEL_CLAUDE_PLANNER WF_MODEL_CLAUDE_BUILDER WF_MODEL_CLAUDE_EXPLORER WF_STACK_SETUP"
+WF_ITEM_CONTRACT WF_SKILLS WF_MODEL_CLAUDE_REVIEWER WF_EVIDENCE_LEDGER WF_EVIDENCE_DIR WF_MODE_DEFAULT WF_REVIEWER_AGENT WF_MODEL_CLAUDE_PLANNER WF_MODEL_CLAUDE_BUILDER WF_MODEL_CLAUDE_EXPLORER WF_STACK_SETUP"
 
 wf="$(cat WORKFLOW.md phases/*.md 2>/dev/null)"   # the agreement = the core + the phase files
 
@@ -165,7 +165,10 @@ check "QC template: replacing the placeholders leaves the exact form (no note af
 check_eq "...and nothing after it" "$(grep -F '**Performed by:**' templates/qc.md | sed -E 's/<[^>]*>/x/g; s/.*x · x · x//')" ''
 check "review template records who performed it" "$(cat templates/review.md)" has "**Performed by:**"
 check "plan template has Reopened after PASS" "$(cat templates/plan.md)" has "**Reopened after PASS:**"
-check "plan template has a Phase log" "$(grep -E '^## ([0-9]+\. *)?Phase log$' templates/plan.md)" has "Phase log"
+check "plan template has no Phase log: a log is not written into the plan (burhan stats still reads one in an old plan)" "$(cat templates/plan.md)" lacks "Phase log"
+check "plan template names its build spec" "$(cat templates/plan.md)" has "**Build spec:**"
+check "plan template has the executor rules and a Deviations table" "$(grep -E '^## ([0-9]+\. *)?(Executor rules|Deviations)$' templates/plan.md | tr '\n' ' ')" has "Executor rules"
+check "build spec template has the parts of a sub-unit" "$(grep -E '^### ' templates/build-spec.md | tr '\n' ' ')" has "### Files ### Test ### RED ### Implementation ### GREEN ### Lint ### Interfaces"
 check "story template has Escapes" "$(cat templates/story.md)" has "**Escapes:**"
 check "QC command demands a fresh context" "$(cat commands/qc.md)" has "Fresh context"
 check "WORKFLOW states the independence rule" "$wf" has "Independent QC"

@@ -66,10 +66,7 @@ test('readFacts: route, QC, acceptance, reopen and escape fields', () => {
   assert.deepEqual(readFacts(join(d, 'fix-x'), 'fix-x'), {
     slug: 'fix-x', route: 'bug / bounded', qc: 'PASS', qcAccepted: true, qcBy: 'independent',
     reopenedAfterPass: false, escapes: ['add-x'], phases: [], reviewBy: null,
-    words: { story: 10, plan: 9, qc: 18, verification: null, review: null },
   });
-  writeFileSync(join(d, 'fix-x/fix-x-story.md'), '# T\nfour words of prose\n| a | b |\n|---|---|\n```\ncode here not counted\n```\n');
-  assert.equal(readFacts(join(d, 'fix-x'), 'fix-x').words.story, 6, 'tables and code are not counted (caps exclude them)');
   writeFileSync(join(d, 'fix-x/fix-x-story.md'), '- **Type / scope:** bug / bounded\n- **Escapes:** `add-x`, `add-y` (both)\n');
   assert.deepEqual(readFacts(join(d, 'fix-x'), 'fix-x').escapes, ['add-x', 'add-y'], 'backticks and lists are cleaned');
   writeFileSync(join(d, 'fix-x/fix-x-story.md'), '- **Escapes:** `pay-flow` (found in prod by QA)\n');
@@ -114,18 +111,16 @@ test('readFacts: route, QC, acceptance, reopen and escape fields', () => {
   mkdirSync(join(d, 'plain'));
   assert.deepEqual(readFacts(join(d, 'plain'), 'plain'), {
     slug: 'plain', route: 'unknown', qc: null, qcAccepted: false, qcBy: null, reopenedAfterPass: false, escapes: [], phases: [], reviewBy: null,
-    words: { story: null, plan: null, qc: null, verification: null, review: null },
   });
 });
 
-test('readFacts: the review file\'s provenance and size — the single per-item file, else the old per-sub-unit files', () => {
+test('readFacts: the review file\'s provenance — the single per-item file, else the old per-sub-unit files', () => {
   const d = tmpDir('burhan-facts-rv-');
   mkdirSync(join(d, 'one/reviews'), { recursive: true });
   writeFileSync(join(d, 'one/reviews/one-review.md'), '# Review\n## Sub-unit 1 · short\n- **Date:** x · **Performed by:** claude · sonnet · fresh subagent\n');
   writeFileSync(join(d, 'one/reviews/one-qc.md'), '- **Performed by:** claude · opus · same session\n');
   const one = readFacts(join(d, 'one'), 'one');
   assert.equal(one.reviewBy, 'independent');
-  assert.equal(typeof one.words.review, 'number');
   mkdirSync(join(d, 'old/reviews'), { recursive: true });
   writeFileSync(join(d, 'old/reviews/old-task1.md'), '- **Performed by:** claude · opus · fresh subagent\n');
   writeFileSync(join(d, 'old/reviews/old-task2.md'), '- **Performed by:** claude · opus · same session\n');

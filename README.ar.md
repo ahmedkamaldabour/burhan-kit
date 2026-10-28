@@ -183,6 +183,7 @@ Follow .burhan/commands/onboard.md
 - burhan بيبلّغ ويوجّه ومبيمنعش. الموافقات والـ test-first قواعد الـ agent مطلوب منه يمشي عليها.
 - بيشوف بس التعديلات والأوامر اللي الـ agent بيبلّغ بيها؛ وتعديل الـ shell بيظهر بس من خلال `>` و`>>` و`tee`.
 - تحذير “done” محتاج `WF_CODE_REGEX` و`WF_EVIDENCE_REGEX` (إعدادات في `.burhan/workflow.config`)؛ الـ agent بيقترحهم أول استخدام، وبعد ما أول استخدام يخلص `doctor` بيحذّر لو الـ code pattern فاضي.
+- اختياري: ممكن تختار موديل لكل دور (planner وbuilder وexplorer وreviewer) على مستوى المشروع كله. لو سيبته فاضي كل مرحلة بتستخدم موديل الـ terminal؛ ولو عايز تضبطه قول للـ agent بتاعك يضبط مفاتيح `WF_MODEL_CLAUDE_*` (`docs/configuration.md`).
 - Codex بيشغّل hooks المشروع بعد ما توثّقها في `/hooks` بس، ومبيقولش حاجة لو مش موثّقة. وعلى Codex الأمر اللي خلص ونتيجته مش موجودة في سجل الـ session بيتحسب مش ناجح، ومتقاسش بيحصل قد إيه ([الـ roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md)).
 - Windows: الـ hooks بتشتغل على Node والـ CI بيغطي `windows-latest`. لسه مش متحقق منه: Windows بـ PowerShell بس، وجلسة Claude Code أو Codex حقيقية على Windows.
 
@@ -195,6 +196,7 @@ Follow .burhan/commands/onboard.md
 | `npx burhan-kit status` · `npx burhan-kit evidence --item <slug>` | فهرس المهام · الـ ledger بتاع مهمة |
 | `npx burhan-kit memory check` · `npx burhan-kit inspect` | فحص ذاكرة المشروع (للـ CI كمان) · نظرة بالأسماء بس على المشروع |
 | `npx burhan-kit use <slug>` | بيتحقق من المهمة؛ والـ session بتتربط لما الـ turn يخلص |
+| `npx burhan-kit item new\|set\|check\|finish` · `gate tick` · `review add` · `approve` · `deviation` · `guide` | أوامر الـ agent لملفات المهمة: يعمل، يحرّك الحالة، يفحص، يخلّص · يأشّر بوابة · يسجّل مراجعة · يسجّل موافقتك · يسجّل خطوة خرجت عن الخطة (يقف لحد ما تقرر) · الخطوة الجاية وهل الكود مسموح |
 | `npx burhan-kit upgrade` · `npx burhan-kit uninstall` | تحديث · إزالة (dry run لحد `--apply`) |
 
 [الإعدادات](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md) · [المميزات بالتفصيل](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md) · [أول مهمة، مسجّلة](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md) · [الترقية والرجوع](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/upgrading.md) · [الـ CI وWindows](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/ci-and-windows.md) · [Changelog](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md) · [Roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md) · [Issues](https://github.com/ahmedkamaldabour/burhan-kit/issues)

@@ -161,4 +161,39 @@ check "releasing: without the required reviewer the publish job runs with no pau
 check "roadmap: the pin candidate is replaced by keeping the pins current" "$(cat ROADMAP.md)" has 'Keep the action pins current'
 check "roadmap: the old pin candidate is gone" "$(cat ROADMAP.md)" lacks 'Pin GitHub Actions by commit SHA'
 
+echo "workflow-engine: the 0.7.0 notes, the upgrading page and the commands"
+cl="$(cat CHANGELOG.md)"
+check "changelog: a 0.7.0 section" "$cl" has '## 0.7.0 — 2026-10-27'
+check "changelog: 0.7.0 says how to upgrade from 0.6.0" "$cl" has '### Upgrading from 0.6.0'
+check "changelog: 0.7.0 says the checks stay off without the key" "$cl" has 'Without it the contract check, the stage check and the deviation check stay off'
+check "changelog: 0.7.0 says init starts with the key on" "$cl" has 'a project made by `burhan init` starts with it on'
+check "changelog: 0.7.0 says an old task is advice until it carries the marker" "$cl" has 'keeps working: its files are checked as advice only'
+check "changelog: 0.7.0 says the stash advice is gone" "$cl" has 'no longer tells the agent to `git stash`'
+check "changelog: 0.7.0 says when a Completed plan reopens" "$cl" has 'a Completed plan reopens only after a'
+check "changelog: 0.7.0 says stated evidence is not proof" "$cl" has 'states what shows it, and the plan then says the evidence was stated, not proven'
+check "changelog: 0.7.0 gives the Haiku trial and its size" "$cl" has 'Six trials with Haiku on one small task'
+check "changelog: 0.7.0 says the gain is not a rescue" "$cl" has 'Not a rescue: the 0.6.0 kit did not reproduce the'
+check "changelog: 0.7.0 says a command can be skipped and hooks only warn" "$cl" has 'A command can be skipped, and the hooks only warn'
+check "changelog: 0.7.0 says the approval author cannot be known" "$cl" has 'The author of an approval cannot be known'
+check "changelog: 0.7.0 says the trials are one small task with Haiku and Sonnet only" "$cl" has 'The trials are one small task, run with Haiku and Sonnet only'
+check "changelog: 0.7.0 says the desktop PATH was not measured" "$cl" has 'a desktop app that starts with a short PATH was not'
+check "upgrading: a section for 0.6.0 installs" "$(cat docs/upgrading.md)" has '## Upgrading from 0.6.0'
+check "upgrading: the 0.6.0 section names the key that switches the checks on" "$(cat docs/upgrading.md)" has 'add `WF_ITEM_CONTRACT="on"` to `.burhan/workflow.config`'
+check "changelog: 0.7.0 says placeholders are refused" "$cl" has "template word for word"
+check "changelog: 0.7.0 says item set does not complete a plan" "$cl" has "is refused: a plan is completed by"
+check "changelog: 0.7.0 says the deviation check is a heuristic" "$cl" has "The deviation check is a heuristic"
+check "releasing: the workflow ran for v0.6.0" "$(cat docs/releasing.md)" has "ran end to end for v0.6.0"
+check "changelog: 0.7.0 says the size limits are gone" "$cl" has "The word and line limits are gone"
+check "changelog: 0.7.0 says a failing step stops the work" "$cl" has "means stop"
+check "changelog: 0.7.0 says burhan has no effort setting" "$cl" has "burhan has no effort setting"
+check "roadmap: Done lists the 0.7.0 items" "$(cat ROADMAP.md)" has '(0.7.0)'
+check "features: a section for the task-file commands" "$(cat docs/features.md)" has '### Commands that own the task files'
+check "configuration: the item contract key is documented" "$cfgdoc" has '`WF_ITEM_CONTRACT`'
+check "lifecycle: a section says the commands own the item files" "$(cat kit/phases/lifecycle.md)" has '## The commands own the item files'
+check "configuration: a section on choosing a model per role" "$cfgdoc" has '## Choosing a model for each role (optional)'
+check "configuration: leaving the model keys empty changes nothing" "$cfgdoc" has 'Leave them empty and nothing changes'
+check "configuration: the user can ask their agent to set them for the project" "$cfgdoc" has 'ask your agent to set them for the project'
+check "configuration: effort is not a burhan setting" "$cfgdoc" has 'burhan has no effort setting'
+check "SETUP: the agent mentions the model choice once, as an option" "$(cat kit/SETUP.md)" has 'mention once that a model can be chosen for each role'
+
 t_summary
