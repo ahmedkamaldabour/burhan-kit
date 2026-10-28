@@ -13,8 +13,8 @@ Coding agents say “done” without proof. burhan installs a working agreement 
 ```text
  1. Intake     the agent restates your request and picks a route: type + scope + a one-line reason
  2. Story      what and why, with acceptance criteria         <- you approve
- 3. Plan       how, in small steps called sub-units           <- you approve
- 4. Build      one sub-unit at a time, test first             <- `step` mode pauses here
+ 3. Plan       how: the decisions, and the full code of each sub-unit   <- you approve
+ 4. Build      one sub-unit at a time, test first, exactly as planned    <- `step` mode pauses here
  5. Review     a fresh reviewer checks that sub-unit          (repeat 4 and 5 per sub-unit)
  6. Verify     a real end-to-end check                        <- asks: you or the agent?
  7. QC         the final independent check, on the routes that need it   <- you accept the verdict
@@ -73,7 +73,7 @@ A **hook** is a small script the agent runs at set moments (session start, your 
 
 **[Agree before you build](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#agree-before-you-build)**
 - The agent routes every request first, so a typo is not a ceremony and a permissions change is never “small”.
-- The agent asks for your approval of the story and the plan before code; `step` or `auto` mode decides where else it pauses.
+- The agent asks for your approval of the story and the plan before code; `step` or `auto` mode decides where else it pauses. The plan holds the complete test and code of every sub-unit, so whoever builds (any model, or you) follows it exactly and stops when a step fails unexpectedly.
 - Before each commit it runs your check and asks you to choose: now, later, or yourself.
 
 **[Prove what was done](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#prove-what-was-done)**
@@ -181,6 +181,7 @@ Start a small change with `/burhan:e2e <slug>` (a short title works too). If you
 ## Limits
 
 - burhan reports and guides — it does not block. Approvals and test-first are rules the agent is told to follow.
+- The checks that read a task's files, and warn when code is edited before the plan is approved, are off until you set `WF_ITEM_CONTRACT=on`. The `full run:` line of `burhan guide` says whether a passing full test run exists after the last code edit only when `WF_FULL_TEST_REGEX` is set.
 - It only sees the edits and commands the agent reports; a shell edit shows up only through `>`, `>>` and `tee`.
 - The “done” warning needs `WF_CODE_REGEX` and `WF_EVIDENCE_REGEX` (settings in `.burhan/workflow.config`); the agent proposes them on first use, and once first use is done `doctor` warns when the code pattern is empty.
 - Optional: a model can be chosen for each role (planner, builder, explorer, reviewer) for the whole project. Leave it empty and every phase uses your terminal's model; to set it, ask your agent which `WF_MODEL_CLAUDE_*` keys to set (`docs/configuration.md`).

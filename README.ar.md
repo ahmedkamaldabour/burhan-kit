@@ -13,8 +13,8 @@
 ```text
  1. Intake     the agent restates your request and picks a route: type + scope + a one-line reason
  2. Story      what and why, with acceptance criteria         <- you approve
- 3. Plan       how, in small steps called sub-units           <- you approve
- 4. Build      one sub-unit at a time, test first             <- `step` mode pauses here
+ 3. Plan       how: the decisions, and the full code of each sub-unit   <- you approve
+ 4. Build      one sub-unit at a time, test first, exactly as planned    <- `step` mode pauses here
  5. Review     a fresh reviewer checks that sub-unit          (repeat 4 and 5 per sub-unit)
  6. Verify     a real end-to-end check                        <- asks: you or the agent?
  7. QC         the final independent check, on the routes that need it   <- you accept the verdict
@@ -73,7 +73,7 @@ agent  **Route:** feature / bounded. It's one pure function with no scope escala
 
 **[اتفق قبل ما تبني](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#agree-before-you-build)**
 - الـ agent بيعمل route لكل طلب الأول، فالـ typo مش بياخد إجراءات تقيلة، وتغيير الصلاحيات عمره ما يتحسب “صغير”.
-- الـ agent بيطلب موافقتك على الـ story والخطة قبل الكود؛ ومود `step` أو `auto` بيحدد بيقف فين تاني.
+- الـ agent بيطلب موافقتك على الـ story والخطة قبل الكود؛ ومود `step` أو `auto` بيحدد بيقف فين تاني. الخطة فيها الـ test والكود الكامل لكل sub-unit، فاللي بيبني (أي موديل، أو إنت) بيمشي عليها حرفياً وبيوقف لو خطوة فشلت بشكل مش متوقع.
 - قبل كل commit بيشغّل الـ check بتاعك وبيطلب منك تختار: دلوقتي، أو بعدين، أو بنفسك.
 
 **[أثبت اللي اتعمل](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#prove-what-was-done)**
@@ -181,6 +181,7 @@ Follow .burhan/commands/onboard.md
 ## الحدود
 
 - burhan بيبلّغ ويوجّه ومبيمنعش. الموافقات والـ test-first قواعد الـ agent مطلوب منه يمشي عليها.
+- الـ checks اللي بتقرا ملفات المهمة وبتحذّر لو الكود اتعدّل قبل ما الخطة تتوافق عليها مقفولة لحد ما تحط `WF_ITEM_CONTRACT=on`. وسطر `full run:` في `burhan guide` بيقول فيه full run ناجح بعد آخر تعديل كود ولا لأ بس لو `WF_FULL_TEST_REGEX` متحدد.
 - بيشوف بس التعديلات والأوامر اللي الـ agent بيبلّغ بيها؛ وتعديل الـ shell بيظهر بس من خلال `>` و`>>` و`tee`.
 - تحذير “done” محتاج `WF_CODE_REGEX` و`WF_EVIDENCE_REGEX` (إعدادات في `.burhan/workflow.config`)؛ الـ agent بيقترحهم أول استخدام، وبعد ما أول استخدام يخلص `doctor` بيحذّر لو الـ code pattern فاضي.
 - اختياري: ممكن تختار موديل لكل دور (planner وbuilder وexplorer وreviewer) على مستوى المشروع كله. لو سيبته فاضي كل مرحلة بتستخدم موديل الـ terminal؛ ولو عايز تضبطه قول للـ agent بتاعك يضبط مفاتيح `WF_MODEL_CLAUDE_*` (`docs/configuration.md`).
