@@ -413,3 +413,11 @@ test('first-use fixes: an empty WF_CODE_REGEX warns once first-use is done, and 
   set('WF_CODE_REGEX', '\\.js$');
   assert.equal(code(runChecks(p, probe())), undefined, 'a set pattern is silent');
 });
+
+test('config: a config without WF_FULL_TEST_REGEX is a warning, not a failure', () => {
+  const p = project();
+  edit(cfg(p), (s) => s.replace(/^WF_FULL_TEST_REGEX=.*\n/m, ''));
+  const cs = runChecks(p, probe());
+  assert.ok(find(cs, 'warn', 'WF_FULL_TEST_REGEX'), 'the missing key is named');
+  assert.deepEqual(cs.filter((c) => c.status === 'fail'), []);
+});

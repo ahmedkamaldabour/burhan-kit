@@ -68,3 +68,31 @@ export function stageOf(i: StageInput): Stage {
 
 /** The route an item's files state, in the order story, plan, findings. */
 export const routeOf = (story: string | null, plan: string | null, findings: string | null): string => planRoute(story ?? '') || planRoute(plan ?? '') || planRoute(findings ?? '');
+
+export interface SkillChoice { skill: string; why: string }
+const choice = (skill: string, why: string): SkillChoice => ({ skill: `superpowers:${skill}`, why });
+const BRAINSTORM = choice('brainstorming', 'before the story');
+const PLANS = choice('writing-plans', 'before the plan and the build spec');
+const TDD = choice('test-driven-development', 'before the failing test and the code');
+const REVIEW = choice('requesting-code-review', 'to review the sub-unit');
+const VERIFY = choice('verification-before-completion', 'before you claim the item is done or passing');
+const DEBUG = choice('systematic-debugging', 'before you look for the cause');
+const NONE = /^(route not allowed|plan Paused|plan Superseded|deviation open|QC passed, not accepted|QC accepted|findings concluded|plan status not recognised)$/;
+
+/** The process skill to run before the next write at a stage (phases/skills.md), or null. One table for the CLI (`burhan guide` and the commands that open a stage).
+ *  It follows the prompt router's `skillLine` (skill-line.mts), which reads the same phases from the item's files, except in the stages it is finer than the router:
+ *  an implemented sub-unit (review), every sub-unit reviewed (verification), a failed QC (debugging) and a missing build spec (planning). */
+export function skillFor(st: Pick<Stage, 'stage'>, route: string): SkillChoice | null {
+  const s = st.stage;
+  const type = route.split(' / ')[0] ?? '';
+  if (route.endsWith(' / patch') || NONE.test(s)) return null;
+  if (s === 'QC failed') return DEBUG;
+  if (s === 'plan completed' || s === 'awaiting QC' || s === 'all sub-units reviewed') return VERIFY;
+  if (/^Sub-unit \d+ implemented$/.test(s)) return REVIEW;
+  if (s === 'build spec missing') return PLANS;
+  if (type === 'bug' || type === 'investigation') return DEBUG;
+  if (s === 'no item files' || s === 'no story' || s === 'story draft') return BRAINSTORM;
+  if (s === 'story approved, no plan' || s === 'no plan' || s === 'plan draft') return PLANS;
+  if (/^Sub-unit \d+ (to start|in progress|has no status)$/.test(s) || s === 'plan without sub-units') return TDD;
+  return null;
+}

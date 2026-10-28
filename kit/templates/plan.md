@@ -71,7 +71,7 @@ What could not be inspected or verified, and why.
 2. A step that fails unexpectedly — a RED that does not fail as the spec says, a GREEN that fails, a file that differs from what the spec expects — means STOP. Do not fix it on your own.
 3. Record the deviation in section 10 (what, where, the output), then ask the owner. An approved deviation updates this plan and the spec first, then the code.
 4. The existing brakes stay: a scope escalator, a discovery outside the item, a plan change, the same test failing twice, an irreversible action.
-5. After a sub-unit run only its test files, then the fast check; the full suite at QC, before a commit, or when a fix lands outside the covered tests.
+5. After a sub-unit run only its test files, then the fast check; the full suite at QC, before a commit, or when a fix lands outside the covered tests. A passing full run is reused (phases/stage-finish.md · Reusing a full run).
 
 ## 10. Deviations
 Empty until a step deviates. Status is open, approved or rejected.

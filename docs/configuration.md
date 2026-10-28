@@ -91,6 +91,7 @@ holds personal overrides, read after the team file, key by key.
 | `WF_CHECK_CMD`, `WF_CHECK_TIMEOUT` | the fast, non-mutating check run before every commit |
 | `WF_CODE_REGEX`, `WF_TEST_REGEX` | which paths are code / tests; with `WF_CODE_REGEX` empty the "done without proof" warning stays off |
 | `WF_EVIDENCE_REGEX` | which commands count as verification evidence; it is matched against each command the line runs, not against words that only appear in it (quoted text is masked, so `echo "npm test"` does not count), and a run with no recorded result is not a pass |
+| `WF_FULL_TEST_REGEX` | the command that runs the whole test suite: a regular expression tested on each command a line runs; `burhan guide` and `burhan evidence --item` use it to say whether a passing full run exists after the last code edit (`WF_CODE_REGEX` or `WF_TEST_REGEX`). A piped run never counts, and a run started in the background never counts (its result is not in the ledger). Empty: they say they cannot tell |
 | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` | access-control paths and the reminder after editing one |
 | `WF_STACK_SETUP` | `pending` = the agent sets up the project checks on first use (`setup --stack`); empty or `done` = nothing to do |
 | `WF_ITEM_CONTRACT` | `on` to check the item files the agent writes against the written contract and to warn when code is edited before the plan is approved; `off` (also when the key is absent) leaves existing projects unchanged |
@@ -149,6 +150,8 @@ A command line with a pipe (`npm test | head`) records the exit of its last comm
 command can show as `exit 0`; `burhan evidence` marks those lines (`--json` adds `"piped": true`). A session
 folder older than 30 days that holds only ledger files is removed; one that also holds session files stays until you delete it
 (in practice nearly every folder does, so the ledger grows until you do).
+
+**Is there a passing full run?** `burhan guide` and `burhan evidence --item <slug>` end with a `full run:` line: `yes` when a command that matches `WF_FULL_TEST_REGEX` passed after the last edit of a path that matches `WF_CODE_REGEX` or `WF_TEST_REGEX` (docs, the CHANGELOG and the item's own files do not count; with both patterns empty or not usable every edit counts, and the line says so), `no` when a code edit came after it, `none` when no passing full run is recorded, and `cannot tell` when the key is empty or the ledger is. The ledger cannot see a shell edit (`sed -i`, a script), the current turn, or a run whose recorded exit hides a failure (`npm test || true`); a run started in the background has no result there, so the line names it and says to read its log. The line informs: nothing refuses and no hook warns because of it. The rule for when to run the suite again is `phases/stage-finish.md`, Reusing a full run.
 
 ## Independent QC and model per phase
 

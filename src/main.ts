@@ -6,7 +6,8 @@ import { changed } from './lib/changed.js';
 import { uninstall } from './lib/uninstall.js';
 import { doctor } from './lib/doctor.js';
 import { prBody } from './lib/pr-body.js';
-import { evidence } from './lib/evidence.js';
+import { evidence, projectRoot } from './lib/evidence.js';
+import { fullRunFor, fullRunLine } from './lib/full-run.js';
 import { stats } from './lib/stats.js';
 import { status } from './lib/status.js';
 import { useItem } from './lib/use.js';
@@ -20,6 +21,7 @@ import { approve } from './lib/approve.js';
 import { deviationAdd, deviationResolve } from './lib/deviation.js';
 import { itemFinish } from './lib/item-finish.js';
 import { guide } from './lib/guide.js';
+import { printAdvice } from './lib/skill-advice.js';
 import { memoryAffected, memoryCheck, memoryStatus } from './lib/memory.js';
 import { inspectCommand } from './lib/inspect.js';
 import { homedir } from 'node:os';
@@ -58,7 +60,7 @@ export const USAGE = `usage: burhan <command> [options]
   changed [dir] --item <slug> [--docs <path>] [--json]
                        files changed since the commit the story was verified at (re-check only those)
   evidence [dir] [--item <slug>] [--session <id>] [--last N] [--json]
-                       the evidence ledger: every command with its exit code, in order, per turn
+                       the evidence ledger: every command with its exit code, in order, per turn (with --item: ends with the full run line)
   pr-body [dir] --item <slug> [--docs <path>]
                        a pull-request description from the item's files (read-only; for gh pr create --body-file)
   setup [dir] [--lang en|ar] [--allow-outside-links]
@@ -92,7 +94,7 @@ export const USAGE = `usage: burhan <command> [options]
   state compact [--apply]
                        shorten the closed items' old lines in the state file: a dry run unless --apply; never touches a "### " block; the old text goes to the item's <slug>-state-notes.md first
   guide [slug] [--json]
-                       the item's stage, whether code edits are authorized now, and the next step
+                       the item's stage, whether code edits are authorized now, the process skill to run (with WF_SKILLS=superpowers), the next step, and whether a passing full run exists after the last code edit
   item finish <slug> [--evidence <text>]
                        complete the plan: every sub-unit Reviewed, every gate the route needs ticked, a passing proof after the last code edit
   review add <slug> --kind review|qc|verification --by <who> [--unit N] [--verdict V] [--round N] [--text T]
@@ -112,6 +114,7 @@ Without --apply, init, upgrade and uninstall are a dry run: they print what they
 
 export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFilesystem): Promise<number> {
   const [cmd, ...rest] = argv;
+  const advise = (code: number, slug: string | undefined, docs: string | undefined): number => { if (code === 0) printAdvice(io.cwd, slug, io, docs); return code; };
   try {
     switch (cmd) {
       case 'init': case 'upgrade': {
@@ -149,7 +152,9 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
           options: { item: { type: 'string' }, session: { type: 'string' }, last: { type: 'string' }, json: { type: 'boolean' } },
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return evidence({ target: positionals[0] ?? io.cwd, item: values.item, session: values.session, last: values.last, json: values.json === true }, io);
+        const code = evidence({ target: positionals[0] ?? io.cwd, item: values.item, session: values.session, last: values.last, json: values.json === true }, io);
+        if (code === 0 && values.item !== undefined && values.json !== true) io.stdout(`${fullRunLine(fullRunFor(projectRoot(positionals[0] ?? io.cwd)))}\n`);
+        return code;
       }
       case 'stats': {
         const { values, positionals } = parseArgs({
@@ -199,10 +204,10 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         const [sub, ...args] = rest;
         if (sub !== 'check' && sub !== 'new' && sub !== 'set' && sub !== 'finish') throw new BurhanError(`item needs a subcommand: check, new, set or finish${sub === undefined ? '' : `, not "${sub}"`}`);
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, ...(sub === 'new' ? { type: { type: 'string' }, scope: { type: 'string' } } : {}), ...(sub === 'finish' ? { evidence: { type: 'string' } } : {}), ...(sub === 'set' ? { reopen: { type: 'string' } } : {}) } });
-        if (sub === 'set') return itemSet(io.cwd, positionals[0], positionals.slice(1), io, values.docs, (values as { reopen?: string }).reopen);
+        if (sub === 'set') return advise(itemSet(io.cwd, positionals[0], positionals.slice(1), io, values.docs, (values as { reopen?: string }).reopen), positionals[0], values.docs);
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        if (sub === 'finish') return itemFinish(io.cwd, positionals[0], io, { evidence: (values as { evidence?: string }).evidence, docs: values.docs });
-        if (sub === 'new') return itemNew(io.cwd, { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io);
+        if (sub === 'finish') return advise(itemFinish(io.cwd, positionals[0], io, { evidence: (values as { evidence?: string }).evidence, docs: values.docs }), positionals[0], values.docs);
+        if (sub === 'new') return advise(itemNew(io.cwd, { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io), positionals[0], values.docs);
         return itemCheck(io.cwd, positionals[0], io, values.docs);
       }
       case 'guide': {
@@ -220,14 +225,14 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
       case 'approve': {
         const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, by: { type: 'string' } } });
         if (positionals.length > 2) throw new BurhanError(`unexpected argument: ${positionals[2]}`);
-        return approve(io.cwd, positionals[0], positionals[1], values, io);
+        return advise(approve(io.cwd, positionals[0], positionals[1], values, io), positionals[1], values.docs);
       }
       case 'deviation': {
         const [sub, ...args] = rest;
         if (sub !== 'add' && sub !== 'resolve') throw new BurhanError(`deviation needs a subcommand: add or resolve${sub === undefined ? '' : `, not "${sub}"`}`);
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, unit: { type: 'string' }, what: { type: 'string' }, where: { type: 'string' }, output: { type: 'string' }, approved: { type: 'boolean' }, rejected: { type: 'boolean' }, by: { type: 'string' }, decision: { type: 'string' } } });
         if (positionals.length > (sub === 'add' ? 1 : 2)) throw new BurhanError(`unexpected argument: ${positionals[sub === 'add' ? 1 : 2]}`);
-        return sub === 'add' ? deviationAdd(io.cwd, positionals[0], values, io) : deviationResolve(io.cwd, positionals[0], positionals[1], values, io);
+        return sub === 'add' ? deviationAdd(io.cwd, positionals[0], values, io) : advise(deviationResolve(io.cwd, positionals[0], positionals[1], values, io), positionals[0], values.docs);
       }
       case 'gate': {
         const [sub, ...args] = rest;

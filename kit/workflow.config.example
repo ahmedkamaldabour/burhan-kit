@@ -44,6 +44,12 @@ WF_EVIDENCE_REGEX=""
 #   e.g. WF_EVIDENCE_REGEX='tsc --noEmit|eslint|npx jest [^ ]+'
 #   e.g. WF_EVIDENCE_REGEX='phpunit|php artisan test --filter'
 #   e.g. WF_EVIDENCE_REGEX='pytest [^ ]+|go test ./'
+# The command that runs the project's WHOLE test suite: a regular expression tested on each command a line runs (a command that only mentions it, such as an echo, does not
+# count; a piped run and a background run never count). `burhan guide` and `burhan evidence --item` use it with WF_CODE_REGEX and WF_TEST_REGEX to say whether a passing
+# full run exists after the last code edit. Empty: they say they cannot tell.
+WF_FULL_TEST_REGEX=""
+#   e.g. WF_FULL_TEST_REGEX='^npm test( [0-9]*>.*)?$'
+#   e.g. WF_FULL_TEST_REGEX='^(pytest|go test \./\.\.\.)$'
 
 # ---- Access control -------------------------------------------------------------------------
 # Paths whose changes affect authorization / visibility, and the reminder shown after editing one.

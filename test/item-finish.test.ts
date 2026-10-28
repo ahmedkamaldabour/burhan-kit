@@ -41,6 +41,16 @@ test('finish completes a ready item whose ledger shows a passing proof after the
   assert.match(r.out, /state file/);
 });
 
+test('finish prints the skill line for the stage it opens, when WF_SKILLS names a skill set', async () => {
+  const dir = await ready();
+  ledger(dir, [{ kind: 'edit', ts: '2026-10-27T10:00:00Z', file: 'src/a.ts' }, { kind: 'cmd', ts: '2026-10-27T10:05:00Z', cmd: 'npm test', exit: 0, status: 'ok' }]);
+  writeFileSync(join(dir, '.burhan', 'workflow.config'), "WF_CODE_REGEX='[.]ts$'\nWF_EVIDENCE_REGEX='npm test'\nWF_SKILLS=superpowers\n");
+  await cli(dir, ['approve', 'story', 'foo', '--by', 'dev-dabour']); // the fixture's story is a Draft: the stage would be "story draft"
+  const r = await finish(dir);
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /^skill: superpowers:verification-before-completion — run it /m);
+});
+
 test('finish refuses and names what is open: the plan state, a sub-unit, a gate', async () => {
   const dir = await ready();
   write(planFile(dir), read(planFile(dir)).replace('- [x] Security re-read', '- [ ] Security re-read').replace(/(### Sub-unit 2 — .*)✅ Reviewed/, '$1🟢 Implemented'));

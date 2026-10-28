@@ -15,6 +15,8 @@ criterion, and record every run — failed ones included — in `reviews/<slug>-
   the human promotes or rejects; or record "none"). Then the close-out (.burhan/phases/close-out.md) with state
   `Done (no QC)`.
 
+**Reusing a full run.** One passing run of the full suite (`WF_FULL_TEST_REGEX`) after the last code edit is enough for verification, QC and the commit: run it again only if code or tests changed since (docs, CHANGELOG, ROADMAP and comments do not count). A QC confirmation round runs the tests of the changed areas, unless the fix lands outside the findings. `burhan guide` and `burhan evidence --item <slug>` print a `full run:` line that says whether such a run exists after the last code edit, and when; the ledger counts every edit of a code or test file (a comment too), so after a comment-only edit the line says no and the run may still be reused; it cannot see a shell edit (`sed -i`, a script) or the current turn, so after one of those run the suite again.
+
 Record any small unrequested tweak in the plan under "Out-of-scope changes".
 
 **Escaped defects (counted by `burhan stats`).** A bug whose cause is an item that already passed QC

@@ -208,3 +208,4 @@ R205|phases/stage-plan.md|A template placeholder left in the story, the plan or 
 R206|commands/e2e.md|open a closed section only when a finding of it is named
 R207|phases/review.md|A finding row is the claim, the location and the result in one line
 R208|phases/files.md|reviews/evidence/<slug>-su<N>.md
+R209|phases/stage-finish.md|Reusing a full run

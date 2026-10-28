@@ -107,4 +107,4 @@ On FAIL, the item goes back to build; nothing is closed.
 
 The next QC is a confirmation round (phases/review.md · Re-review after findings), written as
 `reviews/$ARGUMENTS-qc-r<N>.md`: the findings list, the fix diff and a run of the tests for the changed areas from the ledger; it widens to
-a full pass when the fix is outside the findings. The first QC is always the full pass of this file.
+a full pass when the fix is outside the findings. The first QC is always the full pass of this file. A passing full run after the last code edit is reused, not repeated (phases/stage-finish.md · Reusing a full run).
