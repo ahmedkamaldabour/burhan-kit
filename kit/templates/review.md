@@ -28,4 +28,4 @@ no scope escalator, **full** otherwise.
 | Finding (from the earlier review) | Closed / still open / replaced | Evidence (fix diff hunk, test) |
 |---|---|---|
 
-**Checks run:** exact commands and results. **Limitations:** what this review did not cover, and why.
+**Checks run:** exact commands and results (long output: a file under `reviews/evidence/`, phases/review.md). **Limitations:** what this review did not cover, and why.

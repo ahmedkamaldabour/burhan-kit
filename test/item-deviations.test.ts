@@ -150,19 +150,19 @@ test('the next step after a sub-unit says what to run: its test files and the fa
   assert.match(s.next, /full suite at QC, before a commit/);
 });
 
-test('the kit tells an executor to follow the plan exactly and to stop on a deviation: the plan template, the lifecycle, the e2e command and the builder agent', () => {
+test('the kit tells an executor to follow the plan exactly and to stop on a deviation: the plan template, the build stage file and the builder agent', () => {
   const plan = kit('templates/plan.md');
   assert.match(plan, /^## \d+\. Executor rules$/m);
   assert.match(plan, /exactly: the same files, the same code, the same order, the same commands/);
   assert.match(plan, /means STOP/);
   assert.match(plan, /^## \d+\. Deviations$/m);
-  for (const file of ['phases/lifecycle.md', 'commands/e2e.md', 'agents/claude/burhan-builder.md']) {
+  for (const file of ['phases/stage-build.md', 'agents/claude/burhan-builder.md']) {
     const text = kit(file);
     assert.match(text, /exactly/i, file);
     assert.match(text, /Deviations/, file);
     assert.match(text, /STOP/, file);
   }
-  assert.match(kit('phases/lifecycle.md'), /only its test files/);
+  assert.match(kit('phases/stage-build.md'), /only its test files/);
 });
 
 // ---- review round 1 (SU12): an unreadable row stops the work, and a long run of spaces is not slow ----

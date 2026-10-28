@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { cli, itemDir, projectWithItem, planFile, read, setPlanStatus, storyFile, write } from './item-fixture.js';
 
 const tick = (dir: string, gate: string, ...more: string[]) => cli(dir, ['gate', 'tick', 'foo', gate, ...more]);
@@ -75,7 +76,7 @@ test('ticking a ticked gate changes nothing and says so', async () => {
 });
 
 // ---- review round 1 (SU3) ----
-import { symlinkSync, rmSync } from 'node:fs';
+import { symlinkSync, rmSync, readFileSync } from 'node:fs';
 import { symlinkSkip, tmpDir } from './helpers.js';
 import { project, STATE } from './item-fixture.js';
 
@@ -101,6 +102,13 @@ test('the review gate is not met by a plan whose sub-units are not read', async 
 test('a gate the route does not need is ticked with "not needed" evidence; a gate it needs is not, whatever the evidence', async () => {
   const dir = project();
   await cli(dir, ['item', 'new', 'foo', '--type', 'bug', '--scope', 'bounded']); // a bounded bug has no QC and has a story
+  const generated = await tick(dir, 'QC / convergence');
+  assert.equal(generated.code, 2);
+  assert.match(generated.err, /no gate matches/, 'the generated checklist of this route has no QC gate');
+  // A plan made before the generated checklist carries the full list: the "not needed" path is for it.
+  const old = readFileSync(fileURLToPath(new URL('../../test/fixtures/old-gate-checklist.md', import.meta.url)), 'utf8');
+  const plan = read(planFile(dir));
+  write(planFile(dir), plan.slice(0, plan.indexOf('## Gate checklist')) + old + '\n' + plan.slice(plan.indexOf('## 1.')));
   const refused = await tick(dir, 'QC / convergence');
   assert.equal(refused.code, 2);
   assert.match(refused.err, /not needed/);

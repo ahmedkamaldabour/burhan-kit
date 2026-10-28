@@ -102,10 +102,10 @@ check "configuration: a double-quoted one is refused and ignored" "$cfgdoc" has 
 check "ci and windows: a Windows path goes in single quotes" "$(cat docs/ci-and-windows.md)" has 'with backslashes in single quotes'
 
 echo "multi-session-safety: two sessions on one state file, and when to run which tests"
-check "e2e: run the tests that relate to the part you changed" "$(cat kit/commands/e2e.md)" has 'the tests that relate to the part you changed'
-check "lifecycle: run the tests that relate to the part you changed" "$(cat kit/phases/lifecycle.md)" has 'the tests that relate to the part you changed'
+check "stage-build: run the tests that relate to the part you changed" "$(cat kit/phases/stage-build.md)" has 'the tests that relate to the part you changed'
+check "stage-build (modes and ④): run the tests that relate to the part you changed" "$(cat kit/phases/stage-build.md)" has 'the tests that relate to the part you changed'
 check "plan template: run the tests that relate to the part you changed" "$(cat kit/templates/plan.md)" has 'the tests that relate to the part you changed'
-check "e2e: never the whole suite by default" "$(cat kit/commands/e2e.md)" has 'never the whole suite'
+check "stage-build: never the whole suite by default" "$(cat kit/phases/stage-build.md)" has 'never the whole suite'
 check "enforcement: the removed-block check compares with the list before this session's own write" "$(cat kit/phases/enforcement.md)" has 'is not blamed on this session'
 check "enforcement: the warning before a whole-file write" "$(cat kit/phases/enforcement.md)" has 'drops a block of another session'
 check "enforcement: the list right after the last edit-tool write" "$(cat kit/phases/enforcement.md)" has 'right after its last write through an edit tool'
@@ -123,9 +123,9 @@ check "configuration: the pre-write hook warns before a whole-file write of the 
 check "configuration: what it does not see" "$cfgdoc" has '`cp`, `sed -i` or a script writing the state file is not seen'
 check "configuration: an Edit gets the baseline and no warning before it" "$cfgdoc" has 'an `Edit` gets the Now list and the turn-end check but no warning before it'
 check "enforcement: an Edit gets the baseline and no warning before it" "$(cat kit/phases/enforcement.md)" has 'takes the baseline and is checked at the turn end, but gets no warning'
-check "lifecycle: never the whole suite by default" "$(cat kit/phases/lifecycle.md)" has 'never the whole suite'
+check "stage-build (modes and ④): never the whole suite by default" "$(cat kit/phases/stage-build.md)" has 'never the whole suite'
 check "plan template: never the whole suite by default" "$(cat kit/templates/plan.md)" has 'never the whole suite'
-check "e2e: the review step re-runs the tests of the part it fixed" "$(cat kit/commands/e2e.md)" has 'the tests that relate to the part you fixed'
+check "stage-build: the review step re-runs the tests of the part it fixed" "$(cat kit/phases/stage-build.md)" has 'the tests that relate to the part you fixed'
 
 echo "evidence-honesty: what counts as evidence"
 check "enforcement: an evidence pattern is tested on the commands a line runs, not on words that only appear in it" "$(cat kit/phases/enforcement.md)" has 'tested on the commands the line runs'
@@ -180,6 +180,19 @@ check "changelog: 0.7.0 says the desktop PATH was not measured" "$cl" has 'a des
 check "upgrading: a section for 0.6.0 installs" "$(cat docs/upgrading.md)" has '## Upgrading from 0.6.0'
 check "upgrading: the 0.6.0 section names the key that switches the checks on" "$(cat docs/upgrading.md)" has 'add `WF_ITEM_CONTRACT="on"` to `.burhan/workflow.config`'
 check "changelog: 0.7.0 says placeholders are refused" "$cl" has "template word for word"
+
+echo "artifact-diet: the Unreleased notes, the features page, the upgrade note and the READMEs"
+check "changelog: an Unreleased section above 0.7.0" "$cl" has '## Unreleased'
+check "changelog: Unreleased names the state compact command" "$cl" has 'burhan state compact'
+check "changelog: Unreleased names the generated gate checklist" "$cl" has 'gate checklist is written from the route'
+check "changelog: Unreleased names the stage files" "$cl" has 'stage-build.md'
+check "changelog: Unreleased names the review evidence folder" "$cl" has 'reviews/evidence/'
+check "package.json still says 0.7.0 (no version bump in this item)" "$(cat package.json)" has '"version": "0.7.0"'
+check "features: names burhan state compact and says it is a dry run unless --apply" "$(cat docs/features.md)" has 'burhan state compact'
+check "features: says a dry run unless --apply" "$(cat docs/features.md)" has 'a dry run unless'
+check "upgrading: says item new writes the Gate checklist from the route" "$(cat docs/upgrading.md)" has '`item new` writes the Gate checklist from the route'
+check "README: the commands row names state compact" "$(cat README.md)" has 'state compact'
+check "README.ar: the commands row names state compact" "$(cat README.ar.md)" has 'state compact'
 check "changelog: 0.7.0 says item set does not complete a plan" "$cl" has "is refused: a plan is completed by"
 check "changelog: 0.7.0 says the deviation check is a heuristic" "$cl" has "The deviation check is a heuristic"
 check "releasing: the workflow ran for v0.6.0" "$(cat docs/releasing.md)" has "ran end to end for v0.6.0"
@@ -189,7 +202,7 @@ check "changelog: 0.7.0 says burhan has no effort setting" "$cl" has "burhan has
 check "roadmap: Done lists the 0.7.0 items" "$(cat ROADMAP.md)" has '(0.7.0)'
 check "features: a section for the task-file commands" "$(cat docs/features.md)" has '### Commands that own the task files'
 check "configuration: the item contract key is documented" "$cfgdoc" has '`WF_ITEM_CONTRACT`'
-check "lifecycle: a section says the commands own the item files" "$(cat kit/phases/lifecycle.md)" has '## The commands own the item files'
+check "stage-plan: a section says the commands own the item files" "$(cat kit/phases/stage-plan.md)" has '## The commands own the item files'
 check "configuration: a section on choosing a model per role" "$cfgdoc" has '## Choosing a model for each role (optional)'
 check "configuration: leaving the model keys empty changes nothing" "$cfgdoc" has 'Leave them empty and nothing changes'
 check "configuration: the user can ask their agent to set them for the project" "$cfgdoc" has 'ask your agent to set them for the project'

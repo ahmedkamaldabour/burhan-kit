@@ -7,8 +7,7 @@
 **A snapshot, not a journal:**
 - A line budget (`WF_STATE_BUDGET`, default 80) — it is read in full at every session start.
 - Exactly four sections: `Now`, `Waiting on you`, `Commit instructions`, `Standing facts` (≤ 10).
-- `Now` holds one block per item **in flight** — several may be in flight, one per session. Edit only
-  your own block; never rewrite the file. Each block carries its type/scope, plan link,
+- `Now` holds one block per item **in flight** — several may be in flight, one per session. Each block carries its type/scope, plan link,
   sub-unit status, `Read-only:` marker, **Primary objective** (why it is still open: a reopen reason,
   a blocker, the next deliverable) and **Next action**.
 - A transition **edits the existing line**; it never appends a paragraph.
@@ -16,10 +15,13 @@
   the file. The same rule holds for every index (`<docs>/README.md`, the discovery index).
 - Remove a `Waiting on you` / `Commit instructions` line **in the same turn** it is resolved.
 - **One session per item.** Work one item in a session and start the next in a fresh one (it begins by
-  reading the state file). When an item closes, its block in `Now` shrinks to one line — slug, route,
-  result and the path to its files — and its details stay in the item's files, so the file stays under
-  its budget. When the file nears its budget, fold closed lines into one line per release or phase
-  (slugs only; the commit ids stay in the item files).
+  reading the state file). When an item closes, its block in `Now` shrinks to one line of one fixed
+  shape — `- <slug> · <type> / <scope> · <outcome> · <commit id, or uncommitted> · <path to its folder>`
+  — where the outcome is an index state (`QC PASS`, `Done (no QC)`, `Paused`, `Superseded`); no counts,
+  no file lists, no findings; its details stay in the item's files, so the file stays under its budget.
+  When the file nears its budget, fold closed lines into one line per release or phase (slugs only; a
+  folded line has no commit id, the item's own line and files keep it). `burhan state compact` shows
+  (dry run) and, with `--apply`, writes the shortening of older lines.
 
 **Status vocabularies** (use exactly these words):
 - Sub-unit: ⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed

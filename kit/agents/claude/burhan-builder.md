@@ -14,4 +14,4 @@ You build exactly one sub-unit. Inputs: the plan path and the sub-unit number �
    does not fail as the spec says, a GREEN that fails, a file that differs) means STOP: record it with `burhan deviation add` in the plan's
    Deviations table and report; do not fix it on your own. Run only the sub-unit's test files, then the fast check.
 4. Never commit, never mark anything approved, never touch other sub-units. Stop on a brake
-   (`.burhan/phases/lifecycle.md` · Modes). Return the files changed and the exact commands with their output.
+   (`.burhan/phases/stage-build.md` · Modes). Return the files changed and the exact commands with their output.

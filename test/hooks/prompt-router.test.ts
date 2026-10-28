@@ -9,7 +9,7 @@ const modeStep = '• Mode switch → write `**Mode:** step` in the story and th
 const modeAuto = '• Mode switch → write `**Mode:** auto` in the story and the state file: run the sub-units without pausing. Brakes (scope escalator, discovery, plan change, the same test failing twice, an irreversible action) and the commit checkpoint still stop.';
 const bug = '• Bug → reproduce and find the root cause with evidence before proposing a fix; then a failing regression test first.';
 const access = '• Access/visibility work → record-level visibility is the highest-consequence check: a missing filter returns everything. Test allowed AND denied cases; verify as the affected identity (.burhan/phases/review.md).';
-const investigation = '• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.burhan/phases/lifecycle.md).';
+const investigation = '• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.burhan/phases/stage-story.md).';
 const noMatch = '• No phase keyword matched — run superpowers:using-superpowers before acting.';
 
 async function router(prompt: string, env: NodeJS.ProcessEnv = {}): Promise<string> {
@@ -39,7 +39,7 @@ test('prompt-router: Arabic words require whitespace or punctuation bounds', asy
 });
 
 test('prompt-router: end to end tests and negated auto phrases do not switch modes', async () => {
-  assert.equal(await router('add end to end tests for the role permissions page'), output(access, '• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.burhan/phases/lifecycle.md).'));
+  assert.equal(await router('add end to end tests for the role permissions page'), output(access, '• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.burhan/phases/stage-story.md).'));
   assert.equal(await router("don't go end-to-end yet"), '');
 });
 

@@ -14,6 +14,7 @@ import { itemCheck } from './lib/item-check.js';
 import { itemNew } from './lib/item-new.js';
 import { itemSet } from './lib/item-set.js';
 import { gateTick } from './lib/gate-tick.js';
+import { stateCompact } from './lib/state-compact.js';
 import { reviewAdd } from './lib/review-add.js';
 import { approve } from './lib/approve.js';
 import { deviationAdd, deviationResolve } from './lib/deviation.js';
@@ -88,6 +89,8 @@ export const USAGE = `usage: burhan <command> [options]
                        --reopen reopens a Completed plan whose QC passed and records why)
   gate tick <slug> <gate> [--evidence <text>]
                        tick a gate of the plan's checklist when its evidence exists (or is given)
+  state compact [--apply]
+                       shorten the closed items' old lines in the state file: a dry run unless --apply; never touches a "### " block; the old text goes to the item's <slug>-state-notes.md first
   guide [slug] [--json]
                        the item's stage, whether code edits are authorized now, and the next step
   item finish <slug> [--evidence <text>]
@@ -232,6 +235,13 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, evidence: { type: 'string' } } });
         if (positionals.length > 2) throw new BurhanError(`unexpected argument: ${positionals[2]}`);
         return gateTick(io.cwd, positionals[0], positionals[1], io, { evidence: values.evidence, docs: values.docs });
+      }
+      case 'state': {
+        const [sub, ...args] = rest;
+        if (sub !== 'compact') throw new BurhanError(`state needs a subcommand: compact${sub === undefined ? '' : `, not "${sub}"`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, apply: { type: 'boolean' } } });
+        if (positionals.length > 0) throw new BurhanError(`unexpected argument: ${positionals[0]}`);
+        return stateCompact(io.cwd, io, { apply: values.apply === true, docs: values.docs });
       }
       case 'use': {
         if (rest.length !== 1) throw new BurhanError('use needs exactly one item slug');

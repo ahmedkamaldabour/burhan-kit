@@ -62,7 +62,7 @@ WF_ITEM_CONTRACT="on"
 # "superpowers" enables skill routing and the skill-usage audit; "none" turns both off.
 WF_SKILLS="none"
 
-# ---- Autonomy mode (phases/lifecycle.md · Modes) ------------------------------------------
+# ---- Autonomy mode (phases/stage-build.md · Modes) ------------------------------------------
 # Where burhan's flow stops for the human — not the agent's permission mode. step | auto.
 # The commit checkpoint always stops. A per-route default overrides it, e.g. WF_MODE_BUG_BOUNDED=auto
 WF_MODE_DEFAULT="step"

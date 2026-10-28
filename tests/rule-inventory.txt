@@ -21,19 +21,19 @@ R16|core|irreversible behaviour
 R17|core|not allowed — route as `investigation`
 R18|core|RO** diagnosis only
 R19|core|no application code is modified
-R20|phases/lifecycle.md|open a new routed item
+R20|phases/stage-story.md|open a new routed item
 R21|phases/lifecycle.md|Work **one item at a time, end to end**
 R22|phases/lifecycle.md|⛔ STOP — explicit approval
-R23|phases/lifecycle.md|Re-validate the plan against current code before the first sub-unit
-R24|phases/lifecycle.md|Never build the whole item in one go
-R25|phases/lifecycle.md|A plan that no longer matches the code is worse than none
+R23|phases/stage-build.md|Re-validate the plan against current code before the first sub-unit
+R24|phases/stage-build.md|Never build the whole item in one go
+R25|phases/stage-build.md|A plan that no longer matches the code is worse than none
 R26|phases/lifecycle.md|ASK FIRST who performs it
 R27|core|Definition of done
 R28|core|Tests passing is not the finish line
-R29|phases/lifecycle.md|record an **impact entry**
-R30|phases/lifecycle.md|Evidence is
-R31|phases/lifecycle.md|Convergence findings on changed AC are
-R32|phases/lifecycle.md|never as "project done"
+R29|phases/stage-build.md|record an **impact entry**
+R30|phases/stage-build.md|Evidence is
+R31|phases/stage-build.md|Convergence findings on changed AC are
+R32|phases/stage-story.md|never as "project done"
 R33|phases/lifecycle.md|never by itself authorizes
 R34|core|do not run tests
 R38|core|fails open
@@ -93,25 +93,25 @@ R91|phases/enforcement.md|Silent unless relevant.
 R92|phases/enforcement.md|Evidence ledger.
 R93|phases/enforcement.md|How strong each rule is
 R94|phases/enforcement.md|Only what is *blocked*
-R95|phases/lifecycle.md|approval is given on the card
-R96|phases/lifecycle.md|Ask **all open questions together, once**
+R95|phases/stage-story.md|approval is given on the card
+R96|phases/stage-story.md|Ask **all open questions together, once**
 R97|phases/files.md|an absent section is never a
 R98|phases/close-out.md|Knowledge review: none
 R100|core|Never silently
 R101|phases/close-out.md|Primary objective
 R102|phases/close-out.md|in the same turn** it is resolved
-R103|phases/lifecycle.md|write nothing at all and report what would be recorded
+R103|phases/stage-story.md|write nothing at all and report what would be recorded
 R104|core|check siblings before inventing a pattern
 R105|core|never application workarounds
 R106|core|If a claim is checkable, check it.
 R107|phases/close-out.md|A snapshot, not a journal
 R108|core|the smallest lane
 R109|core|any doubt → `bounded`
-R110|phases/lifecycle.md|re-check only the facts whose files it lists
+R110|phases/stage-plan.md|re-check only the facts whose files it lists
 R111|phases/review.md|When in doubt, full.
 R112|core|the commit checkpoint always stops
-R113|phases/lifecycle.md|gate in burhan's flow, not the agent's permission mode
-R114|phases/lifecycle.md|Brakes — `auto` falls back to asking when:
+R113|phases/stage-build.md|gate in burhan's flow, not the agent's permission mode
+R114|phases/stage-build.md|Brakes — `auto` falls back to asking when:
 R115|core|surface additions for approval
 R116|core|or what the repository cannot give
 R117|core|(a pull request), like code
@@ -127,8 +127,8 @@ R125|core|external integration contracts or public APIs
 R126|core|irreversible behaviour
 R127|core|concurrency / transaction rules
 R128|phases/review.md|Secrets, tokens, credentials, internal identifiers: not logged, not returned, not committed.
-R129|phases/lifecycle.md|Pause between sub-units
-R130|phases/lifecycle.md|An open material question blocks approval.
+R129|phases/stage-build.md|Pause between sub-units
+R130|phases/stage-plan.md|An open material question blocks approval.
 R131|core|skip the steps that depend on it
 R132|core|its docs and its runtime
 R133|core|a bounded bug needs no architectural ceremony
@@ -151,10 +151,10 @@ R148|SETUP.md|**Never enter, ask for, copy or print credentials**
 R149|SETUP.md|never approve the hooks yourself
 R150|SETUP.md|Never start it in this session; never start it on your own.
 R151|SETUP.md|Write it only after the human approves
-R152|phases/lifecycle.md|**Plan only** is a stopping point, not a mode
-R153|phases/lifecycle.md|close the item at `Plan ready`, and write no code.
-R154|phases/lifecycle.md|**The route sets how many stops** the item has, by its risk — not the mode
-R155|commands/e2e.md|**S+P** → one approval gate, two files
+R152|phases/stage-build.md|**Plan only** is a stopping point, not a mode
+R153|phases/stage-build.md|close the item at `Plan ready`, and write no code.
+R154|phases/stage-build.md|**The route sets how many stops** the item has, by its risk — not the mode
+R155|phases/stage-story.md|**S+P** → one approval gate, two files
 R156|core|`.burhan/bindings.md`
 R157|phases/memory.md|`.burhan/PROJECT.md`
 R158|phases/memory.md|`.burhan/context/<area>.md`
@@ -180,7 +180,7 @@ R177|phases/review.md|git diff --name-only <range>
 R178|agents/claude/burhan-reviewer.md|starts lean
 R179|agents/claude/burhan-reviewer.md|reads only the fix diff and the findings list
 R180|commands/qc.md|confirmation round
-R181|commands/e2e.md|review group
+R181|phases/stage-build.md|review group
 R182|templates/plan.md|Review group
 R183|phases/close-out.md|One session per item
 R184|phases/close-out.md|shrinks to one line
@@ -191,17 +191,20 @@ R188|phases/files.md|holds originals only
 R189|phases/files.md|go to `repro/`
 R190|phases/files.md|name it `<name>-summary`
 R191|phases/files.md|Sources section lists the files kept there
-R192|commands/e2e.md|the tests that relate to the part you changed
-R193|phases/lifecycle.md|the tests that relate to the part you changed
+R192|phases/stage-build.md|the tests that relate to the part you changed
+R193|phases/stage-build.md|the tests that relate to the part you changed
 R194|templates/plan.md|the tests that relate to the part you changed
 R195|phases/enforcement.md|just before this session's own first write of the turn
-R196|phases/lifecycle.md|The commands own the item files
-R197|phases/lifecycle.md|the owner said yes in this conversation, never with your own name
-R198|phases/lifecycle.md|Creating a file by hand, or editing a status or a gate line by hand, is the fallback
+R196|phases/stage-plan.md|The commands own the item files
+R197|phases/stage-plan.md|the owner said yes in this conversation, never with your own name
+R198|phases/stage-plan.md|Creating a file by hand, or editing a status or a gate line by hand, is the fallback
 R199|phases/review.md|never stash or reset your working tree
 R200|phases/files.md|no limit on the size of any file
-R201|phases/lifecycle.md|only its test files, then the fast check
-R202|phases/lifecycle.md|A step that fails unexpectedly means STOP
-R203|commands/e2e.md|Follow the plan exactly
+R201|phases/stage-build.md|only its test files, then the fast check
+R202|phases/stage-build.md|A step that fails unexpectedly means STOP
+R203|phases/stage-build.md|Follow the plan exactly
 R204|templates/plan.md|No open deviation
-R205|phases/lifecycle.md|A template placeholder left in the story, the plan or the build spec blocks it too
+R205|phases/stage-plan.md|A template placeholder left in the story, the plan or the build spec blocks it too
+R206|commands/e2e.md|open a closed section only when a finding of it is named
+R207|phases/review.md|A finding row is the claim, the location and the result in one line
+R208|phases/files.md|reviews/evidence/<slug>-su<N>.md

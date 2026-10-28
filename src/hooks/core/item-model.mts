@@ -93,6 +93,33 @@ export function routeNeeds(route: string): { story: boolean; qc: boolean; knowle
   return { story, qc, knowledge };
 }
 
+/** The plan's Gate checklist, one table (the only place that says which gates a route has). Each line starts with the words
+ *  `gate tick` and `item finish` match on; `<slug>` is filled by the caller. `null` for a route that is not exact: the caller keeps the full list. */
+const GATE_TABLE: Array<{ text: string; when: (t: string, s: string, n: { story: boolean; qc: boolean; knowledge: boolean }) => boolean }> = [
+  { text: 'Route stated (type / scope / reason) and the gates it requires known (WORKFLOW §3)', when: () => true },
+  { text: 'Story approved', when: (_t, _s, n) => n.story },
+  { text: 'No open material question (story · Open questions)', when: (_t, _s, n) => n.story },
+  { text: 'Plan approved', when: () => true },
+  { text: 'Plan re-validated against current code before the first sub-unit — only what `burhan changed --item <slug>` lists (or "no change since <sha>")', when: (t) => t !== 'release' },
+  { text: 'Per sub-unit: failing test first → green (the tests that relate to the part you changed, named with the reason) → fast check; never the whole suite by default; a fix outside those tests adds the tests of the area it touches', when: (t) => t !== 'release' },
+  { text: 'Per sub-unit: review done → a section in `reviews/<slug>-review.md` (short or full, by risk; one section for a review group)', when: () => true },
+  { text: 'Security re-read: authorization, record-level visibility, no secrets logged or returned; access-rule changes tested for BOTH allowed and denied cases', when: () => true },
+  { text: 'No open deviation: every row of the Deviations table is approved or rejected by the owner', when: () => true },
+  { text: 'Every completion claim backed by shown command output', when: () => true },
+  { text: 'Discoveries handled per phases/discoveries.md', when: () => true },
+  { text: 'Real verification performed — asked who does it → `reviews/<slug>-verification.md`', when: () => true },
+  { text: 'QC / convergence passed → `reviews/<slug>-qc.md`', when: (_t, _s, n) => n.qc },
+  { text: 'Knowledge review done, or "none"', when: (_t, _s, n) => n.knowledge },
+  { text: 'Close-out in the state file', when: () => true },
+];
+
+export function gatesFor(route: string): string[] | null {
+  if (!/^(feature|bug|change|refactor|release) \/ (bounded|architectural)$/.test(route)) return null;
+  const [type = '', scope = ''] = route.split(' / ');
+  const needs = routeNeeds(route);
+  return GATE_TABLE.filter((g) => g.when(type, scope, needs)).map((g) => g.text);
+}
+
 /** One row of the plan's Deviations table (a step that did not go as the spec said). `line` is its index in the plan's lines. */
 export interface Deviation { n: number; unit: number; what: string; where: string; output: string; status: string; decision: string; line: number }
 

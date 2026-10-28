@@ -27,6 +27,10 @@ Read the cheapest safe way: `git diff -U<n>` or `--name-only` first, `grep -n` b
 with `head` or `tail`. Guard: every hunk of the diff is read in full; a range is never a reason to skip
 a file the diff touches; when in doubt, open the file. It changes how a file is read, never what the checklist covers.
 
+## Findings, not logs
+
+A finding row is the claim, the location and the result in one line. Long probe output and command listings go in `reviews/evidence/<slug>-su<N>.md`, cited under **Checks run**; that file is not read by default. Anything still open when a sub-unit becomes Reviewed is carried forward (phases/discoveries.md), because a closed section is not read again unless it is named.
+
 ## Re-review after findings
 
 A re-review after findings reads only the fix diff and the findings list: each finding is closed, still

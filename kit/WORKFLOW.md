@@ -65,7 +65,7 @@ a routing line (`patch — <reason>`), the change, evidence after it, the commit
 more, or any doubt → `bounded`.
 
 **Read-only work (investigation, bug + spike):** **no application code is modified** →
-`<slug>-findings.md` (phases/lifecycle.md).
+`<slug>-findings.md` (phases/stage-story.md).
 
 **Lifecycle:** intake → story ⛔ STOP → plan ⛔ STOP → build, one sub-unit at a time → review →
 verify (ask who) → QC → knowledge → close-out; the route picks the steps. **Definition of done** =
@@ -154,7 +154,11 @@ fix a discovery** — document it, get approval, then act (`phases/discoveries.m
 
 | When | Read |
 |---|---|
-| Intake, story, plan, build, intent change | `phases/lifecycle.md` |
+| Intake, story, questions, read-only work | `phases/stage-story.md` |
+| Plan, item commands, re-validation | `phases/stage-plan.md` |
+| Build, sub-unit review, modes, intent change | `phases/stage-build.md` |
+| Verification, QC, knowledge, close-out of an item | `phases/stage-finish.md` |
+| The lifecycle overview | `phases/lifecycle.md` |
 | Item files, sources | `phases/files.md` |
 | Reviewing a diff, QC | `phases/review.md` |
 | A status change, close-out, handoff | `phases/close-out.md` |

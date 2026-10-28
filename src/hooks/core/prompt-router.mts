@@ -68,7 +68,7 @@ export const promptRouter: Check = (ctx) => {
   } else if ((!negAuto && (ere(`${W}((go|run|do|finish|carry on|continue|keep going)( it| this| the item)? end to end|on your own([[:space:]]*([,.!?؟—-]|and|then|$))|don.?t wait|do not wait|without waiting|no need to wait)${WE}|(كمل|كمّل|اشتغل|خلص|خلّص|امشي|اعمل[هاـ]*)[^.،]*لوحدك|من غير ما تستن[اىي]|متستناش|ماتستناش`)?.test(pFlow) ?? false)) || namedMode('auto', pFlow)) {
     add('• Mode switch → write `**Mode:** auto` in the story and the state file: run the sub-units without pausing. Brakes (scope escalator, discovery, plan change, the same test failing twice, an irreversible action) and the commit checkpoint still stop.', '');
   }
-  // "Plan only" is not a mode but a stopping point (phases/lifecycle.md · Modes); a step phrase wins.
+  // "Plan only" is not a mode but a stopping point (phases/stage-build.md · Modes); a step phrase wins.
   const PO_END = '[[:space:]]*([,.!?؟،—-]|please|for |$)';
   if (!stepSwitch && m(`^[[:space:]]*(plan only|only the plan)${PO_END}|${W}(just|only) (the|a) plan${PO_END}|${W}plan only${PO_END}|خط[ةه] بس(${PO_END}|[[:space:]]+من غير)`)) {
     add('• Plan only → a stopping point, not a mode: stop after the plan is approved, close the item at Plan ready, write no code.', '');
@@ -82,7 +82,7 @@ export const promptRouter: Check = (ctx) => {
     add('• Trivial change → the patch lane only if no scope escalator and nothing sensitive: a routing line (patch — reason), the change, evidence after it, the (a)/(b)/(c) checkpoint. Any escalator or any doubt → bounded.', '');
   }
   if (m(`${W}(investigate|investigation|why does|how does|what causes|understand)${WE}|ليه بيحصل|${AB}(ازاي|إزاي|افهم|فهمني|تحقيق)${AE}`)) {
-    add('• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.burhan/phases/lifecycle.md).', 'superpowers:systematic-debugging');
+    add('• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.burhan/phases/stage-story.md).', 'superpowers:systematic-debugging');
   }
   if (m(`${W}(bug|fix|error|broken|fail|fails|failing|crash|regress|exception|wrong|incorrect)${WE}|not work|doesn.t work|مش شغال|${AB}(مشكلة|مشكله|خطأ|غلط|باظ|باظت|عطل)${AE}`)) {
     add('• Bug → reproduce and find the root cause with evidence before proposing a fix; then a failing regression test first.', 'superpowers:systematic-debugging, then superpowers:test-driven-development');
@@ -91,7 +91,7 @@ export const promptRouter: Check = (ctx) => {
     add('• Work-item flow → burhan:e2e <slug>, then burhan:qc <slug>; read the state file first.', '');
   }
   if (m(`${W}(build|implement|feature|refactor|add|new|create|support|modify|change|update|enable|rename)${WE}|${AB}(بناء|اضف|أضف|ضيف|ميزة|فيتشر|انشئ|عدل|عدّل|غيّر)${AE}`)) {
-    add('• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.burhan/phases/lifecycle.md).', 'superpowers:brainstorming → superpowers:writing-plans → superpowers:test-driven-development');
+    add('• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.burhan/phases/stage-story.md).', 'superpowers:brainstorming → superpowers:writing-plans → superpowers:test-driven-development');
   }
   if (m(`${W}(review|done|finish|finished|complete|commit|ship)${WE}|${AB}(راجع|مراجعة|خلص|خلصت|خلصنا|سلّم|سلم)${AE}`)) {
     add('• Wrapping up → review (.burhan/phases/review.md), then run the checks and SHOW the output before claiming done; commit only after the (a)/(b)/(c) checkpoint (.burhan/phases/close-out.md).', 'superpowers:requesting-code-review, then superpowers:verification-before-completion');

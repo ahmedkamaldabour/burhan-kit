@@ -19,13 +19,12 @@ in-flight block; the turn-end hook writes this session's external link.
 - Read the state file first. A hook's finding in the context is explained in
   `.burhan/phases/enforcement.md`.
 - Does `<docs>/<slug>/` exist? Try `$ARGUMENTS` as a slug (kebab-case a title).
-- If it exists, read `<slug>-story.md`, `<slug>-implementation-plan.md` or `<slug>-findings.md`, and
-  everything in `reviews/`. **Cross-check against the actual code** — don't trust status markers
+- If it exists, read `<slug>-story.md`, `<slug>-implementation-plan.md` or `<slug>-findings.md`, and `reviews/` by need: the QC and verification reports in full, and of the review file its headings, the sections of sub-units not yet Reviewed and the latest fix round; open a closed section only when a finding of it is named or the plan says so (QC reads everything). **Cross-check against the actual code** — don't trust status markers
   alone.
 - Print a short status: route (type / scope), which gates are done, sub-units done / in progress /
   to do, open questions, the *Primary objective*.
 
-**The mode decides where you stop** (`.burhan/phases/lifecycle.md` · Modes): read `Mode:` from the
+**The mode decides where you stop** (`.burhan/phases/stage-build.md` · Modes): read `Mode:` from the
 item's block in the state file (ask at the start if unset; exact forms: phases/files.md · Fields). `step` pauses after every sub-unit; `auto` runs the
 sub-units without pausing until a brake or the commit checkpoint. "Plan only" is a stopping point, not a
 mode: stop after the plan is approved, close the item at `Plan ready`, write no code.
@@ -46,93 +45,15 @@ reviewed).
 
 ## 2) Branch on state
 
-- **No item yet** → intake (.burhan/phases/lifecycle.md ①): restate the request, **classify type + scope + one-line
-  reason** (§3, including scope escalators), preserve material inputs under `sources/`. Discover
-  before asking — question the human only about business ambiguity.
-  - **Read-only route** (investigation, bug + spike) → write `<slug>-findings.md` from
-    `templates/findings.md`; mark `**Read-only:** yes` in the state file; never modify application code.
-    Finish with the conclusion and, if code should change, propose a new routed item. Then run the
-    knowledge review (.burhan/phases/memory.md) and the close-out (.burhan/phases/close-out.md) with state `Done (no QC)` — onboarding a repository
-    instead stops for the human to approve the baseline. Stop.
-  - Route includes **S** → write `<slug>-story.md` from `templates/story.md`.
-  - Route says **S+P** → one approval gate, two files: write both `<slug>-story.md` and
-    `<slug>-implementation-plan.md` from their templates (the plan as in the plan step below), present
-    them together and stop once. The approval covers both: the story's **Status** and the plan's
-    **Overall status** become `Approved`.
-  - Which files an item has: `.burhan/phases/files.md`.
-  - Route starts at **P** (refactor, release) → skip the story; go to the plan step below. Too big for one plan → propose a split into a parent and children
-    (.burhan/phases/lifecycle.md · Decomposition). **Present it and STOP for approval.**
-- **Story approved (or no story on this route), no plan** → investigate the real code (cite file:line), re-verify the story's
-  facts, then write `<slug>-implementation-plan.md` from `templates/plan.md` and `<slug>-build-spec.md` from
-  `templates/build-spec.md` (read the real files and base every code block on them; list what you could not verify). An open *material*
-  question blocks approval. **Present it and STOP for approval.**
-- **Plan approved** → re-validate it against the current code (facts drift): the kit command's `changed --item
-  $ARGUMENTS` (e.g. `npx burhan-kit changed --item $ARGUMENTS`) lists what changed since the story's **Verified at commit**; re-check only those (no
-  sha → every fact). Then step 3.
+Read the stage file for the state the item is in, and only that one (WORKFLOW §9):
 
-## 3) Build — one sub-unit at a time, never the whole item (routes with **T**)
+- **No item yet** → `.burhan/phases/stage-story.md` (intake, the route, the story).
+- **Story approved (or no story on this route), no plan** → `.burhan/phases/stage-plan.md` (the plan and the build spec).
+- **Plan approved** → `.burhan/phases/stage-build.md` (re-validate, then build, review and pause, one sub-unit at a time).
+- **Every sub-unit reviewed** → `.burhan/phases/stage-finish.md` (verification, then QC or close-out).
 
-For the next unimplemented sub-unit only:
-- **Who builds it:** if `.claude/agents/burhan-builder.md` exists (the project set `WF_MODEL_CLAUDE_BUILDER`
-  to build on a cheaper model), **delegate this sub-unit to the `burhan-builder` subagent** — give it the
-  plan path and the sub-unit number only — **in the foreground: wait for its report** (never launch it in
-  the background, never touch the item's files while it works — two writers on one sub-unit is a race),
-  then check its reported commands and output yourself before moving on. Otherwise build it here, as below. (Planning goes to `burhan-planner` and exploration to
-  `burhan-explorer` the same way, when they exist.)
-- **Scope discipline:** build exactly what the item asks; anything extra is surfaced, not baked in.
-- **Test first:** write the failing test, run it, see it fail for the right reason → smallest change
-  → green → the fast check.
-- **Which tests to run:** after each sub-unit run the tests that relate to the part you changed, which you pick from the diff and name with the reason, then the fast check; never the whole suite by default (a large project's suite can take hours: the project's own full-suite command in `bindings.md`, or its CI, covers it). A fix that lands outside those tests adds the tests of the area it touches.
-- **Follow the plan exactly:** the files, the code, the order and the commands of the approved plan and build spec, nothing more. A step that fails unexpectedly (a RED that does not fail as the spec says, a GREEN that fails, a file that differs from what the spec expects) means STOP: record a row in the plan's Deviations table (`burhan deviation add`), ask the owner, and an approved deviation updates the plan and the spec first, then the code. While a deviation is open, `burhan guide` says code edits are not authorized.
-- **In short:** only its test files, then the fast check; the full suite at QC, before a commit, or when a fix lands outside the covered tests.
-- A failure you didn't expect: before calling it a regression, re-run the same check on a clean copy of the commit your work started from
-  (`git worktree add <a temporary folder> <that commit>`; install what the check needs there; `git worktree remove` it afterwards); never stash, reset or check out over your working tree.
-- Update the sub-unit status (🔵 → 🟢) in the plan and the state file — every transition, as it
-  happens.
+At every stage make and change the item's files with the kit's commands (`item new`, `item set`, `gate tick`, `review add`, `approve`, `deviation`, `item finish`, `guide`): the table and its rules are in `.burhan/phases/stage-plan.md` · The commands own the item files.
 
-## 4) Review the sub-unit
+A release verifies before it is reviewed: read `.burhan/phases/stage-finish.md` (verification) before the review in `.burhan/phases/stage-build.md`.
 
-- An independent review of the sub-unit's diff against `.burhan/phases/review.md` (security first), in a fresh
-  context where feasible (Claude Code: the `burhan-reviewer` subagent, given only the paths; wait for its
-  report before the next sub-unit). Give it the changed files of the diff range (`git diff --name-only <range>`)
-  and read the lean-start and reading rules in `phases/review.md`. Record
-  **Performed by** in the review file, in the exact form of phases/files.md · Fields.
-- A sub-unit the approved plan puts in a review group (`Review group: <letter>`) is reviewed with its group
-  (`phases/review.md` · Review groups): one section, after the group's last sub-unit; they stay 🟢 until then.
-  The wait for the report below applies at the group's last sub-unit.
-- Add the sub-unit's section to `reviews/<slug>-review.md` (from `templates/review.md`): a **short**
-  checklist when it touches nothing sensitive and no scope escalator, the **full** review otherwise
-  (`.burhan/phases/review.md` · Sized by risk).
-- Fix in-scope findings; carry the rest forward (`.burhan/phases/discoveries.md` for anything out of scope).
-- Re-run the affected tests (the tests that relate to the part you fixed, plus those of any area the fix touches outside them) and the fast check after fixes. Show the output.
-
-## 5) Between sub-units
-
-Report what changed (files, real test output, review outcome), update the plan (🟢 → ✅; a review
-group's sub-units together, so a group member that is not the last one is reported without a review
-outcome and stays 🟢) and the state file. Then, in `step` mode, **STOP for the human before the next sub-unit**; in `auto`, go on
-unless a brake fires.
-
-**Commit checkpoint — never on your own judgment.** Show `git status` / diff and ask: (a) commit
-now, (b) keep going and commit later, (c) the human commits. "Finish the sub-unit" is not
-permission to commit. Push or open a pull request only when the human asks (phases/close-out.md).
-
-## 6) Item-complete verification (when the route includes V)
-
-Release routes verify **before** their review; every other route verifies after the sub-units are
-reviewed. When the work is ready: **first ask whether the human performs the verification or wants the
-agent to** (in `auto`, use the answer given at the start). If the agent does it, use the verification identity from §1, check every acceptance
-criterion, and record every run — failed ones included — in `reviews/<slug>-verification.md` from
-`templates/verification.md`. Point the state file at the report (pointer only). Set the plan to
-**Completed**. Then:
-- Route includes **Q** → suggest `burhan:qc $ARGUMENTS` (it runs the knowledge review and the
-  close-out).
-- No **Q** → if the route includes **K**, run the knowledge review now (.burhan/phases/memory.md: propose with evidence;
-  the human promotes or rejects; or record "none"). Then the close-out (.burhan/phases/close-out.md) with state
-  `Done (no QC)`.
-
-Record any small unrequested tweak in the plan under "Out-of-scope changes".
-
-**Escaped defects (counted by `burhan stats`).** A bug whose cause is an item that already passed QC
-names it in the bug story's **Escapes** line. An item reopened after its QC PASS gets the date and the
-reason in its plan's **Reopened after PASS** line.
+The route decides which of these steps the item has (the paragraph above); the lifecycle overview is `.burhan/phases/lifecycle.md`.

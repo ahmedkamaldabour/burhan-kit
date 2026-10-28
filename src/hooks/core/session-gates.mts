@@ -53,7 +53,7 @@ export const sessionGates: Check = ({ cfg, project, ev, env }) => {
   let oldPlanOnly = '';
   for (const [name, val] of [["the item's Mode", modeVal], [routeKey, routeMode], ['WF_MODE_DEFAULT', dflt]]) {
     if (isPlanOnly(val)) {
-      oldPlanOnly = `⚑ plan-only is no longer a mode (step | auto): the old value in ${name} is ignored; this session runs as ${mode}. To stop after the plan, say so — the item closes at Plan ready (.burhan/phases/lifecycle.md · Modes).`;
+      oldPlanOnly = `⚑ plan-only is no longer a mode (step | auto): the old value in ${name} is ignored; this session runs as ${mode}. To stop after the plan, say so — the item closes at Plan ready (.burhan/phases/stage-build.md · Modes).`;
       break;
     }
   }

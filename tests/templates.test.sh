@@ -37,13 +37,13 @@ while IFS= read -r ref; do
   check "$ref exists" "$( [ -f "$ref" ] && echo yes)" has "yes"
 done < <(printf '%s' "$wf" | grep -o -E 'templates/[a-z-]+\.md' | sort -u)
 
-echo "commands — exist and only reference real templates"
+echo "commands and stage files — exist and only reference real templates"
 for c in e2e qc onboard; do
   check "commands/$c.md exists" "$( [ -f "commands/$c.md" ] && echo yes)" has "yes"
 done
 while IFS= read -r ref; do
-  check "commands reference $ref — exists" "$( [ -f "$ref" ] && echo yes)" has "yes"
-done < <(cat commands/*.md 2>/dev/null | grep -o -E 'templates/[a-z-]+\.md' | sort -u)
+  check "commands and stage files reference $ref — exists" "$( [ -f "$ref" ] && echo yes)" has "yes"
+done < <(cat commands/*.md phases/stage-*.md 2>/dev/null | grep -o -E 'templates/[a-z-]+\.md' | sort -u)
 
 echo "onboard command (project-scan-and-memory AC-02…AC-05, AC-12)"
 ob="$(cat commands/onboard.md 2>/dev/null)"
@@ -233,14 +233,14 @@ check "SETUP constraint: no credentials" "$setup" has "credentials"
 echo "modes are step and auto (plan-only removed before 0.1.0)"
 check_eq "plan-only appears nowhere in the kit's text (gates.txt included)" "$(grep -rl --exclude='*.sh' 'plan-only' . | sort | tr '\n' ' ')" ""
 check "...only the session-start hook names it, as removed" "$(grep -l 'plan-only is no longer a mode' "$T_ROOT/src/hooks/core/session-gates.mts")" has "session-gates.mts"
-check "lifecycle: plan only is a stopping point that closes at Plan ready" "$(cat phases/lifecycle.md)" has "close the item at \`Plan ready\`"
-check "lifecycle: the route sets the stops, not the mode" "$(cat phases/lifecycle.md)" has "The route sets how many stops"
+check "stage-build: plan only is a stopping point that closes at Plan ready" "$(cat phases/stage-build.md)" has "close the item at \`Plan ready\`"
+check "stage-build: the route sets the stops, not the mode" "$(cat phases/stage-build.md)" has "The route sets how many stops"
 echo "pull request only on request"
 check "close-out: a PR only when the human asks" "$(cat phases/close-out.md)" has "Pull request — only when the human asks"
 check "close-out names the PR body command" "$(cat phases/close-out.md)" has "burhan pr-body --item <slug>"
 check "e2e names the kit command for use and changed" "$(cat commands/e2e.md)" has 'npx burhan-kit use <slug>'
 check "e2e says the kit command comes from the bindings" "$(cat commands/e2e.md)" has 'the kit command'
-check "e2e: push or PR only when asked" "$(cat commands/e2e.md)" has "Push or open a pull request only when the human asks"
+check "stage-build: push or PR only when asked" "$(cat phases/stage-build.md)" has "Push or open a pull request only when the human asks"
 check "qc: PR only if asked" "$(cat commands/qc.md)" has "a pull request only if"
 echo "fixed-form fields (the user's ruling)"
 fields="$(sed -n '/^## Fields the hooks and stats read/,/^## /p' phases/files.md)"
@@ -248,8 +248,8 @@ for f in '`Route`' '`Mode`' '`Read-only`' '`Accepted by`' '`Reopened after PASS`
   check "files.md · Fields lists $f" "$fields" has "| $f |"
 done
 check "state template carries Route, Read-only and Mode in the fixed form" "$(cat templates/progress.md)" has '**Route:** <type> / <scope> · **Read-only:** <yes|no> · **Mode:** <step|auto>'
-check "e2e writes the bold Read-only field" "$(cat commands/e2e.md)" has '`**Read-only:** yes`'
-check "lifecycle writes the bold Read-only field" "$(cat phases/lifecycle.md)" has '`**Read-only:** yes`'
+check "stage-story writes the bold Read-only field" "$(cat phases/stage-story.md)" has '`**Read-only:** yes`'
+check "stage-story (read-only work) writes the bold Read-only field" "$(cat phases/stage-story.md)" has '`**Read-only:** yes`'
 check "qc.md: same session in the full fixed form" "$(cat commands/qc.md)" has '`<agent> · <model> · same session`'
 check "qc.md: Accepted by in the fixed form" "$(cat commands/qc.md)" has '`<name> · YYYY-MM-DD`'
 check "the reviewer writes the fixed Performed by" "$(cat agents/claude/burhan-reviewer.md)" has '`claude · <your model> · fresh subagent`'

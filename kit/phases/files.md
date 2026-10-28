@@ -11,6 +11,7 @@ slug** — a file opened in an editor tab, pasted into a diff or found by search
 | `<slug>-build-spec.md` (the code per sub-unit; approved with the plan) | `templates/build-spec.md` | ③ |
 | `<slug>-findings.md` (read-only routes) | `templates/findings.md` | instead of ②–⑦ |
 | `reviews/<slug>-review.md` (one per item, a section per sub-unit; older items may have `reviews/<slug>-<sub-unit>.md`) | `templates/review.md` | ⑤ |
+| `reviews/evidence/<slug>-su<N>.md` (long probe output of a review; not read by default) | — | ⑤ |
 | `reviews/<slug>-verification.md` | `templates/verification.md` | ⑥ |
 | `reviews/<slug>-qc.md` | `templates/qc.md` | ⑦ |
 | `sources/` | — originals only, never edited (our scripts and logs: `repro/`) | ① and whenever new input arrives |
@@ -57,5 +58,5 @@ Every template is a skeleton: **delete any section that does not apply — an ab
 violation** (no hook, review or QC treats it as one), except the sections the contract requires: every plan keeps its
 gate checklist, sub-unit breakdown, executor rules and Deviations table, a plan on a route with a story also its AC coverage
 table, and an architectural plan also its security re-read, verification steps, limitations and knowledge review; a build
-spec keeps its "Not verified" list and every part of every sub-unit (`burhan item check` names a missing one). Prefer tables to prose. There is no limit on the size of any file: say what the reader needs to decide or to carry out, and no more. The decision card (phases/lifecycle.md) is short by design.
+spec keeps its "Not verified" list and every part of every sub-unit (`burhan item check` names a missing one). Prefer tables to prose. There is no limit on the size of any file: say what the reader needs to decide or to carry out, and no more. The decision card (phases/stage-story.md) is short by design.
 

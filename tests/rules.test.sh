@@ -33,7 +33,7 @@ stale="$(cd "$T_ROOT" && grep -rnE "(WORKFLOW(\.md)? )?§ ?(1[0-9]|3\.[0-9])" ki
 check "no reference to a § that no longer exists" "$stale" lacks "§"
 echo "S+P is one gate over two files (issue #1: a combined document left burhan status at Spec ready)"
 check "e2e no longer asks for one combined story + plan document" "$(norm < commands/e2e.md)" lacks "one combined story + plan document"
-check "e2e names both files for S+P" "$(norm < commands/e2e.md)" has "write both \`<slug>-story.md\` and \`<slug>-implementation-plan.md\`"
+check "stage-story names both files for S+P" "$(norm < phases/stage-story.md)" has "write both \`<slug>-story.md\` and \`<slug>-implementation-plan.md\`"
 echo "QC and templates"
 check "QC opens the whole review checklist" "$(norm < commands/qc.md)" has "Apply the **whole** review checklist in \`.burhan/phases/review.md\` — security first"
 for t in templates/*.md; do

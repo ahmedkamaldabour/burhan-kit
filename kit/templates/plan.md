@@ -79,7 +79,7 @@ Empty until a step deviates. Status is open, approved or rejected.
 |---|----------|------|-------|--------|--------|----------|
 
 ## 11. Impact log
-Only if the approved intent changed mid-flight (phases/lifecycle.md · intent changes).
+Only if the approved intent changed mid-flight (phases/stage-build.md · intent changes).
 | Date | Change | Phase | Affected? | Reason |
 |------|--------|-------|-----------|--------|
 
