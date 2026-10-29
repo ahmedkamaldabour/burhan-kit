@@ -125,9 +125,9 @@ The audit also warns when a work-item file changed but the state file did not (`
 ## Where it runs
 
 ### Claude Code and Codex
-- **What it is:** one shared hook core, five hooks per agent (session start, your prompt, before a tool, after a tool, end of turn). Your existing hooks are kept and run beside burhan's.
+- **What it is:** one shared hook core, six hook entries per agent (session start, your prompt, before a shell command, before a file write, after a file write, end of turn). Your existing hooks are kept and run beside burhan's.
 - **When it shows up:** after setup, in a new session.
-- **Example:** `ok    .claude/settings.json: all 5 hooks wired` from `doctor`.
+- **Example:** `ok    .claude/settings.json: all 6 hooks wired` from `doctor`.
 - **Limit:** Codex runs project hooks only after you trust them in `/hooks`, and says nothing when they are untrusted; `doctor` reads the trust state from the table names in `~/.codex/config.toml` (never a value) and warns, and the `AGENTS.md` block tells the agent to ask you once. Trust again after an upgrade that changes a hook. Claude Code 2.1.139 or newer is needed.
 
 ### Optional extras

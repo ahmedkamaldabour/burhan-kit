@@ -66,7 +66,7 @@ npx burhan-kit uninstall          # the plan
 npx burhan-kit uninstall --apply  # remove the kit-owned files, blocks and hook entries
 ```
 
-It keeps `workflow.config`, `bindings.md`, `.burhan/local/` and your work and discovery files unless you add `--all`, and never touches project memory, your own files, or anything outside the project.
+It keeps `workflow.config`, `bindings.md`, `.burhan/local/` and your work and discovery files unless you add `--all`, and never touches project memory or anything outside the project. It removes the kit folders under `.burhan/` (`phases`, `templates`, `commands`, `hooks`) whole, so keep your own files outside them.
 
 ## Files that are symbolic links
 

@@ -1,54 +1,32 @@
-# Burhan
+# burhan
 
-Coding agents say “done” without proof. burhan installs a working agreement and hooks in your project, asking your agent to agree the work with you first, build reviewed steps, and show what it ran. For Claude Code and Codex: `npx burhan-kit`.
+Coding agents say “done” without proof.
 
-- **Agree first:** story and plan need your yes before code.
-- **Show proof:** edits and commands are recorded; “done” without a passing check gets a warning.
-- **You commit:** before each commit you choose: now, later, or yourself.
+burhan is **spec-driven development (SDD)** for Claude Code and Codex. The story and plan are the spec: you approve them before code, each acceptance criterion maps to a test, and work that departs from them stops and is recorded. Each step is reviewed, and task commands and hooks (small scripts that report at set moments) keep proof of what ran.
+
+- **Agree first:** approve the story (what and why) and plan (how) before code.
+- **Show proof:** record edits and commands; flag “done” without a passing check.
+- **You commit:** choose now, later, or yourself.
+
+[![npm version](https://img.shields.io/npm/v/burhan-kit.svg)](https://www.npmjs.com/package/burhan-kit) [![CI](https://github.com/ahmedkamaldabour/burhan-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmedkamaldabour/burhan-kit/actions/workflows/ci.yml) [![MIT license](https://img.shields.io/github/license/ahmedkamaldabour/burhan-kit.svg)](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/LICENSE) **Node 22+**
 
 [العربية](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/README.ar.md)
 
-## The flow at a glance
+## Problem and answer
 
-```text
- 1. Intake     the agent restates your request and picks a route: type + scope + a one-line reason
- 2. Story      what and why, with acceptance criteria         <- you approve
- 3. Plan       how: the decisions, and the full code of each sub-unit   <- you approve
- 4. Build      one sub-unit at a time, test first, exactly as planned    <- `step` mode pauses here
- 5. Review     a fresh reviewer checks that sub-unit          (repeat 4 and 5 per sub-unit)
- 6. Verify     a real end-to-end check                        <- asks: you or the agent?
- 7. QC         the final independent check, on the routes that need it   <- you accept the verdict
- 8. Knowledge  lessons worth keeping                          <- you promote or reject them
- 9. Commit     you choose: now, later, or yourself            <- always stops
-```
+| An agent alone can | burhan helps it |
+| --- | --- |
+| Write before you agree what matters | Stop for your yes on the story and the plan |
+| Call work done without current proof | Warn when the last code edit lacks a passing check |
+| Review its own memory of the work | Have a separate reviewer check each step, where feasible |
+| Lose the record in chat | Keep task files and a record of the edits and commands the agent reports (the ledger) |
+| Start each session blind | Point it at project memory and the task state |
 
-Every request is classified first: type + scope + a one-line reason. That is its **route**: the agent states it at the start and you can override it, and it decides which steps follow, so a feature and a bug do not take the same path. Type is `feature`, `bug`, `change` (to existing behaviour), `refactor`, `release` or `investigation`. Scope is `bounded` (local and well understood), `architectural` (cross-cutting, or touching security, data, money or an interface others rely on) or `patch` (one obvious change). On bounded work the story and the plan are one approval.
+Use burhan when human decisions, reviewable records, and proportional process matter. It cannot physically stop an agent or prove unreported work.
 
-| You ask for | Classified as | Path |
-| --- | --- | --- |
-| a new feature | feature / bounded | story + plan (one approval) → build → review → verify → QC → knowledge |
-| a bug | bug / bounded | story + plan (one approval; the story holds the root cause, found with evidence before any fix) → build (starting from a failing regression test) → review → verify → knowledge; no QC |
-| a typo | change / patch | the change, a passing check run after it, the commit; no story or plan |
-| a feature, bug or change touching, for example, security, permissions, the data model, money or a public API | architectural | story and plan as two approvals → build → review → verify → QC → knowledge |
-| a question to investigate | investigation | read-only: findings, no code |
+## A 60-second tour
 
-A **story** is what and why, with acceptance criteria; a **plan** is how, in small steps. A **gate** is a point where the agent stops for you (every `<-` above, and after every sub-unit in `step` mode); **QC** is the final check by a fresh, independent reviewer. Refactors and releases have their own shorter paths ([the full table](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#agree-before-you-build)).
-
-The route sets how many approvals a task has; the mode only decides whether the build pauses between sub-units. For a task with three sub-units:
-
-| A task with three sub-units | `step` (default) | `auto` |
-| --- | --- | --- |
-| story + plan | you approve | you approve, once |
-| build + review of each sub-unit | stops after each of the three | runs straight through |
-| verify | asks whether you or the agent runs it | asked once, at the start |
-| QC verdict (on routes with QC) | you accept it | you accept it |
-| commit | you choose | you choose |
-
-In `auto` the agent asks you again at a **brake**: a scope escalator (the task turns out to touch security, data, money or an interface others rely on), a discovery (something found that the task did not ask for), a plan change, the same test failing twice, or an irreversible action. The commit always stops, in both modes. Switch modes any time in plain words (“go end to end”, “wait for my approval”); “plan only” stops once the plan is approved and writes no code.
-
-## See it work
-
-An excerpt of a real run (Claude Code, a one-function task, shortened with `…`; the full walkthrough is in [docs/first-task.md](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md)):
+This is a shortened real run from the [first-task walkthrough](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md).
 
 ```text
 you    /burhan:e2e slugify — add a function slugify(text) in src/slugify.js … with a test
@@ -60,147 +38,224 @@ agent  **Route:** feature / bounded. It's one pure function with no scope escala
        **Waiting on you:** reply "approved" to approve both the story and the plan … I won't write code before then.
 ```
 
-The `Check before commit` block above came from a run that started with `/burhan:e2e`; after the install steps below, the session-start reminder asks the agent for it in your first session (Step 3), as long as the checks are not set up yet.
+You choose the proposed checks. The agent names the route (how much process this task gets) and writes a story and plan. Your `approved` is its turn to build; it still stops for later human decisions. The first block is first-use setup: later tasks start at the route. Gate, route and scope escalator are in the terms table below.
 
-A **hook** is a small script the agent runs at set moments (session start, your prompt, before a commit, after an edit, end of turn). In another run an agent edited a file, could not run the check, and said “Done.” The end-of-turn hook answered, and the agent took the claim back. The **ledger** is the private record of every edit and command; `npx burhan-kit evidence` prints it, here with that run's `npm test` — refused by the agent's own permission prompt, not by burhan — marked `blocked`:
+## Quick start
+
+1. Optional, recommended: install Superpowers first, so setup can switch its skills on. burhan never installs it. In Claude Code use `/plugin install superpowers@claude-plugins-official`; in Codex use `/plugins`, search `superpowers` and install it; after step 2, also set `WF_SKILLS='superpowers'` in `.burhan/workflow.config` (setup cannot see Codex plugins). Superpowers is a plugin of process skills for the agent; burhan maps its phases to them.
+
+2. In the project root, with Node 22 or newer, run:
+
+   ```bash
+   npx burhan-kit
+   npx burhan-kit doctor
+   ```
+
+   Setup asks questions, shows a summary, and writes only after confirmation. Existing hooks stay. On Codex, [trust the project hooks](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks) in `/hooks`; otherwise they do not run. A healthy setup says `all 6 hooks wired`.
+
+3. Open a **new** agent session in the project. Type `start` (any first message works); or use `/burhan:onboard` in Claude Code; or type `Follow .burhan/commands/onboard.md` in Codex. The agent proposes project checks and understanding for your approval.
+
+Start a task with `/burhan:e2e <slug>` in Claude Code. In Codex, follow the command file under `.burhan/commands/`.
+
+## What burhan puts in your project
+
+```text
+.burhan/
+  WORKFLOW.md SETUP.md VERSION phases/ templates/ commands/ hooks/  kit-owned; upgrade refreshes
+  bindings.md workflow.config                                     yours; commit and review
+  PROJECT.md context/                                             shared project memory, when onboarded
+  local/PROGRESS.md                                               per developer; git-ignored
+  work/<task>/                                                    private task files by default
+  discovery/                                                      private side findings by default
+  .gitignore                                                      ignores local/, work/, discovery/
+.claude/ or .codex/                                               hook settings and agent bindings
+CLAUDE.md or AGENTS.md                                            marked burhan block; outside text stays yours
+```
+
+Do not edit kit-owned files. `upgrade` refreshes them. Keep `bindings.md`, `workflow.config`, memory, and shared task files in version control.
+
+By default work and discovery are private. To share them, point `WF_DOCS_DIR` at a path such as `docs/burhan/work` and `WF_DISCOVERY_DIR` at `docs/burhan/discovery`; see [configuration](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#workflowconfig).
+
+## How burhan works
+
+| Term | Meaning |
+| --- | --- |
+| Story | what and why, with acceptance criteria |
+| Plan | how: the decisions, plus a build spec (the exact tests and code) |
+| Route | a task's type, scope and a one-line reason; it sets the steps |
+| Intake | the agent restates your request and picks the route |
+| Task (item) | one piece of work with its own folder; its short name is the `<slug>` |
+| Gate | a point where the agent waits for you |
+| Sub-unit | one small planned build step |
+| QC | the final independent quality check |
+| Knowledge review | the agent proposes lessons worth keeping; you keep or reject them |
+| Baseline | your approved (or waived) record of what the agent understood about the project |
+| Deviation | a step that left the approved plan |
+| RED / GREEN | a test failing as expected / the same test passing |
+| Hook | a small script that reports at a set moment |
+| Ledger | the record of the edits and commands the agent reports |
+| Scope escalator | a high-risk trait (listed under Routes) that makes a task architectural |
+
+```text
+you ask → Intake → Story ✋ → Plan ✋ → ┌ Build → Review ┐ → Verify ✋ → QC ✋ → Knowledge ✋ → Commit ✋
+                                      └ repeats per sub-unit ┘
+
+✋  always you, in both modes: approve, choose, accept
+step  ⏸ also pauses after every sub-unit's build and review
+auto  runs the loop straight through, keeping the ✋ stops; it also stops at a brake ⚠: a scope escalator appears,
+      something unrequested turns up, the plan must change, the same test fails twice,
+      or an action cannot be undone
+```
+
+The route chooses gates. The mode chooses pauses between sub-units; it is not agent permission.
+
+| A three-sub-unit task | step | auto |
+| --- | --- | --- |
+| Story and plan | you approve | you approve once on bounded work |
+| Build and review | pauses after each | continues between them |
+| Verification | asks when ready | asks once at the start |
+| QC and commit | you decide | you decide |
+
+`step` is the default. Say “go end to end” for `auto`, or “wait for my approval” for `step`. “Plan only” ends after an approved plan and writes no code.
+
+## Life of a task
+
+```text
+work/<task>/
+  <task>-story.md                Draft → Approved                 approve story
+  <task>-implementation-plan.md  Draft → Approved → In progress → Completed   approve plan; item set; item finish
+  <task>-build-spec.md           exact tests, code, commands      approved with plan
+  reviews/                       review, verification, QC reports review add
+  sources/                       originals you gave the agent; never edited
+  repro/                         the agent's scripts and logs
+.burhan/local/PROGRESS.md        one current-state block per task
+```
+
+Each sub-unit moves **Draft → Approved → In progress → Implemented → Reviewed**. `item set` permits one rung at a time. A review section is required before `Reviewed`.
+
+The plan is two files: the decisions (with acceptance-criterion coverage and rulings) and a build spec. The spec gives each sub-unit its files, complete test and code, RED and GREEN commands, expected output, and interfaces.
+
+Build exactly that spec. If RED does not fail as expected, GREEN fails, or a file differs, stop. `deviation add` records the difference. Until you resolve it, `guide` says code is not authorized; an approved deviation updates the plan and spec first, then the code.
+
+## Routes
+
+Every request gets a route before work: type, scope, and a one-line reason. You can correct it. Any one of these makes a task architectural, whatever its size, and is called a **scope escalator**: security or privacy impact · authorization or visibility rules · persistent data-model or migration changes · money or accounting correctness · derived state shared across modules · external integration contracts or public APIs · irreversible behaviour · concurrency or transaction rules. A `patch` exists only for a change, bug or refactor.
+
+| Route | Required journey | Key point |
+| --- | --- | --- |
+| Feature, bounded | story + plan, build, review, verify, QC, knowledge | one approval for story and plan |
+| Feature, architectural | story, plan, build, review, verify, QC, knowledge | plan presents design options |
+| Change, bounded | story + plan, build, review, verify, knowledge | no QC |
+| Change, architectural | story, plan, build, review, verify, QC, knowledge | two approvals |
+| Bug, bounded | story + plan, build, review, verify, knowledge | root cause and failing regression test first |
+| Bug, architectural | story, plan, build, review, verify, QC, knowledge | two approvals |
+| Refactor, bounded | plan, build, review, verify | behavior-preserving tests first |
+| Refactor, architectural | plan, build, review, verify, knowledge | plan presents options |
+| Release | plan, verify, review | architectural release includes rollback |
+| Patch | routing line, change, proof, commit checkpoint | one obvious safe change; no story or plan |
+| Investigation | findings, knowledge | read-only; no application code |
+
+## What only you decide
+
+| Decision | How burhan holds it |
+| --- | --- |
+| Story and plan | `approve` records your name and refuses an agent's name; the decision stays yours |
+| Baseline | the agent writes it only after you approve, correct, or waive |
+| Who verifies | the agent asks before real verification |
+| QC verdict | QC proposes PASS or FAIL; you accept it |
+| A deviation or discovery | work pauses; a separate finding is not silently fixed |
+| Commit | you choose now, later, or yourself; “finish” is not approval |
+| Push or pull request | only when you ask |
+| Codex hook trust | you grant it; burhan never does |
+
+## Reviews
+
+| Review | When | What it establishes |
+| --- | --- | --- |
+| Sub-unit | after build, before the next unit | the planned small change is sound |
+| Review group | after a planned group | one short review for one non-sensitive area |
+| Re-review | after findings | the fix and prior findings; widen when needed |
+| Verification | after reviewed sub-units | runs against every acceptance criterion |
+| Final QC | routes that require QC | fresh, adversarial convergence review |
+
+A reviewer reads the task files, diff, and ledger, then writes a report. Reviews record `Performed by`: agent, model, and context. The other agent can review when configured. Same-session QC is marked and counted as self-review.
+
+QC proposes `PASS` or `FAIL — N issues`, with Critical, Important, or Minor findings. PASS is evidence, not a guarantee. A FAIL returns the task to build; the next QC confirms the fix or widens the review.
+
+## Proof
+
+Hooks report and fail open; they never block. Task commands refuse a wrong lifecycle step, but an agent can skip them.
+
+| Moment | Hook | Purpose |
+| --- | --- | --- |
+| Session start | `session-gates` | gates, task state, first-use setup, tasks in flight |
+| Your prompt | `prompt-router` | phase and mode suggestion; baseline reminder |
+| Before commit | `pre-commit-check` | fast check and your commit choice |
+| Before a write | `pre-edit-skill` | missing skill and another session's state block |
+| After an edit | `post-edit-reminder` | test-first and sensitive-path reminder |
+| End of turn | `turn-audit` | evidence, lifecycle, and completion audit |
+
+The audit flags “done” without passing proof after the last code edit. It also flags stale state, code before a decided baseline, read-only code, skipped skills, weak QC provenance, and broken task-file contracts.
 
 ```text
 ⚠ VERIFICATION GATE: completion was claimed, but the last run of `npm test 2>&1 | tail -15` was blocked and never ran. Run it, show the output — or retract the claim.
-2026-10-22T09:29:59Z  claude  …/… #2  cmd  exit ?  blocked  npm test 2>&1 | tail -15  (pipeline: exit is the last command's)  [slugify]
 ```
 
-## What you get
+The [recorded run](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md) shows that warning making an agent retract “Done.”
 
-**[Agree before you build](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#agree-before-you-build)**
-- The agent routes every request first, so a typo is not a ceremony and a permissions change is never “small”.
-- The agent asks for your approval of the story and the plan before code; `step` or `auto` mode decides where else it pauses. The plan holds the complete test and code of every sub-unit, so whoever builds (any model, or you) follows it exactly and stops when a step fails unexpectedly.
-- Before each commit it runs your check and asks you to choose: now, later, or yourself.
+The ledger is outside the project at `~/.local/state/burhan/evidence/`. It records reported edits, command lines, exit codes, order, and task association; not command output. `evidence --item <slug>` prints it.
 
-**[Prove what was done](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#prove-what-was-done)**
-- A “done” with no passing check after the last code edit gets a warning (the check ran before it, failed, or never ran), once your project says what counts as code and as a check.
-- The ledger lists each edit and command, with its exit code on Claude Code, outside your project.
-- A fresh reviewer (a subagent in Claude Code, or the other agent if you choose that: Claude builds and Codex reviews, or the reverse) checks each step and the finished work, and every review records who did it.
-- Reports come from the records: a pull-request description for a task, how many QC reviews were independent, escaped defects.
+A passing whole-suite run after the last code edit can serve verification, QC, and commit. Reuse it until code or tests change. `guide` reports `full run:` status.
 
-**[Memory and team](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#memory-and-team)**
-- The agent learns your project once and shows you what it understood; each fact names the file it came from, and `memory status` tells you which facts cite a file that has changed since. Understanding and settings travel through git, and so do task files when you chose the shared folder; your own state stays local.
+## Reference
 
-**[Where it runs](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md#where-it-runs)**
-- Claude Code and Codex, with your existing hooks kept; `doctor` checks the setup, Codex trust included.
-- Safe to try: `init`, `upgrade` and `uninstall` are dry runs until `--apply`; `init` and `upgrade` never overwrite your `workflow.config`; `uninstall` removes only what burhan wrote and keeps your `workflow.config` and `bindings.md` unless you add `--all`.
+### Settings
 
-## Install in 3 steps
+`WF_CHECK_CMD` is the fast pre-commit check. `WF_CODE_REGEX` and `WF_TEST_REGEX` identify code and tests. `WF_EVIDENCE_REGEX` says which commands count as proof. `WF_FULL_TEST_REGEX` identifies the whole suite. `WF_SENSITIVE_REGEX` and `WF_SENSITIVE_NOTE` add a sensitive-path reminder. With empty code or proof patterns, the “done” warning cannot work. A project created by `burhan init` has task-file checks on (`WF_ITEM_CONTRACT=on`).
 
-**Which part do I use?**
+### Commands
 
-| You want to… | Use |
-|---|---|
-| type the commands yourself in a terminal | Part 1 |
-| copy a prompt and let your agent run the setup | Part 2 |
+`item new` creates route-shaped files. `approve` records a human decision. `item set` advances one allowed status. `review add` requires reviewer provenance. `deviation add` freezes code authorization until resolution. `item finish` requires reviewed units, gates, no open deviation, and fresh proof. `item check` reports task-file faults. `state compact` shortens the lines of closed tasks in your state file (a dry run until `--apply`).
 
-**Part 1 — Manual install (you run the commands)**
+Read-only reports include `status` (`--write` also writes the task index), `stats`, `evidence`, `changed`, `pr-body`, `memory`, `inspect`, and `doctor`. `use <slug>` links a session to one task. The agent runs these as `npx burhan-kit <command>`; you can too. Run `doctor` from the project root: from a subfolder it says burhan is not installed.
 
-### Step 1 — Superpowers (recommended)
+### Project memory
 
-Superpowers is optional, but strongly recommended: burhan never installs it. With it, burhan uses its skills at each phase (brainstorming before a story, test-driven development while building, verification before “done”). Want to try burhan first? Start at Step 2.
+Onboarding scans the project and drafts `.burhan/PROJECT.md` plus fact files in `.burhan/context/`. You approve, correct, or waive the baseline. Facts cite a path and a short hash, not file content. `memory status` marks facts fresh, changed, missing, or unchecked; `memory check` can run in CI. Knowledge review proposes durable lessons for your decision.
 
-Claude Code — type this inside Claude Code:
+### Claude Code and Codex
 
-```text
-/plugin install superpowers@claude-plugins-official
-```
+Claude Code uses `/burhan:e2e`, `/burhan:qc`, and `/burhan:onboard`; Codex follows installed command files through `AGENTS.md`. Codex hook results need trust. A command with no recorded result is not passing.
 
-Codex — if it is not installed yet: run `/plugins`, search `superpowers`, choose Install Plugin.
+Superpowers is optional. When enabled, burhan maps phases to brainstorming, planning, test-first, debugging, review, and verification skills. Claude Code can generate planner, builder, explorer, and reviewer roles on configured models. Codex uses your own model configuration; burhan never writes it.
 
-You should see: in Step 2's summary, “Superpowers found” (Claude Code only; setup does not look in Codex).
+Several sessions can work on separate tasks. Keep one task per session. Shared configuration, memory, and shared task folders go through review; `.burhan/local/` stays personal.
 
-### Step 2 — Set up burhan
+### Safety and rollback
 
-In your project, with Node 22 or newer, run this in a terminal. It asks four questions (five when you use both agents): which agents, when the agent comes back to you, where the task files live, where side findings (discoveries) go, and, with both agents, who reviews. It shows a summary and writes nothing until you confirm. Setup adds hooks to your agent's settings and keeps the ones you have.
+`init`, `upgrade`, and `uninstall` are dry runs until `--apply`. Setup validates before its first write. Upgrade refreshes kit files and merges exact hook entries without overwriting `workflow.config` or `bindings.md`. Writes through a link outside the project are refused unless you explicitly allow them.
 
-```bash
-npx burhan-kit
-```
+Uninstall removes the kit folders under `.burhan/` whole: `WORKFLOW.md`, `SETUP.md`, `VERSION`, `phases`, `templates`, `commands`, and `hooks`. It keeps `workflow.config`, `bindings.md`, `.burhan/local/`, and task files unless you add `--all`. `--all` removes the private `work/` and `discovery/` folders; a shared task folder you pointed `WF_DOCS_DIR` at is never removed.
 
-Then check the setup:
+### Limits
 
-```bash
-npx burhan-kit doctor
-```
+- Hooks never block; task commands refuse a wrong step; an agent can skip both.
+- Hooks see only activity the agent reports. Shell edits are visible only through `>`, `>>`, and `tee`.
+- Codex hooks need trust. Missing recorded command results do not pass.
+- Windows CI runs the Node suite on `windows-latest`, Node 24, without bash or `jq`. It is not PowerShell-only coverage or a real agent session.
+- The ledger grows until you delete it. It does not prove activity outside reported tool calls.
 
-Codex only — trust burhan's hooks in `/hooks` or they will not run ([the steps](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#codex-trust-the-hooks)); `doctor` warns when they are not trusted.
+### FAQ
 
-You should see: the list of files created, and `npx burhan-kit doctor` printing a last line that starts with `0 fail`.
+**Does every task use every stage?** No. The route chooses the proportional path; a patch skips story and plan.
 
-### Step 3 — Let the agent understand your project
+**Does burhan require a language or framework?** No. You configure the checks and patterns for your project.
 
-Once, open a NEW agent session (a **session** is one conversation with the agent) in the project and type any message, for example `start`.
+**Does burhan send project data over the network?** Its source contains no network client calls. Package installation can use the network.
 
-burhan's reminders tell the agent to set up your project's check command first, if it is not set yet (you approve it once). Then the agent reads the whole project, shows a draft and what it could not examine, and keeps it only after you approve: your **baseline**.
+### Docs
 
-If the agent only greets you, or to go straight to the understanding step, type this instead. Claude Code:
-
-```text
-/burhan:onboard
-```
-
-Codex:
-
-```text
-Follow .burhan/commands/onboard.md
-```
-
-Run it once: an approved understanding is not repeated, and a draft is completed.
-
-You should see: a draft of what the project is and does, and the questions the agent could not answer. Nothing is saved until you decide.
-
-**Part 2 — Install through your agent (you copy, the agent runs)**
-
-Copy this into your agent, in your project.
-
-```text
-Run `npx burhan-kit setup --agent` and follow what it prints. Ask me the questions it gives you, one question per message, then show me the summary. Apply nothing until you have my approval.
-```
-
-When setup has finished: with Codex, first trust burhan's hooks in `/hooks` (as in Step 2). Then copy this into a NEW agent session in the project, or just type any message there:
-
-```text
-Set up this project's check command if it is not set yet, then follow `.burhan/commands/onboard.md`: show me the draft and what you could not examine, and save nothing until I approve.
-```
-
-## Your first task
-
-Start a small change with `/burhan:e2e <slug>` (a short title works too). If your project's checks are not set up yet, the agent sets them up first (one block you approve). Then it writes a story and a plan and stops for your “approved”. You answer its few questions, it builds test-first, a fresh reviewer checks the work, and it asks before it commits. With several tasks open, `npx burhan-kit use <slug>` links the session to one. The whole recorded run, every message and warning, is in [docs/first-task.md](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md).
-
-## Teams and project memory
-
-- Committed and reviewed like code: `.burhan/PROJECT.md`, `.burhan/context/`, `.burhan/bindings.md` (your project's commands and folders), `.burhan/workflow.config` and each task's folder. Yours alone and git-ignored: `.burhan/local/`.
-- Two people adding facts to one area can get a text conflict: keep each row; `npx burhan-kit memory check` catches duplicate IDs. Never use `merge=union` on these files.
-- The evidence ledger lives outside your project (`~/.local/state/burhan/evidence/`): command lines and exit codes only, never their output. It is yours to delete.
-
-## Limits
-
-- burhan reports and guides — it does not block. Approvals and test-first are rules the agent is told to follow.
-- The checks that read a task's files, and warn when code is edited before the plan is approved, are off until you set `WF_ITEM_CONTRACT=on`. The `full run:` line of `burhan guide` says whether a passing full test run exists after the last code edit only when `WF_FULL_TEST_REGEX` is set.
-- It only sees the edits and commands the agent reports; a shell edit shows up only through `>`, `>>` and `tee`.
-- The “done” warning needs `WF_CODE_REGEX` and `WF_EVIDENCE_REGEX` (settings in `.burhan/workflow.config`); the agent proposes them on first use, and once first use is done `doctor` warns when the code pattern is empty.
-- Optional: a model can be chosen for each role (planner, builder, explorer, reviewer) for the whole project. Leave it empty and every phase uses your terminal's model; to set it, ask your agent which `WF_MODEL_CLAUDE_*` keys to set (`docs/configuration.md`).
-- Codex runs project hooks only after you trust them in `/hooks`, and says nothing when they are untrusted. On Codex a finished command whose result is missing from the session record counts as not passing; how often that happens is not measured ([the roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md)).
-- Windows: the hooks run on Node and CI covers `windows-latest`. Not verified yet: Windows with PowerShell only, and a real Claude Code or Codex session on Windows.
-
-## Commands and links
-
-| Command | What it does |
-| --- | --- |
-| `npx burhan-kit` · `npx burhan-kit setup --agent` | guided setup (writes nothing until you confirm) · the questions, for your agent to ask |
-| `npx burhan-kit doctor` | read-only health check |
-| `npx burhan-kit status` · `npx burhan-kit evidence --item <slug>` | the task index · the ledger for a task |
-| `npx burhan-kit memory check` · `npx burhan-kit inspect` | check the project memory (also for CI) · a names-only look at the project |
-| `npx burhan-kit use <slug>` | validate a task; the session is linked when the turn ends |
-| `npx burhan-kit item new\|set\|check\|finish` · `gate tick` · `review add` · `approve` · `deviation` · `guide` · `state compact` | the agent's commands for a task's files: make, move a status, check, finish · tick a gate · record a review · record your approval · record a step that left the plan (it stops until you decide) · what comes next and whether code is allowed · shorten the old closed lines of your state file (a dry run until you add `--apply`) |
-| `npx burhan-kit upgrade` · `npx burhan-kit uninstall` | refresh · remove (a dry run until `--apply`) |
-
-[Configuration](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md) · [Features in detail](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md) · [First task, recorded](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md) · [Upgrading and rollback](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/upgrading.md) · [CI and Windows](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/ci-and-windows.md) · [Changelog](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md) · [Roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md) · [Issues](https://github.com/ahmedkamaldabour/burhan-kit/issues)
+[Features and routes](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md) · [Configuration](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md) · [Recorded first task](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md) · [Upgrading](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/upgrading.md) · [CI and Windows](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/ci-and-windows.md) · [Changelog](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md) · [Roadmap](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md) · [Issues](https://github.com/ahmedkamaldabour/burhan-kit/issues)
 
 ## License
 
