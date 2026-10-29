@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 — 2026-10-29
+
+`npx burhan-kit` works again on Windows: the package now exposes the CLI under the package name as well as `burhan`, so npm finds the command when it runs a package by its name. Nothing else changed.
+
 ## 0.7.0 — 2026-10-27
 
 An agent no longer writes a task's files from memory, and a plan becomes something a weaker model can follow. New

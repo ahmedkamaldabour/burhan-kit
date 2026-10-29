@@ -1,11 +1,12 @@
 {
   "name": "burhan-kit",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "A working process for AI coding agents (Claude Code, Codex): plan first, build in reviewed steps, prove every done, and finish with independent QC.",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "burhan": "dist/cli.js"
+    "burhan": "dist/cli.js",
+    "burhan-kit": "dist/cli.js"
   },
   "files": [
     "dist",

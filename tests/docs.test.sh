@@ -187,7 +187,7 @@ check "changelog: 0.7.0 names the state compact command" "$cl" has 'burhan state
 check "changelog: 0.7.0 names the generated gate checklist" "$cl" has 'gate checklist is written from the route'
 check "changelog: 0.7.0 names the stage files" "$cl" has 'stage-build.md'
 check "changelog: 0.7.0 names the review evidence folder" "$cl" has 'reviews/evidence/'
-check "package.json still says 0.7.0 (no version bump in this item)" "$(cat package.json)" has '"version": "0.7.0"'
+check "package.json says 0.7.1 (the npx bin fix release)" "$(cat package.json)" has '"version": "0.7.1"'
 
 echo "last-before-release: the guide names the skill, a full run is reused"
 check "changelog: no Unreleased section is left" "$cl" lacks '## Unreleased'
