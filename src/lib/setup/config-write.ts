@@ -31,3 +31,9 @@ export function assertWritable(key: string, value: string): void {
   // would read them as one) — the CLI and the hooks would then disagree on the config.
   if (/[\n\r\0]/.test(value)) throw new BurhanError(`${key} must fit on one line (no line break, CR or NUL character)`);
 }
+
+/** A sensitive entry is a path such as `src/modules/auth`: the setup escapes it and builds the pattern itself, so a `^`, a closing `$` or a `.*` would match nothing. */
+const LOOKS_LIKE_PATTERN = /^\^|\$$|\.\*/;
+export function assertIsPath(path: string): void {
+  if (LOOKS_LIKE_PATTERN.test(path)) throw new BurhanError(`a sensitive path is a path such as src/modules/auth, not a pattern: "${path}" — setup writes the pattern itself, so leave out the ^, $ and .*`);
+}

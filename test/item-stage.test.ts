@@ -107,16 +107,55 @@ test('burhan guide --json is machine-readable', async () => {
   assert.match(j.next, /approve story/);
 });
 
-test('burhan guide without a slug uses the only item in Now, and asks when there are none or several', async () => {
+test('burhan guide without a slug uses the only item in Now, and answers when there are none or several', async () => {
   const dir = await projectWithItem(); // item new put "### foo" in Now
   assert.match((await guide(dir)).out, /guide: foo/);
   write(join(dir, STATE), '## Now\n\n### foo\n- x\n\n### bar\n- y\n\n## Waiting on you\n');
   const two = await guide(dir);
-  assert.equal(two.code, 2);
-  assert.match(two.err, /foo, bar/);
-  const empty = project();
-  const none = await guide(empty);
-  assert.equal(none.code, 2);
+  assert.equal(two.code, 0);
+  assert.match(two.out, /guide: 2 items in Now: foo, bar/);
+  assert.match(two.out, /next: burhan guide <slug>, with one of: foo, bar/);
+  const none = await guide(project());
+  assert.equal(none.code, 0);
+  assert.match(none.out, /guide: no item in Now/);
+  assert.match(none.out, /code edits: NOT authorized/);
+  assert.match(none.out, /next: route the request with burhan item new <slug> --type/);
+});
+
+test('burhan guide --json with no item or several keeps the keys of an item and adds items', async () => {
+  const none = JSON.parse((await guide(project(), '--json')).out) as Record<string, unknown>;
+  assert.equal(none.item, null);
+  assert.deepEqual(none.items, []);
+  assert.equal(none.stage, 'no item');
+  assert.equal(none.authorized, false);
+  assert.equal(none.skill, null);
+  for (const key of ['route', 'why', 'next', 'fullRun']) assert.ok(key in none, key);
+  const dir = await projectWithItem();
+  write(join(dir, STATE), '## Now\n\n### foo\n- x\n\n### bar\n- y\n\n## Waiting on you\n');
+  const two = JSON.parse((await guide(dir, '--json')).out) as Record<string, unknown>;
+  assert.deepEqual(two.items, ['foo', 'bar']);
+  assert.equal(two.stage, 'several items');
+});
+
+test('burhan guide with no item names the story skill when the project uses Superpowers', async () => {
+  const dir = project();
+  write(join(dir, '.burhan', 'workflow.config'), 'WF_SKILLS=superpowers\n');
+  const r = await guide(dir);
+  assert.equal(r.code, 0);
+  assert.match(r.out, /^skill: superpowers:brainstorming — run it before the story/m);
+  const j = JSON.parse((await guide(dir, '--json')).out) as { skill: string | null };
+  assert.equal(j.skill, 'superpowers:brainstorming');
+});
+
+test('burhan guide on a named item is unchanged by the no-item answer', async () => {
+  const dir = await projectWithItem();
+  const r = await guide(dir, 'foo');
+  assert.equal(r.code, 0);
+  assert.match(r.out, /^guide: foo — feature \/ architectural/m);
+  assert.match(r.out, /^code edits: NOT authorized — /m);
+  assert.match(r.out, /^next: /m);
+  const keys = Object.keys(JSON.parse((await guide(dir, 'foo', '--json')).out) as object).sort();
+  assert.deepEqual(keys, ['authorized', 'fullRun', 'item', 'next', 'route', 'skill', 'stage', 'why']);
 });
 
 test('burhan guide on an unknown item, and on an item that is a read-only investigation', async () => {
@@ -176,5 +215,6 @@ test('burhan guide shows the mode only from its own line, and a state file that 
   rmSync(join(bad, STATE));
   mkdirSync(join(bad, STATE));
   const r = await cli(bad, ['guide']);
-  assert.equal(r.code, 2);
+  assert.equal(r.code, 0);
+  assert.match(r.out, /guide: no item in Now/);
 });

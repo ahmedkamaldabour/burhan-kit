@@ -7,6 +7,16 @@ const BEGIN_RE = /^<!-- burhan:start -->$/;
 const END_LINE = '<!-- burhan:end -->';
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
 
+const START_LIST = [
+  'Before the first edit of code, tests or config, and before saying a task is done:',
+  '',
+  '1. Run `burhan guide` (with the item\'s slug when Now holds several; the kit command is `burhan`, or the one `.burhan/bindings.md` names). It says the stage, whether code edits are allowed, and the next step.',
+  '2. When it names a process skill, run that skill before writing the file it names.',
+  '3. Edit code, tests or config only when it says AUTHORIZED. With no item, route one with `burhan item new`; for one obvious change with no escalator, state the routing line `patch — <reason>` and make it.',
+  '4. Change statuses, gates and approvals only through burhan commands, never by editing their lines. An approval is the owner\'s to give.',
+  '5. Before you say a task is done, run `burhan item finish <slug>`.',
+];
+
 export function bootstrapBody(agent: Agent): string {
   return [
     '## Working agreement (burhan)',
@@ -22,6 +32,8 @@ export function bootstrapBody(agent: Agent): string {
          '`$ARGUMENTS` means the work-item slug (or title) the user names.',
          'If this session\'s context has no line beginning `⚑ WORKFLOW GATES`, burhan\'s hooks may not be running in',
          'Codex: tell the user once to open `/hooks` in Codex and trust the burhan hooks themselves; never trust them for the user.']),
+    '',
+    ...START_LIST,
     '',
     'At the start of every session, read the state file named in `.burhan/bindings.md` first.',
   ].join('\n');

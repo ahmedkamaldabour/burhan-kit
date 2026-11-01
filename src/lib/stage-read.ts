@@ -11,15 +11,19 @@ import { docsLocation } from './status.js';
 
 export interface ItemStage { slug: string; route: string; st: Stage; story: string | null }
 
+/** The slugs in the state file's Now section; none when there is no state file or it cannot be read. */
+export function nowSlugs(project: string): string[] {
+  const stateRel = readProjectConfig(project).values.WF_STATE_FILE || '.burhan/local/PROGRESS.md';
+  const state = join(project, stateRel);
+  try { return existsSync(state) ? itemSlugs(nowSection(readFileSync(state, 'utf8'))) : []; } catch { return []; /* a folder or an unreadable file: no item found */ }
+}
+
 /** The item a command names (without a slug: the only item in Now), its route and its stage, read from its files. `command` names the caller in an error message. */
 export function readItemStage(target: string, slug: string | undefined, docs: string | undefined, command: string): ItemStage {
   const project = realTarget(target);
   let name = slug;
   if (name === undefined) {
-    const stateRel = readProjectConfig(project).values.WF_STATE_FILE || '.burhan/local/PROGRESS.md';
-    const state = join(project, stateRel);
-    let slugs: string[] = [];
-    try { slugs = existsSync(state) ? itemSlugs(nowSection(readFileSync(state, 'utf8'))) : []; } catch { /* a folder or an unreadable file: no item found */ }
+    const slugs = nowSlugs(project);
     if (slugs.length !== 1) throw new BurhanError(`${command} needs an item slug: ${slugs.length === 0 ? 'there is no item in Now' : `Now has more than one (${slugs.join(', ')})`}`);
     name = slugs[0]!;
   }

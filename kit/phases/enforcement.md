@@ -69,3 +69,5 @@ as `exit 0`; `burhan evidence` marks such lines.
 
 Only what is *blocked* and what the tooling *does itself* is guaranteed. Everything else is a strong
 nudge — claiming more would be exactly the kind of unverified claim this agreement exists to catch.
+
+**What holds an agent that never reads a hook.** The block in `CLAUDE.md` and `AGENTS.md` carries a short start-up list: run `burhan guide`, run the skill it names, edit only when it says AUTHORIZED, record state and approvals through burhan commands, run `burhan item finish` before saying done. `guide` answers even when no item exists, and `item set`, `approve` and `item finish` refuse a wrong step. None of this stops a direct file edit, a shell write, or an approval typed by the agent: the turn-end reports (with hooks) are the only thing that notices, after the fact.

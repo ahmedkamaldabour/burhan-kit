@@ -114,7 +114,7 @@ Without --apply, init, upgrade and uninstall are a dry run: they print what they
 
 export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFilesystem): Promise<number> {
   const [cmd, ...rest] = argv;
-  const advise = (code: number, slug: string | undefined, docs: string | undefined): number => { if (code === 0) printAdvice(io.cwd, slug, io, docs); return code; };
+  const advise = (code: number, slug: string | undefined, docs: string | undefined, withNext = true): number => { if (code === 0) printAdvice(io.cwd, slug, io, docs, withNext); return code; };
   try {
     switch (cmd) {
       case 'init': case 'upgrade': {
@@ -206,8 +206,8 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, ...(sub === 'new' ? { type: { type: 'string' }, scope: { type: 'string' } } : {}), ...(sub === 'finish' ? { evidence: { type: 'string' } } : {}), ...(sub === 'set' ? { reopen: { type: 'string' } } : {}) } });
         if (sub === 'set') return advise(itemSet(io.cwd, positionals[0], positionals.slice(1), io, values.docs, (values as { reopen?: string }).reopen), positionals[0], values.docs);
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        if (sub === 'finish') return advise(itemFinish(io.cwd, positionals[0], io, { evidence: (values as { evidence?: string }).evidence, docs: values.docs }), positionals[0], values.docs);
-        if (sub === 'new') return advise(itemNew(io.cwd, { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io), positionals[0], values.docs);
+        if (sub === 'finish') return advise(itemFinish(io.cwd, positionals[0], io, { evidence: (values as { evidence?: string }).evidence, docs: values.docs }), positionals[0], values.docs, false);
+        if (sub === 'new') return advise(itemNew(io.cwd, { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io), positionals[0], values.docs, false);
         return itemCheck(io.cwd, positionals[0], io, values.docs);
       }
       case 'guide': {

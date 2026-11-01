@@ -91,3 +91,30 @@ test('codex body: tells the agent to warn when the gates are missing; claude bod
   assert.match(bootstrapBody('codex'), /tell the user once/, 'said once, not every turn (SU3 review F-2)');
   assert.doesNotMatch(bootstrapBody('claude'), /WORKFLOW GATES/);
 });
+
+test('both bodies carry the start-up list, in the kit\'s words, without naming hooks', () => {
+  for (const agent of ['claude', 'codex'] as const) {
+    const body = bootstrapBody(agent);
+    assert.ok(body.includes('Before the first edit of code, tests or config'), agent);
+    const list = body.slice(body.indexOf('Before the first edit'), body.indexOf('At the start of every session'));
+    assert.match(list, /^1\. Run `burhan guide`/m);
+    assert.match(list, /^2\. When it names a process skill/m);
+    assert.match(list, /AUTHORIZED/);
+    assert.match(list, /burhan item new/);
+    assert.match(list, /patch — <reason>/);
+    assert.match(list, /burhan item finish <slug>/);
+    assert.doesNotMatch(list, /hook/i);
+    assert.ok(body.endsWith('At the start of every session, read the state file named in `.burhan/bindings.md` first.'), 'the closing line stays last (tests/init.test.sh edits it)');
+  }
+});
+
+test('an older block whose body differs is replaced by the new one, the text around it is kept, no edited warning', () => {
+  const oldBody = 'OLD BODY';
+  const old = renderBlock('claude', '0.7.0').replace(bootstrapBody('claude'), oldBody).replace(/sha256=[0-9a-f]+/, `sha256=${sha(oldBody + '\n')}`);
+  const r = applyBlock(`# Mine\n\n${old}\n\nbelow\n`, 'claude', V);
+  assert.equal(r.editedInside, false);
+  assert.ok(r.content.includes('# Mine'));
+  assert.ok(r.content.includes('below'));
+  assert.ok(!r.content.includes('OLD BODY'));
+  assert.ok(r.content.includes('Before the first edit of code, tests or config'));
+});

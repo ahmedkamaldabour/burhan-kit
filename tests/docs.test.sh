@@ -225,4 +225,10 @@ check "configuration: the user can ask their agent to set them for the project" 
 check "configuration: effort is not a burhan setting" "$cfgdoc" has 'burhan has no effort setting'
 check "SETUP: the agent mentions the model choice once, as an option" "$(cat kit/SETUP.md)" has 'mention once that a model can be chosen for each role'
 
+check "SETUP: sensitive= takes plain paths, not patterns" "$(cat kit/SETUP.md)" has 'takes plain paths'
+check "SETUP: the anchors sentence names the three pattern keys" "$(cat kit/SETUP.md)" has 'keep the anchors of `WF_CODE_REGEX`, `WF_TEST_REGEX` and `WF_EVIDENCE_REGEX`'
+check "configuration: setup refuses a sensitive path written as a pattern" "$cfgdoc" has 'a value that starts with `^`, ends with `$` or contains `.*` is refused'
+check "configuration: setup says how many files each pattern matches" "$cfgdoc" has 'how many project files each pattern matches'
+check "enforcement: the start-up list and the commands' refusals, and what they do not stop" "$(cat kit/phases/enforcement.md)" has 'What holds an agent that never reads a hook'
+
 t_summary

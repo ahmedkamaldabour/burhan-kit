@@ -14,6 +14,7 @@ import { ereRefusal } from '../hooks/core/ere.mjs';
 import { inspect } from './inspect.js';
 import { checkMemory, factFreshness } from './memory.js';
 import { readCodexConfig, stateTableNames, trustedEvents, type CodexConfigSkip } from './codex-trust.js';
+import { countMatches, listProjectFiles } from './project-files.js';
 
 /** `burhan doctor`: read-only health checks of an install. It never writes — not the project, not the
  *  agents' settings, not the user's global files (Codex hook trust is only read). */
@@ -162,6 +163,15 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     if (legacy.includes(key) || !/^WF_[A-Z0-9_]*_REGEX$/.test(key) || value === '') continue;
     const why = ereRefusal(value);
     if (why) add('warn', `${key}: the hooks refuse this pattern (${why}), so its check stays silent — rewrite it`);
+  }
+  // A pattern the engine accepts but that matches no file of the project never fires; name it. Silent without a file list (not a git checkout), and the evidence pattern matches commands, not paths.
+  const files = listProjectFiles(target);
+  if (files !== null && files.length > 0) {
+    for (const key of ['WF_CODE_REGEX', 'WF_TEST_REGEX', 'WF_SENSITIVE_REGEX']) {
+      const value = cfg.values[key] ?? '';
+      if (value === '' || ereRefusal(value) !== null || countMatches(value, files) !== 0) continue;
+      add('warn', `${key}: matches no file in the project, so its check never fires${/\\\^/.test(value) ? ' (an escaped \\^ matches a caret character, not the start of a path; give setup plain paths: burhan setup --set check=<command> sensitive=src/modules/auth)' : ''}`);
+    }
   }
   // First-use is done but nothing says what counts as code: the "done without proof" warning and the test-first reminder are off.
   { const v = cfg.values.WF_ITEM_CONTRACT; if (v !== undefined && v !== '' && v !== 'on' && v !== 'off') add('warn', `WF_ITEM_CONTRACT is "${v}": it must be on or off; any other value turns the task-file checks off`); }

@@ -185,6 +185,7 @@ work/<task>/
 ## الإثبات
 
 الـ hooks بتبلّغ وبتفشل open؛ عمرها ما بتمنع. task commands بترفض خطوة lifecycle غلط، لكن الـ agent يقدر يتخطاهم.
+البلوك اللي بيكتبه `burhan init` في `CLAUDE.md` و`AGENTS.md` بيطلب من الـ agent يشغّل `burhan guide` قبل أي تعديل ويمشي على ردّه، والـ `guide` بيرد حتى لو مفيش item. ده تعليمة مش قفل: التعديل المباشر وكتابة الـ shell وهوية اللي وافق مش بتتمنع.
 
 | اللحظة | Hook | الوظيفة |
 | --- | --- | --- |
@@ -240,6 +241,7 @@ work/<task>/
 ### الحدود
 
 - ‏Hooks عمرها ما بتمنع؛ task commands بترفض خطوة غلط؛ والـ agent يقدر يتخطى الاتنين.
+- ‏قايمة البداية في ملف الـ agent تعليمة؛ مفيش حاجة بتمنع agent بيتجاهلها.
 - ‏Hooks بتشوف بس النشاط اللي الـ agent بلّغ عنه. shell edits بتبان بـ `>` و`>>` و`tee` بس.
 - ‏Codex hooks محتاجة trust. command من غير recorded result مش بتمر.
 - ‏Windows CI بتشغّل Node suite على `windows-latest` وNode 24، من غير bash أو `jq`. ده مش coverage لـ PowerShell بس أو session agent حقيقية.

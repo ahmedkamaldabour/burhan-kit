@@ -1,12 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parseConfig } from '../src/lib/config.js';
 import { BurhanError } from '../src/lib/errors.js';
 import { applySetup, planSetup } from '../src/lib/setup/engine.js';
 import { sensitiveRegex } from '../src/lib/setup/config-write.js';
+import { ereTest } from '../src/hooks/core/ere.mjs';
 import { parseSetArgs, setStack, stackInstructions, type StackValues } from '../src/lib/setup/stack.js';
 import { capture, tmpDir } from './helpers.js';
 import { install } from '../src/lib/install.js';
@@ -222,4 +223,29 @@ test('the first-use instructions ask for the code, test and proof decisions in b
     assert.match(text, /POSIX extended/);
   }
   assert.match(stackInstructions('en'), /no tables, no setting names, no patterns/);
+});
+test('setStack refuses a sensitive entry written as a pattern and writes nothing', async () => {
+  for (const bad of ['^src/modules/auth', 'src/modules/auth$', 'src/.*']) {
+    const t = installed();
+    await assert.rejects(setStack(t, v({ sensitive: [bad] }), { force: false }, capture(t).io), /not a pattern/, bad);
+    assert.equal(cfgOf(t).WF_STACK_SETUP, 'pending', bad);
+  }
+});
+
+test('setStack still accepts real paths with brackets and dots', async () => {
+  const t = installed();
+  assert.equal(await setStack(t, v({ sensitive: ['app/[id]', 'src/v1.2'] }), { force: false }, capture(t).io), 0);
+  assert.equal(ereTest(cfgOf(t).WF_SENSITIVE_REGEX, 'app/[id]/page.tsx'), true);
+});
+
+test('setStack says how many files the sensitive pattern matches, and says so when it matches none', async () => {
+  const t = installed(); // a git checkout
+  mkdirSync(join(t, 'src/modules/auth'), { recursive: true });
+  writeFileSync(join(t, 'src/modules/auth/x.ts'), 'x');
+  const a = capture(t);
+  assert.equal(await setStack(t, v({ sensitive: ['src/modules/auth'] }), { force: false }, a.io), 0);
+  assert.match(a.o.out, /WF_SENSITIVE_REGEX matches 1 file\b/);
+  const b = capture(t);
+  assert.equal(await setStack(t, v({ sensitive: ['no/such/dir'] }), { force: false }, b.io), 0);
+  assert.match(b.o.out, /WF_SENSITIVE_REGEX matches no file in the project/);
 });

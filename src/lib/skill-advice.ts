@@ -38,13 +38,13 @@ const seenText = (s: SkillSeen): string =>
 
 export const skillAdviceLine = (a: SkillAdvice): string => `skill: ${a.skill} — run it ${a.why} (${seenText(a.seen)})`;
 
-/** The line after a command that opened a stage. It is advice: any failure prints nothing and never changes the command's result. */
-export function printAdvice(target: string, slug: string | undefined, io: Io, docs?: string): void {
+/** The lines after a command that changed an item: the skill to run when the project uses one, and the next step unless the command printed its own (`withNext` false). It is advice: any failure prints nothing and never changes the command's result. */
+export function printAdvice(target: string, slug: string | undefined, io: Io, docs?: string, withNext = true): void {
   try {
     const project = realTarget(target);
-    if (!wantsSkills(project)) return;
     const { slug: s, route, st } = readItemStage(target, slug, docs, 'skill advice');
-    const advice = skillAdvice(project, s, st, route);
+    const advice = wantsSkills(project) ? skillAdvice(project, s, st, route) : null;
     if (advice !== null) io.stdout(`${skillAdviceLine(advice)}\n`);
+    if (withNext) io.stdout(`next: ${st.next}\n`);
   } catch { /* advice only */ }
 }

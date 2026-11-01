@@ -7,7 +7,8 @@ import { putFile, realTarget } from '../fs-safe.js';
 import { ereRefusal } from '../../hooks/core/ere.mjs';
 import { runCheck } from '../../hooks/core/run-check.mjs';
 import type { Io } from '../../main.js';
-import { assertWritable, sensitiveRegex, setConfigKeys } from './config-write.js';
+import { assertIsPath, assertWritable, sensitiveRegex, setConfigKeys } from './config-write.js';
+import { listProjectFiles, matchLines } from '../project-files.js';
 import { messages, type Lang } from './messages.js';
 
 const DEFAULT_SENSITIVE_NOTE = 'Access-control path: re-read authorization and data scoping; test allowed AND denied cases.';
@@ -67,6 +68,7 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
   // R-4: every value that reaches the config is checked before anything runs or is written.
   assertWritable('the check command', check);
   sensitive.forEach((c) => assertWritable('a sensitive path', c));
+  sensitive.forEach((c) => assertIsPath(c));
   const sens = sensitiveRegex(sensitive);
   assertWritable('the sensitive paths', sens);
   // The three patterns feed the "done without proof" warning: refuse one the hooks would refuse, before anything runs.
@@ -96,6 +98,9 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
   }
   for (const [, key, value] of patterns) if (value) values[key] = value;
   putFile(configPath, setConfigKeys(text, values));
+  // A pattern that matches no file never fires: say how many files each written pattern matches.
+  const files = listProjectFiles(real);
+  if (files !== null) for (const line of matchLines(files, { WF_CODE_REGEX: v.code, WF_TEST_REGEX: v.test, WF_SENSITIVE_REGEX: sensitive.length ? sens : undefined })) io.stdout(`${line}\n`);
   // The verify skill carries the check command: regenerate it (and anything else that depends on the config).
   // The bootstrap block only where the project already has it: a --no-bootstrap install stays without one.
   const plan = planInstall({ mode: 'upgrade', target: real, agents: null, apply: true, bootstrap: hasBlock, keepProjectFiles: true });

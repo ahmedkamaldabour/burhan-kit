@@ -185,6 +185,7 @@ QC proposes `PASS` or `FAIL — N issues`, with Critical, Important, or Minor fi
 ## Proof
 
 Hooks report and fail open; they never block. Task commands refuse a wrong lifecycle step, but an agent can skip them.
+The block `burhan init` writes into `CLAUDE.md` and `AGENTS.md` tells the agent to run `burhan guide` before it edits and to follow the answer, and `guide` still answers when no item exists. That is an instruction, not a lock: a direct edit, a shell write and who approved are not stopped.
 
 | Moment | Hook | Purpose |
 | --- | --- | --- |
@@ -240,6 +241,7 @@ Uninstall removes the kit folders under `.burhan/` whole: `WORKFLOW.md`, `SETUP.
 ### Limits
 
 - Hooks never block; task commands refuse a wrong step; an agent can skip both.
+- The start-up list in the agent file is an instruction; nothing stops an agent that ignores it.
 - Hooks see only activity the agent reports. Shell edits are visible only through `>`, `>>`, and `tee`.
 - Codex hooks need trust. Missing recorded command results do not pass.
 - Windows CI runs the Node suite on `windows-latest`, Node 24, without bash or `jq`. It is not PowerShell-only coverage or a real agent session.

@@ -16,7 +16,7 @@ If `.burhan/WORKFLOW.md` exists, use `upgrade` (dry run, then `--apply` once app
 Look for `.claude/` and `.codex/` / `AGENTS.md`; Confirm the agents the human uses. Add a missing one with `--agents` (dry run first).
 ## 3. Discover — change nothing
 Read the build, test, lint and CI files; run nothing that writes, installs or calls the network. Propose each key with its evidence as file:line (or "not found"): `WF_CHECK_CMD` (fast check, seconds), `WF_CODE_REGEX`, `WF_TEST_REGEX`, `WF_EVIDENCE_REGEX`, `WF_SENSITIVE_REGEX` + `WF_SENSITIVE_NOTE` (no reminder without the note), `WF_DOCS_DIR`.
-Regexes are POSIX extended regular expressions (`grep -E`): no `\d`, `\w` or lookarounds. Put every regex in single quotes (`WF_CODE_REGEX='^src/.*$'`); keep its anchors.
+Regexes are POSIX extended regular expressions (`grep -E`): no `\d`, `\w` or lookarounds. Put every regex in single quotes (`WF_CODE_REGEX='^src/.*$'`); keep the anchors of `WF_CODE_REGEX`, `WF_TEST_REGEX` and `WF_EVIDENCE_REGEX`. The sensitive paths are the exception: `sensitive=` takes plain paths such as `src/modules/auth`, and setup writes the anchored pattern itself, so never give it a `^`, a `$` or a `.*`.
 ## 4. Ask only business questions
 All together, once: the branch rule, the sensitive paths. For the setup work-files question, name each task's story,
 plan and reviews; fresh projects recommend shared `docs/burhan/work/`, while existing saved choices stay unchanged.

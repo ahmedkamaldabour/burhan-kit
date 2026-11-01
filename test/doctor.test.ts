@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runChecks, type Check, type Probe } from '../src/lib/doctor.js';
@@ -420,4 +421,28 @@ test('config: a config without WF_FULL_TEST_REGEX is a warning, not a failure', 
   const cs = runChecks(p, probe());
   assert.ok(find(cs, 'warn', 'WF_FULL_TEST_REGEX'), 'the missing key is named');
   assert.deepEqual(cs.filter((c) => c.status === 'fail'), []);
+});
+
+test('a code, test or sensitive pattern that matches no file of the project is warned about, the escaped caret by name', () => {
+  const p = project();
+  spawnSync('git', ['init', '-q'], { cwd: p });
+  mkdirSync(join(p, 'src/modules/auth'), { recursive: true });
+  writeFileSync(join(p, 'src/modules/auth/x.ts'), 'x');
+  edit(cfg(p), (s) => s.replace(/^WF_SENSITIVE_REGEX=.*$/m, "WF_SENSITIVE_REGEX='\\^src/'"));
+  const warned = find(runChecks(p, probe()), 'warn', 'WF_SENSITIVE_REGEX: matches no file');
+  assert.ok(warned, 'a pattern that matches nothing is named');
+  assert.match(warned.text, /escaped/);
+  edit(cfg(p), (s) => s.replace(/^WF_SENSITIVE_REGEX=.*$/m, "WF_SENSITIVE_REGEX='^src/'"));
+  assert.equal(find(runChecks(p, probe()), 'warn', 'WF_SENSITIVE_REGEX: matches no file'), undefined);
+});
+
+test('no judgement without a file list, and never for the evidence pattern', () => {
+  const p = project(); // not a git checkout: no file list
+  edit(cfg(p), (s) => s.replace(/^WF_SENSITIVE_REGEX=.*$/m, "WF_SENSITIVE_REGEX='\\^src/'"));
+  assert.equal(find(runChecks(p, probe()), 'warn', 'matches no file'), undefined);
+  spawnSync('git', ['init', '-q'], { cwd: p });
+  mkdirSync(join(p, 'src'), { recursive: true });
+  writeFileSync(join(p, 'src/a.ts'), 'x');
+  edit(cfg(p), (s) => s.replace(/^WF_EVIDENCE_REGEX=.*$/m, "WF_EVIDENCE_REGEX='no-such-command'").replace(/^WF_SENSITIVE_REGEX=.*$/m, 'WF_SENSITIVE_REGEX=""'));
+  assert.equal(find(runChecks(p, probe()), 'warn', 'WF_EVIDENCE_REGEX: matches no file'), undefined);
 });

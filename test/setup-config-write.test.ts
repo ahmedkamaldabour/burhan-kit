@@ -8,7 +8,7 @@ import { kitDir } from '../src/lib/kit.js';
 import { runCli } from '../src/main.js';
 import { ereTest } from '../src/hooks/core/ere.mjs';
 import { applySetup, planSetup } from '../src/lib/setup/engine.js';
-import { setConfigKeys, sensitiveRegex, assertWritable } from '../src/lib/setup/config-write.js';
+import { setConfigKeys, sensitiveRegex, assertWritable, assertIsPath } from '../src/lib/setup/config-write.js';
 import { capture, tmpDir } from './helpers.js';
 
 function installed(): string {
@@ -90,4 +90,9 @@ test('sensitiveRegex matches the path itself or what is under it, not a longer n
 test('assertWritable refuses a single quote', () => {
   assert.throws(() => assertWritable('WF_CHECK_CMD', "echo 'x'"), (e: unknown) => e instanceof BurhanError && /single quote/.test(e.message));
   assert.doesNotThrow(() => assertWritable('WF_CHECK_CMD', 'make lint'));
+});
+test('assertIsPath refuses what looks like a pattern and accepts real paths (AC-07, AC-10)', () => {
+  for (const bad of ['^src/modules/auth', 'src/modules/auth$', 'src/.*']) assert.throws(() => assertIsPath(bad), /not a pattern/, bad);
+  for (const good of ['src/modules/auth', 'app/[id]', 'src/v1.2', 'app/Policies/']) assert.doesNotThrow(() => assertIsPath(good), good);
+  assert.equal(ereTest(sensitiveRegex(['src/modules/auth']), 'src/modules/auth/x.ts'), true);
 });
