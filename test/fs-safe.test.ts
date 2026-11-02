@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { isWritable, putFile, replaceDir, resolveWritePath } from '../src/lib/fs-safe.js';
+import { assertInside } from '../src/lib/item-io.js';
 import { posixOnly, symlinkSkip, tmpDir } from './helpers.js';
 
 const tmp = () => tmpDir('burhan-fs-');
@@ -54,19 +55,34 @@ test('resolveWritePath: where a write to the path would land', { skip: symlinkSk
   assert.equal(resolveWritePath(join(d, 'dir')), real(join(d, 'dir')));
 });
 
-// Windows collapses `..` as text before following a link, resolveWritePath walks it the POSIX way: open product question, not hidden:
-// .internal/discovery/2026-10-27-resolvewritepath-dotdot-after-folder-link-differs-on-windows.md
-const dotdotSkip = process.platform === 'win32' ? 'Windows reads `..` after a folder link as text; resolveWritePath reads it the POSIX way (open discovery)' : symlinkSkip;
-test('resolveWritePath takes `..` after a folder link in the link target, as the kernel does (review I-1)', { skip: dotdotSkip }, () => {
+// Paths are compared through realpathSync.native: on a Windows runner the temp folder may be spelled with a short name (RUNNER~1).
+const samePlace = (a: string | null, b: string, msg?: string): void => { assert.ok(a !== null, msg); assert.equal(realpathSync.native(a), realpathSync.native(b), msg); };
+const win = process.platform === 'win32';
+// A link text is built with sep, not join: join would fold its `..` before the link is made.
+
+test('resolveWritePath takes `..` after a folder link the way the OS does: POSIX in the link target, Windows as text (review I-1, AC-09)', { skip: symlinkSkip }, () => {
   const d = tmp(); const away = tmp();
   mkdirSync(join(away, 'deep'));
   writeFileSync(join(away, 'x.json'), '{}');
   writeFileSync(join(d, 'x.json'), '{}'); // the lexical spot inside the project
   symlinkSync(join(away, 'deep'), join(d, 'evil'));
   mkdirSync(join(d, '.claude'));
-  symlinkSync('../evil/../x.json', join(d, '.claude/settings.json'));
-  assert.equal(resolveWritePath(join(d, '.claude/settings.json')), join(realpathSync(away), 'x.json'));
-  assert.equal(realpathSync.native(join(d, '.claude/settings.json')), join(realpathSync.native(away), 'x.json'), 'same as the kernel (Node\'s JS realpathSync takes `..` in the text)');
+  symlinkSync(['..', 'evil', '..', 'x.json'].join(sep), join(d, '.claude', 'settings.json'));
+  samePlace(resolveWritePath(join(d, '.claude', 'settings.json')), join(win ? d : away, 'x.json'));
+  samePlace(resolveWritePath(join(d, '.claude', 'settings.json')), join(d, '.claude', 'settings.json'), 'the place the OS resolves the link to');
+});
+
+test('resolveWritePath: `../ln/../../victim` with ln a folder link inside the project lands where the OS writes (Windows: outside), and assertInside follows it (AC-09)', { skip: symlinkSkip }, () => {
+  const d = tmp(); const proj = join(d, 'proj');
+  mkdirSync(join(proj, 'a', 'b'), { recursive: true }); mkdirSync(join(proj, '.claude'));
+  symlinkSync(join(proj, 'a', 'b'), join(proj, 'ln'));
+  symlinkSync(['..', 'ln', '..', '..', 'victim'].join(sep), join(proj, '.claude', 'settings.json'));
+  writeFileSync(join(d, 'victim'), ''); writeFileSync(join(proj, 'victim'), ''); // both spots exist, so the OS answer can be read
+  const link = join(proj, '.claude', 'settings.json');
+  samePlace(resolveWritePath(link), join(win ? d : proj, 'victim'));
+  samePlace(resolveWritePath(link), link, 'the place the OS resolves the link to');
+  if (win) assert.throws(() => assertInside(proj, link), /leads outside the project/);
+  else assert.doesNotThrow(() => assertInside(proj, link));
 });
 
 test('resolveWritePath: relative link chains, and a link loop is null', { skip: symlinkSkip }, () => {
@@ -79,10 +95,12 @@ test('resolveWritePath: relative link chains, and a link loop is null', { skip: 
   assert.equal(resolveWritePath(join(d, 'loop-a')), null);
 });
 
-test('resolveWritePath: `..` after a part that does not exist is null (the kernel refuses it; the walk must not guess) (review C-1)', { skip: symlinkSkip }, () => {
+test('resolveWritePath: `..` after a part that does not exist is null on POSIX (the kernel refuses it; the walk must not guess); Windows takes it as text (review C-1, AC-09)', { skip: symlinkSkip }, () => {
   const d = tmp(); const away = tmp();
   mkdirSync(join(d, '.claude'));
-  symlinkSync(away, join(d, '.claude/evil'));
-  symlinkSync('absent/../evil/x.json', join(d, '.claude/settings.json'));
-  assert.equal(resolveWritePath(join(d, '.claude/settings.json')), null);
+  symlinkSync(away, join(d, '.claude', 'evil'));
+  symlinkSync(['absent', '..', 'evil', 'x.json'].join(sep), join(d, '.claude', 'settings.json'));
+  writeFileSync(join(away, 'x.json'), '');
+  if (win) samePlace(resolveWritePath(join(d, '.claude', 'settings.json')), join(away, 'x.json'));
+  else assert.equal(resolveWritePath(join(d, '.claude', 'settings.json')), null);
 });

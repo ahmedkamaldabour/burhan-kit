@@ -218,7 +218,7 @@ work/<task>/
 
 ‏`item new` بينشئ files على شكل route. `approve` بيسجل قرار شخص. `item set` بينقل status مسموح. `review add` يحتاج reviewer provenance. `deviation add` بيجمّد code authorization لحد الحل. `item finish` يحتاج units Reviewed وgates ومن غير deviation مفتوحة وproof حديث. `item check` بيبلغ عن مشاكل task files. `state compact` بيقصّر سطور المهام المقفولة في الـ state file (dry run لحد `--apply`).
 
-تقارير read-only: `status` (ومعاه `--write` بيكتب فهرس المهام) و`stats` و`evidence` و`changed` و`pr-body` و`memory` و`inspect` و`doctor`. `use <slug>` بيربط session بمهمة. الـ agent بيشغّلهم كـ `npx burhan-kit <command>`؛ وإنت تقدر كمان. شغّل `doctor` من project root: من مجلد فرعي بيقول إن burhan مش متثبّت.
+تقارير read-only: `status` (ومعاه `--write` بيكتب فهرس المهام) و`stats` و`evidence` و`changed` و`pr-body` و`memory` و`inspect` و`doctor`. `use <slug>` بيربط session بمهمة. الـ agent بيشغّلهم كـ `npx burhan-kit <command>`؛ وإنت تقدر كمان. كل command ما عدا `init` بيلاقي المشروع من أي مجلد فرعي زي git: بيطلع لأقرب مجلد فيه `.burhan/WORKFLOW.md` وبيكتب اسمه على stderr.
 
 ### ذاكرة المشروع
 

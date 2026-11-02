@@ -236,5 +236,11 @@ check "configuration: burhan verify row says what a record proves and what it do
 check "enforcement: burhan verify and what a record does not prove" "$(cat kit/phases/enforcement.md)" has '`burhan verify <slug> -- <command>` runs the proof itself'
 check "README: burhan verify in Proof" "$(cat README.md)" has '`burhan verify <slug> -- <command>` runs a proof command itself'
 check "README.ar: burhan verify in Proof" "$(cat README.ar.md)" has '`burhan verify <slug> -- <command>` بيشغّل أمر الإثبات بنفسه'
+check "configuration: commands find the project from a subfolder" "$cfgdoc" has 'Every command except `init` works on the project that holds the folder it runs in'
+check "README: commands find the project from any subfolder" "$(cat README.md)" has 'Every command except `init` finds the project from any subfolder, as git does'
+check "README: the old run-doctor-from-the-root advice is gone" "$(cat README.md)" lacks 'from a subfolder it says burhan is not installed'
+check "README.ar: commands find the project from any subfolder" "$(cat README.ar.md)" has 'كل command ما عدا `init` بيلاقي المشروع من أي مجلد فرعي زي git'
+check "configuration: a missing or file [dir] is refused, not walked up from" "$cfgdoc" has 'A `[dir]` that does not exist, or a file, is not walked up from'
+check "configuration: a nested install is made with init, not setup" "$cfgdoc" has '`setup` walks up too, so a nested install inside an installed project is made with `init <dir>`'
 
 t_summary

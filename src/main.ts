@@ -7,6 +7,7 @@ import { uninstall } from './lib/uninstall.js';
 import { doctor } from './lib/doctor.js';
 import { prBody } from './lib/pr-body.js';
 import { evidence, projectRoot } from './lib/evidence.js';
+import { findProject } from './lib/find-project.js';
 import { fullRunFor, fullRunLine } from './lib/full-run.js';
 import { stats } from './lib/stats.js';
 import { status } from './lib/status.js';
@@ -26,6 +27,8 @@ import { printAdvice } from './lib/skill-advice.js';
 import { memoryAffected, memoryCheck, memoryStatus } from './lib/memory.js';
 import { inspectCommand } from './lib/inspect.js';
 import { homedir } from 'node:os';
+import { resolve } from 'node:path';
+import { statSync } from 'node:fs';
 import { clackPrompter, numberedPrompter, withFallback } from './lib/setup/prompter.js';
 import { runWizard } from './lib/setup/wizard.js';
 import { agentInstructions, runAnswers } from './lib/setup/agent.js';
@@ -45,6 +48,8 @@ const CONFLICTING_SETUP_FLAG_PAIRS = [
 const SETUP_FLAG_NAMES = {
   agent: '--agent', answers: '--answers', apply: '--apply', set: '--set', stack: '--stack',
 } as const;
+
+const isDir = (p: string): boolean => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
 export interface Io { stdout(s: string): void; stderr(s: string): void; cwd: string; /** stdin and stdout are both terminals: only then may a prompt be shown. */ interactive?: boolean }
 
@@ -117,7 +122,18 @@ Without --apply, init, upgrade and uninstall are a dry run: they print what they
 
 export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFilesystem): Promise<number> {
   const [cmd, ...rest] = argv;
-  const advise = (code: number, slug: string | undefined, docs: string | undefined, withNext = true): number => { if (code === 0) printAdvice(io.cwd, slug, io, docs, withNext); return code; };
+  let here: string | undefined;
+  /** The folder a command works on: the nearest folder at or above `dir` (default: the current one) that holds .burhan/WORKFLOW.md, said on
+   *  stderr when it is not that folder; with no install there or above, the folder as given (as before). `init` never calls this. */
+  const at = (dir?: string): string => {
+    const given = dir ?? io.cwd;
+    const start = resolve(io.cwd, given);
+    const found = isDir(start) ? findProject(start) : null; // a folder that does not exist, or a file: as given, so the command refuses it as before
+    if (found === null || found === start) return (here = given);
+    io.stderr(`project: ${found}\n`);
+    return (here = found);
+  };
+  const advise = (code: number, slug: string | undefined, docs: string | undefined, withNext = true): number => { if (code === 0) printAdvice(here ?? io.cwd, slug, io, docs, withNext); return code; };
   try {
     switch (cmd) {
       case 'init': case 'upgrade': {
@@ -128,7 +144,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         if (cmd === 'init' && values.agents === undefined) { io.stderr('burhan: init needs --agents claude[,codex]\n'); io.stdout(USAGE); return 2; }
         return install({
-          mode: cmd, target: positionals[0] ?? io.cwd,
+          mode: cmd, target: cmd === 'init' ? positionals[0] ?? io.cwd : at(positionals[0]),
           agents: values.agents === undefined ? null : parseAgents(values.agents),
           apply: values.apply === true, bootstrap: values['no-bootstrap'] !== true, allowOutsideSettings: values['allow-outside-links'] === true || values['allow-outside-settings'] === true,
         }, io);
@@ -139,7 +155,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
           options: { write: { type: 'boolean' }, force: { type: 'boolean' }, docs: { type: 'string' } },
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return status({ target: positionals[0] ?? io.cwd, write: values.write === true, force: values.force === true, docs: values.docs }, io);
+        return status({ target: at(positionals[0]), write: values.write === true, force: values.force === true, docs: values.docs }, io);
       }
       case 'changed': {
         const { values, positionals } = parseArgs({
@@ -147,7 +163,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
           options: { item: { type: 'string' }, docs: { type: 'string' }, json: { type: 'boolean' } },
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return changed({ target: positionals[0] ?? io.cwd, item: values.item, docs: values.docs, json: values.json === true }, io);
+        return changed({ target: at(positionals[0]), item: values.item, docs: values.docs, json: values.json === true }, io);
       }
       case 'evidence': {
         const { values, positionals } = parseArgs({
@@ -155,8 +171,9 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
           options: { item: { type: 'string' }, session: { type: 'string' }, last: { type: 'string' }, json: { type: 'boolean' } },
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        const code = evidence({ target: positionals[0] ?? io.cwd, item: values.item, session: values.session, last: values.last, json: values.json === true }, io);
-        if (code === 0 && values.item !== undefined && values.json !== true) io.stdout(`${fullRunLine(fullRunFor(projectRoot(positionals[0] ?? io.cwd)))}\n`);
+        const target = at(positionals[0]);
+        const code = evidence({ target, item: values.item, session: values.session, last: values.last, json: values.json === true }, io);
+        if (code === 0 && values.item !== undefined && values.json !== true) io.stdout(`${fullRunLine(fullRunFor(projectRoot(target)))}\n`);
         return code;
       }
       case 'stats': {
@@ -165,7 +182,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
           options: { docs: { type: 'string' }, json: { type: 'boolean' } },
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return stats({ target: positionals[0] ?? io.cwd, docs: values.docs, json: values.json === true }, io);
+        return stats({ target: at(positionals[0]), docs: values.docs, json: values.json === true }, io);
       }
       case 'pr-body': {
         const { values, positionals } = parseArgs({
@@ -173,7 +190,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
           options: { item: { type: 'string' }, docs: { type: 'string' } },
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return prBody({ target: positionals[0] ?? io.cwd, item: values.item, docs: values.docs }, io);
+        return prBody({ target: at(positionals[0]), item: values.item, docs: values.docs }, io);
       }
       case 'uninstall': {
         const { values, positionals } = parseArgs({
@@ -181,24 +198,24 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
           options: { apply: { type: 'boolean' }, all: { type: 'boolean' } },
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return uninstall({ target: positionals[0] ?? io.cwd, apply: values.apply === true, all: values.all === true }, io);
+        return uninstall({ target: at(positionals[0]), apply: values.apply === true, all: values.all === true }, io);
       }
       case 'doctor': {
         const { positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: {} });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return doctor({ target: positionals[0] ?? io.cwd }, io);
+        return doctor({ target: at(positionals[0]) }, io);
       }
       case 'inspect': {
         const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: { json: { type: 'boolean' } } });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return inspectCommand(positionals[0] ?? io.cwd, values.json === true, io);
+        return inspectCommand(at(positionals[0]), values.json === true, io);
       }
       case 'memory': {
         const [sub, ...args] = rest;
         if (sub !== 'check' && sub !== 'status' && sub !== 'affected') throw new BurhanError(`memory needs a subcommand: check, status or affected${sub === undefined ? '' : ` (not "${sub}")`}`);
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: sub === 'affected' ? { since: { type: 'string' } } : {} });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        const dir = positionals[0] ?? io.cwd;
+        const dir = at(positionals[0]);
         if (sub === 'status') return memoryStatus(dir, io);
         if (sub === 'affected') return memoryAffected(dir, values.since as string | undefined, io);
         return memoryCheck(dir, io);
@@ -207,49 +224,49 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         const [sub, ...args] = rest;
         if (sub !== 'check' && sub !== 'new' && sub !== 'set' && sub !== 'finish') throw new BurhanError(`item needs a subcommand: check, new, set or finish${sub === undefined ? '' : `, not "${sub}"`}`);
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, ...(sub === 'new' ? { type: { type: 'string' }, scope: { type: 'string' } } : {}), ...(sub === 'finish' ? { evidence: { type: 'string' } } : {}), ...(sub === 'set' ? { reopen: { type: 'string' } } : {}) } });
-        if (sub === 'set') return advise(itemSet(io.cwd, positionals[0], positionals.slice(1), io, values.docs, (values as { reopen?: string }).reopen), positionals[0], values.docs);
+        if (sub === 'set') return advise(itemSet(at(), positionals[0], positionals.slice(1), io, values.docs, (values as { reopen?: string }).reopen), positionals[0], values.docs);
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        if (sub === 'finish') return advise(itemFinish(io.cwd, positionals[0], io, { evidence: (values as { evidence?: string }).evidence, docs: values.docs }), positionals[0], values.docs, false);
-        if (sub === 'new') return advise(itemNew(io.cwd, { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io), positionals[0], values.docs, false);
-        return itemCheck(io.cwd, positionals[0], io, values.docs);
+        if (sub === 'finish') return advise(itemFinish(at(), positionals[0], io, { evidence: (values as { evidence?: string }).evidence, docs: values.docs }), positionals[0], values.docs, false);
+        if (sub === 'new') return advise(itemNew(at(), { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io), positionals[0], values.docs, false);
+        return itemCheck(at(), positionals[0], io, values.docs);
       }
       case 'guide': {
         const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, json: { type: 'boolean' } } });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return guide(io.cwd, positionals[0], io, { json: values.json === true, docs: values.docs });
+        return guide(at(), positionals[0], io, { json: values.json === true, docs: values.docs });
       }
       case 'review': {
         const [sub, ...args] = rest;
         if (sub !== 'add') throw new BurhanError(`review needs a subcommand: add${sub === undefined ? '' : `, not "${sub}"`}`);
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, kind: { type: 'string' }, unit: { type: 'string' }, by: { type: 'string' }, verdict: { type: 'string' }, round: { type: 'string' }, text: { type: 'string' } } });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
-        return reviewAdd(io.cwd, positionals[0], values, io);
+        return reviewAdd(at(), positionals[0], values, io);
       }
       case 'approve': {
         const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, by: { type: 'string' } } });
         if (positionals.length > 2) throw new BurhanError(`unexpected argument: ${positionals[2]}`);
-        return advise(approve(io.cwd, positionals[0], positionals[1], values, io), positionals[1], values.docs);
+        return advise(approve(at(), positionals[0], positionals[1], values, io), positionals[1], values.docs);
       }
       case 'deviation': {
         const [sub, ...args] = rest;
         if (sub !== 'add' && sub !== 'resolve') throw new BurhanError(`deviation needs a subcommand: add or resolve${sub === undefined ? '' : `, not "${sub}"`}`);
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, unit: { type: 'string' }, what: { type: 'string' }, where: { type: 'string' }, output: { type: 'string' }, approved: { type: 'boolean' }, rejected: { type: 'boolean' }, by: { type: 'string' }, decision: { type: 'string' } } });
         if (positionals.length > (sub === 'add' ? 1 : 2)) throw new BurhanError(`unexpected argument: ${positionals[sub === 'add' ? 1 : 2]}`);
-        return sub === 'add' ? deviationAdd(io.cwd, positionals[0], values, io) : advise(deviationResolve(io.cwd, positionals[0], positionals[1], values, io), positionals[0], values.docs);
+        return sub === 'add' ? deviationAdd(at(), positionals[0], values, io) : advise(deviationResolve(at(), positionals[0], positionals[1], values, io), positionals[0], values.docs);
       }
       case 'gate': {
         const [sub, ...args] = rest;
         if (sub !== 'tick') throw new BurhanError(`gate needs a subcommand: tick${sub === undefined ? '' : `, not "${sub}"`}`);
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, evidence: { type: 'string' } } });
         if (positionals.length > 2) throw new BurhanError(`unexpected argument: ${positionals[2]}`);
-        return gateTick(io.cwd, positionals[0], positionals[1], io, { evidence: values.evidence, docs: values.docs });
+        return gateTick(at(), positionals[0], positionals[1], io, { evidence: values.evidence, docs: values.docs });
       }
       case 'state': {
         const [sub, ...args] = rest;
         if (sub !== 'compact') throw new BurhanError(`state needs a subcommand: compact${sub === undefined ? '' : `, not "${sub}"`}`);
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, apply: { type: 'boolean' } } });
         if (positionals.length > 0) throw new BurhanError(`unexpected argument: ${positionals[0]}`);
-        return stateCompact(io.cwd, io, { apply: values.apply === true, docs: values.docs });
+        return stateCompact(at(), io, { apply: values.apply === true, docs: values.docs });
       }
       case 'verify': {
         const cut = rest.indexOf('--');
@@ -257,11 +274,11 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         const command = cut === -1 ? [] : rest.slice(cut + 1);
         const { values, positionals } = parseArgs({ args: own, allowPositionals: true, strict: true, options: { docs: { type: 'string' } } });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]} (the command goes after --)`);
-        return verify(io.cwd, positionals[0], command, io, { docs: values.docs });
+        return verify(at(), positionals[0], command, io, { docs: values.docs });
       }
       case 'use': {
         if (rest.length !== 1) throw new BurhanError('use needs exactly one item slug');
-        return useItem(io.cwd, rest[0], io);
+        return useItem(at(), rest[0], io);
       }
       case 'setup': {
         const { values, positionals } = parseArgs({
@@ -287,7 +304,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         const pairs = values.set ? positionals.filter((x) => x.includes('=')) : [];
         const dirs = positionals.filter((x) => !pairs.includes(x));
         if (dirs.length > 1) throw new BurhanError(`unexpected argument: ${dirs[1]}`);
-        const target = dirs[0] ?? io.cwd;
+        const target = at(dirs[0]);
         if (values.agent) { io.stdout(agentInstructions(target, lang, homedir())); return 0; }
         if (values.answers !== undefined) return runAnswers(target, values.answers, values.apply === true, io, lang, homedir(), setupFilesystem, { allowOutside });
         if (values.apply) throw new BurhanError('--apply needs --answers <file>');
@@ -300,7 +317,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
       case '--help': case '-h': case 'help':
         io.stdout(USAGE); return 0;
       case undefined:
-        if (io.interactive) return await setupWizard(io.cwd, io, 'en', false);
+        if (io.interactive) return await setupWizard(at(), io, 'en', false);
         io.stdout(USAGE); return 2;
       default:
         io.stderr(`burhan: unknown command: ${cmd}\n`); io.stdout(USAGE); return 2;

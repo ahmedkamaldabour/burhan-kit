@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import type { Io } from '../main.js';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
+import { findProject } from './find-project.js';
 import { realTarget } from './fs-safe.js';
 import { evidenceMatches } from '../hooks/core/evidence-cmd.mjs';
 import { isAbsoluteOverride } from '../hooks/core/store.mjs';
@@ -44,15 +45,9 @@ export const ereToJs = (re: string): string => re
   .replace(/\\[<>]/g, '\\b')          // GNU grep word boundaries
   .replace(/\{,(\d+)\}/g, '{0,$1}');   // ERE {,n}; JS reads it literally
 
-/** The project a path belongs to: the nearest ancestor holding .burhan/ (else the path itself). */
+/** The project a path belongs to: the nearest folder at or above it that holds .burhan/WORKFLOW.md (else the path itself), physical path. */
 export function projectRoot(target: string): string {
-  let d = realTarget(target);
-  for (;;) {
-    if (existsSync(join(d, '.burhan'))) return d;
-    const up = dirname(d);
-    if (up === d) return realTarget(target);
-    d = up;
-  }
+  return findProject(realTarget(target)) ?? realTarget(target);
 }
 
 /** The folder the hooks write this project's ledger into; it exists once a hook has recorded a turn of the project. */

@@ -56,6 +56,8 @@ docs/burhan/work/ docs/burhan/discovery/                        optional shared 
 
 ## Commands
 
+Every command except `init` works on the project that holds the folder it runs in (or the `[dir]` it is given): it walks up, as git does, to the nearest folder with `.burhan/WORKFLOW.md`, and prints `project: <path>` on stderr when that is not the folder itself. A `.burhan/` folder without `WORKFLOW.md` is not a project. With no install there or above, the command uses the folder as given. A `[dir]` that does not exist, or a file, is not walked up from: the command refuses it as before. `setup` walks up too, so a nested install inside an installed project is made with `init <dir>`, never with `setup`. `--docs` is read from the project folder, and `verify` runs its command there.
+
 | Command | What it does |
 |---|---|
 | `burhan init --agents claude,codex [--apply]` | Install the kit (dry run without `--apply`) |

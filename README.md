@@ -218,7 +218,7 @@ A passing whole-suite run after the last code edit can serve verification, QC, a
 
 `item new` creates route-shaped files. `approve` records a human decision. `item set` advances one allowed status. `review add` requires reviewer provenance. `deviation add` freezes code authorization until resolution. `item finish` requires reviewed units, gates, no open deviation, and fresh proof. `item check` reports task-file faults. `state compact` shortens the lines of closed tasks in your state file (a dry run until `--apply`).
 
-Read-only reports include `status` (`--write` also writes the task index), `stats`, `evidence`, `changed`, `pr-body`, `memory`, `inspect`, and `doctor`. `use <slug>` links a session to one task. The agent runs these as `npx burhan-kit <command>`; you can too. Run `doctor` from the project root: from a subfolder it says burhan is not installed.
+Read-only reports include `status` (`--write` also writes the task index), `stats`, `evidence`, `changed`, `pr-body`, `memory`, `inspect`, and `doctor`. `use <slug>` links a session to one task. The agent runs these as `npx burhan-kit <command>`; you can too. Every command except `init` finds the project from any subfolder, as git does: it walks up to the nearest folder with `.burhan/WORKFLOW.md` and names it on stderr.
 
 ### Project memory
 

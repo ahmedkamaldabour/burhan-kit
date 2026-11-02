@@ -26,6 +26,7 @@ function audit(project: string, evdir: string, session: string, turn: string, st
 function project(): string {
   const p = tmp('burhan-ev-');
   mkdirSync(join(p, '.burhan/local'), { recursive: true });
+  writeFileSync(join(p, '.burhan/WORKFLOW.md'), '# burhan\n'); // an install: a command run from a subfolder finds this folder
   writeFileSync(join(p, '.burhan/workflow.config'), "WF_EVIDENCE_REGEX='^verify-it'\nWF_CODE_REGEX='\\.src$'\n");
   writeFileSync(join(p, '.burhan/local/PROGRESS.md'), '## Now\n### add-export\n');
   return p;
