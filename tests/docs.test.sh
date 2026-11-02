@@ -232,5 +232,9 @@ check "configuration: setup says how many files each pattern matches" "$cfgdoc" 
 check "enforcement: the start-up list and the commands' refusals, and what they do not stop" "$(cat kit/phases/enforcement.md)" has 'What holds an agent that never reads a hook'
 check "configuration: the match counts need a git checkout" "$cfgdoc" has 'the counts need a git checkout and are left out without one'
 check "configuration: doctor warns when a pattern matches no file" "$cfgdoc" has 'it also warns when `WF_CODE_REGEX`, `WF_TEST_REGEX` or `WF_SENSITIVE_REGEX` is set but matches no file'
+check "configuration: burhan verify row says what a record proves and what it does not" "$cfgdoc" has 'A record shows that a command ran and how it ended, not that it tests the right thing'
+check "enforcement: burhan verify and what a record does not prove" "$(cat kit/phases/enforcement.md)" has '`burhan verify <slug> -- <command>` runs the proof itself'
+check "README: burhan verify in Proof" "$(cat README.md)" has '`burhan verify <slug> -- <command>` runs a proof command itself'
+check "README.ar: burhan verify in Proof" "$(cat README.ar.md)" has '`burhan verify <slug> -- <command>` بيشغّل أمر الإثبات بنفسه'
 
 t_summary

@@ -55,9 +55,12 @@ export function projectRoot(target: string): string {
   }
 }
 
+/** The folder the hooks write this project's ledger into; it exists once a hook has recorded a turn of the project. */
+export const ledgerDir = (target: string, env: Env = process.env): string => join(evidenceRoot(env, readProjectConfig(target).values.WF_EVIDENCE_DIR), projectKey(target));
+
 /** Every recorded step for this project, oldest first. Unreadable files and torn lines are skipped. */
 export function readLedger(target: string, env: Env = process.env): LedgerRecord[] {
-  const dir = join(evidenceRoot(env, readProjectConfig(target).values.WF_EVIDENCE_DIR), projectKey(target));
+  const dir = ledgerDir(target, env);
   if (!existsSync(dir)) return [];
   const out: LedgerRecord[] = [];
   for (const s of readdirSync(dir, { withFileTypes: true })) {

@@ -185,7 +185,7 @@ QC proposes `PASS` or `FAIL — N issues`, with Critical, Important, or Minor fi
 ## Proof
 
 Hooks report and fail open; they never block. Task commands refuse a wrong lifecycle step, but an agent can skip them.
-The block `burhan init` writes into `CLAUDE.md` and `AGENTS.md` tells the agent to run `burhan guide` before it edits and to follow the answer, and `guide` still answers when no item exists. That is an instruction, not a lock: a direct edit, a shell write and who approved are not stopped.
+The block `burhan init` writes into `CLAUDE.md` and `AGENTS.md` tells the agent to run `burhan guide` before it edits and to follow the answer, and `guide` still answers when no item exists. That is an instruction, not a lock: a direct edit, a shell write and who approved are not stopped. `burhan verify <slug> -- <command>` runs a proof command itself and records its exit code and the code state it ran on; `item finish` accepts that record, so a project without hooks still needs a proof. The record shows that a command ran and how it ended, not that it tests the right thing.
 
 | Moment | Hook | Purpose |
 | --- | --- | --- |

@@ -20,6 +20,7 @@ import { reviewAdd } from './lib/review-add.js';
 import { approve } from './lib/approve.js';
 import { deviationAdd, deviationResolve } from './lib/deviation.js';
 import { itemFinish } from './lib/item-finish.js';
+import { verify } from './lib/verify.js';
 import { guide } from './lib/guide.js';
 import { printAdvice } from './lib/skill-advice.js';
 import { memoryAffected, memoryCheck, memoryStatus } from './lib/memory.js';
@@ -95,8 +96,10 @@ export const USAGE = `usage: burhan <command> [options]
                        shorten the closed items' old lines in the state file: a dry run unless --apply; never touches a "### " block; the old text goes to the item's <slug>-state-notes.md first
   guide [slug] [--json]
                        the item's stage, whether code edits are authorized now, the process skill to run (with WF_SKILLS=superpowers), the next step, and whether a passing full run exists after the last code edit
+  verify <slug> [--docs <path>] -- <command> [args]
+                       run a proof command without a shell, show how it ended, and record it in the item's folder (command, exit code, time, code state)
   item finish <slug> [--evidence <text>]
-                       complete the plan: every sub-unit Reviewed, every gate the route needs ticked, a passing proof after the last code edit
+                       complete the plan: every sub-unit Reviewed, every gate the route needs ticked, a proof (a burhan verify record on the current code state, or the hook ledger)
   review add <slug> --kind review|qc|verification --by <who> [--unit N] [--verdict V] [--round N] [--text T]
                        write a review section or report with Performed by in the exact form
   approve story|plan|qc <slug> --by <name>
@@ -247,6 +250,14 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, apply: { type: 'boolean' } } });
         if (positionals.length > 0) throw new BurhanError(`unexpected argument: ${positionals[0]}`);
         return stateCompact(io.cwd, io, { apply: values.apply === true, docs: values.docs });
+      }
+      case 'verify': {
+        const cut = rest.indexOf('--');
+        const own = cut === -1 ? rest : rest.slice(0, cut);
+        const command = cut === -1 ? [] : rest.slice(cut + 1);
+        const { values, positionals } = parseArgs({ args: own, allowPositionals: true, strict: true, options: { docs: { type: 'string' } } });
+        if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]} (the command goes after --)`);
+        return verify(io.cwd, positionals[0], command, io, { docs: values.docs });
       }
       case 'use': {
         if (rest.length !== 1) throw new BurhanError('use needs exactly one item slug');

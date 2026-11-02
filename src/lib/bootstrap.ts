@@ -14,7 +14,7 @@ const START_LIST = [
   '2. When it names a process skill, run that skill before writing the file it names.',
   '3. Edit code, tests or config only when it says AUTHORIZED. With no item, route one with `burhan item new`; for one obvious change with no escalator, state the routing line `patch — <reason>` and make it.',
   '4. Change statuses, gates and approvals only through burhan commands, never by editing their lines. An approval is the owner\'s to give.',
-  '5. Before you say a task is done, run `burhan item finish <slug>`.',
+  '5. Before you say a task is done, run its proof through `burhan verify <slug> -- <command>` (the command records the result), then `burhan item finish <slug>`.',
 ];
 
 export function bootstrapBody(agent: Agent): string {

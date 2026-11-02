@@ -1,20 +1,25 @@
+import { existsSync } from 'node:fs';
 import type { Io } from '../main.js';
 import { checkText, hasContractMarker } from '../hooks/core/item-contract.mjs';
 import { evidenceMatches } from '../hooks/core/evidence-cmd.mjs';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
-import { ereToJs, isPiped, readLedger } from './evidence.js';
+import { ereToJs, isPiped, ledgerDir, readLedger } from './evidence.js';
 import { putFile, realTarget } from './fs-safe.js';
 import { fenced, itemFolder, openDeviations, overallStatus, planPath, planRoute, readOr, routeNeeds, setFieldLine, units } from './item-files.js';
 import { assertInside, oneLine } from './item-io.js';
 import { docsLocation } from './status.js';
+import { currentCodeState, judgeVerify, readVerifyRecords } from './verify.js';
 
 const regex = (ere: string | undefined): RegExp | null => { try { return ere ? new RegExp(ereToJs(ere)) : null; } catch { return null; } };
+/** Matches nothing: a proof pattern that is set but does not compile recognises no proof. */
+const NEVER = /(?!)/;
 
 /** `burhan item finish <slug> [--evidence <text>]`: the plan becomes Completed when the plan follows the contract, every sub-unit is Reviewed, every gate that
- *  comes before Completed is ticked, and the evidence ledger shows a passing proof after the item's last code edit. QC, the knowledge review and Close-out
- *  come AFTER Completed (lifecycle), so they are not asked here. The ledger is written at the end of a turn, so a proof run in this very turn is not in it
- *  yet: `--evidence` states what shows it, and the plan then says it was stated, not proven. */
+ *  comes before Completed is ticked, and a proof is shown: a `burhan verify` record of a proof command that passed on the current code state, or the evidence
+ *  ledger's passing proof after the item's last code edit. QC, the knowledge review and Close-out come AFTER Completed (lifecycle), so they are not asked here.
+ *  The ledger is written at the end of a turn, so a proof run in this very turn is not in it yet: `burhan verify` records it at once, and `--evidence` states
+ *  what shows it (the plan then says it was stated, not proven). */
 export function itemFinish(target: string, slug: string | undefined, io: Io, o: { evidence?: string; docs?: string; env?: NodeJS.ProcessEnv } = {}): number {
   const project = realTarget(target);
   const { slug: s, dir } = itemFolder(docsLocation(target, o.docs).abs, slug, 'item finish');
@@ -56,26 +61,48 @@ export function itemFinish(target: string, slug: string | undefined, io: Io, o: 
   if (gates.length > 0) open.push(`gates still open: ${gates.join(', ')}`);
   if (open.length > 0) throw new BurhanError(`cannot finish ${s}: ${open.join('; ')}`);
 
-  // The proof: a passing, unpiped evidence command after the item's last code edit, from the ledger. A pattern that is empty or does not compile never
-  // turns the requirement off: every edit then counts as code, and a proof cannot be recognised. Records under no item may be this item's, so they count.
+  // The proof. First the records `burhan verify` wrote: among the runs of a proof command, the latest one taken on the current code state decides — a pass
+  // proves, a failure stops the finish even with --evidence. Then the ledger the hooks write: a passing, unpiped evidence command after the item's last code
+  // edit. A pattern that is empty or does not compile never turns the requirement off: every edit then counts as code, and a proof cannot be recognised.
+  // Records under no item may be this item's, so they count. With no ledger folder at all (no hooks) and no record that proves, finish asks for one.
   const values = readProjectConfig(project).values;
   const code = regex(values.WF_CODE_REGEX);
   const proof = regex(values.WF_EVIDENCE_REGEX);
-  const recs = readLedger(target, o.env ?? process.env).filter((r) => r.item === s || !r.item || r.item === '-');
-  const edits = recs.map((r, i) => (r.kind === 'edit' && r.file !== undefined && (code === null || code.test(r.file)) ? i : -1)).filter((i) => i >= 0);
+  const env = o.env ?? process.env;
+  const records = readVerifyRecords(dir, s);
+  const judged = judgeVerify(records, records.length > 0 ? currentCodeState(target, o.docs) : { value: null, files: 0 }, (values.WF_EVIDENCE_REGEX ?? '') === '' ? null : (proof ?? NEVER));
+  const runVerify = `run burhan verify ${s} -- <proof command> (a command WF_EVIDENCE_REGEX matches)`;
   let stateNote = '';
   let say = '';
-  if (edits.length === 0) say = ' (no code edit of this item is in the ledger, so no proof was asked for)';
-  else {
-    const last = edits[edits.length - 1]!;
-    const shown = proof !== null && recs.some((r, i) => i > last && r.kind === 'cmd' && r.status === 'ok' && !isPiped(r.cmd ?? '') && evidenceMatches(proof, r.cmd ?? ''));
-    if (!shown) {
-      if (stated === '') {
-        const unusable = code === null || proof === null ? ` WF_CODE_REGEX or WF_EVIDENCE_REGEX is empty or not usable, so every edit counts as code and a proof cannot be recognised.` : '';
-        throw new BurhanError(`cannot finish ${s}: no passing proof after the last code edit (${recs[last]!.file}) in the evidence ledger.${unusable} The ledger is written at the end of a turn, so a proof run in this turn is not in it yet: end the turn and finish in the next one, or pass --evidence "<what shows it>" (recorded as stated, not proven)`);
+  // The ledger's code edits, read once: the ledger path needs them, and a record with no code state does not count when a code edit came after it.
+  const recs = readLedger(target, env).filter((r) => r.item === s || !r.item || r.item === '-');
+  const edits = recs.map((r, i) => (r.kind === 'edit' && r.file !== undefined && (code === null || code.test(r.file)) ? i : -1)).filter((i) => i >= 0);
+  const lastEdit = edits.length > 0 ? recs[edits[edits.length - 1]!] : undefined;
+  if (judged.kind === 'failed') throw new BurhanError(`cannot finish ${s}: the latest burhan verify run ${judged.rec.fingerprint === null ? '(no code state)' : 'on the current code state'} failed (${judged.rec.cmd}, exit ${judged.rec.exit ?? 'none'}, at ${judged.rec.ts}): fix it and run burhan verify ${s} -- ${judged.rec.cmd} again`);
+  const staleStated = judged.kind === 'stated' && lastEdit !== undefined && Date.parse(lastEdit.ts) > Date.parse(judged.rec.ts);
+  if (judged.kind === 'proven') say = ` (proven by burhan verify: ${judged.rec.cmd} passed at ${judged.rec.ts} on the current code state)`;
+  else if (judged.kind === 'stated' && !staleStated) {
+    stateNote = ` · stated evidence: burhan verify ${judged.rec.cmd} passed at ${judged.rec.ts} with no code state (${judged.why})`;
+    say = ' (evidence stated, not proven: the burhan verify record has no code state)';
+  } else {
+    const note = judged.kind === 'none' ? judged.note : ` (the burhan verify run ${judged.rec.cmd} at ${judged.rec.ts} has no code state and the ledger shows a code edit after it: ${lastEdit?.file ?? '?'} at ${lastEdit?.ts ?? '?'})`;
+    if (edits.length === 0) {
+      if (existsSync(ledgerDir(target, env))) say = ' (no code edit of this item is in the ledger, so no proof was asked for)';
+      else if (stated !== '') {
+        stateNote = ` · stated evidence: ${stated}`;
+        say = ' (evidence stated, not proven: no hook ledger and no burhan verify record)';
+      } else throw new BurhanError(`cannot finish ${s}: this project has no hook ledger and no burhan verify record proves the current code state${note}: ${runVerify}, or pass --evidence "<what shows it>" (recorded as stated, not proven)`);
+    } else {
+      const last = edits[edits.length - 1]!;
+      const shown = proof !== null && recs.some((r, i) => i > last && r.kind === 'cmd' && r.status === 'ok' && !isPiped(r.cmd ?? '') && evidenceMatches(proof, r.cmd ?? ''));
+      if (!shown) {
+        if (stated === '') {
+          const unusable = code === null || proof === null ? ` WF_CODE_REGEX or WF_EVIDENCE_REGEX is empty or not usable, so every edit counts as code and a proof cannot be recognised.` : '';
+          throw new BurhanError(`cannot finish ${s}: no passing proof after the last code edit (${recs[last]!.file}) in the evidence ledger.${unusable} The ledger is written at the end of a turn, so a proof run in this turn is not in it yet: end the turn and finish in the next one, ${runVerify}${note}, or pass --evidence "<what shows it>" (recorded as stated, not proven)`);
+        }
+        stateNote = ` · stated evidence: ${stated}`;
+        say = ' (evidence stated, not proven by the ledger)';
       }
-      stateNote = ` · stated evidence: ${stated}`;
-      say = ' (evidence stated, not proven by the ledger)';
     }
   }
   const updated = setFieldLine(plan, 'Overall status', `Completed${stateNote}`);

@@ -103,6 +103,7 @@ test('both bodies carry the start-up list, in the kit\'s words, without naming h
     assert.match(list, /burhan item new/);
     assert.match(list, /patch — <reason>/);
     assert.match(list, /burhan item finish <slug>/);
+    assert.match(list, /burhan verify <slug> -- <command>/);
     assert.doesNotMatch(list, /hook/i);
     assert.ok(body.endsWith('At the start of every session, read the state file named in `.burhan/bindings.md` first.'), 'the closing line stays last (tests/init.test.sh edits it)');
   }
