@@ -230,5 +230,7 @@ check "SETUP: the anchors sentence names the three pattern keys" "$(cat kit/SETU
 check "configuration: setup refuses a sensitive path written as a pattern" "$cfgdoc" has 'a value that starts with `^`, ends with `$` or contains `.*` is refused'
 check "configuration: setup says how many files each pattern matches" "$cfgdoc" has 'how many project files each pattern matches'
 check "enforcement: the start-up list and the commands' refusals, and what they do not stop" "$(cat kit/phases/enforcement.md)" has 'What holds an agent that never reads a hook'
+check "configuration: the match counts need a git checkout" "$cfgdoc" has 'the counts need a git checkout and are left out without one'
+check "configuration: doctor warns when a pattern matches no file" "$cfgdoc" has 'it also warns when `WF_CODE_REGEX`, `WF_TEST_REGEX` or `WF_SENSITIVE_REGEX` is set but matches no file'
 
 t_summary

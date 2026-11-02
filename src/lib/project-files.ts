@@ -4,12 +4,12 @@ import { ere } from '../hooks/core/ere.mjs';
 /** More files than this and the count is skipped: a count nobody can wait for is worth less than none. */
 export const FILE_CAP = 50_000;
 
-/** The files git knows in the project (tracked, plus untracked and not ignored), with `/` separators; null when this is not a git checkout, git is missing or the list is over FILE_CAP. */
-export function listProjectFiles(project: string): string[] | null {
+/** The files git knows in the project (tracked, plus untracked and not ignored), with `/` separators; null when this is not a git checkout, git is missing or the list is over `cap` (FILE_CAP unless a caller says otherwise). */
+export function listProjectFiles(project: string, cap = FILE_CAP): string[] | null {
   const r = spawnSync('git', ['-C', project, '-c', 'core.quotePath=false', 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (r.error !== undefined || r.status !== 0) return null;
   const files = r.stdout.split('\0').filter((f) => f !== '');
-  return files.length > FILE_CAP ? null : files;
+  return files.length > cap ? null : files;
 }
 
 /** How many of `files` the pattern matches; null when the engine refuses the pattern. */

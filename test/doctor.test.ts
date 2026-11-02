@@ -433,7 +433,7 @@ test('a code, test or sensitive pattern that matches no file of the project is w
   assert.ok(warned, 'a pattern that matches nothing is named');
   assert.match(warned.text, /escaped/);
   edit(cfg(p), (s) => s.replace(/^WF_SENSITIVE_REGEX=.*$/m, "WF_SENSITIVE_REGEX='^src/'"));
-  assert.equal(find(runChecks(p, probe()), 'warn', 'WF_SENSITIVE_REGEX: matches no file'), undefined);
+  assert.equal(find(runChecks(p, probe()), 'warn', 'matches no file'), undefined);
 });
 
 test('no judgement without a file list, and never for the evidence pattern', () => {
@@ -444,5 +444,5 @@ test('no judgement without a file list, and never for the evidence pattern', () 
   mkdirSync(join(p, 'src'), { recursive: true });
   writeFileSync(join(p, 'src/a.ts'), 'x');
   edit(cfg(p), (s) => s.replace(/^WF_EVIDENCE_REGEX=.*$/m, "WF_EVIDENCE_REGEX='no-such-command'").replace(/^WF_SENSITIVE_REGEX=.*$/m, 'WF_SENSITIVE_REGEX=""'));
-  assert.equal(find(runChecks(p, probe()), 'warn', 'WF_EVIDENCE_REGEX: matches no file'), undefined);
+  assert.equal(runChecks(p, probe()).filter((c) => c.text.includes('WF_EVIDENCE_REGEX')).length, 0);
 });

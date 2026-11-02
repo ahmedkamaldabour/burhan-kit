@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { cli, project, projectWithItem } from './item-fixture.js';
+import { capture } from './helpers.js';
+import { printAdvice } from '../src/lib/skill-advice.js';
 
 const BY = ['--by', 'dev-dabour'];
 
@@ -42,4 +44,22 @@ test('item new and approve print exactly one next: line (item new keeps its own)
   assert.match(made.out, /^next: fill the files/m);
   const story = await cli(await projectWithItem(), ['approve', 'story', 'foo', ...BY]);
   assert.equal(count(story.out), 1);
+});
+
+test('printAdvice prints the next step by default and not when withNext is false', async () => {
+  const dir = await projectWithItem();
+  const withNext = capture(dir);
+  printAdvice(dir, 'foo', withNext.io);
+  assert.match(withNext.o.out, /^next: /m);
+  const without = capture(dir);
+  printAdvice(dir, 'foo', without.io, undefined, false);
+  assert.doesNotMatch(without.o.out, /^next: /m);
+});
+
+test('only item new and item finish pass withNext false to the wrapper', () => {
+  const lines = readFileSync(fileURLToPath(new URL('../../src/main.ts', import.meta.url)), 'utf8').split('\n');
+  const flagged = lines.filter((l) => l.includes('advise(') && l.includes('values.docs, false)'));
+  assert.equal(flagged.length, 2);
+  assert.ok(flagged.some((l) => l.includes('advise(itemFinish(')), 'item finish');
+  assert.ok(flagged.some((l) => l.includes('advise(itemNew(')), 'item new');
 });

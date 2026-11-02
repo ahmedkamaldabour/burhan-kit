@@ -38,3 +38,21 @@ test('matchLines: a count, the singular, and a zero that says to check', () => {
     '  WF_SENSITIVE_REGEX matches no file in the project — check it (burhan doctor says why)',
   ]);
 });
+
+test('listProjectFiles is null when git is not on the PATH', () => {
+  const dir = repo(['src/a.ts']);
+  const nowhere = tmpDir('burhan-nogit-');
+  const saved = process.env.PATH;
+  process.env.PATH = nowhere;
+  try {
+    assert.equal(listProjectFiles(dir), null);
+  } finally {
+    if (saved === undefined) delete process.env.PATH; else process.env.PATH = saved;
+  }
+});
+
+test('listProjectFiles is null over the cap and the list at the cap', () => {
+  const dir = repo(['a.ts', 'b.ts', 'c.ts']);
+  assert.equal(listProjectFiles(dir, 2), null);
+  assert.deepEqual(listProjectFiles(dir, 3)?.sort(), ['a.ts', 'b.ts', 'c.ts']);
+});
