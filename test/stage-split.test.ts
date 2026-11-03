@@ -12,7 +12,7 @@ const STAGE = ['stage-story', 'stage-plan', 'stage-build', 'stage-finish'].map((
 const SPLIT = /(?<=[.!?:])\s+|\s*│\s*|\s*⛔ STOP — explicit approval\s*/;
 const sentences = (text: string): string[] => norm(text).split(SPLIT).filter((s) => s.split(' ').length >= 9);
 
-// The edits the owner approved (Deviations rows 5 and 7). Nothing else may change a moved sentence.
+// The edits the owner approved (Deviations rows 5 and 7, and c17 of cli-verify: the table row names `burhan verify`). Nothing else may change a moved sentence.
 const POINTERS: Array<[string, string]> = [
   ['(.burhan/phases/lifecycle.md · Modes)', '(.burhan/phases/stage-build.md · Modes)'],
   ['## 2) Branch on state - No item yet', '## Intake and the story step - No item yet'],
@@ -25,6 +25,7 @@ const POINTERS: Array<[string, string]> = [
   ['propose a split (below).', 'propose a split (phases/stage-story.md · Decomposition).'],
   ['and everything in reviews/.', 'and reviews/ by need: the QC and verification reports in full, and of the review file its headings, the sections of sub-units not yet Reviewed and the latest fix round; open a closed section only when a finding of it is named or the plan says so (QC reads everything).'],
   ['use the verification identity from §1', 'use the verification identity from WORKFLOW §1'],
+  ['a passing proof after the last code edit |', 'a passing proof after the last code edit (record it with burhan verify <slug> -- <command>) |'],
   ['is an intent change (below).', 'is an intent change (phases/stage-build.md · When the intent changes mid-flight).'],
 ];
 // Second copies of sentences that were in two files: [the dropped sentence, the file that keeps its twin].

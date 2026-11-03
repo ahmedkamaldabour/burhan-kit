@@ -52,7 +52,7 @@ Read the stage file for the state the item is in, and only that one (WORKFLOW §
 - **Plan approved** → `.burhan/phases/stage-build.md` (re-validate, then build, review and pause, one sub-unit at a time).
 - **Every sub-unit reviewed** → `.burhan/phases/stage-finish.md` (verification, then QC or close-out).
 
-At every stage make and change the item's files with the kit's commands (`item new`, `item set`, `gate tick`, `review add`, `approve`, `deviation`, `item finish`, `guide`): the table and its rules are in `.burhan/phases/stage-plan.md` · The commands own the item files.
+At every stage make and change the item's files with the kit's commands (`item new`, `item set`, `gate tick`, `review add`, `approve`, `deviation`, `verify`, `item finish`, `guide`): the table and its rules are in `.burhan/phases/stage-plan.md` · The commands own the item files.
 
 A release verifies before it is reviewed: read `.burhan/phases/stage-finish.md` (verification) before the review in `.burhan/phases/stage-build.md`.
 

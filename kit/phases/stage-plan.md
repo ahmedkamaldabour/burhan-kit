@@ -26,7 +26,7 @@ Make and change an item's files with burhan's commands (the kit command in `.bur
 | a gate is met | `gate tick <slug> <gate> [--evidence "…"]` |
 | a review, QC or verification | `review add <slug> --kind review\|qc\|verification --by "<agent · model · context>"` (a review needs `--unit <N>`, a QC needs `--verdict`) |
 | a step deviated from the plan | `deviation add <slug> --unit N --what … --where … --output …`: an open row in the plan's Deviations; the executor STOPS. The owner's decision: `deviation resolve <slug> <n> --approved\|--rejected --by <owner's name>` |
-| the plan is done | `item finish <slug>`: every sub-unit Reviewed, the gates before Completed ticked, a passing proof after the last code edit |
+| the plan is done | `item finish <slug>`: every sub-unit Reviewed, the gates before Completed ticked, a passing proof after the last code edit (record it with `burhan verify <slug> -- <command>`) |
 | anything looks off | `item check <slug>` names every fault |
 
 Writing the prose of a story or plan by hand is normal. Creating a file by hand, or editing a status or a gate line by hand, is the fallback: with `WF_ITEM_CONTRACT=on` the turn-end audit flags a file you wrote directly that breaks the contract or was created by hand without `**Contract:** 1`, and code edited while `guide` says "NOT authorized". The commands refuse a wrong step and say why; they never replace the owner's decisions.
