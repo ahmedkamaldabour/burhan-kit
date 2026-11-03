@@ -44,7 +44,11 @@ const run = (s: Scene, o: { apply: boolean; mode?: 'init' | 'upgrade'; allow?: b
 };
 const hooksIn = (f: string): number => Object.keys((JSON.parse(readFileSync(f, 'utf8')) as { hooks?: object }).hooks ?? {}).length;
 
-for (const how of ['file', 'folder', 'dangling', 'sibling', 'dotdot'] as const) {
+// Windows takes `..` in a link text as text (resolveWritePath, safe-writes AC-09): the dotdot link lands inside the project there, so it
+// is an outside link only off Windows; the Windows answer has its own test below.
+const win = process.platform === 'win32';
+const outsideHows: Array<'file' | 'folder' | 'dangling' | 'sibling' | 'dotdot'> = win ? ['file', 'folder', 'dangling', 'sibling'] : ['file', 'folder', 'dangling', 'sibling', 'dotdot'];
+for (const how of outsideHows) {
   test(`dry run names the outside target (${how} link) and says --apply would refuse; exit 1; nothing written`, { skip }, () => {
     const s = scene(how);
     const r = run(s, { apply: false });
@@ -76,6 +80,16 @@ for (const how of ['file', 'folder', 'dangling', 'sibling', 'dotdot'] as const) 
     assert.equal(hooksIn(s.outside), 5);
   });
 }
+
+test('Windows: the dotdot link lands inside the project (`..` in a link text is taken as text): not refused, the hooks go to <project>/settings.json, the outside file untouched', { skip: win ? skip : 'Windows only: off Windows the dotdot link leads outside and is refused (the tests above)' }, () => {
+  const s = scene('dotdot');
+  const r = run(s, { apply: true });
+  assert.equal(r.error, undefined);
+  assert.equal(r.code, 0);
+  assert.doesNotMatch(r.out, /outside the project/u);
+  assert.equal(hooksIn(join(s.project, 'settings.json')), 5);
+  assert.equal(readFileSync(s.outside, 'utf8'), OUTSIDE_JSON);
+});
 
 test('upgrade refuses the same way, and the flag lifts it', { skip }, () => {
   const s = scene('none');
