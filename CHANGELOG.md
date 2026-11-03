@@ -13,7 +13,7 @@ A proof you can show (`burhan verify`), commands that work from any subfolder, a
 ### Commands find the project from any subfolder
 - Every command except `init` works on the nearest folder, at or above the one it runs in, that holds `.burhan/WORKFLOW.md`, as git does. When that is not the current folder it prints one line, `project: <path>`, on stderr; stdout and `--json` do not change.
 - A `[dir]` that does not exist, or a file, is refused and not walked up from. A `.burhan/` folder without `WORKFLOW.md` is not a project. A nested install is made with `init <dir>`, never with `setup`.
-- On Windows the guard for writes outside the project reads `..` in a link the way Windows does, so a link made to leave the project only under that reading is now refused. On Windows CI, `076ca70` failed three tests that expected the other answer and `6150ff7` passed; the commit of this release has not run on Windows yet.
+- On Windows the guard for writes outside the project reads `..` in a link the way Windows does, so a link made to leave the project only under that reading is now refused. On Windows CI, `076ca70` failed three tests that expected the other answer and `6150ff7` passed, and so did the Windows job on `f7cdfd4`, the commit that set this version.
 
 ### The agent is asked to run `burhan guide` first
 - The block `burhan init` writes into `CLAUDE.md` and `AGENTS.md` carries a five-point start-up list: run `guide`, run the skill it names, edit only when it says AUTHORIZED, change state only through burhan commands, run the proof through `burhan verify`, then `item finish`, before saying done. The list doesn't mention hooks. It is an instruction, not a lock: nothing stops a direct file edit, and the docs say so.
