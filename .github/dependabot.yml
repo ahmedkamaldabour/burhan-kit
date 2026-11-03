@@ -1,0 +1,17 @@
+# Dependabot proposes updates to the commit pins of the actions in .github/workflows, and nothing else (the npm
+# packages are not watched). Each proposal is a pull request: CI runs on it, the pin test checks its form, and
+# the maintainer reviews and merges it. test/dependabot.test.ts pins these values.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # A new action version is proposed only after it has been out for 7 days.
+    cooldown:
+      default-days: 7
+    # All the action updates of a month in one pull request.
+    groups:
+      actions:
+        patterns:
+          - '*'

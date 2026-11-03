@@ -37,7 +37,6 @@ Plans are not promises. Each item is built test-first and lands only with its te
   turn. A shell write after the evidence run therefore does not reopen the "done" check.
 - **Evidence across item close.** Closing an item in the same turn tags that turn's last runs with no
   item. `burhan evidence --session` still shows them.
-- **CI hardening.** Keep the action pins current: they are bumped by hand today; a bot such as Dependabot could do it.
 - **A plugin route.** A commands-and-skills-only plugin that points at `npx burhan-kit init`, if users
   ask for discovery through a plugin marketplace.
 

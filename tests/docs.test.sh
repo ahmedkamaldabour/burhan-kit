@@ -154,12 +154,38 @@ check "releasing: the workflow file npm trusted publishing is bound to" "$reldoc
 check "releasing: what stays yours, the tag push" "$reldoc" has 'You push the tag'
 check "releasing: no token is stored" "$reldoc" has 'No npm token is stored'
 check "releasing: the environment is limited to v* tags" "$reldoc" has 'only `v*` tags'
-check "releasing: the pins are bumped by hand" "$reldoc" has 'bumped by hand'
+check "releasing: Dependabot proposes the pin updates" "$reldoc" has 'Dependabot proposes the pin updates'
 check "releasing: the trusted publisher must allow npm publish" "$reldoc" has 'Allow npm publish'
 check "releasing: the first publish must happen before npm's validation deadline" "$reldoc" has 'Pending validation'
 check "releasing: without the required reviewer the publish job runs with no pause" "$reldoc" has 'with no pause'
-check "roadmap: the pin candidate is replaced by keeping the pins current" "$(cat ROADMAP.md)" has 'Keep the action pins current'
+check "roadmap: Dependabot is no longer a candidate" "$(cat ROADMAP.md)" lacks 'a bot such as Dependabot could do it'
 check "roadmap: the old pin candidate is gone" "$(cat ROADMAP.md)" lacks 'Pin GitHub Actions by commit SHA'
+
+echo "release-hygiene: prereleases, the GitHub Release, the token rights, Dependabot, SECURITY.md"
+check "releasing: the guard refuses a release without its CHANGELOG section" "$reldoc" has 'must have a section for it that is not empty'
+check "releasing: a prerelease goes to next" "$reldoc" has 'goes to the npm dist-tag `next`'
+check "releasing: latest is left as it is for a prerelease" "$reldoc" has '`latest` (what `npx burhan-kit` installs) is left as it is'
+check "releasing: moving latest is a manual step" "$reldoc" has 'npm dist-tag add burhan-kit@<version> latest'
+check "releasing: the old prerelease sentence is gone" "$reldoc" lacks 'is not supported yet'
+check "releasing: the workflow writes the GitHub Release" "$reldoc" has 'The `github-release` job writes the GitHub Release'
+check "releasing: the old by-hand Release step is gone" "$reldoc" lacks 'by hand as before (the workflow does not)'
+check "releasing: an existing Release is never changed" "$reldoc" has 'a Release that already exists for the tag is never changed'
+check "releasing: each job's token rights" "$reldoc" has '## Token rights'
+check "releasing: the new jobs have not run yet" "$reldoc" has 'have not run in a real release yet'
+check "releasing: the stale one-run claim is gone" "$reldoc" lacks 'It has not been run for any other tag yet'
+check "releasing: the dist-tag script refuses a tarball holding package.json twice" "$reldoc" has 'a tarball holding `package/package.json` twice'
+check "releasing: the dist-tag script refuses a tar size that is not an octal number" "$reldoc" has 'a tar header whose size is not an octal number'
+sec="$(cat SECURITY.md 2>/dev/null)"
+check "SECURITY.md: the private channel" "$sec" has 'private vulnerability reporting'
+check "SECURITY.md: the advisory form" "$sec" has 'https://github.com/ahmedkamaldabour/burhan-kit/security/advisories/new'
+check "SECURITY.md: no public issue" "$sec" has 'Do not open a public issue'
+check "SECURITY.md: supported versions" "$sec" has 'the latest published minor version only'
+check "SECURITY.md: the supported line is named by the dist-tag, not by a number" "$sec" has 'the minor of the version on the npm dist-tag `latest`'
+check_eq "SECURITY.md: no version number that goes stale at the next minor" "$(grep -cE '[0-9]+\.[0-9]+\.(x|[0-9]+)' SECURITY.md 2>/dev/null)" "0"
+check "SECURITY.md: next gets no fixes" "$sec" has 'published under the npm dist-tag `next`'
+check "SECURITY.md: acknowledge within 7 days" "$sec" has 'within 7 days'
+check "SECURITY.md: disclosure after the fix is on npm" "$sec" has 'after the fixed version is on npm'
+check "SECURITY.md: stays out of the npm package" "$(cat package.json)" lacks '"SECURITY.md"'
 
 echo "workflow-engine: the 0.7.0 notes, the upgrading page and the commands"
 cl="$(cat CHANGELOG.md)"

@@ -24,8 +24,8 @@ test('the release runs on a pushed v* tag and on nothing else', () => {
   assert.doesNotMatch(on, /branches|pull_request|workflow_dispatch|schedule/);
 });
 
-test('the default token can only read', () => {
-  assert.match(release, /\npermissions:\n  contents: read\n/);
+test('the workflow token has no rights by default: each job states its own', () => {
+  assert.match(release, /\npermissions: \{\}\n/);
 });
 
 test('id-token: write is given to the publish job alone', () => {
@@ -105,4 +105,35 @@ test('the artifact upload overwrites: "re-run all jobs" of one run must not clas
   const uploads = steps(release).filter((step) => /uses: actions\/upload-artifact@/.test(step));
   assert.equal(uploads.length, 1);
   assert.match(uploads[0]!, /overwrite: true/);
+});
+
+test('the GitHub Release job runs only after publish succeeded, and no job waits for it', () => {
+  assert.match(job('github-release'), /needs: publish\n/);
+  assert.equal(release.split('needs: github-release').length - 1, 0);
+});
+
+test('the GitHub Release job writes the Release through github-release.mjs, with the tag and the token from env values', () => {
+  const r = job('github-release');
+  assert.match(r, /\n\s+TAG: \$\{\{ github\.ref_name \}\}\n/);
+  assert.match(r, /\n\s+GH_TOKEN: \$\{\{ github\.token \}\}\n/);
+  assert.match(r, /\n\s+GH_REPO: \$\{\{ github\.repository \}\}\n/);
+  assert.match(r, /run: node scripts\/github-release\.mjs --tag "\$TAG"$/m);
+  assert.doesNotMatch(r, /environment:/, 'the approval stays on publish alone');
+});
+
+test('the job that can write runs no action but checkout, so no other action is handed its token', () => {
+  const uses = job('github-release').split('\n').filter((l) => /\buses:/.test(l));
+  assert.equal(uses.length, 1);
+  assert.match(uses[0]!, /uses: actions\/checkout@/);
+});
+
+test('github.token is only ever read into GH_TOKEN, never inside a command', () => {
+  const lines = release.split('\n').filter((l) => l.includes('github.token'));
+  assert.equal(lines.length, 1);
+  assert.match(lines[0]!, /^\s+GH_TOKEN: \$\{\{ github\.token \}\}$/);
+});
+
+test('contents: write is given to the GitHub Release job alone', () => {
+  assert.equal(release.split('contents: write').length - 1, 1);
+  assert.match(job('github-release'), /permissions:\n\s+contents: write\n/);
 });

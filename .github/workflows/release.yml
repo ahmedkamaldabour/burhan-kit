@@ -7,12 +7,14 @@ on:
   push:
     tags: ['v*']
 
-permissions:
-  contents: read
+# The token has no rights unless a job names them (test/workflow-permissions.test.ts holds the table).
+permissions: {}
 
 jobs:
   guard:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -30,6 +32,8 @@ jobs:
   verify:
     needs: guard
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     strategy:
       fail-fast: true
       matrix:
@@ -51,6 +55,8 @@ jobs:
   pack:
     needs: verify
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -77,6 +83,10 @@ jobs:
       contents: read
       id-token: write
     steps:
+      # For the release scripts only; it comes before the download so it cannot clean the tarball away.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-tarball
@@ -85,5 +95,34 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      # The dist-tag comes from the version inside the tarball (next for a prerelease, latest otherwise); nobody types it.
+      - name: dist-tag of the tarball
+        id: dist-tag
+        run: node scripts/release-dist-tag.mjs --tarball ./pack/package.tgz
+      - name: check the dist-tag against the tarball again, just before publishing
+        env:
+          DIST_TAG: ${{ steps.dist-tag.outputs.dist-tag }}
+        run: node scripts/release-dist-tag.mjs --tarball ./pack/package.tgz --expect "$DIST_TAG"
       # The file the pack job installed and ran, not a fresh build.
-      - run: npm publish ./pack/package.tgz --provenance --access public
+      - env:
+          DIST_TAG: ${{ steps.dist-tag.outputs.dist-tag }}
+        run: npm publish ./pack/package.tgz --provenance --access public --tag "$DIST_TAG"
+
+  # Only after npm has the version: the GitHub Release for the tag, from that version's CHANGELOG section.
+  github-release:
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      # The only action in the one job that can write: no setup-node, which would be handed the token too. The script
+      # runs on the runner's own Node (22 on ubuntu-24.04; the verify job tests the scripts on 22 and 24).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: GitHub Release from the CHANGELOG
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/github-release.mjs --tag "$TAG"

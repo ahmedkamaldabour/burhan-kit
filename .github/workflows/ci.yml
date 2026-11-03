@@ -4,8 +4,8 @@ on:
   push:
   pull_request:
 
-permissions:
-  contents: read
+# The token has no rights unless a job names them (test/workflow-permissions.test.ts holds the table).
+permissions: {}
 
 jobs:
   test:
@@ -17,6 +17,8 @@ jobs:
         os: [ubuntu-24.04, macos-latest]
         node: [24]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -52,6 +54,8 @@ jobs:
   windows:
     name: windows (${{ matrix.variant }}, node ${{ matrix.node }})
     runs-on: windows-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:

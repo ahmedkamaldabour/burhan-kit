@@ -15,10 +15,12 @@ const git = (cwd: string, ...args: string[]): void => {
   assert.equal(r.status, 0, `git ${args.join(' ')}: ${r.stderr}`);
 };
 
-/** A project folder on `main` with a package.json at `version`; `side` leaves HEAD on a branch main does not contain. */
-function project(version = '1.2.3', side = false): string {
+/** A project folder on `main` with a package.json at `version` and a CHANGELOG.md holding `changelog` (none when null);
+ *  `side` leaves HEAD on a branch main does not contain. */
+function project(version = '1.2.3', side = false, changelog: string | null = `## ${version} — 2026-11-03\n\n- a change\n`): string {
   const dir = tmpDir('burhan-guard-');
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'demo-pkg', version }));
+  if (changelog !== null) writeFileSync(join(dir, 'CHANGELOG.md'), `# Changelog\n\n${changelog}`);
   git(dir, 'init', '-q', '-b', 'main');
   git(dir, 'add', '.');
   git(dir, 'commit', '-q', '-m', 'one');
@@ -87,6 +89,60 @@ test('every failure is reported, not only the first', { skip }, () => {
   const r = run(project('1.2.3', true), 'v9.9.9', 'published');
   assert.equal(r.status, 1);
   assert.equal((r.out.match(/release-guard: refused:/g) ?? []).length, 3, r.out);
+});
+
+test('a plain version passes with the dist-tag latest, a prerelease with next', { skip }, () => {
+  const plain = run(project('1.2.3'), 'v1.2.3', 'e404');
+  assert.equal(plain.status, 0, plain.out);
+  assert.match(plain.out, /release-guard: ok demo-pkg@1\.2\.3 on main, not published, dist-tag latest/);
+  const pre = run(project('1.3.0-rc.1'), 'v1.3.0-rc.1', 'e404');
+  assert.equal(pre.status, 0, pre.out);
+  assert.match(pre.out, /release-guard: ok demo-pkg@1\.3\.0-rc\.1 on main, not published, dist-tag next/);
+});
+
+test('a malformed version, a wrong tag and a commit off main are three refusals, exit 1', { skip }, () => {
+  const r = run(project('1.2', true), 'v9.9.9', 'e404');
+  assert.equal(r.status, 1);
+  assert.equal((r.out.match(/release-guard: refused:/g) ?? []).length, 3, r.out);
+  assert.match(r.out, /release-guard: refused: the version 1\.2 in package\.json is not X\.Y\.Z or X\.Y\.Z-<prerelease>/);
+  assert.match(r.out, /release-guard: refused: the tag v9\.9\.9 is not v1\.2/);
+  assert.match(r.out, /release-guard: refused: this commit is not on main/);
+});
+
+test('build metadata in the version is refused', { skip }, () => {
+  const r = run(project('1.2.3+abc'), 'v1.2.3+abc', 'e404');
+  assert.equal(r.status, 1);
+  assert.match(r.out, /release-guard: refused: the version 1\.2\.3\+abc in package\.json/);
+});
+
+test('a CHANGELOG without a section for the version is refused, naming the version', { skip }, () => {
+  const r = run(project('1.2.3', false, '## 1.2.2 — 2026-11-01\n\n- older\n'), 'v1.2.3', 'e404');
+  assert.equal(r.status, 1);
+  assert.match(r.out, /release-guard: refused: CHANGELOG\.md has no section for 1\.2\.3/);
+});
+
+test('an empty CHANGELOG section is refused, naming the version', { skip }, () => {
+  const r = run(project('1.2.3', false, '## 1.2.3 — 2026-11-03\n\n## 1.2.2 — 2026-11-01\n\n- older\n'), 'v1.2.3', 'e404');
+  assert.equal(r.status, 1);
+  assert.match(r.out, /release-guard: refused: the CHANGELOG\.md section for 1\.2\.3 is empty/);
+});
+
+test('a prerelease needs its own CHANGELOG section', { skip }, () => {
+  const r = run(project('1.3.0-rc.1', false, '## 1.3.0 — 2026-11-03\n\n- the final notes\n'), 'v1.3.0-rc.1', 'e404');
+  assert.equal(r.status, 1);
+  assert.match(r.out, /release-guard: refused: CHANGELOG\.md has no section for 1\.3\.0-rc\.1/);
+});
+
+test('a CHANGELOG heading whose date is not a real calendar date is not the version\'s section, so the guard refuses', { skip }, () => {
+  const r = run(project('1.2.3', false, '## 1.2.3 — 2026-13-99\n\n- a change\n'), 'v1.2.3', 'e404');
+  assert.equal(r.status, 1);
+  assert.match(r.out, /release-guard: refused: CHANGELOG\.md has no section for 1\.2\.3/);
+});
+
+test('no CHANGELOG.md at all is refused', { skip }, () => {
+  const r = run(project('1.2.3', false, null), 'v1.2.3', 'e404');
+  assert.equal(r.status, 1);
+  assert.match(r.out, /release-guard: refused: there is no CHANGELOG\.md/);
 });
 
 test('a --main-ref that starts with a dash is a usage error, never handed to git', { skip }, () => {
