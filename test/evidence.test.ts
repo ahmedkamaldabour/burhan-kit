@@ -92,6 +92,25 @@ test('CLI evidence: text, --item, --last, --json; a torn line is skipped', async
   } finally { delete process.env.WF_EVIDENCE_DIR; }
 });
 
+test('an empty answer for an item or a session says the current turn is not in the ledger yet (review-same-turn-ledger)', async () => {
+  const p = project(); const ev = tmp('burhan-evd-');
+  audit(p, ev, 'S1', 'T1', [{ kind: 'cmd', cmd: 'verify-it a', exit: 0, status: 'ok', seq: 1 }]);
+  const TURN = ' — the turn-audit hook writes the ledger when a turn ends, so the steps of the current turn are not in it yet and a review run inside this turn will not see them';
+  process.env.WF_EVIDENCE_DIR = ev;
+  try {
+    const a = capture();
+    assert.equal(await runCli(['evidence', p, '--item', 'other'], a.io), 0);
+    assert.equal(a.o.out.split('\n')[0], `no evidence recorded for item "other"${TURN}`);
+    const b = capture();
+    assert.equal(await runCli(['evidence', p, '--session', 'S9'], b.io), 0);
+    assert.equal(b.o.out.split('\n')[0], `no evidence recorded for session "S9"${TURN}`);
+    const c = capture();
+    assert.equal(await runCli(['evidence', p, '--item', 'add-export'], c.io), 0);
+    assert.match(c.o.out, /verify-it a/);
+    assert.doesNotMatch(c.o.out, /a review run inside this turn/, 'an answer with records is unchanged');
+  } finally { delete process.env.WF_EVIDENCE_DIR; }
+});
+
 test('CLI edge cases: --last 0, a subdirectory, an empty env var, the config value', async () => {
   const p = project(); const ev = tmp('burhan-evd-');
   audit(p, ev, 'S1', 'T1', [{ kind: 'cmd', cmd: 'verify-it a', exit: 0, status: 'ok', seq: 1 }]);

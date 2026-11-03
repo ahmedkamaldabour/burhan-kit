@@ -209,3 +209,7 @@ R206|commands/e2e.md|open a closed section only when a finding of it is named
 R207|phases/review.md|A finding row is the claim, the location and the result in one line
 R208|phases/files.md|reviews/evidence/<slug>-su<N>.md
 R209|phases/stage-finish.md|Reusing a full run
+R210|phases/review.md|order: stated by the builder, not read from the ledger
+R211|phases/review.md|That alone is never a reason to propose FAIL, and never a silent pass
+R212|phases/review.md|QC reads the ledger for every sub-unit whose review says so
+R213|phases/stage-build.md|the build's commands with their exit codes, word for word

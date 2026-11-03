@@ -42,6 +42,9 @@ For the next unimplemented sub-unit only:
   report before the next sub-unit). Give it the changed files of the diff range (`git diff --name-only <range>`)
   and read the lean-start and reading rules in `phases/review.md`. Record
   **Performed by** in the review file, in the exact form of phases/files.md · Fields.
+- Besides the paths, give the reviewer the build's commands with their exit codes, word for word as the
+  build reported them: a review in the build's turn cannot read them from the ledger yet
+  (`phases/review.md` · When the ledger cannot show the sub-unit yet).
 - A sub-unit the approved plan puts in a review group (`Review group: <letter>`) is reviewed with its group
   (`phases/review.md` · Review groups): one section, after the group's last sub-unit; they stay 🟢 until then.
   The wait for the report below applies at the group's last sub-unit.

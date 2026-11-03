@@ -147,7 +147,7 @@ export function evidence(o: { target: string; item?: string; session?: string; l
   if (o.json) { io.stdout(JSON.stringify(recs.map((r) => (r.kind === 'cmd' && isPiped(r.cmd ?? '') ? { ...r, piped: true } : r)), null, 2) + '\n'); return 0; }
   if (recs.length === 0) {
     io.stdout(o.item || o.session
-      ? `no evidence recorded for ${o.item ? `item "${o.item}"` : `session "${o.session}"`}\n`
+      ? `no evidence recorded for ${o.item ? `item "${o.item}"` : `session "${o.session}"`} — the turn-audit hook writes the ledger when a turn ends, so the steps of the current turn are not in it yet and a review run inside this turn will not see them\n`
       : 'no evidence recorded for this project yet (it is written by the turn-audit hook at the end of each turn)\n');
     return 0;
   }

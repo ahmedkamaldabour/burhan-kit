@@ -13,7 +13,7 @@ no scope escalator, **full** otherwise.
 
 **Short checklist** (delete for a full review):
 - [ ] The diff matches the plan's sub-unit — nothing more
-- [ ] Test written first; it failed, then passed — check the evidence ledger (`burhan evidence --item <slug>`), not memory
+- [ ] Test written first; it failed, then passed — check the evidence ledger (`burhan evidence --item <slug>`), not memory; if it cannot show the sub-unit yet, leave this box open and write the stated order under **Limitations** (phases/review.md)
 - [ ] Failure paths and edge cases of the change are handled
 - [ ] No unrequested behaviour (or it is listed and accepted)
 - [ ] No secrets, tokens or internal identifiers logged, returned or committed

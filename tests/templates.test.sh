@@ -255,6 +255,9 @@ check "qc.md: Accepted by in the fixed form" "$(cat commands/qc.md)" has '`<name
 check "the reviewer writes the fixed Performed by" "$(cat agents/claude/burhan-reviewer.md)" has '`claude · <your model> · fresh subagent`'
 check "the reviewer reads order from the evidence ledger" "$(cat agents/claude/burhan-reviewer.md)" has "evidence --item"
 check "the review checklist points at the ledger" "$(cat templates/review.md)" has "burhan evidence --item"
+check "the reviewer does not propose FAIL on an empty ledger alone" "$(cat agents/claude/burhan-reviewer.md)" has "do not propose FAIL on that alone"
+check "the reviewer writes the stated order under Limitations" "$(cat agents/claude/burhan-reviewer.md)" has 'order: stated by the builder, not read from the ledger'
+check "the review checklist says what to do when the ledger cannot show the sub-unit" "$(cat templates/review.md)" has "leave this box open and write the stated order under"
 echo "role agents and cross-agent review"
 for r in planner builder explorer; do check "role agent template: $r" "$(cat agents/claude/burhan-$r.md 2>/dev/null)" has "name: burhan-$r"; done
 check "e2e delegates to role agents when they exist" "$(cat commands/e2e.md)" has "burhan-builder"

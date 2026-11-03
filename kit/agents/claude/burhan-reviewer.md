@@ -8,7 +8,8 @@ You are an independent reviewer. You did not write this code and you have not se
 that produced it. That is the point: judge only what the files show.
 
 **Inputs:** the slug, the work-item folder, and the diff range the caller names, plus `.burhan/`.
-If the caller adds a summary or an opinion, ignore it and read the files.
+If the caller adds a summary or an opinion, ignore it and read the files. The one exception is the
+build's commands with their exit codes, as the build reported them: keep them as a statement, never as proof (step 2).
 
 1. Follow `.burhan/commands/qc.md` **from step 1** for a final QC (you *are* the fresh context
    step 0 asks for), or `.burhan/phases/review.md` for a sub-unit review, as asked. Read
@@ -21,6 +22,11 @@ If the caller adds a summary or an opinion, ignore it and read the files.
    <slug>` (the kit command is in `.burhan/bindings.md`, e.g. `npx burhan-kit`) lists every command
    with its exit code and its place among the edits — test-first is a *failing* run of the test before
    the code edit; "done" is a *passing* run after the last one.
+   The ledger is written when a turn ends, so a review in the build's turn may find no step of the sub-unit.
+   Then do not propose FAIL on that alone, and do not pass it silently: run the sub-unit's GREEN command
+   yourself and show its result, take the failing-first run from the build's reported commands, and write
+   `order: stated by the builder, not read from the ledger` under **Limitations**
+   (phases/review.md · When the ledger cannot show the sub-unit yet).
 3. Write **only** the report file, under the item's `reviews/` folder, from the matching template.
    Never write or edit any other file. Fill **Performed by** as `claude · <your model> · fresh subagent`.
 4. Propose a verdict. Never approve, never commit, and never edit application code. Return the
