@@ -65,7 +65,8 @@ function release(cwd: string, tag: string | null, gh: { bin: string }): { status
 test('release-notes prints the section of this repository\'s 0.7.1 and the install line', () => {
   const r = spawnSync(process.execPath, [notesScript, '--version', '0.7.1'], { cwd: root, encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
-  const line5 = readFileSync(join(root, 'CHANGELOG.md'), 'utf8').split('\n')[4];
+  const lines = readFileSync(join(root, 'CHANGELOG.md'), 'utf8').split('\n');
+  const line5 = lines[lines.indexOf('## 0.7.1 — 2026-10-29') + 2];
   assert.equal(r.stdout, `${line5}\n\nInstall or upgrade: \`npx burhan-kit@0.7.1 upgrade --apply\` in a project that already has burhan, or \`npx burhan-kit\` for a new one.\n`);
 });
 

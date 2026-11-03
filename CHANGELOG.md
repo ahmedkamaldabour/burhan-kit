@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.8.0 — 2026-11-03
+
+A proof you can show (`burhan verify`), commands that work from any subfolder, and a release pipeline that cannot publish a prerelease as the latest version.
+
+### `burhan verify` runs the proof and records it
+- `burhan verify <slug> -- <command>` runs the command itself, without a shell, shows its output and appends one line to `<slug>-verify.jsonl` in the item's folder: the argv, the exit code, the time and a fingerprint of the code state before the run. Exit 0 on a pass, 1 on a failure or a command that could not start (both are recorded), 2 on a refusal.
+- `burhan item finish` takes the latest record of a proof command on the current code state: a pass proves, a failure stops the finish even with `--evidence`. With no hook ledger and no record that proves, it refuses and names `burhan verify`; `--evidence` text is still accepted and stays "stated, not proven".
+- On Windows a `.cmd` or `.bat` runs through `cmd.exe /d /s /c` with every part quoted; an argument holding `&`, `|`, `<`, `>`, `^`, `%`, `"`, `(`, `)`, `!` or a line break is refused, never escaped.
+- Known limits: a record says a command ran and how it ended, not that it tests the right thing, and it is not signed. Outside a git checkout a passing record is only stated.
+
+### Commands find the project from any subfolder
+- Every command except `init` works on the nearest folder, at or above the one it runs in, that holds `.burhan/WORKFLOW.md`, as git does. When that is not the current folder it prints one line, `project: <path>`, on stderr; stdout and `--json` do not change.
+- A `[dir]` that does not exist, or a file, is refused and not walked up from. A `.burhan/` folder without `WORKFLOW.md` is not a project. A nested install is made with `init <dir>`, never with `setup`.
+- On Windows the guard for writes outside the project reads `..` in a link the way Windows does, so a link made to leave the project only under that reading is now refused. On Windows CI, `076ca70` failed three tests that expected the other answer and `6150ff7` passed; the commit of this release has not run on Windows yet.
+
+### The agent is asked to run `burhan guide` first
+- The block `burhan init` writes into `CLAUDE.md` and `AGENTS.md` carries a five-point start-up list: run `guide`, run the skill it names, edit only when it says AUTHORIZED, change state only through burhan commands, run the proof through `burhan verify`, then `item finish`, before saying done. The list doesn't mention hooks. It is an instruction, not a lock: nothing stops a direct file edit, and the docs say so.
+- `burhan guide` with no item, or with several in Now, exits 0 and says what to run next (it exited 2). `item set`, `approve` and `deviation resolve` end with a `next:` step.
+- `burhan setup` refuses a sensitive path written as a pattern (`^src/x` was escaped and matched nothing, with no warning) and prints how many project files each code, test and sensitive pattern matches. `burhan doctor` warns when such a pattern matches no file; both counts need a git checkout.
+
+### The release pipeline
+- A version with a prerelease part (`X.Y.Z-anything`) is published under `next`, never under `latest`; a plain `X.Y.Z` goes to `latest`. The guard also refuses a malformed version and a version with no CHANGELOG section.
+- A new `github-release` job writes the GitHub Release from the CHANGELOG section after a successful publish. Both workflows start from `permissions: {}` and each job names the token rights it needs. Dependabot proposes the action pin updates, once a month. `SECURITY.md` says how to report a vulnerability.
+- Not measured: the dist-tag step and the `github-release` job have not run on GitHub yet; this release is their first run.
+
+### Upgrading from 0.7.1
+- Run `npx burhan-kit upgrade --apply` in every project. It refreshes the kit files and the burhan block in `CLAUDE.md` and `AGENTS.md`, and adds no hook entry; your `workflow.config` and `bindings.md` are kept. Nothing in the hooks changes.
+
 ## 0.7.1 — 2026-10-29
 
 `npx burhan-kit` works again on Windows: the package now exposes the CLI under the package name as well as `burhan`, so npm finds the command when it runs a package by its name. Nothing else changed.
