@@ -8,11 +8,13 @@
 
 ## Not verified
 What the planner could not read or run, and why. Write "None." when everything was checked.
+
 | What | Why |
 |------|-----|
 
 ## Sub-unit 1 — <name>
 ### Files
+
 | Path | Create / modify | Lines (for an edit) |
 |------|-----------------|---------------------|
 | `<path>` | <create or modify> | <first-last, for an edit> |
@@ -42,6 +44,7 @@ The complete code. For a purely mechanical edit, use "### Edit" and give the exa
 - **Command:** `<the fast check, from .burhan/bindings.md>`
 
 ### Interfaces
+
 | Produces (for the next sub-unit) | Consumes (from an earlier one) |
 |----------------------------------|--------------------------------|
 | <exact name and signature> | <exact name and signature, or —> |

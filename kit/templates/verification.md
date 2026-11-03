@@ -9,10 +9,12 @@
 
 ## Runs
 Every attempt, including failed ones — never deleted.
+
 | # | Exact command / action | Result | AC covered |
 |---|------------------------|--------|------------|
 
 ## Acceptance criteria outcome
+
 | AC | Outcome | Run # |
 |----|---------|-------|
 

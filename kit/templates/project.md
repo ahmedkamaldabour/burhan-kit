@@ -9,6 +9,7 @@
 What the system does and who it serves.
 
 ## Areas
+
 | Area | File | Read it when |
 |------|------|--------------|
 | Architecture | .burhan/context/architecture.md | |

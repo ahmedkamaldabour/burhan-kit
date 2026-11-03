@@ -7,6 +7,7 @@
 > Delete any section that does not apply — an absent section is never a violation.
 
 ## Evidence
+
 | # | What was examined (file:line, command, observation) | What it shows |
 |---|------------------------------------------------------|---------------|
 

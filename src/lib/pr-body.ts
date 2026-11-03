@@ -77,7 +77,7 @@ export function prBody(o: { target: string; item?: string; docs?: string }, io: 
     .filter((r) => /^AC-\d+$/.test(r[0]) && real(r[1])).map((r) => [r[0], r[1]]));
   const acs = rows(section(story, /acceptance criteria/i)).filter((r) => /^AC-\d+$/.test(r[0]) && real(r[1]));
   if (acs.length) {
-    out.push('## Acceptance criteria', '| AC | Criterion | Outcome |', '|----|-----------|---------|');
+    out.push('## Acceptance criteria', '', '| AC | Criterion | Outcome |', '|----|-----------|---------|');
     for (const r of acs) out.push(`| ${r[0]} | ${real(r[1])} | ${outcome.get(r[0]) ?? 'not verified'} |`);
     out.push('');
   }

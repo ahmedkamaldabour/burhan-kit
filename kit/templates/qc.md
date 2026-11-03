@@ -8,10 +8,12 @@
 
 ## 1. Convergence matrix
 Every acceptance criterion, business rule and data-dictionary row.
+
 | Item | Expected | Implementation (file:line) | Finding (satisfied / partial / missing / contradicts) | Evidence |
 |------|----------|----------------------------|---------|----------|
 
 ## 2. Unrequested behaviour
+
 | Behaviour (file:line) | Decision (accepted — reason / removed) |
 |-----------------------|----------|
 
@@ -27,5 +29,6 @@ Checks run (exact commands), and how pre-existing failures were told apart from 
 ## 5. Limitations
 
 ## 6. Defects
+
 | # | Severity | Defect (file:line) | Fixed here / surfaced for decision |
 |---|----------|--------------------|-------------------|

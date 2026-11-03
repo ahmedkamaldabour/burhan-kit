@@ -47,5 +47,6 @@ Facts confirmed in the CURRENT code — cite file:line. Not assumptions.
 - **Verified at commit:** <`git rev-parse --short HEAD` when these facts were checked>
 
 ## Proposed sub-units
+
 | # | Area | Sub-unit |
 |---|------|----------|

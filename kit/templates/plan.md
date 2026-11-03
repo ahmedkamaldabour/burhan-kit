@@ -39,16 +39,19 @@ Options considered, with a recommendation. Rejected options stay here as "Altern
 
 ## 2. AC coverage
 Every acceptance criterion of the story, the sub-unit that builds it, and the test that proves it. A route with no story has nothing to cover.
+
 | AC | Sub-unit | Test (file → test name) |
 |----|----------|--------------------------|
 | AC-01 | 1 | `<test file>` → `<test name>` |
 
 ## 3. What the story got wrong
 Corrections from reading the real code, each with file:line. Write "None." when the story held.
+
 | The story said | The code shows | file:line | Effect on the plan |
 |----------------|----------------|-----------|--------------------|
 
 ## 4. Rulings
+
 | Ruling | Reason | Cost if wrong |
 |--------|--------|---------------|
 
@@ -75,16 +78,19 @@ What could not be inspected or verified, and why.
 
 ## 10. Deviations
 Empty until a step deviates. Status is open, approved or rejected.
+
 | # | Sub-unit | What | Where | Output | Status | Decision |
 |---|----------|------|-------|--------|--------|----------|
 
 ## 11. Impact log
 Only if the approved intent changed mid-flight (phases/stage-build.md · intent changes).
+
 | Date | Change | Phase | Affected? | Reason |
 |------|--------|-------|-----------|--------|
 
 ## 12. Knowledge review
 Knowledge review: none <keep this line only after deciding nothing new and durable was learned; otherwise replace it with the table below (phases/memory.md)>
+
 | Candidate | Evidence | Relation (new / reconfirms / supersedes / disputes) | Decision (promoted / rejected) |
 |-----------|----------|------|----------|
 
