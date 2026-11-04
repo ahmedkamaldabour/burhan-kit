@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.8.1 — 2026-11-04
+
+Fixes to how `burhan guide`, `burhan evidence` and `burhan item finish` read the proof, and a few commands made more careful.
+
+### The proof is read the same way everywhere
+- `burhan guide` and `burhan evidence --item <slug>` now read the item's `burhan verify` records as well as the hook ledger and say which one decided, so the `full run:` line no longer says "no" after a passing `burhan verify` in the same turn or in a project without hooks.
+- A failed latest record gives "no"; a record on another code state is named and the ledger decides; a record with no code state is "yes (stated)" with a note of what the ledger cannot see.
+- `item finish` with an empty `WF_EVIDENCE_REGEX` takes a passing record as "stated, not proven" (a failed record still refuses), and `guide`, `evidence`, `item finish` and `burhan stats` give one line and exit 2 for an unreadable ledger instead of a stack trace.
+- Twelve smaller flaws in how these reports read the proof are closed: a record that matches only the other pattern names the right one (`WF_FULL_TEST_REGEX` or `WF_EVIDENCE_REGEX`), `item finish` says "no burhan verify record that counts" when a record exists and does not count, and `evidence --item <slug> --last 0` says that no steps are shown.
+
+### `burhan item finish` is stricter in one case
+- A hook-ledger folder that exists but holds no step of the item (and none under no item) is now read like no ledger: `item finish` asks for a `burhan verify` record or `--evidence`, where it used to finish. The way through: run the proof with `burhan verify <slug> -- <command>`, or pass `--evidence <text>` (stated, not proven). A ledger with any step of the item, a docs edit included, finishes as before.
+
+### Smaller changes
+- A review run inside the turn that built the sub-unit no longer fails on a ledger it cannot see: `burhan evidence` says that the steps of the current turn are not in the ledger yet, and the kit's review text tells the reviewer to run the GREEN command itself and never to propose FAIL on the missing ledger alone.
+- `burhan state compact` reads an item called by a common word only where it is clearly the item, leaves a line that names two items or one still in flight (and says which), keeps the bytes of every line it does not cut, and, with `--apply`, refuses a state file that is not valid UTF-8; `scripts/measure-artifacts.mjs` refuses bad arguments with a message.
+- A table in the kit's templates, and the one `burhan pr-body` writes, no longer sits directly under a line of text, so it shows as a table in viewers that need a blank line above it.
+
+### Upgrading from 0.8.0
+- Installed projects need `upgrade --apply` for the kit text (`npx burhan-kit upgrade --apply`); the commands ship with the package. Nothing in the hooks changes.
+
 ## 0.8.0 — 2026-11-03
 
 A proof you can show (`burhan verify`), commands that work from any subfolder, and a release pipeline that cannot publish a prerelease as the latest version.
