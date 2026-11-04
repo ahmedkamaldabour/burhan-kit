@@ -213,3 +213,7 @@ R210|phases/review.md|order: stated by the builder, not read from the ledger
 R211|phases/review.md|That alone is never a reason to propose FAIL, and never a silent pass
 R212|phases/review.md|QC reads the ledger for every sub-unit whose review says so
 R213|phases/stage-build.md|the build's commands with their exit codes, word for word
+R214|phases/stage-finish.md|its record is taken against the files as they are now
+R215|phases/enforcement.md|parentheses, backticks and a newline
+R216|agents/claude/burhan-reviewer.md|a GREEN run of yours that fails is a finding
+R217|phases/enforcement.md|unless another evidence run after the last code edit passed

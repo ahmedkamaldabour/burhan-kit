@@ -1,12 +1,14 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { evidenceMatches } from '../src/hooks/core/evidence-cmd.mjs';
 import { ereToJs, projectKey, type LedgerRecord } from '../src/lib/evidence.js';
-import { fullRunLine, fullRunOf } from '../src/lib/full-run.js';
+import { fullRunFor, fullRunLine, fullRunOf, withRecords, type FullRun } from '../src/lib/full-run.js';
+import type { VerifyRecord } from '../src/lib/verify.js';
 import { cli, projectWithItem } from './item-fixture.js';
+import { recordProject, verifyRun } from './record-fixture.js';
 import { tmpDir } from './helpers.js';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -182,4 +184,120 @@ test('evidence --item ends with the full run line; its JSON is unchanged', async
   assert.ok(Array.isArray(json) && json.length === 2);
   const all = await cli(dir, ['evidence']);
   assert.doesNotMatch(all.out, /^full run:/m); // without --item nothing is added
+});
+
+// ---- the item's burhan verify records (item evidence-honesty-verify-records) ----
+const vrec = (o: Partial<VerifyRecord> = {}): VerifyRecord => ({ schema: 1, ts: '2026-10-28T11:00:00.000Z', cmd: 'npm test', argv: ['npm', 'test'], exit: 0, status: 'ok', fingerprint: 'fp1:aa', files: 3, platform: 'linux', node: 'v22.0.0', ...o });
+const laterEdit = (ts: string): LedgerRecord => rec({ kind: 'edit', file: 'src/a.ts', ts });
+const SAID = /a record shows that a command ran and how it ended, not that it tests the right thing/;
+
+test('a record on the current code state decides over a ledger that says no, and the line names both sources', () => {
+  const ledger = fullRunOf([run('npm test'), edit('src/a.ts')], CFG);
+  assert.equal(ledger.state, 'no');
+  const f = withRecords(ledger, { kind: 'proven', rec: vrec() });
+  assert.equal(f.state, 'yes');
+  assert.equal(f.by, 'verify record');
+  assert.equal(f.record?.kind, 'proven');
+  assert.equal(f.ledger?.state, 'no');
+  assert.equal(f.edit?.file, 'src/a.ts');
+  const line = fullRunLine(f);
+  assert.match(line, /^full run: yes — by burhan verify record: npm test passed at 2026-10-28T11:00:00\.000Z on the current code state/);
+  assert.match(line, /the ledger: a code edit \(src\/a\.ts at \S+\) came after its last passing full run \(npm test, \S+\)/);
+  assert.match(line, SAID);
+  assert.doesNotMatch(line, /not seen by the ledger/, 'the record reads the files, so the ledger\'s blind spots are not the answer\'s');
+  assert.equal(withRecords(fullRunOf([edit('src/a.ts'), run('npm test')], CFG), { kind: 'proven', rec: vrec() }).ledger?.state, 'yes');
+  assert.match(fullRunLine(withRecords(fullRunOf([], CFG), { kind: 'proven', rec: vrec() })), /the ledger: cannot tell — the evidence ledger has no record for this project yet/);
+});
+
+test('a failed latest run on the current code state is a no, even when the ledger says yes (the order item finish reads them in)', () => {
+  const f = withRecords(fullRunOf([edit('src/a.ts'), run('npm test')], CFG), { kind: 'failed', rec: vrec({ status: 'failed', exit: 1 }) });
+  assert.equal(f.state, 'no');
+  assert.equal(f.by, 'verify record');
+  assert.equal(f.record?.exit, 1);
+  assert.equal(f.ledger?.state, 'yes');
+  const line = fullRunLine(f);
+  assert.match(line, /^full run: no — by burhan verify record: the latest run of npm test on the current code state FAILED \(exit 1\) at 2026-10-28T11:00:00\.000Z; the ledger: npm test passed at /);
+  assert.match(line, SAID);
+});
+
+test('a record that does not count leaves the ledger deciding and says why it does not count; an item with no record changes nothing', () => {
+  const ledger = fullRunOf([edit('src/a.ts'), run('npm test')], CFG);
+  const note = ' (the latest burhan verify run, npm test at 2026-10-28T11:00:00.000Z, was on another code state: the code changed since)';
+  const f = withRecords(ledger, { kind: 'none', note });
+  assert.equal(f.state, 'yes');
+  assert.equal(f.by, undefined);
+  assert.equal(f.record?.kind, 'none');
+  assert.equal(fullRunLine(f), `${fullRunLine(ledger)}; no burhan verify record counts${note}`);
+  for (const l of [ledger, fullRunOf([run('npm test'), edit('src/a.ts')], CFG), fullRunOf([edit('src/a.ts')], CFG), fullRunOf([], CFG)]) {
+    assert.equal(withRecords(l, { kind: 'none', note: '' }), l, 'no record: the same answer, untouched');
+    assert.doesNotMatch(fullRunLine(withRecords(l, { kind: 'none', note: '' })), /burhan verify/);
+  }
+  assert.match(fullRunLine(withRecords(fullRunOf([], CFG), { kind: 'none', note })), /^full run: cannot tell — .*; no burhan verify record counts/);
+});
+
+test('a pass with no code state is stated: it counts only while the ledger shows no code edit after it, and a time that cannot be read is later', () => {
+  const stated = { kind: 'stated', rec: vrec({ fingerprint: null }), why: 'not a git checkout' } as const;
+  const f = withRecords(fullRunOf([], CFG), stated);
+  assert.equal(f.state, 'yes');
+  assert.equal(f.by, 'verify record');
+  assert.equal(f.record?.kind, 'stated');
+  assert.match(fullRunLine(f), /^full run: yes \(stated\) — by burhan verify record: npm test passed at \S+ with no code state \(not a git checkout\), so it cannot be compared with the files now, and the ledger shows no code edit after it \(not seen by the ledger: shell edits \(sed -i, scripts\), edits outside the session, the current turn\); the ledger: cannot tell/);
+  assert.equal(withRecords(fullRunOf([laterEdit('2026-10-28T09:00:00Z')], CFG), stated).by, 'verify record', 'an edit before the record');
+  for (const ts of ['2026-10-28T12:00:00Z', 'garbage']) {
+    const g = withRecords(fullRunOf([laterEdit(ts)], CFG), stated);
+    assert.equal(g.by, undefined, ts);
+    assert.equal(g.state, 'none', ts);
+    assert.match(fullRunLine(g), new RegExp(`; no burhan verify record counts \\(the burhan verify run npm test at \\S+ has no code state and the ledger shows a code edit after it: src/a\\.ts at ${ts}\\)$`), ts);
+  }
+});
+
+test('the answer as JSON keeps both sources, and the ledger inside it is not nested again', () => {
+  const f = withRecords(fullRunOf([run('npm test'), edit('src/a.ts')], CFG), { kind: 'proven', rec: vrec() });
+  const j = JSON.parse(JSON.stringify(f)) as FullRun & { ledger: Record<string, unknown> };
+  assert.equal(j.state, 'yes');
+  assert.equal(j.by, 'verify record');
+  assert.equal(j.ledger.state, 'no');
+  assert.deepEqual(['by', 'record', 'ledger'].filter((k) => k in j.ledger), []);
+});
+
+test('fullRunFor reads the item\'s verify records: a pass on the current code state is yes without any ledger, a change of code takes it back', async () => {
+  const dir = await recordProject();
+  const before = fullRunFor(dir, process.env, { slug: 'foo' });
+  assert.equal(before.state, 'unknown');
+  assert.equal(before.by, undefined);
+  assert.equal((await verifyRun(dir, 0)).code, 0);
+  const yes = fullRunFor(dir, process.env, { slug: 'foo' });
+  assert.equal(yes.state, 'yes');
+  assert.equal(yes.by, 'verify record');
+  assert.match(fullRunLine(yes), /^full run: yes — by burhan verify record: .*process\.exitCode=0 passed at \S+ on the current code state/);
+  assert.equal(fullRunFor(dir).by, undefined, 'without a slug only the ledger is read');
+  writeFileSync(join(dir, 'a.ts'), 'changed after the run');
+  const stale = fullRunFor(dir, process.env, { slug: 'foo' });
+  assert.equal(stale.state, 'unknown');
+  assert.equal(stale.by, undefined);
+  assert.match(fullRunLine(stale), /; no burhan verify record counts \(the latest burhan verify run, .* was on another code state: the code changed since\)$/);
+  assert.equal((await verifyRun(dir, 1)).code, 1);
+  const failed = fullRunFor(dir, process.env, { slug: 'foo' });
+  assert.equal(failed.state, 'no');
+  assert.equal(failed.by, 'verify record');
+  assert.equal(failed.record?.exit, 1);
+});
+
+test('fullRunFor never takes every verify run for a full run: with no usable WF_FULL_TEST_REGEX the answer is cannot tell, and a bad slug or an item with no folder is the ledger alone', async () => {
+  const dir = await recordProject('');
+  await verifyRun(dir, 0);
+  const none = fullRunFor(dir, process.env, { slug: 'foo' });
+  assert.equal(none.state, 'unknown');
+  assert.equal(none.by, undefined);
+  assert.match(none.why ?? '', /WF_FULL_TEST_REGEX/);
+  const dir2 = await recordProject();
+  writeFileSync(join(dir2, '.gitignore'), '.burhan/x-verify.jsonl\n'); // so that the copy below does not change the code state
+  await verifyRun(dir2, 0);
+  copyFileSync(join(dir2, '.burhan', 'work', 'foo', 'foo-verify.jsonl'), join(dir2, '.burhan', 'x-verify.jsonl')); // what the slug "../x" would reach
+  assert.equal(fullRunFor(dir2, process.env, { slug: 'foo' }).by, 'verify record');
+  for (const slug of ['../x', 'ghost', '']) {
+    const f = fullRunFor(dir2, process.env, { slug });
+    assert.equal(f.by, undefined, JSON.stringify(slug));
+    assert.equal(f.state, 'unknown', JSON.stringify(slug));
+  }
 });

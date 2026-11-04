@@ -185,7 +185,7 @@ QC proposes `PASS` or `FAIL — N issues`, with Critical, Important, or Minor fi
 ## Proof
 
 Hooks report and fail open; they never block. Task commands refuse a wrong lifecycle step, but an agent can skip them.
-The block `burhan init` writes into `CLAUDE.md` and `AGENTS.md` tells the agent to run `burhan guide` before it edits and to follow the answer, and `guide` still answers when no item exists. That is an instruction, not a lock: a direct edit, a shell write and who approved are not stopped. `burhan verify <slug> -- <command>` runs a proof command itself and records its exit code and the code state it ran on; `item finish` accepts that record, so a project without hooks still needs a proof. The record shows that a command ran and how it ended, not that it tests the right thing.
+The block `burhan init` writes into `CLAUDE.md` and `AGENTS.md` tells the agent to run `burhan guide` before it edits and to follow the answer, and `guide` still answers when no item exists. That is an instruction, not a lock: a direct edit, a shell write and who approved are not stopped. `burhan verify <slug> -- <command>` runs a proof command itself and records its exit code and the code state it ran on; `item finish` accepts that record, so a project without hooks gets a recorded proof, or states one with `--evidence`. The record shows that a command ran and how it ended, not that it tests the right thing.
 
 | Moment | Hook | Purpose |
 | --- | --- | --- |
@@ -204,7 +204,7 @@ The audit flags “done” without passing proof after the last code edit. It al
 
 The [recorded run](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md) shows that warning making an agent retract “Done.”
 
-The ledger is outside the project at `~/.local/state/burhan/evidence/`. It records reported edits, command lines, exit codes, order, and task association; not command output. `evidence --item <slug>` prints it.
+The ledger is outside the project at `~/.local/state/burhan/evidence/`. It records reported edits, command lines, exit codes, order, and task association; not command output. It is written when a turn ends, so the steps of the current turn are not in it yet. `evidence --item <slug>` prints it.
 
 A passing whole-suite run after the last code edit can serve verification, QC, and commit. Reuse it until code or tests change. `guide` reports `full run:` status.
 

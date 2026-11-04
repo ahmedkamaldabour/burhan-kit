@@ -173,7 +173,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         const target = at(positionals[0]);
         const code = evidence({ target, item: values.item, session: values.session, last: values.last, json: values.json === true }, io);
-        if (code === 0 && values.item !== undefined && values.json !== true) io.stdout(`${fullRunLine(fullRunFor(projectRoot(target)))}\n`);
+        if (code === 0 && values.item !== undefined && values.json !== true) io.stdout(`${fullRunLine(fullRunFor(projectRoot(target), process.env, { slug: values.item }))}\n`);
         return code;
       }
       case 'stats': {

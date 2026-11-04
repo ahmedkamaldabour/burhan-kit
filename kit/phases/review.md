@@ -17,7 +17,7 @@ Every sub-unit gets a section in the item's single review file (`reviews/<slug>-
   than its edits). That alone is never a reason to propose FAIL, and never a silent pass: run the
   sub-unit's GREEN command from the build spec yourself and show its result, take the failing-first run
   from the build's commands and exit codes the caller passes, check the rest from the diff and the code,
-  leave the "test written first" box open and write `order: stated by the builder, not read from the ledger`
+  leave the "test written first" box open (the short lane's checklist has it; a full review has no such box) and write `order: stated by the builder, not read from the ledger`
   under **Limitations**. QC reads the ledger for every sub-unit whose review says so; a step missing
   there, or out of order, is a finding.
 

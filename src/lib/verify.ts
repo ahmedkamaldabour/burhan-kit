@@ -7,7 +7,7 @@ import { BurhanError } from './errors.js';
 import { codeState, type CodeState } from './fingerprint.js';
 import { realTarget } from './fs-safe.js';
 import { itemFolder } from './item-files.js';
-import { assertInside } from './item-io.js';
+import { assertInside, isSlug } from './item-io.js';
 import { docsLocation } from './status.js';
 import { launchFor, runLaunch } from './verify-run.js';
 
@@ -74,10 +74,35 @@ export function judgeVerify(recs: VerifyRecord[], current: CodeState, proof: Reg
     return latest.status === 'ok' ? { kind: 'stated', rec: latest, why: current.why ?? 'no file list' } : { kind: 'failed', rec: latest };
   }
   const same = proofs.filter((r) => r.fingerprint === current.value);
-  if (same.length === 0) return { kind: 'none', note: ` (the latest burhan verify run, ${latest.cmd} at ${latest.ts}, was on another code state: the code changed since)` };
+  if (same.length === 0) {
+    const run = `the latest burhan verify run, ${latest.cmd} at ${latest.ts}`;
+    return { kind: 'none', note: latest.fingerprint === null ? ` (${run}, has no code state and the project has one now, so it cannot be compared: run burhan verify again)` : ` (${run}, was on another code state: the code changed since)` };
+  }
   const last = same[same.length - 1]!;
   return last.status === 'ok' ? { kind: 'proven', rec: last } : { kind: 'failed', rec: last };
 }
+
+/** True when the item's record file would really be inside the project, links followed: the check `burhan verify` makes before it writes. An item folder that is a link
+ *  leading outside the project is not read, so a record planted there never counts. */
+export function recordsInside(project: string, dir: string, slug: string): boolean {
+  try { assertInside(project, verifyFile(dir, slug)); return true; } catch { return false; }
+}
+
+/** An item's records and the code state they are compared with (taken only when there is a record to compare). The one reading `item finish`, `guide` and `evidence` share. */
+export interface ItemRecords { records: VerifyRecord[]; current: CodeState }
+export function itemRecords(target: string, dir: string, slug: string, docs?: string): ItemRecords {
+  const records = recordsInside(target, dir, slug) ? readVerifyRecords(dir, slug) : [];
+  return { records, current: records.length > 0 ? currentCodeState(target, docs) : { value: null, files: 0 } };
+}
+
+/** The item's folder under the docs location, or null when the slug or the docs location is not usable: the commands that only report never fail on it. */
+export function itemDirQuiet(target: string, slug: string, docs?: string): string | null {
+  if (!isSlug(slug)) return null;
+  try { return join(docsLocation(target, docs).abs, slug); } catch { return null; }
+}
+
+/** True unless the edit provably came no later than the record: a time that cannot be read counts as later, the safe side (a stated record then does not count). */
+export const editAfter = (editAt: string, recordAt: string): boolean => !(Date.parse(editAt) <= Date.parse(recordAt));
 
 /** `burhan verify <slug> -- <command> [args]`: runs the command in the project without a shell, shows its output and how it ended, and appends one record to the item's
  *  `<slug>-verify.jsonl`: the command, exit code, time and the code state before the run. Exit 0 on a pass, 1 on a failure or a command that could not start, 2 on a

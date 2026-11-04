@@ -38,7 +38,7 @@ export function guide(target: string, slug: string | undefined, io: Io, o: { jso
   }
   const { slug: s, route, st, story } = readItemStage(target, slug, o.docs, 'guide');
   const advice = skillAdvice(realTarget(target), s, st, route);
-  const full = fullRunFor(realTarget(target));
+  const full = fullRunFor(realTarget(target), process.env, { slug: s, docs: o.docs });
   if (o.json) { io.stdout(`${JSON.stringify({ item: s, route, stage: st.stage, authorized: st.authorized, why: st.why, next: st.next, skill: advice?.skill ?? null, fullRun: full })}\n`); return 0; }
   const mode = /^- \*\*Mode:\*\*[ \t]*(step|auto)(?![A-Za-z])/m.exec(story ?? '')?.[1];
   io.stdout(`guide: ${s} — ${route || 'no exact route'}${mode ? ` (mode ${mode})` : ''}\n`);

@@ -185,7 +185,7 @@ work/<task>/
 ## الإثبات
 
 الـ hooks بتبلّغ وبتفشل open؛ عمرها ما بتمنع. task commands بترفض خطوة lifecycle غلط، لكن الـ agent يقدر يتخطاهم.
-البلوك اللي بيكتبه `burhan init` في `CLAUDE.md` و`AGENTS.md` بيطلب من الـ agent يشغّل `burhan guide` قبل أي تعديل ويمشي على ردّه، والـ `guide` بيرد حتى لو مفيش item. ده تعليمة مش قفل: التعديل المباشر وكتابة الـ shell وهوية اللي وافق مش بتتمنع. `burhan verify <slug> -- <command>` بيشغّل أمر الإثبات بنفسه ويسجّل الـ exit code وحالة الكود اللي اشتغل عليها، و`item finish` بيقبل السجل ده، فالمشروع اللي من غير hooks برضه محتاج إثبات. السجل بيقول إن الأمر اشتغل وخلص إزاي، مش إنه بيختبر الحاجة الصح.
+البلوك اللي بيكتبه `burhan init` في `CLAUDE.md` و`AGENTS.md` بيطلب من الـ agent يشغّل `burhan guide` قبل أي تعديل ويمشي على ردّه، والـ `guide` بيرد حتى لو مفيش item. ده تعليمة مش قفل: التعديل المباشر وكتابة الـ shell وهوية اللي وافق مش بتتمنع. `burhan verify <slug> -- <command>` بيشغّل أمر الإثبات بنفسه ويسجّل الـ exit code وحالة الكود اللي اشتغل عليها، و`item finish` بيقبل السجل ده، فالمشروع اللي من غير hooks بياخد إثبات مسجّل، أو يذكر إثبات بـ `--evidence`. السجل بيقول إن الأمر اشتغل وخلص إزاي، مش إنه بيختبر الحاجة الصح.
 
 | اللحظة | Hook | الوظيفة |
 | --- | --- | --- |
@@ -204,7 +204,7 @@ work/<task>/
 
 الـ [run المسجل](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md) بيورّي التحذير ده وهو بيخلّي agent يسحب “Done.”
 
-الـ ledger برا المشروع في `~/.local/state/burhan/evidence/`. بتسجل reported edits وcommand lines وexit codes والترتيب وربط المهمة؛ مش command output. `evidence --item <slug>` بيعرضها.
+الـ ledger برا المشروع في `~/.local/state/burhan/evidence/`. بتسجل reported edits وcommand lines وexit codes والترتيب وربط المهمة؛ مش command output. بتتكتب لما الـ turn بيخلص، فخطوات الـ turn الحالي لسه مش فيها. `evidence --item <slug>` بيعرضها.
 
 ‏whole-suite run ناجح بعد آخر code edit يقدر يكفي verification وQC وcommit. استخدمه تاني لحد ما code أو tests تتغير. `guide` بيعرض حالة `full run:`.
 

@@ -272,4 +272,15 @@ check "README.ar: commands find the project from any subfolder" "$(cat README.ar
 check "configuration: a missing or file [dir] is refused, not walked up from" "$cfgdoc" has 'A `[dir]` that does not exist, or a file, is not walked up from'
 check "configuration: a nested install is made with init, not setup" "$cfgdoc" has '`setup` walks up too, so a nested install inside an installed project is made with `init <dir>`'
 
+echo "evidence-honesty-verify-records"
+check "configuration: the full run line reads the item records, a record that counts decides" "$cfgdoc" has 'a record that counts decides, the line says `by burhan verify record`'
+check "configuration: an empty WF_EVIDENCE_REGEX makes the proof stated, not proven" "$cfgdoc" has 'the plan then says the proof was stated, not proven'
+
+check "configuration: a ledger time is the end of the turn" "$cfgdoc" has 'each record carries the time the turn ended, not the time of the step'
+check "README: a project without hooks states a proof with --evidence" "$(cat README.md)" has 'or states one with `--evidence`'
+check "README.ar: a project without hooks states a proof with --evidence" "$(cat README.ar.md)" has 'بياخد إثبات مسجّل'
+check "README.ar: a project without hooks says it states a proof with --evidence" "$(cat README.ar.md)" has 'أو يذكر إثبات بـ `--evidence`'
+check "configuration: a failed record decides no even when a later ledger run passed" "$cfgdoc" has 'even when the ledger shows a later passing full run'
+check "configuration: a record in an item folder that leads outside the project is not read" "$cfgdoc" has 'one that is a link leading outside is not read'
+
 t_summary

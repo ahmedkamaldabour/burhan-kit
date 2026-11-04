@@ -24,7 +24,7 @@ build's commands with their exit codes, as the build reported them: keep them as
    the code edit; "done" is a *passing* run after the last one.
    The ledger is written when a turn ends, so a review in the build's turn may find no step of the sub-unit.
    Then do not propose FAIL on that alone, and do not pass it silently: run the sub-unit's GREEN command
-   yourself and show its result, take the failing-first run from the build's reported commands, and write
+   yourself and show its result (a GREEN run of yours that fails is a finding), take the failing-first run from the build's reported commands, and write
    `order: stated by the builder, not read from the ledger` under **Limitations**
    (phases/review.md · When the ledger cannot show the sub-unit yet).
 3. Write **only** the report file, under the item's `reviews/` folder, from the matching template.

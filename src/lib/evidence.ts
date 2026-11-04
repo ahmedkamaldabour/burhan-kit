@@ -9,6 +9,7 @@ import { findProject } from './find-project.js';
 import { realTarget } from './fs-safe.js';
 import { evidenceMatches } from '../hooks/core/evidence-cmd.mjs';
 import { isAbsoluteOverride } from '../hooks/core/store.mjs';
+import { itemDirQuiet, itemRecords } from './verify.js';
 
 /** One step of a turn, as the turn-audit hook records it (src/hooks/core/turn-audit.mts). */
 export interface LedgerRecord {
@@ -73,6 +74,11 @@ export function readLedger(target: string, env: Env = process.env): LedgerRecord
     || (a.part ?? 0) - (b.part ?? 0) || a.seq - b.seq);
 }
 
+/** readLedger that does not throw: when a ledger folder cannot be listed (a file where a folder should be, no right to read it), `error` is the system's code and `recs` is empty. */
+export function tryReadLedger(target: string, env: Env = process.env): { recs: LedgerRecord[]; error?: string } {
+  try { return { recs: readLedger(target, env) }; } catch (e) { return { recs: [], error: (e as NodeJS.ErrnoException).code ?? 'error' }; }
+}
+
 export function summarizeLedger(recs: LedgerRecord[], evidenceRegex: string): LedgerSummary {
   let re: RegExp | null = null;
   try { re = evidenceRegex ? new RegExp(ereToJs(evidenceRegex)) : null; } catch { re = null; }
@@ -135,6 +141,19 @@ const line = (r: LedgerRecord): string =>
   (r.kind === 'edit' ? `edit  ${r.file ?? ''}` : r.kind === 'skill' ? `skill  ${r.skill ?? ''}` : `cmd  exit ${r.exit ?? '?'}  ${r.status ?? 'unknown'}  ${r.cmd ?? ''}${r.kind === 'cmd' && isPiped(r.cmd ?? '') ? "  (pipeline: exit is the last command's)" : ''}`) +
   (r.by ? `  (${r.by})` : '') + (r.item ? `  [${r.item}]` : '');
 
+/** The item's `burhan verify` records as one line, or null when the item has none. The hook ledger and these records are two sources: a review run inside the build's turn
+ *  finds the steps of that turn in the second and not yet in the first. */
+export function verifyRecordsLine(target: string, slug: string, docs?: string): string | null {
+  const dir = itemDirQuiet(target, slug, docs);
+  if (dir === null) return null;
+  const { records, current } = itemRecords(target, dir, slug, docs);
+  const last = records[records.length - 1];
+  if (last === undefined) return null;
+  const ended = last.status === 'ok' ? 'passed' : last.status === 'failed' ? 'FAILED' : 'could not start';
+  const where = last.fingerprint === null ? 'with no code state' : current.value === null ? 'on a code state that cannot be compared now' : last.fingerprint === current.value ? 'on the current code state' : 'on another code state (the code changed since)';
+  return `verify records: ${records.length} for ${slug} — the latest, ${last.cmd}, ${ended} (exit ${last.exit ?? 'none'}) at ${last.ts} ${where}; a record shows that a command ran and how it ended, not that it tests the right thing`;
+}
+
 export function evidence(o: { target: string; item?: string; session?: string; last?: string; json: boolean }, io: Io): number {
   const target = projectRoot(o.target);
   let n: number | undefined;
@@ -142,16 +161,18 @@ export function evidence(o: { target: string; item?: string; session?: string; l
     if (!/^\d+$/.test(o.last)) throw new BurhanError(`--last needs a number: ${o.last}`);
     n = Number(o.last);
   }
-  let recs = readLedger(target).filter((r) => (!o.item || r.item === o.item) && (!o.session || r.session === o.session));
+  const read = tryReadLedger(target);
+  if (read.error !== undefined) throw new BurhanError(`the evidence ledger could not be read (${read.error}): ${ledgerDir(target)}`);
+  let recs = read.recs.filter((r) => (!o.item || r.item === o.item) && (!o.session || r.session === o.session));
   if (n !== undefined) recs = n === 0 ? [] : recs.slice(-n);
   if (o.json) { io.stdout(JSON.stringify(recs.map((r) => (r.kind === 'cmd' && isPiped(r.cmd ?? '') ? { ...r, piped: true } : r)), null, 2) + '\n'); return 0; }
+  const records = o.item ? verifyRecordsLine(target, o.item) : null;
   if (recs.length === 0) {
     io.stdout(o.item || o.session
-      ? `no evidence recorded for ${o.item ? `item "${o.item}"` : `session "${o.session}"`} — the turn-audit hook writes the ledger when a turn ends, so the steps of the current turn are not in it yet and a review run inside this turn will not see them\n`
+      ? `no ${records === null ? 'evidence' : 'hook-ledger steps'} recorded for ${o.item ? `item "${o.item}"` : `session "${o.session}"`} — the turn-audit hook writes the ledger when a turn ends, so the steps of the current turn are not in it yet and a review run inside this turn will not see them\n`
       : 'no evidence recorded for this project yet (it is written by the turn-audit hook at the end of each turn)\n');
-    return 0;
-  }
-  io.stdout(recs.map(line).join('\n') + '\n');
+  } else io.stdout(recs.map(line).join('\n') + '\n');
+  if (records !== null) io.stdout(`${records}\n`);
   return 0;
 }
 

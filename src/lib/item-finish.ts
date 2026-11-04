@@ -4,12 +4,12 @@ import { checkText, hasContractMarker } from '../hooks/core/item-contract.mjs';
 import { evidenceMatches } from '../hooks/core/evidence-cmd.mjs';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
-import { ereToJs, isPiped, ledgerDir, readLedger } from './evidence.js';
+import { ereToJs, isPiped, ledgerDir, tryReadLedger, type LedgerRecord } from './evidence.js';
 import { putFile, realTarget } from './fs-safe.js';
 import { fenced, itemFolder, openDeviations, overallStatus, planPath, planRoute, readOr, routeNeeds, setFieldLine, units } from './item-files.js';
 import { assertInside, oneLine } from './item-io.js';
 import { docsLocation } from './status.js';
-import { currentCodeState, judgeVerify, readVerifyRecords } from './verify.js';
+import { editAfter, itemRecords, judgeVerify } from './verify.js';
 
 const regex = (ere: string | undefined): RegExp | null => { try { return ere ? new RegExp(ereToJs(ere)) : null; } catch { return null; } };
 /** Matches nothing: a proof pattern that is set but does not compile recognises no proof. */
@@ -69,29 +69,36 @@ export function itemFinish(target: string, slug: string | undefined, io: Io, o: 
   const code = regex(values.WF_CODE_REGEX);
   const proof = regex(values.WF_EVIDENCE_REGEX);
   const env = o.env ?? process.env;
-  const records = readVerifyRecords(dir, s);
-  const judged = judgeVerify(records, records.length > 0 ? currentCodeState(target, o.docs) : { value: null, files: 0 }, (values.WF_EVIDENCE_REGEX ?? '') === '' ? null : (proof ?? NEVER));
-  const runVerify = `run burhan verify ${s} -- <proof command> (a command WF_EVIDENCE_REGEX matches)`;
+  const anyProof = (values.WF_EVIDENCE_REGEX ?? '') === ''; // no pattern: any command a record names counts, so a pass is only stated
+  const { records, current: codeNow } = itemRecords(target, dir, s, o.docs);
+  const judged = judgeVerify(records, codeNow, anyProof ? null : (proof ?? NEVER));
+  const runVerify = `run burhan verify ${s} -- <proof command> (${anyProof ? 'WF_EVIDENCE_REGEX is empty, so any command counts, and the plan will say the proof was stated' : 'a command WF_EVIDENCE_REGEX matches'})`;
   let stateNote = '';
   let say = '';
-  // The ledger's code edits, read once: the ledger path needs them, and a record with no code state does not count when a code edit came after it.
-  const recs = readLedger(target, env).filter((r) => r.item === s || !r.item || r.item === '-');
+  // The ledger's code edits, read once and only when no record decides: the ledger path needs them, and a record with no code state does not count when a code edit came after it.
+  const read = judged.kind === 'proven' || judged.kind === 'failed' ? { recs: [] as LedgerRecord[] } : tryReadLedger(target, env);
+  const recs = read.recs.filter((r) => r.item === s || !r.item || r.item === '-');
   const edits = recs.map((r, i) => (r.kind === 'edit' && r.file !== undefined && (code === null || code.test(r.file)) ? i : -1)).filter((i) => i >= 0);
   const lastEdit = edits.length > 0 ? recs[edits[edits.length - 1]!] : undefined;
   if (judged.kind === 'failed') throw new BurhanError(`cannot finish ${s}: the latest burhan verify run ${judged.rec.fingerprint === null ? '(no code state)' : 'on the current code state'} failed (${judged.rec.cmd}, exit ${judged.rec.exit ?? 'none'}, at ${judged.rec.ts}): fix it and run burhan verify ${s} -- ${judged.rec.cmd} again`);
-  const staleStated = judged.kind === 'stated' && lastEdit !== undefined && Date.parse(lastEdit.ts) > Date.parse(judged.rec.ts);
-  if (judged.kind === 'proven') say = ` (proven by burhan verify: ${judged.rec.cmd} passed at ${judged.rec.ts} on the current code state)`;
+  const staleStated = judged.kind === 'stated' && lastEdit !== undefined && editAfter(lastEdit.ts, judged.rec.ts);
+  if (judged.kind === 'proven' && anyProof) {
+    stateNote = ` · stated evidence: burhan verify ${judged.rec.cmd} passed at ${judged.rec.ts} on the current code state; WF_EVIDENCE_REGEX is empty, so any command counted`;
+    say = ' (evidence stated, not proven: WF_EVIDENCE_REGEX is empty, so the burhan verify command was not checked to be a proof command)';
+  } else if (judged.kind === 'proven') say = ` (proven by burhan verify: ${judged.rec.cmd} passed at ${judged.rec.ts} on the current code state)`;
   else if (judged.kind === 'stated' && !staleStated) {
-    stateNote = ` · stated evidence: burhan verify ${judged.rec.cmd} passed at ${judged.rec.ts} with no code state (${judged.why})`;
-    say = ' (evidence stated, not proven: the burhan verify record has no code state)';
+    const unread = read.error === undefined ? '' : `; the evidence ledger could not be read (${read.error}), so a code edit after the record was not looked for`;
+    stateNote = ` · stated evidence: burhan verify ${judged.rec.cmd} passed at ${judged.rec.ts} with no code state (${judged.why})${unread}`;
+    say = ` (evidence stated, not proven: the burhan verify record has no code state${unread})`;
   } else {
     const note = judged.kind === 'none' ? judged.note : ` (the burhan verify run ${judged.rec.cmd} at ${judged.rec.ts} has no code state and the ledger shows a code edit after it: ${lastEdit?.file ?? '?'} at ${lastEdit?.ts ?? '?'})`;
     if (edits.length === 0) {
-      if (existsSync(ledgerDir(target, env))) say = ' (no code edit of this item is in the ledger, so no proof was asked for)';
+      const noLedger = read.error === undefined ? 'no hook ledger' : `the evidence ledger could not be read (${read.error})`;
+      if (read.error === undefined && existsSync(ledgerDir(target, env))) say = ' (no code edit of this item is in the ledger, so no proof was asked for)';
       else if (stated !== '') {
         stateNote = ` · stated evidence: ${stated}`;
-        say = ' (evidence stated, not proven: no hook ledger and no burhan verify record)';
-      } else throw new BurhanError(`cannot finish ${s}: this project has no hook ledger and no burhan verify record proves the current code state${note}: ${runVerify}, or pass --evidence "<what shows it>" (recorded as stated, not proven)`);
+        say = ` (evidence stated, not proven: ${noLedger} and no burhan verify record)`;
+      } else throw new BurhanError(`cannot finish ${s}: ${read.error === undefined ? 'this project has no hook ledger' : noLedger} and no burhan verify record proves the current code state${note}: ${runVerify}, or pass --evidence "<what shows it>" (recorded as stated, not proven)`);
     } else {
       const last = edits[edits.length - 1]!;
       const shown = proof !== null && recs.some((r, i) => i > last && r.kind === 'cmd' && r.status === 'ok' && !isPiped(r.cmd ?? '') && evidenceMatches(proof, r.cmd ?? ''));
