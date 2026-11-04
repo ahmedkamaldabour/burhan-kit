@@ -93,12 +93,14 @@ export function itemFinish(target: string, slug: string | undefined, io: Io, o: 
   } else {
     const note = judged.kind === 'none' ? judged.note : ` (the burhan verify run ${judged.rec.cmd} at ${judged.rec.ts} has no code state and the ledger shows a code edit after it: ${lastEdit?.file ?? '?'} at ${lastEdit?.ts ?? '?'})`;
     if (edits.length === 0) {
-      const noLedger = read.error === undefined ? 'no hook ledger' : `the evidence ledger could not be read (${read.error})`;
-      if (read.error === undefined && existsSync(ledgerDir(target, env))) say = ' (no code edit of this item is in the ledger, so no proof was asked for)';
+      const folder = read.error === undefined && existsSync(ledgerDir(target, env));
+      const noLedger = read.error !== undefined ? `the evidence ledger could not be read (${read.error})` : folder ? 'the hook ledger has no step of this item' : 'no hook ledger';
+      const noRecord = judged.kind === 'none' && judged.note === '' ? 'no burhan verify record' : 'no burhan verify record that counts';
+      if (folder && recs.length > 0) say = ' (no code edit of this item is in the ledger, so no proof was asked for)';
       else if (stated !== '') {
         stateNote = ` · stated evidence: ${stated}`;
-        say = ` (evidence stated, not proven: ${noLedger} and no burhan verify record)`;
-      } else throw new BurhanError(`cannot finish ${s}: ${read.error === undefined ? 'this project has no hook ledger' : noLedger} and no burhan verify record proves the current code state${note}: ${runVerify}, or pass --evidence "<what shows it>" (recorded as stated, not proven)`);
+        say = ` (evidence stated, not proven: ${noLedger} and ${noRecord})`;
+      } else throw new BurhanError(`cannot finish ${s}: ${read.error === undefined && !folder ? 'this project has no hook ledger' : noLedger} and no burhan verify record proves the current code state${note}: ${runVerify}, or pass --evidence "<what shows it>" (recorded as stated, not proven)`);
     } else {
       const last = edits[edits.length - 1]!;
       const shown = proof !== null && recs.some((r, i) => i > last && r.kind === 'cmd' && r.status === 'ok' && !isPiped(r.cmd ?? '') && evidenceMatches(proof, r.cmd ?? ''));

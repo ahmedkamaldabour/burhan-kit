@@ -21,7 +21,7 @@ import { reviewAdd } from './lib/review-add.js';
 import { approve } from './lib/approve.js';
 import { deviationAdd, deviationResolve } from './lib/deviation.js';
 import { itemFinish } from './lib/item-finish.js';
-import { verify } from './lib/verify.js';
+import { itemRecordsQuiet, verify } from './lib/verify.js';
 import { guide } from './lib/guide.js';
 import { printAdvice } from './lib/skill-advice.js';
 import { memoryAffected, memoryCheck, memoryStatus } from './lib/memory.js';
@@ -172,8 +172,10 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         });
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         const target = at(positionals[0]);
-        const code = evidence({ target, item: values.item, session: values.session, last: values.last, json: values.json === true }, io);
-        if (code === 0 && values.item !== undefined && values.json !== true) io.stdout(`${fullRunLine(fullRunFor(projectRoot(target), process.env, { slug: values.item }))}\n`);
+        const root = projectRoot(target);
+        const records = values.item !== undefined && values.json !== true ? itemRecordsQuiet(root, values.item) : undefined;
+        const code = evidence({ target, item: values.item, session: values.session, last: values.last, json: values.json === true, records }, io);
+        if (code === 0 && values.item !== undefined && values.json !== true) io.stdout(`${fullRunLine(fullRunFor(root, process.env, { slug: values.item, records }))}\n`);
         return code;
       }
       case 'stats': {

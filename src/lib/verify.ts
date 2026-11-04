@@ -63,11 +63,11 @@ export type VerifyJudgement =
 
 /** Which record decides: among the runs of a proof command (every run when `proof` is null), the latest one taken on the current code state. It proves when it
  *  passed and stops the finish when it failed. With no code state now, the latest run that had none either decides too: a pass is only stated, a failure stops
- *  the finish. `note` says why none counts. */
-export function judgeVerify(recs: VerifyRecord[], current: CodeState, proof: RegExp | null): VerifyJudgement {
+ *  the finish. `note` says why none counts; `pattern` names the key `proof` was read from, for the note. */
+export function judgeVerify(recs: VerifyRecord[], current: CodeState, proof: RegExp | null, pattern = 'WF_EVIDENCE_REGEX'): VerifyJudgement {
   if (recs.length === 0) return { kind: 'none', note: '' };
   const proofs = recs.filter((r) => proof === null || evidenceMatches(proof, r.cmd));
-  if (proofs.length === 0) return { kind: 'none', note: ` (no burhan verify record runs a proof command: ${recs.length} record(s), none matches WF_EVIDENCE_REGEX)` };
+  if (proofs.length === 0) return { kind: 'none', note: ` (no burhan verify record runs a proof command: ${recs.length} record(s), none matches ${pattern})` };
   const latest = proofs[proofs.length - 1]!;
   if (current.value === null) {
     if (latest.fingerprint !== null) return { kind: 'none', note: ` (the code state cannot be taken now: ${current.why ?? 'no file list'})` };
@@ -99,6 +99,12 @@ export function itemRecords(target: string, dir: string, slug: string, docs?: st
 export function itemDirQuiet(target: string, slug: string, docs?: string): string | null {
   if (!isSlug(slug)) return null;
   try { return join(docsLocation(target, docs).abs, slug); } catch { return null; }
+}
+
+/** The item's records for the commands that only report: null when the slug or the docs location is not usable. One call reads the records and takes the code state once. */
+export function itemRecordsQuiet(target: string, slug: string, docs?: string): ItemRecords | null {
+  const dir = itemDirQuiet(target, slug, docs);
+  return dir === null ? null : itemRecords(target, dir, slug, docs);
 }
 
 /** True unless the edit provably came no later than the record: a time that cannot be read counts as later, the safe side (a stated record then does not count). */

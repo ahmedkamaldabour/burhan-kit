@@ -124,7 +124,7 @@ test('guide with no git checkout and a ledger that cannot be read: the stated li
   process.env.WF_EVIDENCE_DIR = '';
   assert.equal((await verifyRun(dir, 0)).code, 0);
   const ok = lastLine((await cli(dir, ['guide', 'foo'])).out);
-  assert.match(ok, /^full run: yes \(stated\) — by burhan verify record: .* and the ledger shows no code edit after it/, 'control: with a readable ledger the line claims what the ledger shows');
+  assert.match(ok, /^full run: yes \(stated\) — by burhan verify record: .* and the ledger holds no step for this project, so a code edit after it was not looked for/, 'control: with a readable, empty ledger the line says nothing was looked at');
   const folder = join(process.env.XDG_STATE_HOME, 'burhan', 'evidence', projectKey(dir));
   mkdirSync(join(folder, '..'), { recursive: true });
   writeFileSync(folder, 'a file where the ledger folder should be');

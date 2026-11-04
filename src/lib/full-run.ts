@@ -1,7 +1,7 @@
 import { evidenceMatches } from '../hooks/core/evidence-cmd.mjs';
 import { readProjectConfig } from './config.js';
 import { ereToJs, isPiped, tryReadLedger, type LedgerRecord } from './evidence.js';
-import { editAfter, itemDirQuiet, itemRecords, judgeVerify, type VerifyJudgement } from './verify.js';
+import { editAfter, itemRecordsQuiet, judgeVerify, type ItemRecords, type VerifyJudgement } from './verify.js';
 
 /** Whether the ledger holds a passing run of the whole test suite after the last code edit.
  *  yes: one does · no: the last code edit came after the last one · none: no passing full run is recorded · unknown: the ledger cannot tell. */
@@ -78,17 +78,17 @@ export function withRecords(ledger: FullRun, judged: VerifyJudgement): FullRun {
   }
 }
 
-/** The project's full-run answer, from its ledger and its own patterns; with `slug`, also from that item's `burhan verify` records (WF_FULL_TEST_REGEX picks the commands that count). */
-export function fullRunFor(target: string, env: NodeJS.ProcessEnv = process.env, o: { slug?: string; docs?: string } = {}): FullRun {
+/** The project's full-run answer, from its ledger and its own patterns; with `slug`, also from that item's `burhan verify` records (WF_FULL_TEST_REGEX picks the commands that count).
+ *  `records` are the item's records already read (null: it has none); left out, they are read here. */
+export function fullRunFor(target: string, env: NodeJS.ProcessEnv = process.env, o: { slug?: string; docs?: string; records?: ItemRecords | null } = {}): FullRun {
   const v = readProjectConfig(target).values;
   const read = tryReadLedger(target, env);
   const ledger: FullRun = read.error !== undefined ? { state: 'unknown', why: `${UNREADABLE} (${read.error})` } : fullRunOf(read.recs, { code: v.WF_CODE_REGEX, test: v.WF_TEST_REGEX, full: v.WF_FULL_TEST_REGEX });
   const full = compile(v.WF_FULL_TEST_REGEX);
   if (o.slug === undefined || full === null) return ledger; // no pattern: judgeVerify would take every run of every command for a full run
-  const dir = itemDirQuiet(target, o.slug, o.docs);
-  if (dir === null) return ledger;
-  const { records, current } = itemRecords(target, dir, o.slug, o.docs);
-  return withRecords(ledger, judgeVerify(records, current, full));
+  const seen = o.records === undefined ? itemRecordsQuiet(target, o.slug, o.docs) : o.records;
+  if (seen === null) return ledger;
+  return withRecords(ledger, judgeVerify(seen.records, seen.current, full, 'WF_FULL_TEST_REGEX'));
 }
 
 /** A command as one short piece of a line: its first line, cut at 80 characters (a run can sit inside a long script). */
@@ -114,7 +114,10 @@ export function fullRunLine(f: FullRun): string {
     if (r.kind === 'failed') return `full run: no — by burhan verify record: the latest run of ${shown(r.command)} on the current code state FAILED (exit ${r.exit ?? 'none'}) at ${r.at}; ${other}; ${RECORD_LIMIT}`;
     if (r.kind === 'stated') {
       const unread = f.ledger?.state === 'unknown' && f.ledger.why?.startsWith(UNREADABLE) === true;
-      const seen = unread ? 'the ledger could not be read, so a code edit after it was not looked for' : `the ledger shows no code edit after it (${BLIND})`;
+      const empty = f.ledger?.state === 'unknown' && !unread;
+      const seen = unread ? 'the ledger could not be read, so a code edit after it was not looked for'
+        : empty ? 'the ledger holds no step for this project, so a code edit after it was not looked for'
+          : `the ledger shows no code edit after it (${BLIND})`;
       return `full run: yes (stated) — by burhan verify record: ${shown(r.command)} passed at ${r.at} with no code state (${r.why}), so it cannot be compared with the files now, and ${seen}; ${other}; ${RECORD_LIMIT}`;
     }
     return `full run: yes — by burhan verify record: ${shown(r.command)} passed at ${r.at} on the current code state (the files now are the files it ran on); ${other}; ${RECORD_LIMIT}`;

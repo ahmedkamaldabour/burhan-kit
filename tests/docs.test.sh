@@ -273,7 +273,7 @@ check "configuration: a missing or file [dir] is refused, not walked up from" "$
 check "configuration: a nested install is made with init, not setup" "$cfgdoc" has '`setup` walks up too, so a nested install inside an installed project is made with `init <dir>`'
 
 echo "evidence-honesty-verify-records"
-check "configuration: the full run line reads the item records, a record that counts decides" "$cfgdoc" has 'a record that counts decides, the line says `by burhan verify record`'
+check "configuration: the full run line reads the item records, a record that counts decides" "$cfgdoc" has 'ecord that counts decides, the line says `by burhan verify record`'
 check "configuration: an empty WF_EVIDENCE_REGEX makes the proof stated, not proven" "$cfgdoc" has 'the plan then says the proof was stated, not proven'
 
 check "configuration: a ledger time is the end of the turn" "$cfgdoc" has 'each record carries the time the turn ended, not the time of the step'

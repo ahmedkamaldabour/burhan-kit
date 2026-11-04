@@ -241,7 +241,8 @@ test('a pass with no code state is stated: it counts only while the ledger shows
   assert.equal(f.state, 'yes');
   assert.equal(f.by, 'verify record');
   assert.equal(f.record?.kind, 'stated');
-  assert.match(fullRunLine(f), /^full run: yes \(stated\) — by burhan verify record: npm test passed at \S+ with no code state \(not a git checkout\), so it cannot be compared with the files now, and the ledger shows no code edit after it \(not seen by the ledger: shell edits \(sed -i, scripts\), edits outside the session, the current turn\); the ledger: cannot tell/);
+  assert.match(fullRunLine(f), /^full run: yes \(stated\) — by burhan verify record: npm test passed at \S+ with no code state \(not a git checkout\), so it cannot be compared with the files now, and the ledger holds no step for this project, so a code edit after it was not looked for; the ledger: cannot tell/);
+  assert.match(fullRunLine(withRecords(fullRunOf([edit('docs/x.md')], CFG), stated)), /and the ledger shows no code edit after it \(not seen by the ledger: shell edits \(sed -i, scripts\), edits outside the session, the current turn\)/);
   assert.equal(withRecords(fullRunOf([laterEdit('2026-10-28T09:00:00Z')], CFG), stated).by, 'verify record', 'an edit before the record');
   for (const ts of ['2026-10-28T12:00:00Z', 'garbage']) {
     const g = withRecords(fullRunOf([laterEdit(ts)], CFG), stated);

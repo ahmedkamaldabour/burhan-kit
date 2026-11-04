@@ -84,13 +84,13 @@ test('a failing proof, a piped proof and a command that is not a proof do not co
 
 test('with no code edit in the ledger no proof is asked for', async () => {
   const dir = await ready();
-  ledger(dir, []);
+  ledger(dir, [{ kind: 'edit', ts: '2026-10-27T10:00:00Z', file: 'README.md' }]);
   assert.equal((await finish(dir)).code, 0);
 });
 
 test('QC, the knowledge review and Close-out are not preconditions of Completed: they follow it (lifecycle), on every route', async () => {
   const dir = await ready();
-  ledger(dir, []);
+  ledger(dir, [{ kind: 'edit', ts: '2026-10-27T10:00:00Z', file: 'README.md' }]);
   write(planFile(dir), read(planFile(dir)).replace(/- \[x\] QC/, '- [ ] QC').replace(/- \[x\] Knowledge review/, '- [ ] Knowledge review').replace(/- \[x\] Close-out/, '- [ ] Close-out'));
   const r = await finish(dir);
   assert.equal(r.code, 0, r.err);
