@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gatesFor } from '../src/hooks/core/item-model.mjs';
 import { cli, planFile, project, read, write } from './item-fixture.js';
@@ -39,10 +40,29 @@ test('item new writes the generated checklist; each route is shorter than the ol
   }
 });
 
-test('the template still lists every gate the table can give, in the same words (it is the fallback for a hand-made plan)', () => {
-  const template = readFileSync(fileURLToPath(new URL('../../kit/templates/plan.md', import.meta.url)), 'utf8').replace(/\r?\n {6}/g, ' ');
-  const union = new Set(ROUTES.flatMap(([t, s]) => gatesFor(`${t} / ${s}`)!));
-  for (const g of union) assert.ok(template.includes(`- [ ] ${g}`), `the template lacks: ${g}`);
+test('the template lists exactly the gates the table can give, each as a whole line and in the same order (it is the fallback for a hand-made plan)', () => {
+  const template = readFileSync(fileURLToPath(new URL('../../kit/templates/plan.md', import.meta.url)), 'utf8').replace(/\r\n/g, '\n').replace(/\n {6}/g, ' ');
+  const section = template.slice(template.indexOf('## Gate checklist\n'), template.indexOf('\n## 1.'));
+  // The two documented suffixes say when a route has the gate; nothing else may follow the table's words.
+  const boxes = section.split('\n').filter((l) => l.startsWith('- [ ] ')).map((l) => l.slice(6).replace(/ \((if the route requires it|if the route includes K)\)$/, ''));
+  const union = [...new Set(ROUTES.flatMap(([t, s]) => gatesFor(`${t} / ${s}`)!))];
+  assert.deepEqual(boxes, union);
+});
+
+test('a "## Gate checklist" inside a code fence of the project template is not the section: the fence stays and the real section gets the route\'s gates', async () => {
+  const dir = project();
+  const own = join(dir, '.burhan', 'templates', 'plan.md');
+  const text = read(own);
+  const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  const example = ['```', '## Gate checklist', '- [ ] an example inside a fence', '## 1. Decisions', '```', '', ''].join(eol);
+  write(own, text.replace(/^## Gate checklist\r?$/m, `${example}## Gate checklist`));
+  const r = await cli(dir, ['item', 'new', 'foo', '--type', 'refactor', '--scope', 'bounded']);
+  assert.equal(r.code, 0, r.err);
+  const plan = read(planFile(dir)).replace(/\r\n/g, '\n');
+  assert.ok(plan.includes('```\n## Gate checklist\n- [ ] an example inside a fence\n## 1. Decisions\n```\n'), 'the fenced example is left as it is');
+  const at = plan.lastIndexOf('## Gate checklist');
+  const boxes = plan.slice(at, plan.indexOf('## 1.', at)).split('\n').filter((l) => /^- \[ \] /.test(l)).map((l) => l.slice(6));
+  assert.deepEqual(boxes, gatesFor('refactor / bounded')!.map((l) => l.split('<slug>').join('foo')));
 });
 
 test('a plan made before this change (the old long checklist) still works in gate tick and item finish', async () => {

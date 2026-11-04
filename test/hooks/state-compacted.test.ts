@@ -49,3 +49,18 @@ test('the state-size gate counts a compacted file by its lines, and the transiti
   const out = await run(['core', 'turn-audit'], JSON.stringify({ event: 'turn_end', session: 'S1', project_dir: project, turn }), { ...process.env, WF_EVIDENCE_DIR: store });
   assert.doesNotMatch(out.stdout, /STATE-SIZE GATE|STATE-TRANSITION GATE/);
 });
+
+test('the control: on the same compacted file both gates do speak when their cause is there, so their silence above is a reading, not a gate that never ran', async () => {
+  const project = tmpDir('burhan-compacted-control-');
+  const store = tmpDir('burhan-compacted-control-store-');
+  mkdirSync(join(project, '.burhan/local'), { recursive: true });
+  mkdirSync(join(project, '.internal/work/gamma'), { recursive: true });
+  writeFileSync(join(project, '.burhan/workflow.config'), ['WF_DOCS_DIR=.internal/work', 'WF_STATE_FILE=.burhan/local/PROGRESS.md', 'WF_STATE_BUDGET=5', `WF_EVIDENCE_DIR='${store}'`].join('\n') + '\n');
+  writeFileSync(join(project, '.burhan/local/PROGRESS.md'), FILE);
+  const doc = join(project, '.internal/work/gamma/gamma-story.md');
+  writeFileSync(doc, 'text\n');
+  const turn = { files_created: [], files_edited: [doc], shell_commands: [], skills_used: [], assistant_text: 'saved', steps: [] }; // the state file is not written
+  const out = await run(['core', 'turn-audit'], JSON.stringify({ event: 'turn_end', session: 'S2', project_dir: project, turn }), { ...process.env, WF_EVIDENCE_DIR: store });
+  assert.match(out.stdout, /STATE-SIZE GATE: `\.burhan\/local\/PROGRESS\.md` is \d+ lines \(budget: 5\)/);
+  assert.match(out.stdout, /STATE-TRANSITION GATE/);
+});

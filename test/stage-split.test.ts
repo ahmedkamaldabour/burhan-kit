@@ -56,15 +56,22 @@ test('the four stage files exist and the old sentences each live in exactly one 
   assert.deepEqual(twice, []);
 });
 
-test('no sentence of nine or more words appears in two kit files', () => {
-  const seen = new Map<string, string>();
+// A sentence a template repeats from another kit file on purpose: [the sentence, the template]. Two templates may share a sentence: each is
+// copied into an item on its own.
+const TEMPLATE_TWINS: Array<[string, string]> = [
+  // The plan's Executor rules hold it for the executor, who follows the plan and the build spec, not stage-build.md.
+  ['A passing full run is reused (phases/stage-finish.md · Reusing a full run).', 'kit/templates/plan.md'],
+];
+
+test('no sentence of nine or more words appears in two kit files (two templates may share one; a template that repeats another kit file is listed in TEMPLATE_TWINS)', () => {
+  const seen = new Map<string, string[]>();
+  for (const f of kitFiles()) for (const s of new Set(sentences(readFileSync(join(root, f), 'utf8')))) seen.set(s, [...(seen.get(s) ?? []), f]);
   const dup: string[] = [];
-  for (const f of kitFiles().filter((f) => !f.startsWith('kit/templates/'))) {
-    for (const s of new Set(sentences(readFileSync(join(root, f), 'utf8')))) {
-      const prior = seen.get(s);
-      if (prior !== undefined && prior !== f) dup.push(`${s.slice(0, 60)} → ${prior}, ${f}`);
-      seen.set(s, f);
-    }
+  for (const [s, files] of seen) {
+    const rest = files.filter((f) => !f.startsWith('kit/templates/'));
+    if (files.length < 2 || rest.length === 0) continue;
+    if (files.length === 2 && rest.length === 1 && TEMPLATE_TWINS.some(([t, tf]) => t === s && files.includes(tf))) continue;
+    dup.push(`${s.slice(0, 60)} → ${files.join(', ')}`);
   }
   assert.deepEqual(dup, []);
 });

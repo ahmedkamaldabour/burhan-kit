@@ -1,7 +1,7 @@
 // Counts what a session reads: words, bytes and an ESTIMATED token count (bytes / 4: no tokenizer is installed or allowed as a dependency).
 //   node scripts/measure-artifacts.mjs [--root <dir>] [--file <path>]... [--set <label>=<path>,<path>]... [--sections <path>]
 // With no --file and no --set it measures the session-start files, e2e.md, lifecycle.md and the plan template.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 export const DEFAULT_FILES = ['CLAUDE.md', 'kit/WORKFLOW.md', '.burhan/bindings.md', '.burhan/local/PROGRESS.md', 'kit/commands/e2e.md', 'kit/phases/lifecycle.md', 'kit/templates/plan.md'];
@@ -13,17 +13,29 @@ export const countText = (text) => ({
 });
 const estimate = (bytes) => Math.ceil(bytes / 4);
 
+const FLAGS = ['--root', '--file', '--set', '--sections'];
 const argv = process.argv.slice(2);
-const all = (name) => argv.flatMap((a, i) => (a === name && argv[i + 1] !== undefined ? [argv[i + 1]] : []));
+/** A wrong argument stops the run with a message and exit 2 before anything is measured. */
+const usage = (message) => { console.error(`measure-artifacts: ${message}`); process.exit(2); };
+for (let i = 0; i < argv.length; i += 2) {
+  if (!FLAGS.includes(argv[i])) usage(`unknown argument: ${argv[i]} (the flags are ${FLAGS.join(', ')}, each followed by its value)`);
+  if (argv[i + 1] === undefined || argv[i + 1].startsWith('--')) usage(`${argv[i]} needs a value`);
+}
+const all = (name) => argv.flatMap((a, i) => (i % 2 === 0 && a === name ? [argv[i + 1]] : []));
 const root = all('--root')[0] ?? '.';
 const files = all('--file');
 const sets = all('--set');
 const sections = all('--sections');
+for (const s of sets) {
+  const eq = s.indexOf('=');
+  if (eq <= 0 || s.slice(eq + 1).split(',').every((p) => p === '')) usage(`--set needs <label>=<path>,<path>, not "${s}"`);
+}
 
 let failed = false;
 const read = (rel) => {
   const p = join(root, rel);
   if (!existsSync(p)) { console.error(`${rel}: missing`); failed = true; return null; }
+  if (!statSync(p).isFile()) { console.error(`${rel}: not a file`); failed = true; return null; }
   return readFileSync(p, 'utf8');
 };
 const row = (label, c) => `| ${label} | ${c.words} | ${c.bytes} | ${estimate(c.bytes)} |`;
@@ -53,7 +65,7 @@ if (sections.length > 0) {
   for (const rel of wanted) { const t = read(rel); if (t !== null) rows.push(row(rel, countText(t))); }
   for (const s of sets) {
     const eq = s.indexOf('=');
-    const parts = eq < 0 ? [] : s.slice(eq + 1).split(',').filter((p) => p !== '');
+    const parts = s.slice(eq + 1).split(',').filter((p) => p !== '');
     let sum = { words: 0, bytes: 0 };
     let ok = parts.length > 0;
     for (const rel of parts) { const t = read(rel); if (t === null) ok = false; else { const c = countText(t); sum = { words: sum.words + c.words, bytes: sum.bytes + c.bytes }; } }

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import type { Io } from '../main.js';
 import { readProjectConfig } from './config.js';
-import { gatesFor } from '../hooks/core/item-model.mjs';
+import { fenced, gatesFor } from '../hooks/core/item-model.mjs';
 import { BurhanError } from './errors.js';
 import { putFile, realTarget } from './fs-safe.js';
 import { assertInside, isSlug, SLUG_RULE, today } from './item-io.js';
@@ -31,14 +31,16 @@ function swap(text: string, pattern: RegExp, line: string, what: string): string
   return text.replace(pattern, () => line);
 }
 
-/** The plan's Gate checklist written from the route's table; a route that is not exact keeps the template's full list. */
+/** The plan's Gate checklist written from the route's table; a route that is not exact keeps the template's full list. A heading inside a
+ *  code fence is not read, as in gate tick and item finish. */
 function withChecklist(text: string, route: string, slug: string): string {
   const gates = gatesFor(route);
   if (gates === null) return text;
   const lines = text.replace(/\r\n/g, '\n').split('\n');
-  const start = lines.findIndex((l) => /^## Gate checklist\s*$/.test(l));
+  const inFence = fenced(lines);
+  const start = lines.findIndex((l, i) => !inFence[i] && /^## Gate checklist\s*$/.test(l));
   if (start === -1) throw new BurhanError('the template no longer has the Gate checklist section the command fills; run burhan upgrade or fix the template');
-  const next = lines.findIndex((l, i) => i > start && /^## /.test(l));
+  const next = lines.findIndex((l, i) => i > start && !inFence[i] && /^## /.test(l));
   const end = next === -1 ? lines.length : next;
   lines.splice(start + 1, end - start - 1, ...gates.map((g) => `- [ ] ${g.split('<slug>').join(slug)}`), '');
   return lines.join('\n');

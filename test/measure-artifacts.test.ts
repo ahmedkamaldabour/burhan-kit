@@ -61,3 +61,42 @@ test('a 200,000-character line is counted without delay', () => {
   assert.match(r.stdout, /\| long\.md \| 1 \| 200001 \| 50001 \|/);
   assert.ok(Date.now() - started < 5000);
 });
+
+test('a flag with no value, an unknown argument or a bare path is refused with a message (exit 2), never ignored', () => {
+  const root = tmpDir('burhan-measure-');
+  put(root, 'a.md', 'one\n');
+  for (const [args, said] of [
+    [['--file', 'a.md', '--file'], /--file needs a value/],
+    [['--set'], /--set needs a value/],
+    [['--file', '--sections', 'a.md'], /--file needs a value/],
+    [['--bogus', 'x'], /unknown argument: --bogus/],
+    [['a.md'], /unknown argument: a\.md/],
+  ] as Array<[string[], RegExp]>) {
+    const r = run('--root', root, ...args);
+    assert.equal(r.status, 2, `${args.join(' ')}: ${r.stdout}`);
+    assert.match(r.stderr, said, args.join(' '));
+    assert.equal(r.stdout, '', `${args.join(' ')}: nothing is measured`);
+  }
+});
+
+test('a --set with no "=", no label or no file is refused with a message that names it (exit 2)', () => {
+  const root = tmpDir('burhan-measure-');
+  put(root, 'a.md', 'one\n');
+  for (const set of ['nonsense', 'label=', '=a.md', 'label=,']) {
+    const r = run('--root', root, '--set', set);
+    assert.equal(r.status, 2, set);
+    assert.match(r.stderr, /--set needs <label>=<path>,<path>/, set);
+    assert.ok(r.stderr.includes(`"${set}"`), `${set}: the message names it`);
+  }
+});
+
+test('a folder given as a file is named "not a file" with exit 1, with no stack trace, in --file, --set and --sections', () => {
+  const root = tmpDir('burhan-measure-');
+  mkdirSync(join(root, 'sub'));
+  for (const args of [['--file', 'sub'], ['--set', 's=sub'], ['--sections', 'sub']]) {
+    const r = run('--root', root, ...args);
+    assert.equal(r.status, 1, args.join(' '));
+    assert.match(r.stderr, /sub: not a file/, args.join(' '));
+    assert.doesNotMatch(r.stderr, /\n\s+at /, `${args.join(' ')}: no stack trace`);
+  }
+});

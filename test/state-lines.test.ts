@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatClosedLine, parseClosedLine, OUTCOMES } from '../src/hooks/core/state-lines.mjs';
+import { formatClosedLine, isOutcome, parseClosedLine, OUTCOMES } from '../src/hooks/core/state-lines.mjs';
+import type { ClosedLine } from '../src/hooks/core/state-lines.mjs';
 
-const ok = { slug: 'workflow-engine', route: 'feature / architectural', outcome: 'QC PASS', commit: '5ae9a09', folder: '.internal/work/workflow-engine' };
+const ok: ClosedLine = { slug: 'workflow-engine', route: 'feature / architectural', outcome: 'QC PASS', commit: '5ae9a09', folder: '.internal/work/workflow-engine' };
 
 test('a closed line has one shape: slug · type / scope · outcome · commit · folder', () => {
   assert.equal(formatClosedLine(ok), '- workflow-engine · feature / architectural · QC PASS · 5ae9a09 · .internal/work/workflow-engine');
@@ -35,4 +36,14 @@ test('a 200,000-character line is read in linear time', () => {
   assert.equal(parseClosedLine('- ' + 'a · '.repeat(50000)), null);
   assert.equal(parseClosedLine('- ' + 'x'.repeat(200000)), null);
   assert.ok(Date.now() - started < 2000);
+});
+
+test('the outcomes are a fixed list: it cannot be changed at run time, and a closed line with another outcome does not compile', () => {
+  assert.throws(() => (OUTCOMES as unknown as string[]).push('Done'), TypeError);
+  assert.deepEqual([...OUTCOMES], ['QC PASS', 'Done (no QC)', 'Paused', 'Superseded']);
+  assert.equal(isOutcome('QC PASS'), true);
+  assert.equal(isOutcome('Done'), false);
+  // @ts-expect-error "Done" is not one of the four index states, so it is not an Outcome
+  const wrong: ClosedLine = { ...ok, outcome: 'Done' };
+  assert.equal(parseClosedLine(formatClosedLine(wrong)), null, 'a line with another outcome is not read back');
 });
