@@ -98,6 +98,13 @@ for phrase in \
   check "onboard says: $phrase" "$ob" has "$phrase"
 done
 check "onboard: no approval on the person's behalf (core §4-D)" "$ob" has "§4-D"
+check "onboard: first-use setup when WF_STACK_SETUP is pending" "$ob" has 'Only when `WF_STACK_SETUP` is `pending`'
+check "onboard: runs setup --stack" "$ob" has 'setup --stack'
+check "onboard: --stack prints and writes no file" "$ob" has 'prints instructions and writes no file'
+check 'onboard: no "shall I run setup" question' "$ob" has 'Do not ask "shall I run setup?"'
+check "onboard: not pending goes to section 1" "$ob" has 'any other value, or no line: go to section 1'
+check "onboard: no question between setup and onboarding" "$ob" has 'in the same turn, with no question between them'
+check "onboard: the person decides the block and the baseline only" "$ob" has 'the setup block and the baseline'
 
 echo "workflow.config.example — documents every key"
 cfg="$(cat workflow.config.example 2>/dev/null)"
