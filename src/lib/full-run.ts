@@ -1,5 +1,5 @@
 import { evidenceMatches } from '../hooks/core/evidence-cmd.mjs';
-import { readProjectConfig } from './config.js';
+import { readProjectConfig, refusedLineOf } from './config.js';
 import { ereToJs, isPiped, tryReadLedger, type LedgerRecord } from './evidence.js';
 import { editAfter, itemRecordsQuiet, judgeVerify, type ItemRecords, type VerifyJudgement } from './verify.js';
 
@@ -33,10 +33,11 @@ export const UNREADABLE = 'the evidence ledger could not be read';
 const compile = (ere: string | undefined): RegExp | null => { try { return ere ? new RegExp(ereToJs(ere)) : null; } catch { return null; } };
 
 /** `recs`: the project's ledger, oldest first. A code edit is an edit of a path matching `code` or `test`; with neither usable every edit counts.
- *  A full run is a command a line runs (not a mention) that matches `full`, passed, and was not piped; a run with status `background` has no result and never counts. */
-export function fullRunOf(recs: LedgerRecord[], cfg: { code?: string; test?: string; full?: string }): FullRun {
+ *  A full run is a command a line runs (not a mention) that matches `full`, passed, and was not piped; a run with status `background` has no result and never counts.
+ *  `fullRefused` is the sentence of `refusedLineOf` for WF_FULL_TEST_REGEX; it is added to the message when the key is empty. */
+export function fullRunOf(recs: LedgerRecord[], cfg: { code?: string; test?: string; full?: string; fullRefused?: string | null }): FullRun {
   const full = compile(cfg.full);
-  if (full === null) return { state: 'unknown', why: 'WF_FULL_TEST_REGEX is empty or not usable, so the ledger cannot tell a full run from a run of one file' };
+  if (full === null) return { state: 'unknown', why: `WF_FULL_TEST_REGEX is empty or not usable, so the ledger cannot tell a full run from a run of one file${cfg.fullRefused ? `; ${cfg.fullRefused}` : ''}` };
   if (recs.length === 0) return { state: 'unknown', why: 'the evidence ledger has no record for this project yet' };
   const code = compile(cfg.code);
   const test = compile(cfg.test);
@@ -81,9 +82,10 @@ export function withRecords(ledger: FullRun, judged: VerifyJudgement): FullRun {
 /** The project's full-run answer, from its ledger and its own patterns; with `slug`, also from that item's `burhan verify` records (WF_FULL_TEST_REGEX picks the commands that count).
  *  `records` are the item's records already read (null: it has none); left out, they are read here. */
 export function fullRunFor(target: string, env: NodeJS.ProcessEnv = process.env, o: { slug?: string; docs?: string; records?: ItemRecords | null } = {}): FullRun {
-  const v = readProjectConfig(target).values;
+  const cfg = readProjectConfig(target);
+  const v = cfg.values;
   const read = tryReadLedger(target, env);
-  const ledger: FullRun = read.error !== undefined ? { state: 'unknown', why: `${UNREADABLE} (${read.error})` } : fullRunOf(read.recs, { code: v.WF_CODE_REGEX, test: v.WF_TEST_REGEX, full: v.WF_FULL_TEST_REGEX });
+  const ledger: FullRun = read.error !== undefined ? { state: 'unknown', why: `${UNREADABLE} (${read.error})` } : fullRunOf(read.recs, { code: v.WF_CODE_REGEX, test: v.WF_TEST_REGEX, full: v.WF_FULL_TEST_REGEX, fullRefused: refusedLineOf(cfg, 'WF_FULL_TEST_REGEX') });
   const full = compile(v.WF_FULL_TEST_REGEX);
   if (o.slug === undefined || full === null) return ledger; // no pattern: judgeVerify would take every run of every command for a full run
   const seen = o.records === undefined ? itemRecordsQuiet(target, o.slug, o.docs) : o.records;

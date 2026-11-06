@@ -105,6 +105,7 @@ check 'onboard: no "shall I run setup" question' "$ob" has 'Do not ask "shall I 
 check "onboard: not pending goes to section 1" "$ob" has 'any other value, or no line: go to section 1'
 check "onboard: no question between setup and onboarding" "$ob" has 'in the same turn, with no question between them'
 check "onboard: the person decides the block and the baseline only" "$ob" has 'the setup block and the baseline'
+check "onboard: the request is still kept aside after the setup" "$ob" has 'it is still kept aside in section 2'
 
 echo "workflow.config.example — documents every key"
 cfg="$(cat workflow.config.example 2>/dev/null)"

@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import type { Io } from '../main.js';
 import { checkText, hasContractMarker } from '../hooks/core/item-contract.mjs';
 import { evidenceMatches } from '../hooks/core/evidence-cmd.mjs';
-import { readProjectConfig } from './config.js';
+import { readProjectConfig, refusedLineOf } from './config.js';
 import { BurhanError } from './errors.js';
 import { ereToJs, isPiped, ledgerDir, tryReadLedger, type LedgerRecord } from './evidence.js';
 import { putFile, realTarget } from './fs-safe.js';
@@ -65,14 +65,19 @@ export function itemFinish(target: string, slug: string | undefined, io: Io, o: 
   // proves, a failure stops the finish even with --evidence. Then the ledger the hooks write: a passing, unpiped evidence command after the item's last code
   // edit. A pattern that is empty or does not compile never turns the requirement off: every edit then counts as code, and a proof cannot be recognised.
   // Records under no item may be this item's, so they count. With no ledger folder at all (no hooks) and no record that proves, finish asks for one.
-  const values = readProjectConfig(project).values;
+  const config = readProjectConfig(project);
+  const values = config.values;
   const code = regex(values.WF_CODE_REGEX);
   const proof = regex(values.WF_EVIDENCE_REGEX);
   const env = o.env ?? process.env;
   const anyProof = (values.WF_EVIDENCE_REGEX ?? '') === ''; // no pattern: any command a record names counts, so a pass is only stated
+  // A key that is empty because its line was refused by the config parser is named, with its file:line (null: the key is plainly empty, or has a value).
+  const refusedCode = refusedLineOf(config, 'WF_CODE_REGEX');
+  const refusedProof = refusedLineOf(config, 'WF_EVIDENCE_REGEX');
+  const proofWhy = refusedProof === null ? '' : `; ${refusedProof}`;
   const { records, current: codeNow } = itemRecords(target, dir, s, o.docs);
   const judged = judgeVerify(records, codeNow, anyProof ? null : (proof ?? NEVER));
-  const runVerify = `run burhan verify ${s} -- <proof command> (${anyProof ? 'WF_EVIDENCE_REGEX is empty, so any command counts, and the plan will say the proof was stated' : 'a command WF_EVIDENCE_REGEX matches'})`;
+  const runVerify = `run burhan verify ${s} -- <proof command> (${anyProof ? `WF_EVIDENCE_REGEX is empty, so any command counts, and the plan will say the proof was stated${proofWhy}` : 'a command WF_EVIDENCE_REGEX matches'})`;
   let stateNote = '';
   let say = '';
   // The ledger's code edits, read once and only when no record decides: the ledger path needs them, and a record with no code state does not count when a code edit came after it.
@@ -83,8 +88,8 @@ export function itemFinish(target: string, slug: string | undefined, io: Io, o: 
   if (judged.kind === 'failed') throw new BurhanError(`cannot finish ${s}: the latest burhan verify run ${judged.rec.fingerprint === null ? '(no code state)' : 'on the current code state'} failed (${judged.rec.cmd}, exit ${judged.rec.exit ?? 'none'}, at ${judged.rec.ts}): fix it and run burhan verify ${s} -- ${judged.rec.cmd} again`);
   const staleStated = judged.kind === 'stated' && lastEdit !== undefined && editAfter(lastEdit.ts, judged.rec.ts);
   if (judged.kind === 'proven' && anyProof) {
-    stateNote = ` · stated evidence: burhan verify ${judged.rec.cmd} passed at ${judged.rec.ts} on the current code state; WF_EVIDENCE_REGEX is empty, so any command counted`;
-    say = ' (evidence stated, not proven: WF_EVIDENCE_REGEX is empty, so the burhan verify command was not checked to be a proof command)';
+    stateNote = ` · stated evidence: burhan verify ${judged.rec.cmd} passed at ${judged.rec.ts} on the current code state; WF_EVIDENCE_REGEX is empty, so any command counted${proofWhy}`;
+    say = ` (evidence stated, not proven: WF_EVIDENCE_REGEX is empty, so the burhan verify command was not checked to be a proof command${proofWhy})`;
   } else if (judged.kind === 'proven') say = ` (proven by burhan verify: ${judged.rec.cmd} passed at ${judged.rec.ts} on the current code state)`;
   else if (judged.kind === 'stated' && !staleStated) {
     const unread = read.error === undefined ? '' : `; the evidence ledger could not be read (${read.error}), so a code edit after the record was not looked for`;
@@ -106,7 +111,8 @@ export function itemFinish(target: string, slug: string | undefined, io: Io, o: 
       const shown = proof !== null && recs.some((r, i) => i > last && r.kind === 'cmd' && r.status === 'ok' && !isPiped(r.cmd ?? '') && evidenceMatches(proof, r.cmd ?? ''));
       if (!shown) {
         if (stated === '') {
-          const unusable = code === null || proof === null ? ` WF_CODE_REGEX or WF_EVIDENCE_REGEX is empty or not usable, so every edit counts as code and a proof cannot be recognised.` : '';
+          const refused = [refusedCode, refusedProof].filter((r): r is string => r !== null).map((r) => ` ${r}.`).join('');
+          const unusable = (code === null || proof === null ? ` WF_CODE_REGEX or WF_EVIDENCE_REGEX is empty or not usable, so every edit counts as code and a proof cannot be recognised.` : '') + refused;
           throw new BurhanError(`cannot finish ${s}: no passing proof after the last code edit (${recs[last]!.file}) in the evidence ledger.${unusable} The ledger is written at the end of a turn, so a proof run in this turn is not in it yet: end the turn and finish in the next one, ${runVerify}${note}, or pass --evidence "<what shows it>" (recorded as stated, not proven)`);
         }
         stateNote = ` · stated evidence: ${stated}`;

@@ -15,6 +15,7 @@ Read `WF_STACK_SETUP` in `.burhan/workflow.config`. Only when `WF_STACK_SETUP` i
 - Run the kit command's `setup --stack`. It prints instructions and writes no file, so run it at once and follow it. Do not ask "shall I run setup?" and do not ask what the person wants to work on before it.
 - Show the person the one block it describes and nothing else. When they choose, save with `setup --set` as it says. It runs the check once.
 - When it reports that first-use setup is done, go on to section 1 in the same turn, with no question between them. The person decides two things only: the setup block and the baseline.
+- The person's request, if there is one, is not lost by the setup: it is still kept aside in section 2, which reads it from `$ARGUMENTS` or from the message that brought you here.
 
 ## 1. Where things stand
 Read `.burhan/PROJECT.md` if it exists and run the kit's `memory check`.

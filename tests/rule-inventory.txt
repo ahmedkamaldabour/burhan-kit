@@ -219,3 +219,4 @@ R216|agents/claude/burhan-reviewer.md|a GREEN run of yours that fails is a findi
 R217|phases/enforcement.md|unless another evidence run after the last code edit passed
 R218|phases/stage-finish.md|with a command `WF_FULL_TEST_REGEX` matches
 R219|commands/onboard.md|with no question between them
+R220|commands/onboard.md|it is still kept aside in section 2
