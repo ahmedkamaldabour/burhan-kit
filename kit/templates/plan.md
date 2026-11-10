@@ -65,6 +65,7 @@ Status ladder: ⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Impleme
 
 ### Sub-unit 1 — <name> · ⬜ Draft
 - **Covers:** <AC ids, e.g. AC-01, AC-02>
+- **Why separate:** <A1 | A2 | A3, one or more: what makes it its own sub-unit (phases/stage-plan.md · Sub-units)>
 - **Review group:** <letter, or — (phases/review.md · Review groups: decided here, short lane only)>
 
 ## 6. Security re-read

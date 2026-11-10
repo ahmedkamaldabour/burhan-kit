@@ -35,6 +35,18 @@ Findings: `burhan finding add <slug> --in review:<N>|qc[:<round>] --severity <S>
 
 Deviations: `burhan deviation add <slug> --unit N --what … --where … --output …` records an open row (class B: the owner decides it with `deviation resolve`); with `--apply "<why no decision is needed>"` it records an `applied` row at once (class A: the agent fixes the problem and reports it; a reason of at least three words, no owner's name; `guide` and `item finish` list the row). The two classes are in `.burhan/phases/stage-build.md` · A problem found while building.
 
+## Sub-units
+
+Plan the fewest sub-units that leave each one inside one scope: when two pieces cause no problem together they are one sub-unit, and a sub-unit never covers more than one scope. A piece is its own sub-unit only when at least one of the reasons below holds, and the plan says which in the sub-unit's line `- **Why separate:** A1`, `A2`, `A3` or a list such as `A1, A3`.
+
+| Reason | The piece |
+|--------|-----------|
+| A1 | touches a path matching `WF_SENSITIVE_REGEX` or a scope escalator, so it needs its own full review |
+| A2 | writes the owner's decision or a gate state (approve, finish, a gate) |
+| A3 | has behaviour that its own RED and GREEN test proves, without a later sub-unit |
+
+Everything else merges into its neighbour: docs, text, wiring and rules that follow code go into the last sub-unit that touches the same area. An item has at most 6 sub-units. A plan with more has the line `- **More than 6 because:** <reason>` in its Sub-unit breakdown, naming the A-reason of each sub-unit past the sixth, or the item is split into a parent and children (`phases/stage-story.md` · Decomposition). `burhan item check` reads these lines for their form only; whether a reason is true is for the owner to judge when approving the plan. A review group (`phases/review.md` · Review groups) shares one review, and each of its sub-units still needs its own reason.
+
 ## Re-validation by diff
 
 The story's *Codebase verification* records **Verified at commit** (the sha at which its facts were

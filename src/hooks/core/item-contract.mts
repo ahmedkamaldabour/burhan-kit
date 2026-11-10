@@ -100,6 +100,40 @@ function routeFault(text: string): { faults: Fault[]; scope: string | null; rout
   return { faults: [{ code: 'route-invalid', message: '**Route:** is missing or not exactly "<type> / <scope>" (for example "feature / architectural")' }], scope: null, route: '' };
 }
 
+/** A sub-unit's reason to be separate (phases/stage-plan.md · Sub-units): A1, A2 or A3, or a comma list of them ("A1, A3"). */
+const WHY_SEPARATE = /^A[123](?:[ \t]*,[ \t]*A[123])*$/;
+/** A whole template placeholder in the reason is left to `approve`, which refuses every placeholder; any other value must pass WHY_SEPARATE. */
+const PLACEHOLDER = /^<[^<>]*>$/;
+/** The most sub-units an item has without the written reason line (keep in step with "More than 6 because" below and in the kit text). */
+const SUB_UNIT_CAP = 6;
+
+/** The sub-unit rule over the text of "Sub-unit breakdown": every "### Sub-unit N" has a "- **Why separate:** A1|A2|A3" line, and more than SUB_UNIT_CAP of them
+ *  need a "- **More than 6 because:** <reason>" line. It judges the form, never whether an A-claim is true. One pass over the lines, like the Covers pass. */
+function subUnitRuleFaults(breakdown: string): Fault[] {
+  const out: Fault[] = [];
+  let count = 0;
+  let reason = false;
+  let current: string | null = null;
+  let why: string | null = null;
+  const flush = (): void => {
+    if (current === null) return;
+    const n = /^### Sub-unit\s+(\d+)/.exec(current)?.[1];
+    const label = n === undefined ? current.replace(/ · .*$/, '') : `Sub-unit ${n}`;
+    if (why === null) out.push({ code: 'plan-subunit-why', message: `${label} has no "- **Why separate:** A1, A2 or A3" line` });
+    else if (!PLACEHOLDER.test(why) && !WHY_SEPARATE.test(why)) out.push({ code: 'plan-subunit-why', message: `${label}: "Why separate: ${why}" is not A1, A2 or A3 (a list such as "A1, A3" is fine)` });
+  };
+  for (const raw of breakdown.split('\n')) {
+    const l = raw.replace(/\r$/, '');
+    if (/^### Sub-unit\b/.test(l)) { flush(); current = l; why = null; count++; }
+    else if (/^###? /.test(l)) { flush(); current = null; }
+    else if (/^- \*\*More than 6 because:\*\*[ \t]*\S/.test(l)) reason = true;
+    else if (current !== null) { const m = /^- \*\*Why separate:\*\*[ \t]*(.*?)[ \t]*$/.exec(l); if (m) why = m[1]!; }
+  }
+  flush();
+  if (count > SUB_UNIT_CAP && !reason) out.push({ code: 'plan-subunit-cap', message: `${count} sub-units: more than ${SUB_UNIT_CAP} need a "- **More than 6 because:** <reason>" line in the sub-unit breakdown` });
+  return out;
+}
+
 function checkPlan(text: string): Fault[] {
   const out: Fault[] = [];
   const route = routeFault(text);
@@ -141,6 +175,7 @@ function checkPlan(text: string): Fault[] {
       }
       flush();
     }
+    out.push(...subUnitRuleFaults(breakdown));
   }
 
   const seen = new Set<number>();

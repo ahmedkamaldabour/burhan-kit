@@ -56,8 +56,7 @@ This is for re-runs only: the first QC is never shortened.
 
 A plan may put consecutive sub-units in one review group (`Review group: <letter>` in each sub-unit):
 one section of the review file covers them. Allowed only when every sub-unit of the group is in the short
-lane, they touch one area, and the combined diff is at most 400 changed lines (added + deleted from
-`git diff --numstat`, test files included, lockfiles and generated files excluded). A sensitive or
+lane and they touch one area. The group's review runs once, after the group's last sub-unit. A sensitive or
 escalated sub-unit is never grouped. The group is decided in the plan the human approves, never during the
 build. Its sub-units stay 🟢 until the group's review, then become ✅. A finding that touches more than one
 sub-unit of the group is a finding for all of them: every sub-unit of the group goes back to 🔵 In progress.

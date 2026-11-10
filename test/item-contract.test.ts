@@ -18,7 +18,7 @@ function plan(o: { route?: string; overall?: string; drop?: string[]; unit?: str
     'AC coverage': '## 2. AC coverage\n| AC | Sub-unit | Test |\n|----|----------|------|\n| AC-01 | 1 | t.test.ts → works |\n',
     'What the story got wrong': '## 3. What the story got wrong\nNone.\n',
     'Rulings': '## 4. Rulings\n| R | why | cost |\n',
-    'Sub-unit breakdown': `## 5. Sub-unit breakdown\n${o.unit ?? '### Sub-unit 1 — thing · 🟡 Approved\n- **Covers:** AC-01\n'}`,
+    'Sub-unit breakdown': `## 5. Sub-unit breakdown\n${o.unit ?? '### Sub-unit 1 — thing · 🟡 Approved\n- **Covers:** AC-01\n- **Why separate:** A3\n'}`,
     'Security re-read': '## 6. Security re-read\nNone.\n',
     'Verification steps': '## 7. Verification steps\nRun.\n',
     'Limitations': '## 8. Limitations\nSome.\n',
@@ -85,7 +85,7 @@ test('the gate checklist and the sub-unit breakdown are needed on every route', 
 });
 
 test('a sub-unit heading without a status from the ladder is named', () => {
-  const faults = checkText('plan', plan({ unit: '### Sub-unit 1 — thing\n- **Covers:** AC-01\n### Sub-unit 2 — other · 🟢 Implemented\n- **Covers:** AC-01\n' }));
+  const faults = checkText('plan', plan({ unit: '### Sub-unit 1 — thing\n- **Covers:** AC-01\n- **Why separate:** A3\n### Sub-unit 2 — other · 🟢 Implemented\n- **Covers:** AC-01\n- **Why separate:** A3\n' }));
   assert.deepEqual(faults.map((f) => f.code), ['plan-subunit-status']);
   assert.match(faults[0]!.message, /Sub-unit 1/);
 });
@@ -217,7 +217,7 @@ test('the marker is exactly "1": 1.5 and 1-x are not the contract', () => {
 });
 
 test('a heading or a Route line inside a code fence is not read', () => {
-  const fenced = plan({ unit: '### Sub-unit 1 — real · 🟡 Approved\n- **Covers:** AC-01\n```\n### Sub-unit 2 — shown as an example\n```\n' }).replace('- **Route:**', '```\n- **Route:** bug / patch\n```\n- **Route:**');
+  const fenced = plan({ unit: '### Sub-unit 1 — real · 🟡 Approved\n- **Covers:** AC-01\n- **Why separate:** A3\n```\n### Sub-unit 2 — shown as an example\n```\n' }).replace('- **Route:**', '```\n- **Route:** bug / patch\n```\n- **Route:**');
   assert.deepEqual(checkText('plan', fenced), []);
 });
 
@@ -273,7 +273,7 @@ test('every plan needs Executor rules and Deviations; a story route also needs A
 });
 
 test('on a story route every sub-unit says which ACs it covers; a route without a story does not need it', () => {
-  const bare = '### Sub-unit 1 — thing · 🟡 Approved\n- **Review group:** —\n';
+  const bare = '### Sub-unit 1 — thing · 🟡 Approved\n- **Why separate:** A3\n- **Review group:** —\n';
   const faults = checkText('plan', plan({ route: 'change / bounded', unit: bare }));
   assert.deepEqual(faults.map((f) => f.code), ['plan-subunit-covers']);
   assert.match(faults[0]!.message, /Sub-unit 1/);
@@ -322,7 +322,7 @@ test('the cross-file check: a story AC missing from the coverage table, a row wi
 });
 
 test('the cross-file check: a plan sub-unit with no spec section, and a spec section with no plan sub-unit', () => {
-  const two = plan({ unit: '### Sub-unit 1 — a · 🟡 Approved\n- **Covers:** AC-01\n### Sub-unit 2 — b · 🟡 Approved\n- **Covers:** AC-01\n' });
+  const two = plan({ unit: '### Sub-unit 1 — a · 🟡 Approved\n- **Covers:** AC-01\n- **Why separate:** A3\n### Sub-unit 2 — b · 🟡 Approved\n- **Covers:** AC-01\n- **Why separate:** A3\n' });
   const noSpec = crossCheck({ story: story(), plan: two, spec: spec() });
   assert.deepEqual(noSpec.map((f) => f.code), ['cross-unit-no-spec']);
   assert.match(noSpec[0]!.message, /Sub-unit 2/);
@@ -348,7 +348,7 @@ test('a code fence is closed by a fence of the same kind and at least the same l
 
 test('the AC coverage table is read tolerantly: several ACs or a range in one row, AC-1 for AC-01, bold ids, "Sub-unit 1" or "1, 2" as the sub-unit', () => {
   const s = story('Approved — dev · 2026-10-27', '| AC-01 | a | r |\n| AC-02 | b | r |\n| AC-03 | c | r |\n| AC-04 | d | r |\n');
-  const unit2 = '### Sub-unit 1 — a · 🟡 Approved\n- **Covers:** AC-01\n### Sub-unit 2 — b · 🟡 Approved\n- **Covers:** AC-03\n';
+  const unit2 = '### Sub-unit 1 — a · 🟡 Approved\n- **Covers:** AC-01\n- **Why separate:** A3\n### Sub-unit 2 — b · 🟡 Approved\n- **Covers:** AC-03\n- **Why separate:** A3\n';
   const table = '| AC | Sub-unit | Test |\n|----|----------|------|\n| **AC-1**, AC-02 | Sub-unit 1 | a.test.ts → a |\n| AC-03 to AC-04 | 1, 2 | b.test.ts → b |\n';
   const text = plan({ unit: unit2 }).replace(/\| AC \| Sub-unit \| Test \|[\s\S]*?\| AC-01 \| 1 \| t\.test\.ts → works \|\n/, table);
   assert.deepEqual(crossCheck({ story: s, plan: text, spec: spec({ units: [1, 2] }) }), []);
@@ -367,8 +367,8 @@ test('the contract marker is a line of its own that starts "- **Contract:** 1": 
 });
 
 test('a sub-unit with no Covers line is named once each, even in a plan with many sub-units, and fast', () => {
-  const many = Array.from({ length: 5000 }, (_, i) => `### Sub-unit ${i + 1} — u · 🟡 Approved\n- **Covers:** AC-01\n`).join('');
+  const many = Array.from({ length: 5000 }, (_, i) => `### Sub-unit ${i + 1} — u · 🟡 Approved\n- **Covers:** AC-01\n- **Why separate:** A3\n`).join('');
   const start = Date.now();
-  assert.deepEqual(checkText('plan', plan({ unit: many })), []);
+  assert.deepEqual(checkText('plan', plan({ unit: `- **More than 6 because:** a stress test of the reader\n${many}` })), []);
   assert.ok(Date.now() - start < 1500, `took ${Date.now() - start} ms`);
 });

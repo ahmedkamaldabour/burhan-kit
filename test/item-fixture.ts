@@ -34,7 +34,7 @@ export async function projectWithItem(o: { raw?: boolean } = {}): Promise<string
   const dir = project();
   const r = await cli(dir, ['item', 'new', 'foo', '--type', 'feature', '--scope', 'architectural']);
   if (r.code !== 0) throw new Error(`item new failed: ${r.err}`);
-  write(planFile(dir), read(planFile(dir)).replace(/(### Sub-unit 1 — .*\n(?:- .*\n)*)/, '$1\n### Sub-unit 2 — other · ⬜ Draft\n- **Covers:** AC-01\n'));
+  write(planFile(dir), read(planFile(dir)).replace(/(### Sub-unit 1 — .*\n(?:- .*\n)*)/, '$1\n### Sub-unit 2 — other · ⬜ Draft\n- **Covers:** AC-01\n- **Why separate:** A3\n'));
   // the build spec gets the same second sub-unit: a copy of the first
   const specText = read(specFile(dir));
   const first = /(## Sub-unit 1 [\s\S]*?)(?=\n## |$)/.exec(specText)?.[1];
@@ -54,6 +54,7 @@ export function fillItem(dir: string, slug = 'foo'): void {
     [/^\| AC-01 \| \| \|$/, () => '| AC-01 | does a thing | request |'],
     [/^\| AC-01 \| 1 \| `<test file>`/, () => '| AC-01 | 1 | `a.test.ts` → `works` |'],
     [/^- \*\*Covers:\*\*/, () => '- **Covers:** AC-01'],
+    [/^- \*\*Why separate:\*\*/, () => '- **Why separate:** A3'],
     [/^- \*\*Review group:\*\*/, () => '- **Review group:** —'],
     [/^- \*\*Reopened after PASS:\*\*/, () => '- **Reopened after PASS:** —'],
     [/^Knowledge review: none </, (m) => m.input], // decided after QC: stays as the template gives it
