@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { join } from 'node:path';
 import { tmpDir } from './helpers.js';
 import { cli, planFile, storyFile, project, projectWithItem, read, setPlanStatus, write } from './item-fixture.js';
+import { qcDecided } from './findings-fixture.js';
 
 test('item set plan completed does not skip item finish: it is refused and says which command', async () => {
   const dir = await projectWithItem();
@@ -146,6 +147,7 @@ const QC_BY = 'claude · Sonnet 5.5 · fresh subagent';
 test('approve qc ticks the QC gate, as approve story and approve plan tick theirs', async () => {
   const dir = await projectWithItem();
   await cli(dir, ['review', 'add', 'foo', '--kind', 'qc', '--by', QC_BY, '--verdict', 'PASS']);
+  await qcDecided(dir);
   assert.equal((await cli(dir, ['approve', 'qc', 'foo', '--by', 'dev-dabour'])).code, 0);
   assert.match(read(planFile(dir)), /^- \[x\] QC \/ convergence/m);
 });
@@ -250,6 +252,7 @@ test('a report that quotes the Performed by label inside a finding is not read a
   write(file, `${read(file)}\n| 3 | Minor | the contract reads \`**Performed by:** x\` anywhere, and "Amer · m · human'" is a quote |\n- note: the field **Performed by:** is checked\n`);
   const r = await cli(dir, ['item', 'check', 'foo']);
   assert.doesNotMatch(r.out, /performed-by-form/);
+  await qcDecided(dir);
   assert.equal((await cli(dir, ['approve', 'qc', 'foo', '--by', 'dev-dabour'])).code, 0);
   // a real second field line with a wrong form is still named
   write(file, `${read(file)}\n- **Performed by:** nobody\n`);

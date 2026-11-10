@@ -1,12 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cli, planFile, projectWithItem, read, write } from './item-fixture.js';
-import { addFinding, addQc, BY, OWNER } from './findings-fixture.js';
+import { addFinding, addQc, BY, OWNER, stripGateLine } from './findings-fixture.js';
 import { stageOf } from '../src/hooks/core/item-stage.mjs';
 
 /** Item foo at the stage "all sub-units reviewed": story approved, plan In progress, both sub-units Reviewed (each with a review section). */
-async function reviewed(o: { gate?: boolean } = {}): Promise<string> {
-  const dir = await projectWithItem({ gate: o.gate ?? true });
+async function reviewed(): Promise<string> {
+  const dir = await projectWithItem();
   assert.equal((await cli(dir, ['approve', 'story', 'foo', '--by', OWNER])).code, 0);
   for (const n of [1, 2]) await cli(dir, ['review', 'add', 'foo', '--kind', 'review', '--unit', String(n), '--by', BY]);
   write(planFile(dir), read(planFile(dir)).replace(/^- \*\*Overall status:\*\* .*$/m, '- **Overall status:** In progress').replace(/· ⬜ Draft$/gm, '· ✅ Reviewed'));
@@ -42,16 +42,14 @@ test('guide names a section with no table, and says nothing new once every findi
   assert.doesNotMatch(done.out, /QUESTION FOR THE OWNER|finding/);
 });
 
-test('an old item\'s guide is what it was: the same next line, no question, and the same JSON keys (AC-11)', async () => {
-  const dir = await reviewed({ gate: false });
+test('guide of a plan with no Findings gate line puts the open findings as one question like any other, and the JSON keys are the same (AC-01)', async () => {
+  const dir = await reviewed();
+  stripGateLine(dir);
   await addFinding(dir, 'review:1', 'Minor', 'src/a.ts:1 small');
   const r = await guide(dir);
-  assert.match(r.out, /^next: tick the remaining gates \(burhan gate tick foo <gate>\), then burhan item finish foo$/m);
-  assert.doesNotMatch(r.out, /QUESTION FOR THE OWNER/);
+  assert.match(r.out, /QUESTION FOR THE OWNER/);
   const keys = Object.keys(JSON.parse((await cli(dir, ['guide', 'foo', '--json'])).out) as object).sort();
   assert.deepEqual(keys, ['authorized', 'fullRun', 'item', 'next', 'route', 'skill', 'stage', 'why']);
-  const gated = await reviewed();
-  assert.deepEqual(Object.keys(JSON.parse((await cli(gated, ['guide', 'foo', '--json'])).out) as object).sort(), keys);
 });
 
 test('guide at "QC passed, not accepted" asks for the QC findings, and the plain acceptance step returns when they are decided (AC-09)', async () => {
@@ -84,7 +82,7 @@ test('stageOf is pure and the hooks do not pass the count: without it the answer
 });
 
 test('guide names a Reviewed sub-unit that has no review section, with the command that adds it (Deviation 6, review Minor 14)', async () => {
-  const dir = await projectWithItem({ gate: true });
+  const dir = await projectWithItem();
   assert.equal((await cli(dir, ['approve', 'story', 'foo', '--by', OWNER])).code, 0);
   await cli(dir, ['review', 'add', 'foo', '--kind', 'review', '--unit', '1', '--by', BY]);
   write(planFile(dir), read(planFile(dir)).replace(/^- \*\*Overall status:\*\* .*$/m, '- **Overall status:** In progress').replace(/· ⬜ Draft$/gm, '· ✅ Reviewed'));

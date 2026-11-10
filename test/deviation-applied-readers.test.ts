@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cli, planFile, projectWithItem, read, setPlanStatus, write } from './item-fixture.js';
-import { addFinding, OWNER, reviewFile, withReviews } from './findings-fixture.js';
+import { addFinding, OWNER, reviewFile, reviewsDecided, withReviews } from './findings-fixture.js';
 
 const WHY = 'the spec counted six tests and the file has seven';
 const apply = (dir: string, what = 'a count in the spec') => cli(dir, ['deviation', 'add', 'foo', '--unit', '1', '--what', what, '--where', 'spec:12', '--output', 'tests 7', '--apply', WHY]);
@@ -16,9 +16,10 @@ async function building(): Promise<string> {
 }
 
 /** The plan where `item finish` can pass: In progress, every sub-unit Reviewed, every gate ticked (the proof is stated with --evidence). */
-function readyToFinish(dir: string): void {
+async function readyToFinish(dir: string): Promise<void> {
   setPlanStatus(dir, 'In progress');
   write(planFile(dir), read(planFile(dir)).replace(/· 🟡 Approved$/gm, '· ✅ Reviewed').replace(/- \[ \]/g, '- [x]'));
+  await reviewsDecided(dir);
 }
 
 test('guide lists the rows the agent applied without asking, with where and why, and nothing when there are none (AC-17)', async () => {
@@ -54,7 +55,7 @@ test('item finish accepts approved, rejected and applied rows, prints the applie
   await open(dir);
   await open(dir);
   await cli(dir, ['deviation', 'resolve', 'foo', '2', '--approved', '--by', OWNER]);
-  readyToFinish(dir);
+  await readyToFinish(dir);
   const refused = await cli(dir, ['item', 'finish', 'foo', '--evidence', 'ran by hand']);
   assert.equal(refused.code, 2);
   assert.match(refused.err, /a deviation is open \(Deviations row 3\)/);
@@ -70,7 +71,7 @@ test('item finish prints no applied line when no row was applied (AC-17)', async
   const dir = await building();
   await open(dir);
   await cli(dir, ['deviation', 'resolve', 'foo', '1', '--approved', '--by', OWNER]);
-  readyToFinish(dir);
+  await readyToFinish(dir);
   const done = await cli(dir, ['item', 'finish', 'foo', '--evidence', 'ran by hand']);
   assert.equal(done.code, 0, done.err);
   assert.doesNotMatch(done.out, /applied by the agent/);

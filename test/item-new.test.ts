@@ -218,11 +218,11 @@ test('a project template for the build spec is used, and the kit one is the fall
   assert.deepEqual(files(dir), ['foo-build-spec.md', 'foo-implementation-plan.md', 'foo-story.md']);
 });
 
-test('a project plan template without the Overall status line says the Contract and Findings gate lines are written there (Deviation 18, review Minor 13)', async () => {
+test('a project plan template without the Overall status line says the Contract line is written there (Deviation 18, review Minor 13)', async () => {
   const dir = project();
   const p = join(dir, '.burhan', 'templates', 'plan.md');
   writeFileSync(p, readFileSync(p, 'utf8').replace(/^- \*\*Overall status:\*\* .*\n/m, ''));
   const r = await run(dir, ['foo', '--type', 'feature', '--scope', 'bounded']);
   assert.equal(r.code, 2);
-  assert.match(r.err, /Overall status line the command fills \(it also carries the Contract and the Findings gate lines\)/);
+  assert.match(r.err, /Overall status line the command fills \(it also carries the Contract line\)/);
 });

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { cli, planFile, read, write } from './item-fixture.js';
+import { reviewsDecided } from './findings-fixture.js';
 import { ledgerFor, recordProject, verifyRun } from './record-fixture.js';
 
 const saved = { state: process.env.XDG_STATE_HOME, ev: process.env.WF_EVIDENCE_DIR };
@@ -11,8 +12,11 @@ afterEach(() => {
   if (saved.ev === undefined) delete process.env.WF_EVIDENCE_DIR; else process.env.WF_EVIDENCE_DIR = saved.ev;
 });
 
-const complete = (dir: string): void => write(planFile(dir), read(planFile(dir))
+const complete = async (dir: string): Promise<void> => {
+  write(planFile(dir), read(planFile(dir))
   .replace(/^- \*\*Overall status:\*\* .*$/m, '- **Overall status:** In progress').replace(/· ⬜ Draft$/gm, '· ✅ Reviewed').replace(/- \[ \]/g, '- [x]'));
+  await reviewsDecided(dir);
+};
 const team = (dir: string, text: string): void => writeFileSync(join(dir, '.burhan', 'workflow.config'), text);
 const local = (dir: string, text: string): void => writeFileSync(join(dir, '.burhan', 'local', 'workflow.config'), text);
 const fullLine = async (dir: string): Promise<string> => (await cli(dir, ['guide', 'foo'])).out.split('\n').find((l) => l.startsWith('full run:')) ?? '(no full run line)';
@@ -50,14 +54,14 @@ test('a plain empty key keeps the old messages and a single-quoted value is unaf
   assert.doesNotMatch(await fullLine(dir), /refused|WF_FULL_TEST_REGEX is empty/);
 
   const empty = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX=''\n");
-  complete(empty);
+  await complete(empty);
   const e = await finish(empty);
   assert.equal(e.code, 2);
   assert.ok(e.err.includes('(WF_EVIDENCE_REGEX is empty, so any command counts, and the plan will say the proof was stated)'), e.err);
   assert.doesNotMatch(e.err, /refused/);
 
   const quoted = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX='^node$'\n");
-  complete(quoted);
+  await complete(quoted);
   const q = await finish(quoted);
   assert.equal(q.code, 2);
   assert.ok(q.err.includes('(a command WF_EVIDENCE_REGEX matches)'), q.err);
@@ -76,7 +80,7 @@ test('guide names a refused line of the local override file (AC-05)', async () =
 
 test('item finish names a refused WF_CODE_REGEX line in its refusal (AC-03)', async () => {
   const dir = await recordProject();
-  complete(dir);
+  await complete(dir);
   team(dir, "WF_CODE_REGEX=\"[.]ts$\"\nWF_EVIDENCE_REGEX='node'\n");
   ledgerFor(dir, [{ kind: 'edit', ts: '2026-10-27T10:00:00Z', file: 'src/a.ts' }]);
   const r = await finish(dir);
@@ -87,7 +91,7 @@ test('item finish names a refused WF_CODE_REGEX line in its refusal (AC-03)', as
 
 test('item finish names a refused WF_EVIDENCE_REGEX line in the hint, the stated note and the stdout line (AC-03)', async () => {
   const dir = await recordProject('process[.]exitCode', 'WF_EVIDENCE_REGEX="^node$"\n'); // the third line of the config
-  complete(dir);
+  await complete(dir);
   const because = `WF_EVIDENCE_REGEX is empty because its line .burhan/workflow.config:3 was refused by the config parser: ${FIX('WF_EVIDENCE_REGEX')}`;
   const refused = await finish(dir);
   assert.equal(refused.code, 2);
@@ -108,7 +112,7 @@ test('a later valid empty line keeps the old messages (AC-04)', async () => {
   assert.equal(await fullLine(dir), OLD_FULL, 'other file: the local empty line gives the key its value');
 
   const empty = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX=\"^node$\"\nWF_EVIDENCE_REGEX=''\n");
-  complete(empty);
+  await complete(empty);
   const e = await finish(empty);
   assert.equal(e.code, 2);
   assert.ok(e.err.includes('(WF_EVIDENCE_REGEX is empty, so any command counts, and the plan will say the proof was stated)'), e.err);
@@ -121,7 +125,7 @@ test("guide and item finish give the parser's reason for a refusal that single q
   assert.equal(await fullLine(dir), `${OLD_FULL}; WF_FULL_TEST_REGEX is empty because its line .burhan/workflow.config:2 was refused by the config parser: ${LITERAL}`);
 
   const spaced = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX = 'node'\n"); // the third line of the config
-  complete(spaced);
+  await complete(spaced);
   const because = `WF_EVIDENCE_REGEX is empty because its line .burhan/workflow.config:3 was refused by the config parser: ${LITERAL}`;
   const refused = await finish(spaced);
   assert.equal(refused.code, 2);

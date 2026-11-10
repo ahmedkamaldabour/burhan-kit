@@ -8,6 +8,7 @@ import { fullRunFor } from '../src/lib/full-run.js';
 import { itemRecordsQuiet, type ItemRecords } from '../src/lib/verify.js';
 import { runCli } from '../src/main.js';
 import { cli, planFile, projectWithItem, read, write } from './item-fixture.js';
+import { reviewsDecided } from './findings-fixture.js';
 import { ledgerFor, NODE, recordProject, verifyRun } from './record-fixture.js';
 import { capture, tmpDir } from './helpers.js';
 
@@ -35,12 +36,15 @@ test('stage-finish.md says the burhan verify command must match WF_FULL_TEST_REG
   assert.ok(s.includes('(with the key empty it says `cannot tell`)'));
 });
 
-const complete = (dir: string): void => write(planFile(dir), read(planFile(dir))
+const complete = async (dir: string): Promise<void> => {
+  write(planFile(dir), read(planFile(dir))
   .replace(/^- \*\*Overall status:\*\* .*$/m, '- **Overall status:** In progress').replace(/· ⬜ Draft$/gm, '· ✅ Reviewed').replace(/- \[ \]/g, '- [x]'));
+  await reviewsDecided(dir);
+};
 
 test('a record whose command does not match: the full run line names WF_FULL_TEST_REGEX and item finish names WF_EVIDENCE_REGEX (AC-03)', async () => {
   const dir = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX='nothing-matches-this'\n");
-  complete(dir);
+  await complete(dir);
   assert.equal((await cli(dir, ['verify', 'foo', '--', NODE, '-e', '1'])).code, 0);
   assert.match(lastLine((await cli(dir, ['guide', 'foo'])).out), /no burhan verify record counts \(no burhan verify record runs a proof command: 1 record\(s\), none matches WF_FULL_TEST_REGEX\)$/);
   const r = await cli(dir, ['item', 'finish', 'foo']);
@@ -50,7 +54,7 @@ test('a record whose command does not match: the full run line names WF_FULL_TES
 
 test('item finish with --evidence says "no burhan verify record that counts" when a record exists and does not count, and keeps the old words with no record (AC-04)', async () => {
   const dir = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX='node'\n");
-  complete(dir);
+  await complete(dir);
   assert.equal((await verifyRun(dir, 0)).code, 0);
   writeFileSync(join(dir, 'a.ts'), 'changed after the proof');
   const r = await cli(dir, ['item', 'finish', 'foo', '--evidence', 'ran it by hand']);
@@ -58,7 +62,7 @@ test('item finish with --evidence says "no burhan verify record that counts" whe
   assert.match(r.out, /not proven: no hook ledger and no burhan verify record that counts\)/);
 
   const bare = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX='node'\n");
-  complete(bare);
+  await complete(bare);
   const b = await cli(bare, ['item', 'finish', 'foo', '--evidence', 'ran it by hand']);
   assert.equal(b.code, 0, b.err);
   assert.match(b.out, /not proven: no hook ledger and no burhan verify record\)/);
@@ -138,7 +142,7 @@ test('burhan stats on a ledger folder that cannot be listed gives one line and e
 
 test('item finish treats a ledger folder with no step of the item like no ledger; a step of the item (a docs edit) still finishes it (AC-09)', async () => {
   const dir = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX='node'\n");
-  complete(dir);
+  await complete(dir);
   writeFileSync(join(dir, 'a.ts'), 'code changed, nothing proved it');
   mkdirSync(join(process.env.XDG_STATE_HOME!, 'burhan', 'evidence', projectKey(dir)), { recursive: true });
   const refused = await cli(dir, ['item', 'finish', 'foo']);
@@ -149,14 +153,14 @@ test('item finish treats a ledger folder with no step of the item like no ledger
   assert.match(stated.out, /not proven: the hook ledger has no step of this item and no burhan verify record\)/);
 
   const docsOnly = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX='node'\n");
-  complete(docsOnly);
+  await complete(docsOnly);
   ledgerFor(docsOnly, [{ kind: 'edit', ts: '2026-10-28T09:00:00Z', file: 'docs/x.md' }]);
   const ok = await cli(docsOnly, ['item', 'finish', 'foo']);
   assert.equal(ok.code, 0, ok.err);
   assert.match(ok.out, /no code edit of this item is in the ledger, so no proof was asked for/);
 
   const proven = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX='node'\n");
-  complete(proven);
+  await complete(proven);
   mkdirSync(join(process.env.XDG_STATE_HOME!, 'burhan', 'evidence', projectKey(proven)), { recursive: true });
   assert.equal((await verifyRun(proven, 0)).code, 0);
   assert.match((await cli(proven, ['item', 'finish', 'foo'])).out, /proven by burhan verify/);

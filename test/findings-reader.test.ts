@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { addNone, addRow, findingsGated, gateOf, gateOpen, gateSentence, qcScope, readItemFindings, reviewScopes, rowLine, withDecision } from '../src/lib/findings.js';
+import { addNone, addRow, gateOf, gateOpen, gateSentence, qcScope, readItemFindings, reviewScopes, rowLine, withDecision } from '../src/lib/findings.js';
 import { tmpDir } from './helpers.js';
 
 const OWNER = 'dev-dabour · 2026-11-08';
@@ -113,15 +113,6 @@ test('gateOf: what stops the finish (review) and the QC acceptance (qc), and the
   assert.equal(gateOpen(gateOf(all, 'qc')), 0);
   // the review's rows never block the QC acceptance, and the other way round
   assert.equal(gateOf(all, 'qc').undecided.length, 0);
-});
-
-test('findingsGated: only the plan line "- **Findings gate:** on" counts, not in a code fence (AC-11)', () => {
-  assert.equal(findingsGated('# P\n- **Overall status:** Draft\n- **Findings gate:** on\n'), true);
-  assert.equal(findingsGated('# P\r\n- **Findings gate:** on\r\n'), true);
-  assert.equal(findingsGated('# P\n- **Overall status:** Draft\n'), false);
-  assert.equal(findingsGated('# P\n```\n- **Findings gate:** on\n```\n'), false);
-  assert.equal(findingsGated('# P\n- **Findings gate:** off\n'), false);
-  assert.equal(findingsGated('# P\nthe line - **Findings gate:** on is mentioned\n'), false);
 });
 
 test('addRow makes the Findings heading at the end of the section, then adds rows under the table; addNone replaces nothing and a row replaces "No findings."', () => {

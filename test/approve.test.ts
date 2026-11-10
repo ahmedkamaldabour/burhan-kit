@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { cli, itemDir, planFile, projectWithItem, read, storyFile, unitLine, write } from './item-fixture.js';
 import { storyIsApproved } from '../src/hooks/core/item-contract.mjs';
+import { qcDecided } from './findings-fixture.js';
 
 const approve = (dir: string, what: string, ...args: string[]) => cli(dir, ['approve', what, 'foo', ...args]);
 const gate = (dir: string, text: string): string => read(planFile(dir)).split('\n').find((l) => l.includes(text)) ?? '';
@@ -58,6 +59,8 @@ test('approve qc needs a PASS report and writes Accepted by', async () => {
   await cli(dir, ['review', 'add', 'foo', '--kind', 'qc', '--by', 'Claude · Sonnet 5.5 · fresh subagent', '--verdict', 'FAIL — 1 issue']);
   assert.equal((await approve(dir, 'qc', '--by', 'dev-dabour')).code, 2); // FAIL is not accepted
   await cli(dir, ['review', 'add', 'foo', '--kind', 'qc', '--by', 'Claude · Sonnet 5.5 · fresh subagent', '--verdict', 'PASS', '--round', '2']);
+  await qcDecided(dir, 'qc:1');
+  await qcDecided(dir);
   assert.equal((await approve(dir, 'qc', '--by', 'dev-dabour')).code, 0);
   assert.match(read(join(itemDir(dir), 'reviews', 'foo-qc-r2.md')), /\*\*Accepted by:\*\* dev-dabour · \d{4}-\d{2}-\d{2}/);
 });
@@ -93,10 +96,12 @@ test('the Status that is changed is the real one, not a line shown inside a code
 test('approve qc writes Accepted by without expanding $ patterns', async () => {
   const dir = await projectWithItem();
   await cli(dir, ['review', 'add', 'foo', '--kind', 'qc', '--by', 'Claude · Sonnet 5.5 · fresh subagent', '--verdict', 'PASS']);
+  await qcDecided(dir);
+  const before = read(join(itemDir(dir), 'reviews', 'foo-qc.md')).split('\n').length;
   assert.equal((await approve(dir, 'qc', '--by', "Amer$'x")).code, 0);
   const qc = read(join(itemDir(dir), 'reviews', 'foo-qc.md'));
   assert.match(qc, /\*\*Accepted by:\*\* Amer\$'x · \d{4}/);
-  assert.equal(qc.split('\n').length < 12, true);
+  assert.equal(qc.split('\n').length <= before + 1, true); // the one Accepted by line, and no $ pattern expanded
 });
 
 test('approve plan checks the story even when the plan\'s Route line is not exact', async () => {

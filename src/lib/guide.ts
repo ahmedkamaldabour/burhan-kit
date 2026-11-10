@@ -51,7 +51,7 @@ export function guide(target: string, slug: string | undefined, io: Io, o: { jso
   // The rows of the Deviations table that the agent applied without asking: the owner sees them here, whatever the stage.
   const applied = plan === null ? null : appliedSentence(plan);
   if (applied !== null) io.stdout(`deviations: ${applied}\n`);
-  // An item with the findings gate: at the stage where they are asked, the open findings as one question for the owner.
+  // At the stage where they are asked, the open findings as one question for the owner.
   const open = findings === null ? null : st.stage === 'all sub-units reviewed' ? findings.review : st.stage === 'QC passed, not accepted' ? findings.qc : null;
   if (open !== null) for (const l of questionLines(s, open)) io.stdout(`${l}\n`);
   io.stdout(`${fullRunLine(full)}\n`);

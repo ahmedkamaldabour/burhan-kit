@@ -78,7 +78,8 @@ test('finding list shows the grouped question: each finding, the three ready com
   await addFinding(dir, 'review:2', 'Critical', 'src/b.ts:2 big');
   const r = await cli(dir, ['finding', 'list', 'foo']);
   assert.equal(r.code, 0, r.err);
-  assert.match(r.out, /finding list: foo — 2 findings, 2 without a decision; the Findings gate is off/);
+  assert.match(r.out, /finding list: foo — 2 findings, 2 without a decision\n/);
+  assert.doesNotMatch(r.out, /Findings gate/);
   assert.match(r.out, /QUESTION FOR THE OWNER — 2 findings have no decision\. Put them to the owner as ONE question and wait for the answer/);
   assert.match(r.out, /#1 Minor · review Sub-unit 1 · src\/a\.ts:1 small\n/);
   assert.match(r.out, /burhan finding decide foo 1 --fixed unit:1 --by <owner name>/);

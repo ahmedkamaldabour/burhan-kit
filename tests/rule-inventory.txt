@@ -250,3 +250,4 @@ R247|agents/claude/burhan-builder.md|if the code no longer matches them: a misma
 R248|phases/stage-build.md|in `auto` the build continues, in `step` the sub-unit continues and the build stops at its end as always
 R249|phases/stage-build.md|A security, data or money problem is class B even inside the item's scope, and a problem that fits both lists is class B.
 R250|core|controls A–D remain.
+R251|phases/review.md|refuses an item while a finding of a sub-unit review has no decision

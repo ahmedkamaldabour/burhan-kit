@@ -240,7 +240,9 @@ check "features: names burhan state compact and says it is a dry run unless --ap
 check "features: says a dry run unless --apply" "$(cat docs/features.md)" has 'a dry run unless'
 check "upgrading: says item new writes the Gate checklist from the route" "$(cat docs/upgrading.md)" has '`item new` writes the Gate checklist from the route'
 check "features: the finding commands are described" "$(cat docs/features.md)" has '`finding decide` writes your decision on it'
-check "features: the findings gate is for tasks made by item new of this version" "$(cat docs/features.md)" has 'an older task is not gated, and a table written by hand can carry a decision the command never recorded'
+check "features: the findings gate applies to every task" "$(cat docs/features.md)" has 'The findings gate applies to every task: `item finish` refuses while a finding of its sub-unit reviews has no decision'
+check "features: no task is exempt from the findings gate" "$(cat docs/features.md)" lacks 'an older task is not gated'
+check "upgrading: no task is exempt from the findings gate" "$(cat docs/upgrading.md)" lacks 'is not gated'
 check "features: deviation add --apply records an applied row, never an approved one" "$(cat docs/features.md)" has 'as `applied` and never as `approved`, and `guide` and `item finish` list it for you'
 check "features: an applied deviation is the agent's own claim, and nothing checks it" "$(cat docs/features.md)" has "An \`applied\` deviation is the agent's own claim that no decision was needed: nothing checks it"
 check "upgrading: a new task asks for the owner's decision on every review finding" "$(cat docs/upgrading.md)" has "so \`item finish\` asks for the owner's decision on every review finding"

@@ -8,6 +8,7 @@ import { itemFinish } from '../src/lib/item-finish.js';
 import { verifyFile } from '../src/lib/verify.js';
 import { capture, tmpDir } from './helpers.js';
 import { cli, itemDir, planFile, projectWithItem, read, write } from './item-fixture.js';
+import { reviewsDecided } from './findings-fixture.js';
 
 const NODE = process.execPath;
 const savedState = process.env.XDG_STATE_HOME;
@@ -21,6 +22,7 @@ async function ready(o: { git?: boolean; proof?: string } = {}): Promise<string>
   writeFileSync(join(dir, '.burhan', 'workflow.config'), `WF_CODE_REGEX='[.]ts$'\nWF_EVIDENCE_REGEX='${o.proof ?? 'node'}'\n`);
   process.env.XDG_STATE_HOME = tmpDir('burhan-noledger-');
   write(planFile(dir), read(planFile(dir)).replace(/^- \*\*Overall status:\*\* .*$/m, '- **Overall status:** In progress').replace(/· ⬜ Draft$/gm, '· ✅ Reviewed').replace(/- \[ \]/g, '- [x]'));
+  await reviewsDecided(dir);
   return dir;
 }
 function withLedger(dir: string, recs: object[]): void {

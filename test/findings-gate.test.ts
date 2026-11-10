@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { cli, planFile, projectWithItem, read, storyFile, specFile, write } from './item-fixture.js';
-import { addFinding, BY, OWNER, reviewFile } from './findings-fixture.js';
+import { addFinding, addGateLine, BY, OWNER, reviewFile, stripGateLine } from './findings-fixture.js';
 
-/** A gated item that is finished except for its findings: plan In progress, both sub-units Reviewed (each with a review section written by `review add`), every box ticked.
+/** An item that is finished except for its findings: plan In progress, both sub-units Reviewed (each with a review section written by `review add`), every box ticked.
  *  No hook ledger and no record: the finish is asked with --evidence, which only states a proof. */
-async function ready(o: { gate?: boolean } = {}): Promise<string> {
-  const dir = await projectWithItem({ gate: o.gate ?? true });
+async function ready(): Promise<string> {
+  const dir = await projectWithItem();
   for (const n of [1, 2]) assert.equal((await cli(dir, ['review', 'add', 'foo', '--kind', 'review', '--unit', String(n), '--by', BY, '--text', 'checked the diff'])).code, 0);
   write(planFile(dir), read(planFile(dir)).replace(/^- \*\*Overall status:\*\* .*$/m, '- **Overall status:** In progress').replace(/· ⬜ Draft$/gm, '· ✅ Reviewed').replace(/- \[ \]/g, '- [x]'));
   return dir;
@@ -16,14 +16,11 @@ async function ready(o: { gate?: boolean } = {}): Promise<string> {
 const finish = (dir: string) => cli(dir, ['item', 'finish', 'foo', '--evidence', 'ran the proof by hand']);
 const none = async (dir: string): Promise<void> => { for (const n of [1, 2]) await cli(dir, ['finding', 'add', 'foo', '--in', `review:${n}`, '--none']); };
 
-test('item new writes the Findings gate line into the plan only, and the new item checks (AC-11)', async () => {
-  const dir = await projectWithItem({ gate: true });
-  assert.match(read(planFile(dir)), /^- \*\*Overall status:\*\* Draft\n- \*\*Contract:\*\* 1\n- \*\*Findings gate:\*\* on\n/m);
-  assert.doesNotMatch(read(storyFile(dir)), /Findings gate/);
-  assert.doesNotMatch(read(specFile(dir)), /Findings gate/);
+test('item new writes no Findings gate line: the plan has the Overall status and Contract lines only, and the new item checks (AC-02)', async () => {
+  const dir = await projectWithItem();
+  assert.match(read(planFile(dir)), /^- \*\*Overall status:\*\* Draft\n- \*\*Contract:\*\* 1\n(?!- \*\*Findings gate)/m);
+  for (const f of [planFile(dir), storyFile(dir), specFile(dir)]) assert.doesNotMatch(read(f), /Findings gate/);
   assert.equal((await cli(dir, ['item', 'check', 'foo'])).code, 0);
-  const plain = await projectWithItem();
-  assert.doesNotMatch(read(planFile(plain)), /Findings gate/);
 });
 
 test('item finish refuses a new item whose reviewed sub-units have no findings table or "No findings.", and names the command (AC-01, AC-02)', async () => {
@@ -99,15 +96,55 @@ test('a Reviewed sub-unit with no review section stops the finish; an earlier se
   assert.equal((await finish(again)).code, 0);
 });
 
-test('an old item (no Findings gate line) finishes exactly as before, with a free-text review and no table; item check is as before (AC-11)', async () => {
-  const dir = await ready({ gate: false });
+test('a plan with no Findings gate line is gated like any other: item finish refuses a Reviewed sub-unit with no table, and a malformed row is an item check fault (AC-01)', async () => {
+  const dir = await ready();
+  stripGateLine(dir);
   assert.doesNotMatch(read(planFile(dir)), /Findings gate/);
-  write(reviewFile(dir), `${read(reviewFile(dir))}\n| # | Severity | Finding (file:line) | Owner | Resolution |\n|---|---|---|---|---|\n| 1 | Minor | src/a.ts:1 free text | | |\n`);
   const r = await finish(dir);
-  assert.equal(r.code, 0, r.err);
-  assert.equal((await cli(dir, ['item', 'check', 'foo'])).code, 0);
-  assert.equal((await cli(dir, ['finding', 'list', 'foo'])).code, 0);
-  assert.match((await cli(dir, ['finding', 'list', 'foo'])).out, /the Findings gate is off/);
+  assert.equal(r.code, 2);
+  assert.match(r.err, /cannot finish foo: findings are not all decided: /);
+  assert.match(r.err, /review Sub-unit 1 \(reviews\/foo-review\.md\) has neither a findings table nor "No findings\."/);
+  await none(dir);
+  write(reviewFile(dir), read(reviewFile(dir)).replace('No findings.', '| # | Severity | Finding (file:line) | Decision | Pointer or reason | Decided by |\n|---|---|---|---|---|---|\n| 1 | Minor | src/a.ts:1 x | fixed |  |  |'));
+  const line = read(reviewFile(dir)).split('\n').findIndex((l) => l.startsWith('| 1 | Minor')) + 1;
+  const check = await cli(dir, ['item', 'check', 'foo']);
+  assert.equal(check.code, 1);
+  assert.match(check.out, new RegExp(`finding-row: line ${line}: finding 1: the decision fixed has no pointer or reason`));
+});
+
+test('a plan that still has the old line "- **Findings gate:** on" is harmless: it behaves like a plan without it, and item check does not fault it (AC-04)', async () => {
+  const plain = await ready();
+  stripGateLine(plain);
+  const old = await ready();
+  addGateLine(old);
+  assert.match(read(planFile(old)), /^- \*\*Findings gate:\*\* on$/m);
+  const a = await finish(plain);
+  const b = await finish(old);
+  assert.equal(a.code, 2);
+  assert.equal(b.code, 2);
+  assert.equal(b.err, a.err);
+  await none(plain);
+  await none(old);
+  assert.equal((await finish(plain)).code, 0);
+  assert.equal((await finish(old)).code, 0);
+  const fresh = await projectWithItem();
+  addGateLine(fresh);
+  const check = await cli(fresh, ['item', 'check', 'foo']);
+  assert.equal(check.code, 0, check.out);
+  assert.doesNotMatch(check.out, /Findings gate/);
+});
+
+test('finding list says nothing about a gate being on or off, with no finding and with one (AC-05)', async () => {
+  const dir = await ready();
+  stripGateLine(dir);
+  const empty = await cli(dir, ['finding', 'list', 'foo']);
+  assert.equal(empty.code, 0, empty.err);
+  assert.match(empty.out, /^finding list: foo — 0 findings, 0 without a decision\n/);
+  assert.doesNotMatch(empty.out, /Findings gate|gate is (on|off)/);
+  await addFinding(dir, 'review:1', 'Minor', 'src/a.ts:1 small');
+  const one = await cli(dir, ['finding', 'list', 'foo']);
+  assert.match(one.out, /^finding list: foo — 1 finding, 1 without a decision\n/);
+  assert.doesNotMatch(one.out, /Findings gate|gate is (on|off)/);
 });
 
 test('the gate is the CLI\'s: no hook source reads the findings (AC-12)', async () => {

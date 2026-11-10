@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { cli, itemDir, planFile, projectWithItem, read, write } from './item-fixture.js';
 import { stageOf } from '../src/hooks/core/item-stage.mjs';
+import { qcDecided } from './findings-fixture.js';
 
 // A QC report written the way kit/templates/qc.md and kit/commands/qc.md step 5 give it: the verdict is on the Date line.
 const by = 'claude · Sonnet 5.5 · fresh subagent';
@@ -20,6 +21,7 @@ test('approve qc and gate tick QC read a PASS that is on the Date line, as the t
   const dir = await qcInTemplateForm('PASS');
   const gate = await cli(dir, ['gate', 'tick', 'foo', 'QC / convergence']);
   assert.equal(gate.code, 0, gate.err);
+  await qcDecided(dir);
   const r = await cli(dir, ['approve', 'qc', 'foo', '--by', 'dev-dabour']);
   assert.equal(r.code, 0, r.err);
   assert.match(read(join(itemDir(dir), 'reviews', 'foo-qc.md')), /^- \*\*Accepted by:\*\* dev-dabour · \d{4}-\d{2}-\d{2}$/m);

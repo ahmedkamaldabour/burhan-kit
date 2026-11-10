@@ -9,7 +9,7 @@ import { deviations, itemFolder, planPath, readOr, units } from './item-files.js
 import { assertInside, oneLine, today } from './item-io.js';
 import { accepted, fieldLine, latestQcFile } from './items.js';
 import { kitDir } from './kit.js';
-import { addNone, addRow, findingsGated, qcScope, readItemFindings, reviewScopes, rowLine, SEVERITIES, withDecision, type Decision, type Finding, type Gate, type Scope, type Severity } from './findings.js';
+import { addNone, addRow, qcScope, readItemFindings, reviewScopes, rowLine, SEVERITIES, withDecision, type Decision, type Finding, type Gate, type Scope, type Severity } from './findings.js';
 import { docsLocation } from './status.js';
 
 const isLink = (p: string): boolean => { try { return lstatSync(p).isSymbolicLink(); } catch { return false; } };
@@ -104,10 +104,8 @@ export function questionLines(slug: string, g: Gate): string[] {
 export function findingList(root: string, slug: string | undefined, o: { docs?: string }, io: Io): number {
   const { slug: s, dir } = itemFolder(docsLocation(root, o.docs).abs, slug, 'finding list');
   const all = readItemFindings(dir, s);
-  const plan = readOr(planPath(dir, s));
-  const gated = plan !== null && findingsGated(plan);
   const open = all.findings.filter((f) => f.decision === '');
-  io.stdout(`finding list: ${s} — ${all.findings.length} finding${all.findings.length === 1 ? '' : 's'}, ${open.length} without a decision; the Findings gate is ${gated ? 'on' : 'off (the plan has no "- **Findings gate:** on" line: item finish does not ask for decisions)'}\n`);
+  io.stdout(`finding list: ${s} — ${all.findings.length} finding${all.findings.length === 1 ? '' : 's'}, ${open.length} without a decision\n`);
   const linked = linkedReviewFiles(dir, s);
   if (linked.length > 0) io.stdout(`  ${linked.join(', ')} ${linked.length === 1 ? 'is a link and is' : 'are links and are'} not read: its findings are not in this list\n`);
   for (const f of all.findings.filter((x) => x.decision !== '')) io.stdout(`  #${f.id} ${f.severity} · ${f.where} · ${f.decision} (${f.pointer}) · ${f.by}\n`);

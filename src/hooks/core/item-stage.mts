@@ -5,7 +5,7 @@ import { hasContractMarker, storyIsApproved } from './item-contract.mjs';
 import { openDeviations, overallStatus, qcAccepted, qcVerdict, planRoute, routeAllowed, routeNeeds, units } from './item-model.mjs';
 
 /** `spec`: the build spec's text, null when the file is missing, left out when the caller does not read it. */
-/** `undecided`: how many findings of the sub-unit reviews (`review`) and of the QC reports (`qc`) have no decision, for an item with the findings gate; the caller counts them and the hooks leave it out
+/** `undecided`: how many findings of the sub-unit reviews (`review`) and of the QC reports (`qc`) have no decision, the caller counts them and the hooks leave it out
  *  (they read no review file), so a hook's answer is the one it always gave. */
 export interface StageInput { slug?: string; route: string; story: string | null; plan: string | null; findings: string | null; qc: string | null; spec?: string | null; undecided?: { review: number; qc: number } }
 export interface Stage { stage: string; authorized: boolean; why: string; next: string }

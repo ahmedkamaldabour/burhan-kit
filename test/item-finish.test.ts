@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { projectKey } from '../src/lib/evidence.js';
 import { tmpDir } from './helpers.js';
 import { cli, itemDir, planFile, project, projectWithItem, read, write } from './item-fixture.js';
+import { reviewsDecided } from './findings-fixture.js';
 
 const savedState = process.env.XDG_STATE_HOME;
 afterEach(() => { if (savedState === undefined) delete process.env.XDG_STATE_HOME; else process.env.XDG_STATE_HOME = savedState; });
@@ -28,6 +29,7 @@ function ledger(dir: string, recs: Rec[]): void {
 async function ready(): Promise<string> {
   const dir = await projectWithItem();
   write(planFile(dir), read(planFile(dir)).replace(/^- \*\*Overall status:\*\* .*$/m, '- **Overall status:** In progress').replace(/· ⬜ Draft$/gm, '· ✅ Reviewed').replace(/- \[ \]/g, '- [x]'));
+  await reviewsDecided(dir);
   return dir;
 }
 const finish = (dir: string, ...args: string[]) => cli(dir, ['item', 'finish', 'foo', ...args]);
@@ -101,6 +103,7 @@ test('a gate that is not QC, knowledge or Close-out still blocks, on a route wit
   const dir = project();
   await cli(dir, ['item', 'new', 'foo', '--type', 'refactor', '--scope', 'bounded']);
   write(planFile(dir), read(planFile(dir)).replace(/^- \*\*Overall status:\*\* .*$/m, '- **Overall status:** In progress').replace(/· ⬜ Draft$/gm, '· ✅ Reviewed'));
+  await reviewsDecided(dir, [1]);
   ledger(dir, []);
   const r = await finish(dir);
   assert.equal(r.code, 2);

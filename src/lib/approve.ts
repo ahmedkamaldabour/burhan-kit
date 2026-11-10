@@ -4,7 +4,7 @@ import { checkText, crossCheck, hasContractMarker, storyIsApproved } from '../ho
 import { executableHash, qcVerdict } from '../hooks/core/item-model.mjs';
 import { BurhanError } from './errors.js';
 import { putFile, realTarget } from './fs-safe.js';
-import { findingsGated, gateOf, gateOpen, gateSentence, readItemFindings } from './findings.js';
+import { gateOf, gateOpen, gateSentence, readItemFindings } from './findings.js';
 import { openMaterial, tickMatching } from './gate-tick.js';
 import { placeholderReport } from './placeholders.js';
 import { fenced, itemFolder, overallStatus, planPath, planRoute, readOr, routeNeeds, RUNGS, setFieldLine, units, withRung } from './item-files.js';
@@ -101,8 +101,8 @@ export function approve(target: string, what: string | undefined, slug: string |
   const faults = checkText('qc', qc);
   if (faults.length > 0) throw new BurhanError(`the QC report has a fault: ${faults[0]!.code}`);
   if (qcVerdict(qc) !== 'PASS') throw new BurhanError('the QC verdict is not PASS: a failed QC is not accepted');
-  // A plan with the findings gate: the findings of every QC report (the rounds too) have the owner's decision first. `item finish` cannot ask for them: the QC comes after it.
-  if (plan !== null && findingsGated(plan)) {
+  // The findings of every QC report (the rounds too) have the owner's decision first. `item finish` cannot ask for them: the QC comes after it.
+  if (plan !== null) {
     const gate = gateOf(readItemFindings(dir, s), 'qc');
     if (gateOpen(gate) > 0) throw new BurhanError(`cannot accept the QC: ${gateSentence(s, gate)}`);
   }

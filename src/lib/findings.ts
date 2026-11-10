@@ -10,21 +10,12 @@ export const SEVERITIES: Severity[] = ['Critical', 'Important', 'Minor'];
 export const NONE_LINE = 'No findings.';
 /** The findings table: one shape for a review section and for a QC report (kit/templates/review.md, qc.md). */
 export const TABLE_HEAD = ['| # | Severity | Finding (file:line) | Decision | Pointer or reason | Decided by |', '|---|----------|---------------------|----------|-------------------|------------|'];
-/** The plan line `burhan item new` writes: an item with it must have every finding decided before `item finish`. A plan without it is old and not gated. */
-export const GATE_LINE = '- **Findings gate:** on';
 
 export interface Finding { id: number; severity: Severity; text: string; decision: Decision | ''; pointer: string; by: string; kind: Kind; file: string; line: number; where: string; spec: string }
 export interface Problem { file: string; line: number; message: string }
 /** One review section (`## Sub-unit N …`) or one QC report. `heading` is the section's heading line (−1 for a QC report: the whole file), `end` the line after its last line (0-based indexes). */
 export interface Scope { kind: Kind; file: string; where: string; spec: string; units: number[]; heading: number; end: number; state: 'table' | 'none' | 'missing'; findings: Finding[]; problems: Problem[]; superseded: boolean; badIds?: number[] }
 export interface ItemFindings { scopes: Scope[]; findings: Finding[]; problems: Problem[]; maxId: number }
-
-/** Does the plan carry the line `- **Findings gate:** on` (outside a code fence)? */
-export function findingsGated(plan: string): boolean {
-  const lines = plan.split('\n');
-  const inFence = fenced(lines);
-  return lines.some((l, i) => !inFence[i] && /^- \*\*Findings gate:\*\*[ \t]*on[ \t]*\r?$/.test(l));
-}
 
 const FINDINGS_HEAD = /^#{2,6}[ \t]+(?:\d+\.[ \t]+)?Findings[ \t]*$/;
 

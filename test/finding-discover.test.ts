@@ -89,7 +89,7 @@ test('discover is the owner\'s: --by must be a person; with nothing open, or onl
 });
 
 test('item finish keeps refusing until discover (or a decision per finding) has run, and then finishes (AC-06, AC-02)', async () => {
-  const dir = await projectWithItem({ gate: true });
+  const dir = await projectWithItem();
   for (const n of [1, 2]) await cli(dir, ['review', 'add', 'foo', '--kind', 'review', '--unit', String(n), '--by', BY]);
   await addFinding(dir, 'review:1', 'Minor', 'src/a.ts:1 a');
   await addFinding(dir, 'review:1', 'Important', 'src/b.ts:2 b');
