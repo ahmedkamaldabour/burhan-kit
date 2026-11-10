@@ -4,6 +4,7 @@ import { checkText, crossCheck, hasContractMarker, storyIsApproved } from '../ho
 import { executableHash, qcVerdict } from '../hooks/core/item-model.mjs';
 import { BurhanError } from './errors.js';
 import { putFile, realTarget } from './fs-safe.js';
+import { findingsGated, gateOf, gateOpen, gateSentence, readItemFindings } from './findings.js';
 import { openMaterial, tickMatching } from './gate-tick.js';
 import { placeholderReport } from './placeholders.js';
 import { fenced, itemFolder, overallStatus, planPath, planRoute, readOr, routeNeeds, RUNGS, setFieldLine, units, withRung } from './item-files.js';
@@ -14,12 +15,14 @@ import { docsLocation } from './status.js';
 
 // A name that starts like a model or a tool is not a person (a known limit: it cannot list every spelling, and it refuses a person called "Claude Monet").
 const AGENT_NAME = /^(claude|codex|haiku|sonnet|opus|fable|gpt|chatgpt|gemini|copilot|grok|anthropic|openai|llama|deepseek|cursor|agent|ai|assistant|bot|burhan|model|me|human)(?!\p{L})/iu;
+// A model or tool name that is not also a common given name, as any word of the name ("Ahmed Claude") is not a person either (the words that name a model or a tool only).
+const MODEL_WORD = /(^|[^\p{L}])(claude|codex|haiku|sonnet|gpt|chatgpt|copilot|anthropic|openai|deepseek)(?!\p{L})/iu;
 
-/** The approval is a person's: a name, not an agent's, a placeholder, or a separator. */
-export function person(by: string | undefined): string {
-  if (by === undefined || by.trim() === '') throw new BurhanError('--by is needed: the name of the person who approves');
+/** The approval (or, with `verb`, the decision) is a person's: a name, not an agent's, a placeholder, or a separator. */
+export function person(by: string | undefined, verb = 'approves'): string {
+  if (by === undefined || by.trim() === '') throw new BurhanError(`--by is needed: the name of the person who ${verb}`);
   const name = oneLine(by, '--by');
-  if (!/\p{L}/u.test(name) || /[<>·]/.test(name) || AGENT_NAME.test(name)) throw new BurhanError(`--by must be the name of the person who approves (not an agent, a placeholder or a separator): "${name}"`);
+  if (!/\p{L}/u.test(name) || /[<>·]/.test(name) || AGENT_NAME.test(name) || MODEL_WORD.test(name)) throw new BurhanError(`--by must be the name of the person who ${verb} (not an agent, a placeholder or a separator): "${name}"`);
   return name;
 }
 
@@ -98,6 +101,11 @@ export function approve(target: string, what: string | undefined, slug: string |
   const faults = checkText('qc', qc);
   if (faults.length > 0) throw new BurhanError(`the QC report has a fault: ${faults[0]!.code}`);
   if (qcVerdict(qc) !== 'PASS') throw new BurhanError('the QC verdict is not PASS: a failed QC is not accepted');
+  // A plan with the findings gate: the findings of every QC report (the rounds too) have the owner's decision first. `item finish` cannot ask for them: the QC comes after it.
+  if (plan !== null && findingsGated(plan)) {
+    const gate = gateOf(readItemFindings(dir, s), 'qc');
+    if (gateOpen(gate) > 0) throw new BurhanError(`cannot accept the QC: ${gateSentence(s, gate)}`);
+  }
   const accepted = `${by} · ${date}`;
   const updated = setFieldLine(qc, 'Accepted by', accepted) ?? insertAfter(qc, /\*\*Verdict:\*\*/, `- **Accepted by:** ${accepted}`);
   if (updated === null) throw new BurhanError('the QC report has no **Verdict:** line that is read: run burhan item check');

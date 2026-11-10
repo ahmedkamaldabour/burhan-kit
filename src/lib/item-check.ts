@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { Io } from '../main.js';
 import { checkText, crossCheck, hasContractMarker, kindOf, storyIsApproved, type Fault, type Kind } from '../hooks/core/item-contract.mjs';
 import { BurhanError } from './errors.js';
+import { findingsGated, readItemFindings } from './findings.js';
 import { overallStatus, readOr } from './item-files.js';
 import { isSlug, SLUG_RULE } from './item-io.js';
 import { placeholderReport } from './placeholders.js';
@@ -41,6 +42,11 @@ export function checkItem(docsAbs: string, slug: string, project?: string): File
     const spec = results.find((r) => r.kind === 'build-spec');
     if (spec === undefined) plan.faults.push({ code: 'spec-missing', message: `the plan names a build spec (${slug}-build-spec.md) and there is none` });
     plan.faults.push(...crossCheck({ story: text(`${slug}-story.md`), plan: text(plan.file) ?? '', spec: spec === undefined ? null : text(spec.file) }));
+  }
+  // A plan with the findings gate: a malformed row of a review or QC file is named with its line (the rows are read only for such an item).
+  if (plan !== undefined && !plan.legacy && findingsGated(readOr(join(dir, plan.file)) ?? '')) {
+    const { problems } = readItemFindings(dir, slug);
+    for (const r of results) if (r.kind === 'review' || r.kind === 'qc') for (const p of problems.filter((x) => x.file === r.file)) r.faults.push({ code: 'finding-row', message: `line ${p.line}: ${p.message}` });
   }
   // Placeholders of the templates: only once the file is approved (an item under construction may have them).
   if (project !== undefined && plan !== undefined && !plan.legacy) {

@@ -27,7 +27,7 @@ build's commands with their exit codes, as the build reported them: keep them as
    yourself and show its result (a GREEN run of yours that fails is a finding), take the failing-first run from the build's reported commands, and write
    `order: stated by the builder, not read from the ledger` under **Limitations**
    (phases/review.md · When the ledger cannot show the sub-unit yet).
-3. Write **only** the report file, under the item's `reviews/` folder, from the matching template.
+3. Write **only** the report file, under the item's `reviews/` folder, from the matching template. Write each finding as a row with `<kit command> finding add <slug> --in review:<N>|qc[:<round>] --severity <S> --text "<finding, file:line>"` (or `--none` when there is none); do not run `finding decide` or `finding discover`: a finding's decision is the owner's. Say in each finding whether its fix is class A (inside the item's scope, keeps the approved intent) or class B (a decision is needed): the builder fixes class A at once and records it with `deviation add --apply`, you do not.
    Never write or edit any other file. Fill **Performed by** as `claude · <your model> · fresh subagent`.
 4. Propose a verdict. Never approve, never commit, and never edit application code. Return the
    report path, the proposed verdict and the defects found.

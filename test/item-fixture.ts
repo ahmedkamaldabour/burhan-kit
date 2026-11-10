@@ -29,11 +29,13 @@ export const read = (path: string): string => readFileSync(path, 'utf8');
 export const write = (path: string, text: string): void => { mkdirSync(join(path, '..'), { recursive: true }); writeFileSync(path, text); };
 
 /** A project with item `foo` made by `burhan item new` (a feature / architectural one: story and plan), plus a second sub-unit in the plan, with every template placeholder filled in
- *  (`raw: true` keeps the files exactly as `item new` made them). */
-export async function projectWithItem(o: { raw?: boolean } = {}): Promise<string> {
+ *  (`raw: true` keeps the files exactly as `item new` made them; `gate: true` keeps the plan's `Findings gate` line, which every other test takes out). */
+export async function projectWithItem(o: { raw?: boolean; gate?: boolean } = {}): Promise<string> {
   const dir = project();
   const r = await cli(dir, ['item', 'new', 'foo', '--type', 'feature', '--scope', 'architectural']);
   if (r.code !== 0) throw new Error(`item new failed: ${r.err}`);
+  // An item the way it was before the findings gate: `item new` writes its line, and a test that is not about the gate takes it out (`gate: true` keeps it; `raw: true` keeps everything).
+  if (o.gate !== true && o.raw !== true) write(planFile(dir), read(planFile(dir)).replace(/^- \*\*Findings gate:\*\* on\n/m, ''));
   write(planFile(dir), read(planFile(dir)).replace(/(### Sub-unit 1 — .*\n(?:- .*\n)*)/, '$1\n### Sub-unit 2 — other · ⬜ Draft\n- **Covers:** AC-01\n'));
   // the build spec gets the same second sub-unit: a copy of the first
   const specText = read(specFile(dir));

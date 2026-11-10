@@ -20,6 +20,7 @@ import { stateCompact } from './lib/state-compact.js';
 import { reviewAdd } from './lib/review-add.js';
 import { approve } from './lib/approve.js';
 import { deviationAdd, deviationResolve } from './lib/deviation.js';
+import { findingAdd, findingDecide, findingDiscover, findingList } from './lib/finding.js';
 import { itemFinish } from './lib/item-finish.js';
 import { itemRecordsQuiet, verify } from './lib/verify.js';
 import { guide } from './lib/guide.js';
@@ -109,10 +110,17 @@ export const USAGE = `usage: burhan <command> [options]
                        write a review section or report with Performed by in the exact form
   approve story|plan|qc <slug> --by <name>
                        write an approval in the exact form and tick its gate (the approval is a person's)
-  deviation add <slug> --unit N --what <t> --where <w> --output <o>
-                       record a step that did not go as the build spec said: the executor stops until the owner decides
+  deviation add <slug> --unit N --what <t> --where <w> --output <o> [--apply "<why no decision is needed>"]
+                       record a step that did not go as the build spec said: the executor stops until the owner decides; with --apply the row is applied at once (a problem that needs no decision: the agent fixes it and reports it)
   deviation resolve <slug> <n> --approved|--rejected --by <name> [--decision <t>]
                        write the owner's decision on an open deviation (the decision is a person's)
+  finding add <slug> --in review:<unit>|qc[:<round>] (--severity <S> --text <t> | --none)
+                       add one finding to a review section or QC report (a row of its findings table, with no decision), or write "No findings."
+  finding list <slug>  every finding with its decision, and the grouped question for the owner about the ones with none (read-only)
+  finding decide <slug> <n> (--fixed unit:<N>|deviation:<n> | --discovery <file> [--outside <why>] | --accepted <reason>) --by <owner name>
+                       write the owner's decision on one finding (a person's decision; a Critical is never accepted)
+  finding discover <slug> --by <owner name>
+                       open a discovery file (and its index line) for every finding with no decision, a Critical excepted, and record each as the decision
   item check <slug> [--docs <path>]
                        check an item's files against the written contract; names every fault (exit 1 only for a file with **Contract:** 1)
   --version | --help
@@ -252,9 +260,19 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
       case 'deviation': {
         const [sub, ...args] = rest;
         if (sub !== 'add' && sub !== 'resolve') throw new BurhanError(`deviation needs a subcommand: add or resolve${sub === undefined ? '' : `, not "${sub}"`}`);
-        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, unit: { type: 'string' }, what: { type: 'string' }, where: { type: 'string' }, output: { type: 'string' }, approved: { type: 'boolean' }, rejected: { type: 'boolean' }, by: { type: 'string' }, decision: { type: 'string' } } });
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, unit: { type: 'string' }, what: { type: 'string' }, where: { type: 'string' }, output: { type: 'string' }, apply: { type: 'string' }, approved: { type: 'boolean' }, rejected: { type: 'boolean' }, by: { type: 'string' }, decision: { type: 'string' } } });
         if (positionals.length > (sub === 'add' ? 1 : 2)) throw new BurhanError(`unexpected argument: ${positionals[sub === 'add' ? 1 : 2]}`);
         return sub === 'add' ? deviationAdd(at(), positionals[0], values, io) : advise(deviationResolve(at(), positionals[0], positionals[1], values, io), positionals[0], values.docs);
+      }
+      case 'finding': {
+        const [sub, ...args] = rest;
+        if (sub !== 'add' && sub !== 'list' && sub !== 'decide' && sub !== 'discover') throw new BurhanError(`finding needs a subcommand: add, list, decide or discover${sub === undefined ? '' : `, not "${sub}"`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, in: { type: 'string' }, severity: { type: 'string' }, text: { type: 'string' }, none: { type: 'boolean' }, by: { type: 'string' }, fixed: { type: 'string' }, discovery: { type: 'string' }, accepted: { type: 'string' }, outside: { type: 'string' } } });
+        if (positionals.length > (sub === 'decide' ? 2 : 1)) throw new BurhanError(`unexpected argument: ${positionals[sub === 'decide' ? 2 : 1]}`);
+        if (sub === 'add') return findingAdd(at(), positionals[0], values, io);
+        if (sub === 'list') return findingList(at(), positionals[0], values, io);
+        if (sub === 'discover') return advise(findingDiscover(at(), positionals[0], values, io), positionals[0], values.docs);
+        return advise(findingDecide(at(), positionals[0], positionals[1], values, io), positionals[0], values.docs);
       }
       case 'gate': {
         const [sub, ...args] = rest;

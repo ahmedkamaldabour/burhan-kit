@@ -26,7 +26,7 @@
 - [ ] Per sub-unit: review done → a section in `reviews/<slug>-review.md` (short or full, by risk; one section for a review group)
 - [ ] Security re-read: authorization, record-level visibility, no secrets logged or returned;
       access-rule changes tested for BOTH allowed and denied cases
-- [ ] No open deviation: every row of the Deviations table is approved or rejected by the owner
+- [ ] No open deviation: every row of the Deviations table is approved, rejected or applied (an applied row says why no decision was needed)
 - [ ] Every completion claim backed by shown command output
 - [ ] Discoveries handled per phases/discoveries.md
 - [ ] Real verification performed — asked who does it → `reviews/<slug>-verification.md`
@@ -36,6 +36,11 @@
 
 ## 1. Decisions
 Options considered, with a recommendation. Rejected options stay here as "Alternatives".
+
+**Decisions taken at approval** (the owner's answers, copied from the story; the build does not ask them again):
+- **Who performs the real verification:** <the owner | the agent>
+- **An out-of-scope finding becomes:** <a discovery the agent writes while the build goes on | a question to the owner at the end of the sub-unit>
+- **An in-scope finding:** fixed at once, whatever its severity, without asking; the owner decides its row once, at the end.
 
 ## 2. AC coverage
 Every acceptance criterion of the story, the sub-unit that builds it, and the test that proves it. A route with no story has nothing to cover.
@@ -71,13 +76,13 @@ What could not be inspected or verified, and why.
 
 ## 9. Executor rules
 1. Follow this plan and the build spec exactly: the same files, the same code, the same order, the same commands. No improvising, no extra scope, no refactoring.
-2. A step that fails unexpectedly — a RED that does not fail as the spec says, a GREEN that fails, a file that differs from what the spec expects — means STOP. Do not fix it on your own.
-3. Record the deviation in section 10 (what, where, the output), then ask the owner. An approved deviation updates this plan and the spec first, then the code.
-4. The existing brakes stay: a scope escalator, a discovery outside the item, a plan change, the same test failing twice, an irreversible action.
+2. A step that fails unexpectedly — a RED that does not fail as the spec says, a GREEN that fails, a file that differs from what the spec expects — is classified first (phases/stage-build.md · A problem found while building). A class B problem, one that needs a decision, means STOP: do not fix it on your own.
+3. Record the deviation in section 10 (what, where, the output). Class B: leave the row open and ask the owner; an approved deviation updates this plan and the spec first, then the code. Class A, a problem whose answer is already known: record the row with `--apply`, fix it, report it, and go on.
+4. The brakes are those of phases/stage-build.md · Modes, for a class B problem only: a scope escalator, a discovery outside the item (unless "Decisions taken at approval" says what it becomes), a plan change, the same test failing twice, an irreversible action.
 5. After a sub-unit run only its test files, then the fast check; the full suite at QC, before a commit, or when a fix lands outside the covered tests. A passing full run is reused (phases/stage-finish.md · Reusing a full run).
 
 ## 10. Deviations
-Empty until a step deviates. Status is open, approved or rejected.
+Empty until a step deviates. Status is open, approved, rejected or applied.
 
 | # | Sub-unit | What | Where | Output | Status | Decision |
 |---|----------|------|-------|--------|--------|----------|

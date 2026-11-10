@@ -28,7 +28,7 @@ in-flight block; the turn-end hook writes this session's external link.
 item's block in the state file (ask at the start if unset; exact forms: phases/files.md · Fields). `step` pauses after every sub-unit; `auto` runs the
 sub-units without pausing until a brake or the commit checkpoint. "Plan only" is a stopping point, not a
 mode: stop after the plan is approved, close the item at `Plan ready`, write no code.
-The commit checkpoint always stops. **Brakes** — `auto` falls back to asking on: a scope escalator
+The commit checkpoint always stops. **Brakes** — `auto` falls back to asking, for a class B problem only (phases/stage-build.md · class A or class B), on: a scope escalator
 mid-work · an out-of-scope discovery · a plan change · the same test failing twice in a row · an
 irreversible action. In `auto`, ask "who verifies?" once at the start, with the mode.
 

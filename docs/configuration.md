@@ -141,6 +141,12 @@ The end-of-turn audit reads the agent's tool calls, not the disk:
   with the subagent's name. A subagent's shell redirections are not seen;
 - failed edit calls are not counted, and the final message is taken from the Stop payload.
 
+The findings gate (`burhan finding …`, the decision memory of the turn-end report) has four limits that were left on purpose:
+- `finding decide --fixed deviation:<n>` checks that the Deviations row exists and is approved, not that it relates to the finding: the owner chooses the pointer, and a fix may live under another sub-unit;
+- the decision-wording memory shows wording, not consent: a question or a mention counts, and a negation removes only the word after it, because removing more would also remove a real decision ("no problem, fix it");
+- a `burhan finding decide` or `finding discover` inside the quoted text of another burhan command is reported as a command: telling them apart needs a full shell parser, and `bash -c '…'` is supported on purpose.
+- `--by` of a decision is refused when the name starts with a model or tool word (`Claude Monet`, `Cursor Hassan`) or has a model name as any word (`Ahmed Claude`): write the name another way, for example with an initial;
+
 ## Evidence ledger
 
 At the end of every turn the hooks record each edit and each command with its **exit code and its

@@ -18,14 +18,17 @@ no scope escalator, **full** otherwise.
 - [ ] No unrequested behaviour (or it is listed and accepted)
 - [ ] No secrets, tokens or internal identifiers logged, returned or committed
 
-**Full review** (sensitive or escalated): every item of `phases/review.md`, findings below.
-
-| # | Severity (Critical / Important / Minor) | Finding (file:line) | Owner | Resolution |
-|---|----------|---------|-------|------------|
+**Full review** (sensitive or escalated): every item of `phases/review.md`; its findings go in the Findings table below, as a short review's do.
 
 **Re-review after findings** (phases/review.md; delete when this is a first review):
 
 | Finding (from the earlier review) | Closed / still open / replaced | Evidence (fix diff hunk, test) |
 |---|---|---|
+
+### Findings
+Every section, short or full, ends with its findings (phases/review.md · Findings are decided before the finish). Write one row each with `burhan finding add <slug> --in review:<N> --severity <Critical|Important|Minor> --text "<finding, file:line>"`; with none, write `burhan finding add <slug> --in review:<N> --none`, which puts the single line `No findings.` here instead of the table. A section with neither is refused at the finish. You propose and recommend; the owner decides each row (`burhan finding decide`, with their name): never decide one yourself.
+
+| # | Severity | Finding (file:line) | Decision | Pointer or reason | Decided by |
+|---|----------|---------------------|----------|-------------------|------------|
 
 **Checks run:** exact commands and results (long output: a file under `reviews/evidence/`, phases/review.md). **Limitations:** what this review did not cover, and why.

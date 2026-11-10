@@ -334,6 +334,31 @@ export function approvalWordSeen(project: string, session: string, env: Env = pr
   } catch { return false; }
 }
 
+// Did the owner's latest message have wording of a decision on a finding (fix / accept / discovery, or yes)? The same shape as the approval word: written by the prompt hook, read and
+// spent by the turn audit when the agent ran `burhan finding decide` or `finding discover`. It says "wording seen", never "decision given".
+const decisionFile = (project: string, session: string, env: Env): string => {
+  const dir = (session.length <= 128 ? sessionDir(project, session, env) : '') || (session === '' ? '' : sessionDir(project, `h${createHash('sha256').update(session).digest('hex').slice(0, 32)}`, env));
+  return dir ? join(dir, 'decisionword') : '';
+};
+
+/** Record whether the owner's latest message had decision wording; fail open. */
+export function rememberDecisionWord(project: string, session: string, seen: boolean, env: Env = process.env): void {
+  try {
+    const file = decisionFile(project, session, env);
+    if (file === '') return;
+    if (seen) atomicPrivateWrite(file, 'decisionword', '1\n');
+    else unlinkSync(file);
+  } catch { /* fail open: no file to remove, or no store */ }
+}
+
+/** Did the owner's latest message have decision wording (false on any error)? */
+export function decisionWordSeen(project: string, session: string, env: Env = process.env): boolean {
+  try {
+    const file = decisionFile(project, session, env);
+    return file !== '' && existsSync(file);
+  } catch { return false; }
+}
+
 /** Forget the created paths once the audit has judged them. */
 export function clearShellCreated(project: string, session: string, env: Env = process.env): void {
   try {

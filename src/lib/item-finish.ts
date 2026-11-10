@@ -3,9 +3,11 @@ import type { Io } from '../main.js';
 import { checkText, hasContractMarker } from '../hooks/core/item-contract.mjs';
 import { evidenceMatches } from '../hooks/core/evidence-cmd.mjs';
 import { readProjectConfig, refusedLineOf } from './config.js';
+import { appliedSentence } from './deviation.js';
 import { BurhanError } from './errors.js';
 import { ereToJs, isPiped, ledgerDir, tryReadLedger, type LedgerRecord } from './evidence.js';
 import { putFile, realTarget } from './fs-safe.js';
+import { findingsGated, gateOf, gateOpen, gateSentence, readItemFindings } from './findings.js';
 import { fenced, itemFolder, openDeviations, overallStatus, planPath, planRoute, readOr, routeNeeds, setFieldLine, units } from './item-files.js';
 import { assertInside, oneLine } from './item-io.js';
 import { docsLocation } from './status.js';
@@ -38,6 +40,11 @@ export function itemFinish(target: string, slug: string | undefined, io: Io, o: 
   const all = units(plan);
   if (all.length === 0) open.push('the plan has no sub-unit heading that is read');
   else { const notReviewed = all.filter((u) => u.rung !== 4).map((u) => `Sub-unit ${u.n}`); if (notReviewed.length > 0) open.push(`not every sub-unit is Reviewed: ${notReviewed.join(', ')}`); }
+  // A plan with the line `- **Findings gate:** on` (written by item new) also needs every finding of the sub-unit reviews decided by the owner. The QC's findings come after Completed: approve qc asks for them.
+  if (findingsGated(plan)) {
+    const gate = gateOf(readItemFindings(dir, s), 'review', all.filter((u) => u.rung === 4).map((u) => u.n));
+    if (gateOpen(gate) > 0) open.push(gateSentence(s, gate));
+  }
 
   const needs = routeNeeds(planRoute(plan));
   const lines = plan.split('\n');
@@ -125,6 +132,8 @@ export function itemFinish(target: string, slug: string | undefined, io: Io, o: 
   assertInside(project, path);
   putFile(path, updated);
   io.stdout(`item finish: ${s} is Completed${say}\n`);
+  const applied = appliedSentence(plan);
+  if (applied !== null) io.stdout(`item finish: ${applied}\n`);
   io.stdout('next: update the item block in the state file (a transition), then QC or close-out as the route says\n');
   return 0;
 }

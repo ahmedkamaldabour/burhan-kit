@@ -42,6 +42,8 @@
 4. Leaves a decision open → one line under `Waiting on you`, pointing at the file with the detail.
 5. If the route includes **K**: knowledge review done (phases/memory.md) — or explicitly "none".
 
+**Findings come first.** Close-out starts after every finding has the owner's decision: those of the sub-unit reviews before `burhan item finish`, those of a QC report before `burhan approve qc` (phases/review.md · Findings are decided before the finish). A finding the owner left out of scope is a discovery, already opened by the command (phases/discoveries.md).
+
 **Pull request — only when the human asks.** After the commit, a pull request is the human's call:
 offer it only if they ask. Build its description from the item files with the kit's PR command
 (e.g. `burhan pr-body --item <slug> > /tmp/pr.md`, then `gh pr create --body-file /tmp/pr.md`).

@@ -107,6 +107,81 @@ check "onboard: no question between setup and onboarding" "$ob" has 'in the same
 check "onboard: the person decides the block and the baseline only" "$ob" has 'the setup block and the baseline'
 check "onboard: the request is still kept aside after the setup" "$ob" has 'it is still kept aside in section 2'
 
+echo "findings — the owner decides every review and QC finding, and the CLI refuses a finish and a QC acceptance while one has no decision"
+rv="$(cat templates/review.md)"; qt="$(cat templates/qc.md)"; rp="$(cat phases/review.md)"
+FH='| # | Severity | Finding (file:line) | Decision | Pointer or reason | Decided by |'
+check "review template: the findings table has the fixed columns" "$rv" has "$FH"
+check "review template: the old Owner | Resolution columns are gone" "$rv" lacks '| Owner | Resolution |'
+check "review template: a finding is written with finding add" "$rv" has 'burhan finding add <slug> --in review:<N> --severity'
+check "review template: no finding is the line No findings." "$rv" has 'the single line `No findings.`'
+check "review template: a section with neither table nor line is refused" "$rv" has 'A section with neither is refused at the finish'
+check "review template: the owner decides, the reviewer never does" "$rv" has 'never decide one yourself'
+check "qc template: the Findings section has the same columns" "$qt" has "$FH"
+check "qc template: the old Defects table is gone" "$qt" lacks '## 6. Defects'
+check "qc template: findings are written with finding add --in qc" "$qt" has 'burhan finding add <slug> --in qc[:<round>] --severity'
+check "qc template: the owner decides before approve qc" "$qt" has 'before `burhan approve qc` accepts the report'
+check "review phase: findings are decided before the finish" "$rp" has '## Findings are decided before the finish'
+check "review phase: fixed, discovery or accepted" "$rp" has '**fixed** (a sub-unit of the plan, or an approved Deviation row), **discovery** (a discovery file that exists) or **accepted**'
+check "review phase: a Critical is never accepted" "$rp" has 'A Critical is never accepted'
+check "review phase: item finish refuses a new item with an undecided finding" "$rp" has '`burhan item finish` refuses a new item (its plan has the line `- **Findings gate:** on`)'
+check "review phase: approve qc gates the QC findings" "$rp" has '`burhan approve qc` refuses while a finding of a QC report has none'
+check "review phase: the agent does not decide for the owner" "$rp" has 'the agent does not run `burhan finding decide` for the owner'
+check "review phase: a fix goes through a Deviation" "$rp" has 'goes through `burhan deviation add`'
+check "review phase: discover only when the owner asked" "$rp" has 'only when the owner asked for it'
+check "review phase: an old item is not gated" "$rp" has 'an item made before this rule is not gated'
+check "discoveries: a finding left out of scope is a discovery opened by the command" "$(cat phases/discoveries.md)" has '`burhan finding discover <slug> --by <owner>` for every finding that still has no decision'
+check "discoveries: finding discover never overwrites a file" "$(cat phases/discoveries.md)" has 'never overwrites a file'
+check "close-out: findings come first" "$(cat phases/close-out.md)" has '**Findings come first.**'
+check "qc command: findings are rows of the report's table" "$(cat commands/qc.md)" has 'burhan finding add <slug> --in qc[:<round>] --severity <S>'
+check "qc command: approve qc refuses while a finding has no decision" "$(cat commands/qc.md)" has '`burhan approve qc` refuses while a finding has no decision'
+check "reviewer agent: writes findings, does not decide them" "$(cat agents/claude/burhan-reviewer.md)" has 'do not run `finding decide` or `finding discover`'
+check "stage-build: the owner decides every finding before the finish" "$(cat phases/stage-build.md)" has 'The owner decides every finding before the finish'
+check "stage-plan: the finding commands are in the Findings paragraph" "$(cat phases/stage-plan.md)" has 'Findings: `burhan finding add <slug>'
+check "review phase: the table sits directly under the Findings heading" "$(cat phases/review.md)" has 'The findings table sits directly under the Findings heading.'
+check "review phase: a replaced section's findings still need a decision" "$(cat phases/review.md)" has 'still blocks `burhan item finish` until the owner decides it.'
+check "review phase: a finding inside the item's scope is fixed, not accepted" "$(cat phases/review.md)" has "A finding inside this item's scope is fixed, not accepted"
+
+echo "deviations — a problem whose answer is known is applied and reported, a decision is asked (class A and class B)"
+check "stage-build: the two classes have a section" "$(cat phases/stage-build.md)" has "## A problem found while building: class A or class B"
+check "stage-build: when in doubt a problem is class B" "$(cat phases/stage-build.md)" has "When in doubt, a problem is class B."
+check "stage-build: class A is a closed list" "$(cat phases/stage-build.md)" has "**Class A — no decision is needed.** The list is closed:"
+check "stage-build: class A covers a finding of any severity inside the scope" "$(cat phases/stage-build.md)" has "a review finding of any severity, a Critical included, inside the item"
+check "stage-build: a plan or spec mismatch is fixed in the text, never in an older test" "$(cat phases/stage-build.md)" has "never by editing a test that existed before the item and never by changing behaviour"
+check "stage-build: a bug inside the scope needs a failing test first" "$(cat phases/stage-build.md)" has "a bug found while building, inside the scope, fixed after a failing test is written first"
+check "stage-build: a class A problem is fixed at once and recorded with --apply" "$(cat phases/stage-build.md)" has 'records it with `burhan deviation add <slug> --unit N --what … --where … --output … --apply "<why no decision is needed>"`'
+check "stage-build: applied is the agent's own claim" "$(cat phases/stage-build.md)" has 'The row is `applied`: the agent'
+check "stage-build: class B is everything else" "$(cat phases/stage-build.md)" has "**Class B — a decision is needed.** Everything else:"
+check "stage-build: class B stops at the sub-unit in step, waits in auto" "$(cat phases/stage-build.md)" has 'in `step` mode at the end of the sub-unit, in `auto` mode it stops there and waits for the answer, then goes on'
+check "stage-build: the brakes of auto are class B only" "$(cat phases/stage-build.md)" has 'The brakes of `auto` are class B only'
+check "stage-build: an out-of-scope finding follows the decision taken at approval" "$(cat phases/stage-build.md)" has 'says what it becomes, `auto` writes it'
+check "stage-build: the build-step STOP is for a class B problem" "$(cat phases/stage-build.md)" has "That STOP is for a class B problem, which needs a decision"
+check "stage-build: the diagram STOP is for a decision" "$(cat phases/stage-build.md)" has "That STOP is for a decision (class B)"
+check "stage-build: a class A problem never brakes" "$(cat phases/stage-build.md)" has "a class A problem never brakes"
+check "stage-build: an in-scope finding is class A in the review step" "$(cat phases/stage-build.md)" has "A finding inside the item's scope is class A: fix it at once"
+check "review phase: a class A fix is applied with --apply, a class B row stays open" "$(cat phases/review.md)" has '(class A: with `--apply`, applied by the agent without asking; class B: left open for the owner'
+check "review phase: the in-scope fix is class A and does not wait" "$(cat phases/review.md)" has "That fix is class A (phases/stage-build.md · A problem found while building)"
+check "stage-plan: the Deviations paragraph names --apply" "$(cat phases/stage-plan.md)" has 'with `--apply "<why no decision is needed>"` it records an `applied` row at once'
+check "builder agent: classifies a deviation, class A is applied" "$(cat agents/claude/burhan-builder.md)" has "Class A, the answer is already known and no decision is"
+check "builder agent: a class B problem stops the builder" "$(cat agents/claude/burhan-builder.md)" has 'without `--apply`, STOP and report'
+check "reviewer agent: says the class of each finding" "$(cat agents/claude/burhan-reviewer.md)" has "Say in each finding whether its fix is class A"
+check "plan template: Decisions taken at approval" "$(cat templates/plan.md)" has "**Decisions taken at approval**"
+check "story template: Decisions taken at approval" "$(cat templates/story.md)" has "## Decisions taken at approval"
+check "plan template: an executor classifies a failing step first" "$(cat templates/plan.md)" has "is classified first (phases/stage-build.md · A problem found while building)"
+check "plan template: a class A step is recorded with --apply and the build goes on" "$(cat templates/plan.md)" has 'Class A, a problem whose answer is already known: record the row with `--apply`'
+check "plan template: the brakes are for a class B problem only" "$(cat templates/plan.md)" has "for a class B problem only"
+check "plan template: the deviation gate line counts applied rows" "$(cat templates/plan.md)" has "is approved, rejected or applied (an applied row says why no decision was needed)"
+check "plan template: the Deviations status words include applied" "$(cat templates/plan.md)" has "Status is open, approved, rejected or applied."
+check "core: a known answer is applied, not asked" "$(cat WORKFLOW.md)" has "Known answers applied; controls A–D remain."
+check "gate line: brakes stop only for a class B problem, a class A problem is fixed and recorded" "$(cat hooks/core/gates.txt)" has "a problem whose answer is known (class A) is fixed, recorded with burhan deviation add --apply, and the build goes on (phases/stage-build.md)."
+check "e2e: auto brakes on a class B problem only" "$(cat commands/e2e.md)" has "falls back to asking, for a class B problem only (phases/stage-build.md · class A or class B), on:"
+check "stage-build: which problems brake auto" "$(cat phases/stage-build.md)" has '- **Which problems brake `auto`:** a class B problem only; a class A problem is fixed, recorded with `--apply` and the build goes on'
+check "stage-build: the build step first classifies a failing step" "$(cat phases/stage-build.md)" has '- **First classify a step that fails unexpectedly:** a problem whose answer is already known is class A'
+check "stage-build: the build box names the class A fix" "$(cat phases/stage-build.md)" has 'fix it at once, record it with `burhan deviation add --apply`, and go on (A problem found while building, below).'
+check "builder agent: a plan or spec mismatch is class A when the text can fix it" "$(cat agents/claude/burhan-builder.md)" has 'if the code no longer matches them: a mismatch you can fix by editing the plan or spec text is class A'
+check "stage-build: class A goes on in auto and in step" "$(cat phases/stage-build.md)" has 'in `auto` the build continues, in `step` the sub-unit continues and the build stops at its end as always'
+check "stage-build: a security, data or money problem is class B even inside the scope" "$(cat phases/stage-build.md)" has "A security, data or money problem is class B even inside the item's scope, and a problem that fits both lists is class B."
+check "core: the known-answer sentence keeps controls A–D" "$(cat WORKFLOW.md)" has "controls A–D remain."
+
 echo "workflow.config.example — documents every key"
 cfg="$(cat workflow.config.example 2>/dev/null)"
 for k in $KEYS; do

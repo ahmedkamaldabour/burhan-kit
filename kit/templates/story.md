@@ -42,6 +42,13 @@ marked **material** blocks plan approval.
 | ID | Category (business / architecture) | Material (yes / no) | Question | Answer |
 |----|------|----|----------|--------|
 
+## Decisions taken at approval
+Ask these in the same round as the questions above, so the build does not stop to ask them later; the plan repeats the answers.
+
+- **Who performs the real verification:** <the owner | the agent>
+- **An out-of-scope finding becomes:** <a discovery the agent writes while the build goes on | a question to the owner at the end of the sub-unit>
+- **An in-scope finding:** fixed at once, whatever its severity, without asking; the owner decides its row once, at the end.
+
 ## Codebase verification
 Facts confirmed in the CURRENT code — cite file:line. Not assumptions.
 - **Verified at commit:** <`git rev-parse --short HEAD` when these facts were checked>

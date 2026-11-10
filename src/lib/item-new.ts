@@ -4,6 +4,7 @@ import type { Io } from '../main.js';
 import { readProjectConfig } from './config.js';
 import { fenced, gatesFor } from '../hooks/core/item-model.mjs';
 import { BurhanError } from './errors.js';
+import { GATE_LINE } from './findings.js';
 import { putFile, realTarget } from './fs-safe.js';
 import { assertInside, isSlug, SLUG_RULE, today } from './item-io.js';
 import { kitDir } from './kit.js';
@@ -27,7 +28,7 @@ const TEMPLATE: Record<Make, string> = { story: 'story.md', plan: 'plan.md', spe
 
 /** Replace the one line a template has for a label; a template that no longer has it is an error, never a silently wrong file. */
 function swap(text: string, pattern: RegExp, line: string, what: string): string {
-  if (!pattern.test(text)) throw new BurhanError(`the template no longer has the ${what} line the command fills; run burhan upgrade or fix the template`);
+  if (!pattern.test(text)) throw new BurhanError(`the template no longer has the ${what} line the command fills${what === 'Overall status' ? ' (it also carries the Contract and the Findings gate lines)' : ''}; run burhan upgrade or fix the template`);
   return text.replace(pattern, () => line);
 }
 
@@ -58,7 +59,7 @@ function fill(kind: Make, text: string, slug: string, route: string, mode: strin
     t = swap(t, /^- \*\*Route:\*\* .*$/m, `- **Route:** ${route} · **Routing reason:** <one line; any scope escalator>`, 'Route');
     t = swap(t, /^- \*\*Story:\*\* .*$/m, `- **Story:** ${hasStory ? `./${slug}-story.md` : '—'}`, 'Story');
     t = swap(t, /^- \*\*Build spec:\*\* .*$/m, `- **Build spec:** ./${slug}-build-spec.md (approved with this plan)`, 'Build spec');
-    t = swap(t, /^- \*\*Overall status:\*\* .*$/m, '- **Overall status:** Draft\n- **Contract:** 1', 'Overall status');
+    t = swap(t, /^- \*\*Overall status:\*\* .*$/m, `- **Overall status:** Draft\n- **Contract:** 1\n${GATE_LINE}`, 'Overall status');
     t = t.split('<slug>').join(slug); // the gate lines name this item's files
     t = withChecklist(t, route, slug);
   } else if (kind === 'spec') {

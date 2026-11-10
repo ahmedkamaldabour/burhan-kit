@@ -2,7 +2,7 @@
 import { ere } from './ere.mjs';
 import type { Check } from './lib.mjs';
 import { skillLine, skillLineText } from './skill-line.mjs';
-import { clearStateSnapshot, rememberApprovalWord } from './store.mjs';
+import { clearStateSnapshot, rememberApprovalWord, rememberDecisionWord } from './store.mjs';
 import { reminderLine, undecided } from './understanding.mjs';
 
 // Arabic has no \b in grep; bound Arabic words by whitespace/ASCII punctuation instead, so that
@@ -20,6 +20,12 @@ function sedGlobal(text: string, src: string, replacement: string): string {
 }
 
 const APPROVAL_WORDS = '(^|[^[:alnum:]_])(approve[ds]?|approval|yes|yep|ok|okay|go ahead|lgtm|agreed?)([^[:alnum:]_]|$)|موافق|وافقت|اعتمد|تمام|ماشي|أيوه|ايوه';
+/** Wording of a decision on a review finding: the approval words, and fix / accept / discovery / decide. A heuristic, as the approval one: it shows wording, not consent. */
+const DECISION_WORDS = '(^|[^[:alnum:]_])(approve[ds]?|approval|yes|yep|ok|okay|go ahead|lgtm|agreed?|fix|fixed|fixing|fixes|accept|accepted|discovery|discoveries|decide[ds]?|decision|proceed|go with|do it)([^[:alnum:]_]|$)|موافق|وافقت|اعتمد|تمام|ماشي|أيوه|ايوه|صلح|اصلح|اقبل|ديسكفري|قبول|قبلت|نعم|امشي|كمل';
+/** Arabic diacritics and the tatweel: "صلّح" is read as "صلح". */
+const TASHKEEL = /[ً-ْـ]/g;
+/** A negation and the word after it: "مش موافق" and "don't fix" are no decision. Removed before the decision words are looked for. */
+const NEGATED = '(^|[^a-z0-9_])(don.?t|do not|never|not|no)\\s+\\S+|(^|\\s)(مش|لا|ما|لن|بلاش)\\s+\\S+';
 
 export const promptRouter: Check = (ctx) => {
   const { ev, cfg } = ctx;
@@ -31,6 +37,7 @@ export const promptRouter: Check = (ctx) => {
   const p = raw.toLowerCase();
   // The turn audit asks "did the owner say yes?" when the agent runs an approve command: record only whether such wording is here (a heuristic).
   rememberApprovalWord(ctx.project, ev.get('.session'), ere(APPROVAL_WORDS)?.test(p) ?? false, { ...ctx.env, ...cfg });
+  rememberDecisionWord(ctx.project, ev.get('.session'), ere(DECISION_WORDS)?.test(sedGlobal(p.replace(TASHKEEL, ''), NEGATED, ' ')) ?? false, { ...ctx.env, ...cfg });
   const skills = cfg.WF_SKILLS === 'superpowers';
   let n = 0;
   let out = '';
@@ -66,7 +73,7 @@ export const promptRouter: Check = (ctx) => {
     stepSwitch = true;
     add('• Mode switch → write `**Mode:** step` in the story and the state file: stop after every sub-unit for the human.', '');
   } else if ((!negAuto && (ere(`${W}((go|run|do|finish|carry on|continue|keep going)( it| this| the item)? end to end|on your own([[:space:]]*([,.!?؟—-]|and|then|$))|don.?t wait|do not wait|without waiting|no need to wait)${WE}|(كمل|كمّل|اشتغل|خلص|خلّص|امشي|اعمل[هاـ]*)[^.،]*لوحدك|من غير ما تستن[اىي]|متستناش|ماتستناش`)?.test(pFlow) ?? false)) || namedMode('auto', pFlow)) {
-    add('• Mode switch → write `**Mode:** auto` in the story and the state file: run the sub-units without pausing. Brakes (scope escalator, discovery, plan change, the same test failing twice, an irreversible action) and the commit checkpoint still stop.', '');
+    add('• Mode switch → write `**Mode:** auto` in the story and the state file: run the sub-units without pausing. Brakes stop only for a problem that needs a decision (class B); a problem whose answer is known (class A) is fixed, recorded with `burhan deviation add --apply`, and the build goes on. The commit checkpoint still stops.', '');
   }
   // "Plan only" is not a mode but a stopping point (phases/stage-build.md · Modes); a step phrase wins.
   const PO_END = '[[:space:]]*([,.!?؟،—-]|please|for |$)';

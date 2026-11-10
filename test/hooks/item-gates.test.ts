@@ -422,3 +422,15 @@ test('the approval report sees the options before the slug, as the CLI accepts t
   const c = await setup();
   assert.match(await audit(c, { shell: ['burhan approve story --by dev-dabour foo'] }), /APPROVAL/);
 });
+
+test('an applied deviation counts like an approved one for the deviation gate of the build spec and of the plan, and the gate text names --apply (AC-17)', async () => {
+  const c = await approvedItem();
+  const flagged = await audit(c, { edited: [SPEC] });
+  assert.match(flagged, /no deviation is approved or applied/);
+  assert.match(flagged, /--apply \\"<why no decision is needed>\\"/); // the hook's answer is JSON: the quotes arrive escaped
+  const r = await cli(c.dir, ['deviation', 'add', 'foo', '--unit', '1', '--what', 'a count', '--where', 'spec:12', '--output', 'tests 7', '--apply', 'the spec counted six tests and the file has seven']);
+  assert.equal(r.code, 0, r.err);
+  assert.doesNotMatch(await audit(c, { edited: [SPEC] }), /DEVIATION GATE/);
+  write(planFile(c.dir), read(planFile(c.dir)).replace('## 9. Executor rules\n', '## 9. Executor rules\n0. Skip the tests when in a hurry.\n'));
+  assert.doesNotMatch(await audit(c, { edited: [PLAN] }), /DEVIATION GATE/);
+});

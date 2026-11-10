@@ -77,7 +77,7 @@ mode) decides where the build pauses; the commit checkpoint always stops.
 
 ## 4 · Control checkpoints — decisions belong to the human
 
-**These are absolute. Automation surfaces the decision; it never makes it.**
+**These are absolute. Automation surfaces the decision; it never makes it. Known answers applied; controls A–D remain.**
 
 **A · Verification — ask who performs it.** Before any end-to-end/manual verification pass, ask
 whether the human wants to do it or wants the agent to. Never default to doing it autonomously.

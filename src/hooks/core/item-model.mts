@@ -104,7 +104,7 @@ const GATE_TABLE: Array<{ text: string; when: (t: string, s: string, n: { story:
   { text: 'Per sub-unit: failing test first → green (the tests that relate to the part you changed, named with the reason) → fast check; never the whole suite by default; a fix outside those tests adds the tests of the area it touches', when: (t) => t !== 'release' },
   { text: 'Per sub-unit: review done → a section in `reviews/<slug>-review.md` (short or full, by risk; one section for a review group)', when: () => true },
   { text: 'Security re-read: authorization, record-level visibility, no secrets logged or returned; access-rule changes tested for BOTH allowed and denied cases', when: () => true },
-  { text: 'No open deviation: every row of the Deviations table is approved or rejected by the owner', when: () => true },
+  { text: 'No open deviation: every row of the Deviations table is approved, rejected or applied (an applied row says why no decision was needed)', when: () => true },
   { text: 'Every completion claim backed by shown command output', when: () => true },
   { text: 'Discoveries handled per phases/discoveries.md', when: () => true },
   { text: 'Real verification performed — asked who does it → `reviews/<slug>-verification.md`', when: () => true },
@@ -124,7 +124,7 @@ export function gatesFor(route: string): string[] | null {
 export interface Deviation { n: number; unit: number; what: string; where: string; output: string; status: string; decision: string; line: number }
 
 /** The cells of a table row: split on a pipe that is not escaped (`\|` is a pipe inside a cell). null when the line is not a table row. */
-function rowCells(line: string): string[] | null {
+export function rowCells(line: string): string[] | null {
   const l = line.replace(/\r$/, '').trim();
   if (!l.startsWith('|')) return null;
   const cells: string[] = [];
@@ -169,8 +169,8 @@ export function deviations(plan: string): Deviation[] {
 const rowText = (n: number, unit: number, what: string, where: string, output: string, status: string, decision: string): string =>
   `| ${n} | ${unit} | ${deviationCell(what)} | ${deviationCell(where)} | ${deviationCell(output)} | ${status} | ${deviationCell(decision)} |`;
 
-/** The plan with an open row added to the Deviations table (numbered after the last), or null when the plan has no such table. */
-export function withDeviationRow(plan: string, r: { unit: number; what: string; where: string; output: string }): { text: string; n: number } | null {
+/** The plan with a row added to the Deviations table (numbered after the last), or null when the plan has no such table. The row is open, or applied when `applied` (the decision text the caller built: who, when, why) is given. */
+export function withDeviationRow(plan: string, r: { unit: number; what: string; where: string; output: string; applied?: string }): { text: string; n: number } | null {
   const lines = plan.split('\n');
   const range = deviationRange(lines);
   if (range === null) return null;
@@ -178,7 +178,7 @@ export function withDeviationRow(plan: string, r: { unit: number; what: string; 
   for (let i = range[0] + 1; i < range[1]; i++) if (rowCells(lines[i]!) !== null) last = i;
   if (last === -1) return null;
   const n = deviations(plan).reduce((m, d) => Math.max(m, d.n), 0) + 1;
-  lines.splice(last + 1, 0, rowText(n, r.unit, r.what, r.where, r.output, 'open', '') + (lines[last]!.endsWith('\r') ? '\r' : ''));
+  lines.splice(last + 1, 0, rowText(n, r.unit, r.what, r.where, r.output, r.applied === undefined ? 'open' : 'applied', r.applied ?? '') + (lines[last]!.endsWith('\r') ? '\r' : ''));
   return { text: lines.join('\n'), n };
 }
 
@@ -191,8 +191,8 @@ export function withDeviationResolved(plan: string, n: number, status: 'approved
   return lines.join('\n');
 }
 
-/** The rows that stop the work: every row the owner has not decided. Only exactly approved or rejected lets the work go on, so a row that cannot be read stops it too. */
-export const openDeviations = (plan: string): Deviation[] => deviations(plan).filter((d) => d.status !== 'approved' && d.status !== 'rejected');
+/** The rows that stop the work: every row nobody has decided. Only exactly approved, rejected or applied (the agent's own row, for a problem that needs no decision) lets the work go on, so a row that cannot be read stops it too. */
+export const openDeviations = (plan: string): Deviation[] => deviations(plan).filter((d) => d.status !== 'approved' && d.status !== 'rejected' && d.status !== 'applied');
 
 /** The parts of an approved plan the executor follows: the AC coverage table, the executor rules and each sub-unit's Covers line. Status, gate ticks,
  *  results and deviation rows change while the work goes on and are not part of it. Line ends and trailing spaces do not count. */

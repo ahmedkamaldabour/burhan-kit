@@ -1,6 +1,8 @@
 import type { Io } from '../main.js';
 import { skillFor } from '../hooks/core/item-stage.mjs';
 import { realTarget } from './fs-safe.js';
+import { appliedSentence } from './deviation.js';
+import { questionLines } from './finding.js';
 import { fullRunFor, fullRunLine } from './full-run.js';
 import { skillAdvice, skillAdviceLine, wantsSkills } from './skill-advice.js';
 import { nowSlugs, readItemStage } from './stage-read.js';
@@ -36,7 +38,7 @@ export function guide(target: string, slug: string | undefined, io: Io, o: { jso
     const slugs = nowSlugs(project);
     if (slugs.length !== 1) return guideWithoutItem(project, slugs, io, o.json === true);
   }
-  const { slug: s, route, st, story } = readItemStage(target, slug, o.docs, 'guide');
+  const { slug: s, route, st, story, plan, findings } = readItemStage(target, slug, o.docs, 'guide');
   const advice = skillAdvice(realTarget(target), s, st, route);
   const full = fullRunFor(realTarget(target), process.env, { slug: s, docs: o.docs });
   if (o.json) { io.stdout(`${JSON.stringify({ item: s, route, stage: st.stage, authorized: st.authorized, why: st.why, next: st.next, skill: advice?.skill ?? null, fullRun: full })}\n`); return 0; }
@@ -46,6 +48,12 @@ export function guide(target: string, slug: string | undefined, io: Io, o: { jso
   io.stdout(`code edits: ${st.authorized ? 'AUTHORIZED' : 'NOT authorized'} — ${st.why}\n`);
   if (advice !== null) io.stdout(`${skillAdviceLine(advice)}\n`);
   io.stdout(`next: ${st.next}\n`);
+  // The rows of the Deviations table that the agent applied without asking: the owner sees them here, whatever the stage.
+  const applied = plan === null ? null : appliedSentence(plan);
+  if (applied !== null) io.stdout(`deviations: ${applied}\n`);
+  // An item with the findings gate: at the stage where they are asked, the open findings as one question for the owner.
+  const open = findings === null ? null : st.stage === 'all sub-units reviewed' ? findings.review : st.stage === 'QC passed, not accepted' ? findings.qc : null;
+  if (open !== null) for (const l of questionLines(s, open)) io.stdout(`${l}\n`);
   io.stdout(`${fullRunLine(full)}\n`);
   return 0;
 }

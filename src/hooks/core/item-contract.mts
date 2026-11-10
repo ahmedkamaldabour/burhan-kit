@@ -147,7 +147,7 @@ function checkPlan(text: string): Fault[] {
   for (const d of deviations(text)) {
     if (seen.has(d.n)) out.push({ code: 'deviation-duplicate', message: `Deviations row number ${d.n} is used twice: the rows are numbered once, in order` });
     seen.add(d.n);
-    if (!['open', 'approved', 'rejected'].includes(d.status)) out.push({ code: 'deviation-status', message: `Deviations row ${d.n}: status "${d.status}" is not open, approved or rejected` });
+    if (!['open', 'approved', 'rejected', 'applied'].includes(d.status)) out.push({ code: 'deviation-status', message: `Deviations row ${d.n}: status "${d.status}" is not open, approved, rejected or applied` });
     else if (d.unit < 0 || d.what === '' || d.where === '' || d.output === '' || (d.status !== 'open' && d.decision === '')) out.push({ code: 'deviation-incomplete', message: `Deviations row ${d.n} has an empty field (sub-unit, what, where, output${d.status === 'open' ? '' : ', decision'})` });
     if (d.status === 'open') out.push({ code: 'deviation-open', message: `Deviations row ${d.n} (sub-unit ${d.unit}) is open: STOP and ask the owner — ${d.what}` });
   }

@@ -7,7 +7,7 @@ import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stat
 import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
 import { agoText, liveOwnerAge, slugText } from './state-blocks.mjs';
-import { approvalWordSeen, rememberApprovalWord, clearShellCreated, clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, shellCreated, stateAfterSlugs, stateSnapshotFile } from './store.mjs';
+import { approvalWordSeen, decisionWordSeen, rememberApprovalWord, rememberDecisionWord, clearShellCreated, clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, shellCreated, stateAfterSlugs, stateSnapshotFile } from './store.mjs';
 import { evidenceMatches } from './evidence-cmd.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
 import { gateLine, undecided } from './understanding.mjs';
@@ -399,13 +399,13 @@ const gateDeviation: Gate = (audit) => {
   if (status !== 'Approved' && status !== 'In progress') return [];
   if (openDeviations(plan).length > 0) return [];
   const out: string[] = [];
-  const how = `Record it with burhan deviation add ${slug} --unit N --what … --where … --output …, STOP, and ask the owner; an approved deviation updates the plan and the build spec first, then the code.`;
+  const how = `Record it with burhan deviation add ${slug} --unit N --what … --where … --output … (add --apply "<why no decision is needed>" when the answer is already known and go on; otherwise STOP and ask the owner); an approved deviation updates the plan and the build spec first, then the code.`;
   const specRel = `${dir}/${slug}-build-spec.md`;
   const written = [...new Set(audit.written)];
-  if (written.includes(specRel) && !deviations(plan).some((d) => d.status === 'approved')) out.push(`⚠ DEVIATION GATE: the build spec of ${slug} was edited after its plan was approved and no deviation is approved. ${how}`);
+  if (written.includes(specRel) && !deviations(plan).some((d) => d.status === 'approved' || d.status === 'applied')) out.push(`⚠ DEVIATION GATE: the build spec of ${slug} was edited after its plan was approved and no deviation is approved or applied. ${how}`);
   const planRel = `${dir}/${slug}-implementation-plan.md`;
   const fingerprint = recordedHash(plan);
-  if (written.includes(planRel) && fingerprint !== null && fingerprint !== executableHash(plan) && !deviations(plan).some((d) => d.status === 'approved')) out.push(`⚠ DEVIATION GATE: the executable parts of the plan of ${slug} (AC coverage, executor rules, a sub-unit's Covers line) were edited after approval and no deviation is approved. ${how}`);
+  if (written.includes(planRel) && fingerprint !== null && fingerprint !== executableHash(plan) && !deviations(plan).some((d) => d.status === 'approved' || d.status === 'applied')) out.push(`⚠ DEVIATION GATE: the executable parts of the plan of ${slug} (AC coverage, executor rules, a sub-unit's Covers line) were edited after approval and no deviation is approved or applied. ${how}`);
   const spec = plainText(audit.ctx.project, specRel);
   const listed = spec === null ? [] : specFiles(spec);
   if (listed.length > 0) {
@@ -417,9 +417,9 @@ const gateDeviation: Gate = (audit) => {
   return out;
 };
 
-/** `approve story|plan|qc <slug>` behind any launcher (burhan, burhan-kit, node …/cli.js, npx, npm exec, pnpm dlx, bash -c, an env prefix, a sub-shell). A segment that
+/** `approve story|plan|qc <slug>`, `deviation resolve <slug> <n>` and `finding decide|discover <slug> …` behind any launcher (burhan, burhan-kit, node …/cli.js, npx, npm exec, pnpm dlx, bash -c, an env prefix, a sub-shell). A segment that
  *  only shows text (echo, printf, grep, git, cat …) is not a command. Forms it cannot see (a script file, an alias) are missed: the gate reports what it recognises. */
-const APPROVE_CMD = /(?:^|[\s/\\'"=(])(?:burhan(?:-kit)?|cli\.js)(?![\w/\\-])[^\n]{0,2000}?\b(?:approve\s+(story|plan|qc)|deviation\s+(resolve))(?:\s+--?[A-Za-z][\w-]*(?:[ =][^\s-][^\s]*)?){0,6}\s+['"]?([A-Za-z0-9._][A-Za-z0-9._-]*(?:['"]?\s+\d+)?)/;
+const APPROVE_CMD = /(?:^|[\s/\\'"=(])(?:burhan(?:-kit)?|cli\.js)(?![\w/\\-])[^\n]{0,2000}?\b(?:approve\s+(story|plan|qc)|deviation\s+(resolve)|(?<=(?:burhan(?:-kit)?|cli\.js)(?:@\S+)?['"]?\s+(?:--\s+)?)finding\s+(decide|discover))(?:\s+--?[A-Za-z][\w-]*(?:[ =][^\s-][^\s]*)?){0,6}\s+['"]?([A-Za-z0-9._][A-Za-z0-9._-]*(?:['"]?\s+\d+)?)/;
 /** The command without the bodies of its here-documents: text a command only carries (a note, a commit message) is not a command it runs. */
 const stripHeredocs = (cmd: string): string => {
   const out: string[] = [];
@@ -438,13 +438,28 @@ const TEXT_ONLY_CMD = /^\s*(?:echo|printf|grep|egrep|rg|cat|head|tail|less|man|g
 const gateApproval: Gate = (audit) => {
   const ran = audit.cmds.flatMap((cmd) => stripHeredocs(cmd.replace(/\\\r?\n/g, ' ')).split(/&&|\|\||;|\||\n/)).filter((part) => !TEXT_ONLY_CMD.test(part)).map((part) => APPROVE_CMD.exec(part)).filter((m): m is RegExpExecArray => m !== null);
   if (ran.length === 0) return [];
-  const list = [...new Set(ran.map((m) => (m[1] !== undefined ? `approve ${m[1]} ${m[3]}` : `deviation resolve ${m[3]}`)))].join(', ');
   const session = audit.ctx.ev.get('.session');
-  const said = approvalWordSeen(audit.ctx.project, session, audit.ctx.env);
-  rememberApprovalWord(audit.ctx.project, session, false, audit.ctx.env);
-  return said
-    ? [`ℹ APPROVAL: the agent ran ${list} this turn; the owner's message had approval wording. Confirm it is what they approved.`]
-    : [`⚠ APPROVAL GATE: the agent ran ${list} this turn but the owner's message had no approval wording. An approval is the owner's: if they did not say yes, set the status back and ask.`];
+  const out: string[] = [];
+  const approvals = ran.filter((m) => m[3] === undefined);
+  if (approvals.length > 0) {
+    const list = [...new Set(approvals.map((m) => (m[1] !== undefined ? `approve ${m[1]} ${m[4]}` : `deviation resolve ${m[4]}`)))].join(', ');
+    const said = approvalWordSeen(audit.ctx.project, session, audit.ctx.env);
+    rememberApprovalWord(audit.ctx.project, session, false, audit.ctx.env);
+    out.push(said
+      ? `ℹ APPROVAL: the agent ran ${list} this turn; the owner's message had approval wording. Confirm it is what they approved.`
+      : `⚠ APPROVAL GATE: the agent ran ${list} this turn but the owner's message had no approval wording. An approval is the owner's: if they did not say yes, set the status back and ask.`);
+  }
+  // A decision on a finding is the owner's too: `finding decide` and `finding discover` are reported the same way, with their own wording (fix / accept / discovery / yes).
+  const decisions = ran.filter((m) => m[3] !== undefined);
+  if (decisions.length > 0) {
+    const list = [...new Set(decisions.map((m) => `finding ${m[3]} ${m[4]}`))].join(', ');
+    const said = decisionWordSeen(audit.ctx.project, session, audit.ctx.env);
+    rememberDecisionWord(audit.ctx.project, session, false, audit.ctx.env);
+    out.push(said
+      ? `ℹ FINDING DECISION: the agent ran ${list} this turn; the owner's message had decision wording. Confirm it is what they decided.`
+      : `⚠ FINDING DECISION GATE: the agent ran ${list} this turn but the owner's message had no decision wording. The decision on a finding is the owner's: if they did not give it, put the question to them (burhan finding list <slug>) and set the row back.`);
+  }
+  return out;
 };
 
 const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateH, gateBaseline, gateContract, gateStage, gateDeviation, gateApproval];

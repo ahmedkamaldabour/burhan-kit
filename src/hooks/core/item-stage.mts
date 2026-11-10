@@ -5,7 +5,9 @@ import { hasContractMarker, storyIsApproved } from './item-contract.mjs';
 import { openDeviations, overallStatus, qcAccepted, qcVerdict, planRoute, routeAllowed, routeNeeds, units } from './item-model.mjs';
 
 /** `spec`: the build spec's text, null when the file is missing, left out when the caller does not read it. */
-export interface StageInput { slug?: string; route: string; story: string | null; plan: string | null; findings: string | null; qc: string | null; spec?: string | null }
+/** `undecided`: how many findings of the sub-unit reviews (`review`) and of the QC reports (`qc`) have no decision, for an item with the findings gate; the caller counts them and the hooks leave it out
+ *  (they read no review file), so a hook's answer is the one it always gave. */
+export interface StageInput { slug?: string; route: string; story: string | null; plan: string | null; findings: string | null; qc: string | null; spec?: string | null; undecided?: { review: number; qc: number } }
 export interface Stage { stage: string; authorized: boolean; why: string; next: string }
 
 const field = (text: string, label: string): string => new RegExp(`\\*\\*${label}:\\*\\*[ \\t]*([^\\r\\n]*)`).exec(text)?.[1]?.replace(/\*/g, '').trim() ?? '';
@@ -49,7 +51,11 @@ export function stageOf(i: StageInput): Stage {
     if (!needs.qc) return no('plan completed', why, 'knowledge review (if the route has one) and close-out in the state file');
     if (i.qc === null) return no('awaiting QC', why, `run the QC in a fresh context, then burhan review add ${slug} --kind qc --by "<agent · model · context>" --verdict "PASS" or "FAIL — N issues"`);
     if (qcVerdict(i.qc) === 'FAIL') return no('QC failed', why, `the QC failed: reopen the plan (burhan item set ${slug} plan in-progress), set the failed sub-units back (burhan item set ${slug} unit N in-progress), fix them, and run the QC again with --round N`);
-    if (!qcAccepted(i.qc)) return no('QC passed, not accepted', why, `ask the owner to accept the QC: burhan approve qc ${slug} --by <owner name>`);
+    if (!qcAccepted(i.qc)) {
+      const n = i.undecided?.qc ?? 0;
+      const accept = `ask the owner to accept the QC: burhan approve qc ${slug} --by <owner name>`;
+      return no('QC passed, not accepted', why, n > 0 ? `the findings of the QC are not all decided (${n} open): put them to the owner as one question (burhan finding list ${slug}; the owner answers, not you), record the answers with burhan finding decide, then ${accept}` : accept);
+    }
     return no('QC accepted', why, 'knowledge review (if the route has one) and close-out in the state file');
   }
 
@@ -59,7 +65,11 @@ export function stageOf(i: StageInput): Stage {
   const all = units(i.plan);
   const open = all.find((u) => u.rung !== 4);
   const yes = (stage: string, next: string): Stage => ({ stage, authorized: true, why: `the plan is ${status}`, next });
-  if (all.length === 0 || open === undefined) return yes(all.length === 0 ? 'plan without sub-units' : 'all sub-units reviewed', all.length === 0 ? `burhan item check ${slug}` : `tick the remaining gates (burhan gate tick ${slug} <gate>), then burhan item finish ${slug}`);
+  if (all.length === 0 || open === undefined) {
+    const n = i.undecided?.review ?? 0;
+    const finish = `tick the remaining gates (burhan gate tick ${slug} <gate>), then burhan item finish ${slug}`;
+    return yes(all.length === 0 ? 'plan without sub-units' : 'all sub-units reviewed', all.length === 0 ? `burhan item check ${slug}` : n > 0 ? `the findings of the reviews are not all decided (${n} open): put them to the owner as one question (burhan finding list ${slug}; the owner answers, not you), record the answers with burhan finding decide, then ${finish}` : finish);
+  }
   if (open.rung === -1) return yes(`Sub-unit ${open.n} has no status`, `burhan item check ${slug}`);
   if (open.rung <= 1) return yes(`Sub-unit ${open.n} to start`, `Sub-unit ${open.n}: burhan item set ${slug} unit ${open.n} in-progress, then write the failing test first`);
   if (open.rung === 2) return yes(`Sub-unit ${open.n} in progress`, `Sub-unit ${open.n}: test first, make it pass, run only its test files and then the fast check (the full suite at QC, before a commit, or when a fix lands outside the covered tests), then burhan item set ${slug} unit ${open.n} implemented`);

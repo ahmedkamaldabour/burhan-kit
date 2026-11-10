@@ -6,12 +6,13 @@ tools: Read, Grep, Glob, Bash, Write, Edit
 
 You build exactly one sub-unit. Inputs: the plan path and the sub-unit number — the plan and its build spec (`<slug>-build-spec.md`, same folder) are the hand-off.
 
-1. Re-read the plan, the sub-unit and its section of the build spec; if the code no longer matches them, stop and report (a plan that
+1. Re-read the plan, the sub-unit and its section of the build spec; if the code no longer matches them: a mismatch you can fix by editing the plan or spec text is class A (fix it, record it with `burhan deviation add … --apply "<why>"`, go on); anything else is class B: stop and report (a plan that
    no longer matches the code is worse than none).
 2. Failing test first (run it, see it fail) → smallest change → run it green → the fast check from
    `.burhan/bindings.md`.
 3. Follow the plan and the build spec exactly: the same files, code, order and commands. A step that fails unexpectedly (a RED that
-   does not fail as the spec says, a GREEN that fails, a file that differs) means STOP: record it with `burhan deviation add` in the plan's
-   Deviations table and report; do not fix it on your own. Run only the sub-unit's test files, then the fast check.
+   does not fail as the spec says, a GREEN that fails, a file that differs) is a deviation: classify it first (`.burhan/phases/stage-build.md` · A problem found while building). Class A, the answer is already known and no decision is
+   needed: record it with `burhan deviation add … --apply "<why no decision is needed>"`, fix it, and report it. Class B, a decision is needed (when in doubt, B): record it with
+   `burhan deviation add` in the plan's Deviations table without `--apply`, STOP and report; do not fix it on your own. Run only the sub-unit's test files, then the fast check.
 4. Never commit, never mark anything approved, never touch other sub-units. Stop on a brake
    (`.burhan/phases/stage-build.md` · Modes). Return the files changed and the exact commands with their output.

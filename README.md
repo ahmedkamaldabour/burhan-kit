@@ -102,9 +102,9 @@ you ask → Intake → Story ✋ → Plan ✋ → ┌ Build → Review ┐ → V
 
 ✋  always you, in both modes: approve, choose, accept
 step  ⏸ also pauses after every sub-unit's build and review
-auto  runs the loop straight through, keeping the ✋ stops; it also stops at a brake ⚠: a scope escalator appears,
-      something unrequested turns up, the plan must change, the same test fails twice,
-      or an action cannot be undone
+auto  runs the loop straight through, keeping the ✋ stops; it also stops at a brake ⚠: a problem that needs your
+      decision (a change of intent, a real choice, security, data, money, an action that
+      cannot be undone); a problem with a known fix is fixed, recorded, and the build goes on
 ```
 
 The route chooses gates. The mode chooses pauses between sub-units; it is not agent permission.

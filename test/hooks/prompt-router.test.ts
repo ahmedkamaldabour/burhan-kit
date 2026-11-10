@@ -6,7 +6,7 @@ import { run } from '../../src/hooks/main.mjs';
 const project = tmpDir('burhan-prompt-router-');
 const heading = '⚑ Router — before acting:';
 const modeStep = '• Mode switch → write `**Mode:** step` in the story and the state file: stop after every sub-unit for the human.';
-const modeAuto = '• Mode switch → write `**Mode:** auto` in the story and the state file: run the sub-units without pausing. Brakes (scope escalator, discovery, plan change, the same test failing twice, an irreversible action) and the commit checkpoint still stop.';
+const modeAuto = '• Mode switch → write `**Mode:** auto` in the story and the state file: run the sub-units without pausing. Brakes stop only for a problem that needs a decision (class B); a problem whose answer is known (class A) is fixed, recorded with `burhan deviation add --apply`, and the build goes on. The commit checkpoint still stops.';
 const bug = '• Bug → reproduce and find the root cause with evidence before proposing a fix; then a failing regression test first.';
 const access = '• Access/visibility work → record-level visibility is the highest-consequence check: a missing filter returns everything. Test allowed AND denied cases; verify as the affected identity (.burhan/phases/review.md).';
 const investigation = '• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.burhan/phases/stage-story.md).';

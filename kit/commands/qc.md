@@ -84,7 +84,7 @@ Tell pre-existing failures apart from new ones by comparing against a clean copy
 ## 5) Report and proposed verdict
 
 Write `reviews/$ARGUMENTS-qc.md` (a confirmation round: `reviews/$ARGUMENTS-qc-r<N>.md`) from `templates/qc.md`: the matrix, unrequested behaviour, the
-adversarial findings with severity (Critical / Important / Minor) and file:line, the regression
+adversarial findings with severity (Critical / Important / Minor) and file:line (each one a row of the report's Findings table, written with `burhan finding add <slug> --in qc[:<round>] --severity <S> --text "<finding, file:line>"`, or `--none` when there is none), the regression
 result with real output, limitations, and a top-line **proposed** verdict: **PASS** or
 **FAIL — N issues**. Write the verdict to the state file (a QC verdict is a transition, WORKFLOW §5) —
 the caller does this when the QC was delegated: a delegated reviewer writes only its report.
@@ -95,7 +95,7 @@ commit of those fixes, the commit checkpoint applies (WORKFLOW §4-B: show the f
 ## 6) The human decides — then close out
 
 **Present the verdict and STOP.** The verdict is the human's to accept (WORKFLOW §4-D: never approve on their
-behalf). Only after they accept a PASS:
+behalf). Put the QC's findings to them as one question too (`burhan finding list <slug>`): `burhan approve qc` refuses while a finding has no decision (phases/review.md · Findings are decided before the finish). Only after they accept a PASS and have decided the findings:
 1. record it on the QC file's `Accepted by` line as `<name> · YYYY-MM-DD` — the human's name, never
    yours (phases/files.md · Fields);
 2. run the knowledge review if the route includes **K** (.burhan/phases/memory.md — propose with evidence; the human

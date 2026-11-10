@@ -220,3 +220,33 @@ R217|phases/enforcement.md|unless another evidence run after the last code edit 
 R218|phases/stage-finish.md|with a command `WF_FULL_TEST_REGEX` matches
 R219|commands/onboard.md|with no question between them
 R220|commands/onboard.md|it is still kept aside in section 2
+R221|templates/review.md|burhan finding add <slug> --in review:<N> --severity
+R222|templates/qc.md|before `burhan approve qc` accepts the report
+R223|phases/review.md|## Findings are decided before the finish
+R224|phases/review.md|A Critical is never accepted
+R225|phases/review.md|the agent does not run `burhan finding decide` for the owner
+R226|phases/discoveries.md|`burhan finding discover <slug> --by <owner>` for every finding that still has no decision
+R227|commands/qc.md|`burhan approve qc` refuses while a finding has no decision
+R228|phases/close-out.md|**Findings come first.**
+R229|agents/claude/burhan-reviewer.md|do not run `finding decide` or `finding discover`
+R230|phases/stage-build.md|The owner decides every finding before the finish
+R231|phases/review.md|The findings table sits directly under the Findings heading.
+R232|phases/review.md|still blocks `burhan item finish` until the owner decides it.
+R233|phases/review.md|A finding inside this item's scope is fixed, not accepted
+R234|core|Known answers applied; controls A–D remain.
+R235|phases/stage-build.md|A problem found while building: class A or class B
+R236|phases/stage-build.md|The brakes of `auto` are class B only
+R237|phases/review.md|That fix is class A (phases/stage-build.md · A problem found while building)
+R238|phases/stage-plan.md|it records an `applied` row at once
+R239|agents/claude/burhan-builder.md|Class A, the answer is already known
+R240|templates/plan.md|Decisions taken at approval
+R241|templates/story.md|Decisions taken at approval
+R242|hooks/core/gates.txt|a problem whose answer is known (class A) is fixed, recorded with burhan deviation add --apply, and the build goes on (phases/stage-build.md).
+R243|commands/e2e.md|falls back to asking, for a class B problem only (phases/stage-build.md · class A or class B), on:
+R244|phases/stage-build.md|- **Which problems brake `auto`:** a class B problem only; a class A problem is fixed, recorded with `--apply` and the build goes on
+R245|phases/stage-build.md|- **First classify a step that fails unexpectedly:** a problem whose answer is already known is class A
+R246|phases/stage-build.md|fix it at once, record it with `burhan deviation add --apply`, and go on (A problem found while building, below).
+R247|agents/claude/burhan-builder.md|if the code no longer matches them: a mismatch you can fix by editing the plan or spec text is class A
+R248|phases/stage-build.md|in `auto` the build continues, in `step` the sub-unit continues and the build stops at its end as always
+R249|phases/stage-build.md|A security, data or money problem is class B even inside the item's scope, and a problem that fits both lists is class B.
+R250|core|controls A–D remain.

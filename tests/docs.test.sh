@@ -239,6 +239,11 @@ check "configuration: says a background run never counts" "$(cat docs/configurat
 check "features: names burhan state compact and says it is a dry run unless --apply" "$(cat docs/features.md)" has 'burhan state compact'
 check "features: says a dry run unless --apply" "$(cat docs/features.md)" has 'a dry run unless'
 check "upgrading: says item new writes the Gate checklist from the route" "$(cat docs/upgrading.md)" has '`item new` writes the Gate checklist from the route'
+check "features: the finding commands are described" "$(cat docs/features.md)" has '`finding decide` writes your decision on it'
+check "features: the findings gate is for tasks made by item new of this version" "$(cat docs/features.md)" has 'an older task is not gated, and a table written by hand can carry a decision the command never recorded'
+check "features: deviation add --apply records an applied row, never an approved one" "$(cat docs/features.md)" has 'as `applied` and never as `approved`, and `guide` and `item finish` list it for you'
+check "features: an applied deviation is the agent's own claim, and nothing checks it" "$(cat docs/features.md)" has "An \`applied\` deviation is the agent's own claim that no decision was needed: nothing checks it"
+check "upgrading: a new task asks for the owner's decision on every review finding" "$(cat docs/upgrading.md)" has "so \`item finish\` asks for the owner's decision on every review finding"
 check "README: the commands row names state compact" "$(cat README.md)" has 'state compact'
 check "README.ar: the commands row names state compact" "$(cat README.ar.md)" has 'state compact'
 check "changelog: 0.7.0 says item set does not complete a plan" "$cl" has "is refused: a plan is completed by"
@@ -285,5 +290,7 @@ check "README.ar: a project without hooks states a proof with --evidence" "$(cat
 check "README.ar: a project without hooks says it states a proof with --evidence" "$(cat README.ar.md)" has 'أو يذكر إثبات بـ `--evidence`'
 check "configuration: a failed record decides no even when a later ledger run passed" "$cfgdoc" has 'even when the ledger shows a later passing full run'
 check "configuration: a record in an item folder that leads outside the project is not read" "$cfgdoc" has 'one that is a link leading outside is not read'
+check "configuration: the finding limits left on purpose are named" "$cfgdoc" has 'shows wording, not consent'
+check "configuration: the --by name filter limit is named" "$cfgdoc" has 'starts with a model or tool word'
 
 t_summary

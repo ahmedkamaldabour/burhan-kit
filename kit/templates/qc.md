@@ -28,7 +28,8 @@ Checks run (exact commands), and how pre-existing failures were told apart from 
 
 ## 5. Limitations
 
-## 6. Defects
+## 6. Findings
+Every defect of any severity (Critical, Important, Minor), one row each: write it with `burhan finding add <slug> --in qc[:<round>] --severity <S> --text "<finding, file:line>"`; with none, `burhan finding add <slug> --in qc[:<round>] --none` puts the single line `No findings.` here instead of the table. The owner decides each row before `burhan approve qc` accepts the report (a Critical is fixed, or a discovery for code the item did not change; never accepted): you propose, you never decide.
 
-| # | Severity | Defect (file:line) | Fixed here / surfaced for decision |
-|---|----------|--------------------|-------------------|
+| # | Severity | Finding (file:line) | Decision | Pointer or reason | Decided by |
+|---|----------|---------------------|----------|-------------------|------------|
