@@ -109,6 +109,14 @@ test('both bodies carry the start-up list, in the kit\'s words, without naming h
   }
 });
 
+test('the start-up list says that a hand edit of the state file is still possible and only reported', () => {
+  for (const agent of ['claude', 'codex'] as const) {
+    const body = bootstrapBody(agent);
+    assert.match(body, /A hand edit is still possible and nothing stops it; the turn-end report may name some of them, not all\./, agent);
+    assert.match(body, /not by editing the file\. A hand edit is still possible/, agent);
+  }
+});
+
 test('an older block whose body differs is replaced by the new one, the text around it is kept, no edited warning', () => {
   const oldBody = 'OLD BODY';
   const old = renderBlock('claude', '0.7.0').replace(bootstrapBody('claude'), oldBody).replace(/sha256=[0-9a-f]+/, `sha256=${sha(oldBody + '\n')}`);

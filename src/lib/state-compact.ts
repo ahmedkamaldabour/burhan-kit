@@ -8,6 +8,7 @@ import type { Outcome } from '../hooks/core/state-lines.mjs';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { putFile, realTarget } from './fs-safe.js';
+import { editStateFile, ReplaceFailed, writeFileAtomic } from './state-write.js';
 import { assertInside, today } from './item-io.js';
 import { itemSlugs, readItem } from './items.js';
 import { docsLocation } from './status.js';
@@ -195,10 +196,18 @@ export function stateCompact(target: string, io: Io, o: { apply?: boolean; docs?
     put(notes, `${prior.endsWith('\n') ? prior : prior + '\n'}\n## ${today()} — from "${c.section}"\n${body}\n`, 'the state file is unchanged');
     io.stdout(`notes: ${c.slug}: the old text is in ${info.rel}/${c.slug}-state-notes.md\n`);
   }
-  if (!readFileSync(statePath).equals(raw)) throw new BurhanError('the state file changed while compacting: nothing was written to it; run the command again');
   const replacing = existsSync(bak);
-  put(bak, raw, 'the state file is unchanged');
-  put(statePath, out.map((l, i) => l + (ends[i] ?? '')).join(''), `the old file is in ${stateRel}.bak`);
+  const next = out.map((l, i) => l + (ends[i] ?? '')).join('');
+  try {
+    editStateFile(statePath, (current) => {
+      if (current !== text) throw new BurhanError('the state file changed while compacting: nothing was written to it; run the command again');
+      try { writeFileAtomic(bak, raw); } catch (e) { throw new BurhanError(`cannot write ${norm(relative(project, bak))}: ${(e as ReplaceFailed).code ?? (e as Error).message}; the state file is unchanged`); }
+      return next;
+    }, { label: stateRel });
+  } catch (e) {
+    if (e instanceof ReplaceFailed) throw new BurhanError(`cannot write ${norm(relative(project, statePath))}: ${e.code}; the old file is in ${stateRel}.bak`);
+    throw e;
+  }
   io.stdout(`written: ${stateRel} (backup: ${stateRel}.bak${replacing ? ', replacing the earlier backup' : ''}); ${lines.length} → ${out.length} lines\n`);
   if (gitIgnores(project, bak) === false) io.stdout(`note: ${stateRel}.bak is not ignored by git: do not commit it (add it to .gitignore)\n`);
   return 0;

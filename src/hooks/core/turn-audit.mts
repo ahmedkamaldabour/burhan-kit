@@ -7,7 +7,7 @@ import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stat
 import { explicitLink } from './link.mjs';
 import { shellWrites } from './shell-writes.mjs';
 import { agoText, liveOwnerAge, slugText } from './state-blocks.mjs';
-import { approvalWordSeen, decisionWordSeen, rememberApprovalWord, rememberDecisionWord, clearShellCreated, clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, shellCreated, stateAfterSlugs, stateSnapshotFile } from './store.mjs';
+import { approvalWordSeen, decisionWordSeen, rememberApprovalWord, rememberDecisionWord, clearShellCreated, clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, shellCreated, stateAfterSlugs, stateMineBlockSlugs, stateSnapshotFile } from './store.mjs';
 import { evidenceMatches } from './evidence-cmd.mjs';
 import { evidenceRuns, lastCodeEdit, lastRunPerCommand, parseSteps, type Step } from './steps.mjs';
 import { gateLine, undecided } from './understanding.mjs';
@@ -253,6 +253,43 @@ const gateI: Gate = (audit) => {
   return [];
 };
 
+// ---- J ---------------------------------------------------------------------
+// A block of another live session that this session changed, and can show it: by one edit-tool write of this session (the block's hash differs
+// between that write's pre-write and post-edit hooks; the post-edit hook put it into `mine-blocks`) or by a successful `burhan state set|close <slug>`
+// run of the turn, read from the command text. A shell or script write is not judged, and the file is never compared as a whole at the turn end
+// (owner option A, 2026-11-10: a missed report is better than a false one). One report per block; it never stops anything (WORKFLOW §7).
+// A slug this session shares with another live session is reported too.
+const STATE_RUN = /\bstate\s+(?:set|close)\s+["']?([A-Za-z0-9][A-Za-z0-9._-]*)/;
+/** A shell command whose every recorded run failed (non-zero exit, an error result) or was blocked: it changed nothing. A command with no step, or a step
+ *  with no known result (unknown, background), is not judged failed. */
+const failedRunOf = (audit: Audit, cmd: string): boolean => {
+  const text = cmd.replace(/[\t\n\r]/g, ' ');
+  const runs = audit.steps.filter((step) => step.kind === 'cmd' && step.cmd === text);
+  return runs.length > 0 && runs.every((step) => step.status === 'failed' || step.status === 'blocked' || (step.exit !== '' && step.exit !== '0'));
+};
+/** A command whose parts all ran when it exits 0: its parts are joined by `&&` only. A `;`, `||`, `|`, a single `&` (background) or a line break
+ *  may leave a part unrun or unseen while the command still exits 0 (`burhan state set … ; echo`, `… || echo`, `… | tee`), so none of its runs is
+ *  judged (a missed report, never a false one). Redirections (`2>&1`, `&>`) are not separators. */
+const allPartsRun = (text: string): boolean => !/[;|&\r\n]/.test(text.replace(/&>>?|[0-9]*[<>]&[0-9-]*/g, ' ').replace(/&&/g, ' '));
+const gateJ: Gate = (audit) => {
+  try {
+    const mine = audit.ctx.ev.get('.session');
+    const touched = new Set<string>();
+    const parts = audit.cmds.filter((cmd) => !failedRunOf(audit, cmd)).flatMap((cmd) => {
+      const text = stripHeredocs(cmd.replace(/\\\r?\n/g, ' '));
+      return allPartsRun(text) ? text.split('&&') : [];
+    }).filter((part) => !TEXT_ONLY_CMD.test(part));
+    for (const part of parts) { const slug = STATE_RUN.exec(part)?.[1]; if (slug !== undefined) touched.add(slug); }
+    for (const slug of stateMineBlockSlugs(audit.ctx.project, mine, audit.ctx.env)) touched.add(slug);
+    const out: string[] = [];
+    for (const slug of [...touched].sort(codePointCompare)) {
+      const age = liveOwnerAge(audit.ctx.project, mine, slug, audit.ctx.env);
+      if (age !== null) out.push(`⚠ You changed the \`${slugText(slug)}\` block — another session (active ${agoText(age)}) is working on it. Change only your own block, with \`burhan state\` (WORKFLOW §5).`);
+    }
+    return out.slice(0, 3);
+  } catch { return []; }
+};
+
 // ---- H ---------------------------------------------------------------------
 const gateH: Gate = (audit) => {
   const qc = `${docsRe(audit)}reviews/[^/]+-qc(-r[0-9]+)?\\.md$`;
@@ -462,7 +499,7 @@ const gateApproval: Gate = (audit) => {
   return out;
 };
 
-const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateH, gateBaseline, gateContract, gateStage, gateDeviation, gateApproval];
+const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateJ, gateH, gateBaseline, gateContract, gateStage, gateDeviation, gateApproval];
 
 export const turnAudit: Check = (ctx) => {
   const auditCtx = { ...ctx, env: { ...ctx.env, ...ctx.cfg } };

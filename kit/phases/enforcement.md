@@ -32,7 +32,7 @@ only a heredoc that is the content of a `>`/`tee` write is compared before the w
 another session between this session's first and last write of one turn — or, when the turn wrote the state file
 through a shell redirection, or a write failed or was denied (no list is saved then), until the turn end — is blamed
 on this one, and so is one made in the tens of milliseconds between this session's write and the post-edit hook
-reading the file. A very long slug is cut at 80 characters in the warning.
+reading the file. A very long slug is cut at 80 characters in the warning. A block of another live session is reported at the turn end only when it is sure: one edit-tool write of this session (Write, Edit, MultiEdit or a Codex patch) changed that block between its own pre-write and post-edit hooks, or a successful `burhan state set` or `burhan state close` run of the turn names it in the command text. The warning reads "You changed the `<slug>` block — another session (active … ago) is working on it". A shell write (a `>`, `tee` or heredoc into the state file) and a script are not judged, and the whole file is never compared at the turn end; a post-edit hook with no matching pre-write reports nothing. Both only report: the hooks never block, a direct edit with `sed -i` or a script is seen by nothing, and the lock of `burhan state` protects only the commands that take it. A no-op `burhan state set` ("already has that value") is reported too: the audit sees the command, not its output.
 
 **Evidence ledger.** At the end of every turn, `turn-audit` writes the turn's steps — each edit and
 each command with its exit code, in order, tagged with the item in flight — to

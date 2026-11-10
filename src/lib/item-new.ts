@@ -5,6 +5,7 @@ import { readProjectConfig } from './config.js';
 import { fenced, gatesFor } from '../hooks/core/item-model.mjs';
 import { BurhanError } from './errors.js';
 import { putFile, realTarget } from './fs-safe.js';
+import { editStateFile } from './state-write.js';
 import { assertInside, isSlug, SLUG_RULE, today } from './item-io.js';
 import { kitDir } from './kit.js';
 import { docsLocation } from './status.js';
@@ -132,26 +133,34 @@ export function itemNew(target: string, o: { slug?: string; type?: string; scope
   // Everything is computed and checked before the first write.
   const out = make.map((kind) => ({ path: join(dir, NAME[kind](slug)), text: fill(kind, template(kind), slug, route, mode, make.includes('story')) }));
   for (const f of out) assertInside(project, f.path);
-  let newState: string | null = null;
+  let blockLines: string[] | null = null;
+  let stateWritten = false;
   let noNow = false;
   if (state !== null) {
     assertInside(project, statePath);
-    newState = withBlock(state, slug, [`### ${slug}`, `- **Route:** ${route} · **Mode:** ${mode} · intake ${today()}`, `- Created by \`burhan item new\`; fill ${make.includes('story') ? 'the story' : 'the files'} next, then \`burhan item check ${slug}\``]);
-    noNow = newState === null;
+    blockLines = [`### ${slug}`, `- **Route:** ${route} · **Mode:** ${mode} · intake ${today()}`, `- Created by \`burhan item new\`; fill ${make.includes('story') ? 'the story' : 'the files'} next, then \`burhan item check ${slug}\``];
   }
 
   // The folder did not exist, so on any failure it is removed whole and nothing is left half-made.
   try {
     mkdirSync(dir, { recursive: true });
     for (const f of out) { mkdirSync(dirname(f.path), { recursive: true }); putFile(f.path, f.text); }
-    if (newState !== null) putFile(statePath, newState);
+    if (blockLines !== null) {
+      const lines = blockLines;
+      const result = editStateFile(statePath, (current) => {
+        if (hasBlock(current, slug)) throw new BurhanError(`item "${slug}" already has a block in Now (${stateRel})`);
+        return withBlock(current, slug, lines);
+      }, { label: stateRel });
+      stateWritten = result === 'written';
+      noNow = !stateWritten;
+    }
   } catch (error) {
     try { rmSync(dir, { recursive: true, force: true }); } catch { /* best effort: the message below tells what to check */ }
     throw new BurhanError(`item new failed (${(error as NodeJS.ErrnoException).code ?? 'file system error'}) and nothing was left behind: ${(error as Error).message}`);
   }
   io.stdout(`item new: created ${slug} (${route}, mode ${mode})\n`);
   for (const f of out) io.stdout(`  ${relative(target, f.path).split('\\').join('/')}\n`);
-  if (newState !== null) io.stdout(`  state: added "### ${slug}" under Now in ${stateRel}\n`);
+  if (stateWritten) io.stdout(`  state: added "### ${slug}" under Now in ${stateRel}\n`);
   else if (noNow) io.stdout(`  ${stateRel} has no "## Now" section: add the "### ${slug}" block yourself\n`);
   else io.stdout(`  no state file at ${stateRel}: add the "### ${slug}" block under "## Now" yourself\n`);
   io.stdout(`next: fill the files, then burhan item check ${slug}\n`);

@@ -1,13 +1,14 @@
-/** Before this session writes the state file: remember the Now list it is about to change (the baseline gate I compares with), and for a
- *  whole-file write warn when the new content drops a block another live session works on. Never blocks (WORKFLOW §7). Edit tools and patches
- *  give the file; a shell command gives it through its redirection. The new content is known only for a Write (its `content`) and a heredoc
- *  `>`/`tee` write; any other write gets the baseline and no warning. */
+/** Around this session's writes of the state file. Before a write: remember the Now list it is about to change (the baseline gate I compares
+ *  with); for a whole-file write, warn when the new content drops a block another live session works on; for an edit-tool write, save the block
+ *  hashes of that write (gate J judges it after the write). A shell write saves no hashes: gate J does not judge it. Never blocks (WORKFLOW §7).
+ *  Edit tools and patches give the file; a shell command gives it through its redirection. The new content is known only for a Write (its
+ *  `content`) and a heredoc `>`/`tee` write; any other write gets the baseline and no warning. */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { itemSlugs, nowSection, relPath, type Check, type Ctx } from './lib.mjs';
 import { shellWrites } from './shell-writes.mjs';
-import { agoText, liveOwnerAge, slugText } from './state-blocks.mjs';
-import { stateAfterSnapshot, stateSnapshot } from './store.mjs';
+import { agoText, blockHashes, changedBlocks, liveOwnerAge, slugText } from './state-blocks.mjs';
+import { forgetStateBlocks, stateAfterSnapshot, stateBlockLines, stateBlocksSnapshot, stateMineBlocks, stateSnapshot } from './store.mjs';
 
 const storeEnv = (ctx: Ctx): NodeJS.ProcessEnv => ({ ...ctx.env, ...ctx.cfg });
 const escapeRe = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -47,6 +48,11 @@ export const preStateWrite: Check = (ctx) => {
     try { text = readFileSync(join(ctx.project, ctx.cfg.WF_STATE_FILE ?? ''), 'utf8'); } catch { /* a missing file has no blocks */ }
     const before = [...new Set(itemSlugs(nowSection(text)))];
     stateSnapshot(ctx.project, ctx.ev.get('.session'), before, storeEnv(ctx));
+    const hashes = blockHashes(nowSection(text));
+    // Gate J judges one edit-tool write, with its own post hook. A shell write is not judged, so it drops any older baseline instead of saving one;
+    // an edit whose post hook never ran has its baseline replaced here, not judged (QC round 2 #7): the file may have changed since, by another session.
+    if (shell) forgetStateBlocks(ctx.project, ctx.ev.get('.session'), storeEnv(ctx));
+    else stateBlocksSnapshot(ctx.project, ctx.ev.get('.session'), hashes, storeEnv(ctx));
     const content = shell ? heredocBody(command, target) : typeof ctx.ev.raw.content === 'string' ? ctx.ev.raw.content : null;
     if (content === null) return [];
     const after = new Set(itemSlugs(nowSection(content)));
@@ -59,12 +65,19 @@ export const preStateWrite: Check = (ctx) => {
   return out;
 };
 
-/** After this session wrote the state file (Write, Edit, MultiEdit, a Codex patch): save the Now list as it stands. Never prints. */
+/** After this session wrote the state file through an edit tool (Write, Edit, MultiEdit, a Codex patch): judge this one write. The blocks whose
+ *  hash differs from the list the pre-write hook saved just before this same write go to this session's `mine-blocks` (gate J reads them); with
+ *  no pre-write for it (`now-blocks` absent), nothing is judged. Then save the Now list as it stands (gate I). Never prints. */
 export const postStateWrite: Check = (ctx) => {
   try {
     if (!isStateFile(ctx, ctx.ev.get('.file'))) return [];
     const text = readFileSync(join(ctx.project, ctx.cfg.WF_STATE_FILE ?? ''), 'utf8');
-    stateAfterSnapshot(ctx.project, ctx.ev.get('.session'), itemSlugs(nowSection(text)), storeEnv(ctx));
+    const session = ctx.ev.get('.session');
+    const hashes = blockHashes(nowSection(text));
+    const before = stateBlockLines(ctx.project, session, storeEnv(ctx));
+    if (before !== null) stateMineBlocks(ctx.project, session, changedBlocks(before, hashes), storeEnv(ctx));
+    forgetStateBlocks(ctx.project, session, storeEnv(ctx));
+    stateAfterSnapshot(ctx.project, session, itemSlugs(nowSection(text)), storeEnv(ctx));
   } catch { /* fail open */ }
   return [];
 };

@@ -226,3 +226,15 @@ test('a project plan template without the Overall status line says the Contract 
   assert.equal(r.code, 2);
   assert.match(r.err, /Overall status line the command fills \(it also carries the Contract line\)/);
 });
+
+test('item new refuses a state file that is not valid UTF-8 instead of rewriting it, and leaves no folder', async () => {
+  const dir = project();
+  const bytes = Buffer.from([0x23, 0x20, 0xff, 0x0a, 0x23, 0x23, 0x20, 0x4e, 0x6f, 0x77, 0x0a]); // "# \xff\n## Now\n"
+  writeFileSync(join(dir, STATE), bytes);
+  const r = await run(dir, ['foo', '--type', 'bug', '--scope', 'bounded']);
+  assert.equal(r.code, 2, r.out + r.err);
+  assert.match(r.err, /nothing was left behind/);
+  assert.match(r.err, /not valid UTF-8/);
+  assert.ok(readFileSync(join(dir, STATE)).equals(bytes));
+  assert.equal(existsSync(join(dir, WORK, 'foo')), false);
+});

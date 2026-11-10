@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 import { cli, project, STATE, write } from './item-fixture.js';
@@ -360,4 +360,13 @@ test('a ### block of a closed item is named in the output and left as it is; a b
   assert.equal(state(dir), before, 'a dry run writes nothing');
   await cli(dir, ['state', 'compact', '--apply']);
   assert.ok(state(dir).includes(`### beta\n- **Route:** change / bounded · **Mode:** auto\n- beta: ${LONG}`), 'the block is left whole');
+});
+
+test('--apply writes the backup and the state file atomically and leaves no temp file or lock', async () => {
+  const dir = setup();
+  const before = state(dir);
+  const r = await cli(dir, ['state', 'compact', '--apply']);
+  assert.equal(r.code, 0, r.err);
+  assert.equal(readFileSync(join(dir, STATE + '.bak'), 'utf8'), before);
+  assert.deepEqual(readdirSync(join(dir, '.burhan', 'local')).sort(), ['PROGRESS.md', 'PROGRESS.md.bak']);
 });

@@ -17,6 +17,7 @@ import { itemNew } from './lib/item-new.js';
 import { itemSet } from './lib/item-set.js';
 import { gateTick } from './lib/gate-tick.js';
 import { stateCompact } from './lib/state-compact.js';
+import { stateClose, stateSet, stateShow } from './lib/state-set.js';
 import { reviewAdd } from './lib/review-add.js';
 import { approve } from './lib/approve.js';
 import { deviationAdd, deviationResolve } from './lib/deviation.js';
@@ -100,6 +101,11 @@ export const USAGE = `usage: burhan <command> [options]
                        tick a gate of the plan's checklist when its evidence exists (or is given)
   state compact [--apply]
                        shorten the closed items' old lines in the state file: a dry run unless --apply; never touches a "### " block; the old text goes to the item's <slug>-state-notes.md first
+  state show [<slug>]  print an item's block under Now, or list the blocks; writes nothing
+  state set <slug> <Label> <value>
+                       change the line "- **<Label>:** …" of that item's block in the state file, under a lock; no other byte changes (a value that starts with - goes after --)
+  state close <slug> --outcome <state> --commit <id> --folder <path> [--docs <path>]
+                       replace the item's block with its one closed line; the outcome must be the item's index state
   guide [slug] [--json]
                        the item's stage, whether code edits are authorized now, the process skill to run (with WF_SKILLS=superpowers), the next step, and whether a passing full run exists after the last code edit
   verify <slug> [--docs <path>] -- <command> [args]
@@ -283,8 +289,22 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
       }
       case 'state': {
         const [sub, ...args] = rest;
-        if (sub !== 'compact') throw new BurhanError(`state needs a subcommand: compact${sub === undefined ? '' : `, not "${sub}"`}`);
-        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, apply: { type: 'boolean' } } });
+        if (sub !== 'compact' && sub !== 'show' && sub !== 'set' && sub !== 'close') throw new BurhanError(`state needs a subcommand: compact, show, set or close${sub === undefined ? '' : `, not "${sub}"`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, apply: { type: 'boolean' }, outcome: { type: 'string' }, commit: { type: 'string' }, folder: { type: 'string' } } });
+        const own: Record<string, string[]> = { compact: ['docs', 'apply'], show: [], set: [], close: ['docs', 'outcome', 'commit', 'folder'] };
+        for (const name of Object.keys(values)) if (!own[sub]!.includes(name)) throw new BurhanError(`--${name} is not an option of state ${sub}`);
+        if (sub === 'show') {
+          if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
+          return stateShow(at(), positionals[0], io);
+        }
+        if (sub === 'set') {
+          if (positionals.length !== 3) throw new BurhanError('state set needs <slug> <Label> <value> (a value that starts with - goes after --)');
+          return stateSet(at(), positionals[0]!, positionals[1]!, positionals[2]!, io);
+        }
+        if (sub === 'close') {
+          if (positionals.length !== 1) throw new BurhanError('state close needs exactly one item slug');
+          return stateClose(at(), positionals[0]!, { outcome: values.outcome, commit: values.commit, folder: values.folder, docs: values.docs }, io);
+        }
         if (positionals.length > 0) throw new BurhanError(`unexpected argument: ${positionals[0]}`);
         return stateCompact(at(), io, { apply: values.apply === true, docs: values.docs });
       }

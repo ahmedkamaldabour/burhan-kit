@@ -241,6 +241,10 @@ check "docs index is marked generated" "$(head -1 templates/docs-index.md)" has 
 check "WORKFLOW explains team use" "$wf" has "Team use"
 check "WORKFLOW: concurrent items are one per session" "$wf" has "Several items may be in flight, one per session"
 check "WORKFLOW: state edits stay in the owner's block" "$wf" has "Edit only your own block; never rewrite the file"
+check "WORKFLOW: the own block is written with burhan state" "$wf" has 'Write it with `burhan state`.'
+check "close-out: state close writes the closed line" "$(cat phases/close-out.md)" has 'burhan state close <slug>'
+check "close-out: a direct state edit is still possible and only reported" "$(cat phases/close-out.md)" has "A direct edit of the state file is still possible: it is reported at the turn end only when the edit tool's own write shows it, never prevented."
+check "enforcement: a block of another session is reported only when sure" "$(cat phases/enforcement.md)" has "A block of another live session is reported at the turn end only when it is sure"
 check "close-out: concurrent items are one per session" "$(cat phases/close-out.md)" has "several may be in flight, one per session"
 check "no old command names left in the kit" "$(grep -rl 'feat-e2e\|qc-review' . 2>/dev/null)" lacks "."
 echo "provenance, escapes, timing, independence"

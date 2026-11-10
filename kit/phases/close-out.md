@@ -33,7 +33,7 @@
   `Completed` on a route without Q → `Done (no QC)`.
 
 **Close-out** — whenever an item stops being in flight, in the same turn:
-1. Shrink its block in `Now` to one line (a bullet, not a `###` heading: a heading counts as an item in flight).
+1. Shrink its block in `Now` to one line (a bullet, not a `###` heading: a heading counts as an item in flight). `burhan state close <slug> --outcome <state> --commit <id> --folder <path>` writes that line under the state file's lock. A direct edit of the state file is still possible: it is reported at the turn end only when the edit tool's own write shows it, never prevented.
 2. Regenerate the docs index with the kit's status command (bindings · Kit command, e.g.
    `burhan status --write`); never hand-edit it. A merge conflict in the index is resolved by
    re-running the command. States (derived from the item files): `Draft` · `Spec ready` ·

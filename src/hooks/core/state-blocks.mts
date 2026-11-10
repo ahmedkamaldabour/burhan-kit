@@ -1,7 +1,9 @@
 /** Who works on an item block of the shared state file: another session of this project whose link names the slug and whose ledger moved in
  *  the last 24 h. Read-only: only this session's own files are ever written. */
+import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { itemBlock, itemSlugs } from './lib.mjs';
 import { evidenceRoot, mtime, projectKey, safeId } from './store.mjs';
 
 const DAY = 86400;
@@ -32,3 +34,19 @@ export const slugText = (slug: string): string => (slug.length > 80 ? `${slug.sl
 
 /** `5s ago`, `3m ago`, `2h ago`. */
 export const agoText = (age: number): string => (age < 60 ? `${age}s ago` : age < 3600 ? `${Math.floor(age / 60)}m ago` : `${Math.floor(age / 3600)}h ago`);
+
+/** `<slug>\t<sha1 of the block>` for every block of a Now section: what the hooks save to tell a changed block from an untouched one. */
+export const blockHashes = (now: string): string[] => itemSlugs(now).map((slug) => `${slug}\t${createHash('sha1').update(itemBlock(now, slug)).digest('hex')}`);
+
+/** The lines of `blockHashes` as a slug → hash map. */
+export function hashMap(lines: string[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const line of lines) { const tab = line.indexOf('\t'); if (tab > 0) out.set(line.slice(0, tab), line.slice(tab + 1)); }
+  return out;
+}
+
+/** The slugs whose block hash differs between two `blockHashes` lists, one write apart. A slug missing on either side is not judged here. */
+export function changedBlocks(before: string[], after: string[]): string[] {
+  const later = hashMap(after);
+  return [...hashMap(before)].filter(([slug, hash]) => { const next = later.get(slug); return next !== undefined && next !== hash; }).map(([slug]) => slug);
+}

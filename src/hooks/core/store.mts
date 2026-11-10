@@ -145,9 +145,55 @@ export function stateAfterSlugs(project: string, session: string, env: Env = pro
   } catch { return null; }
 }
 
+/** The block hashes (`<slug>\t<hash>` lines) just before this session's edit-tool write of the state file (`now-blocks`). The post-edit hook of
+ *  that same write judges it and drops it (`forgetStateBlocks`). Only one baseline is kept: a new pre-write replaces an older one no post hook
+ *  judged, and a shell write drops it (`forgetStateBlocks`), so no later post-edit hook can compare with a stale list. */
+export function stateBlocksSnapshot(project: string, session: string, lines: string[], env: Env = process.env): void {
+  try {
+    const dir = sessionDir(project, session, env);
+    if (dir) atomicPrivateWrite(join(dir, 'now-blocks'), 'blocks', `${lines.join('\n')}\n`);
+  } catch { /* fail open */ }
+}
+
+/** Drop the block hashes of the write just judged, or of a shell write that is not judged (`now-blocks`). */
+export function forgetStateBlocks(project: string, session: string, env: Env = process.env): void {
+  try {
+    const dir = sessionDir(project, session, env);
+    if (dir) unlinkSync(join(dir, 'now-blocks'));
+  } catch { /* fail open: no file to remove */ }
+}
+
+/** The block hashes saved by `stateBlocksSnapshot` (`now-blocks`), or null when there is none (no baseline). */
+export function stateBlockLines(project: string, session: string, env: Env = process.env): string[] | null {
+  try {
+    const dir = sessionDir(project, session, env);
+    return dir ? readFileSync(join(dir, 'now-blocks'), 'utf8').split('\n').filter((line) => line !== '') : null;
+  } catch { return null; }
+}
+
+/** The slugs whose block this session changed by its own state-file writes in the turn (`mine-blocks`, one slug per line; the write hooks add
+ *  to it, the audit clears it). Gate J reports the ones another live session works on. */
+export function stateMineBlockSlugs(project: string, session: string, env: Env = process.env): string[] {
+  try {
+    const dir = sessionDir(project, session, env);
+    return dir ? readFileSync(join(dir, 'mine-blocks'), 'utf8').split('\n').filter((slug) => slug !== '') : [];
+  } catch { return []; }
+}
+
+/** Add slugs to `mine-blocks` (a set; fail open). */
+export function stateMineBlocks(project: string, session: string, slugs: string[], env: Env = process.env): void {
+  try {
+    const dir = sessionDir(project, session, env);
+    const added = slugs.filter((slug) => !/[\t\n\r]/.test(slug));
+    if (!dir || added.length === 0) return;
+    const all = [...new Set([...stateMineBlockSlugs(project, session, env), ...added])];
+    atomicPrivateWrite(join(dir, 'mine-blocks'), 'mine', `${all.join('\n')}\n`);
+  } catch { /* fail open */ }
+}
+
 /** Forget the baseline and the list after the write (end of an audit, a new prompt, SessionStart). */
 export function clearStateSnapshot(project: string, session: string, env: Env = process.env): void {
-  for (const name of ['now-slugs', 'after-slugs']) {
+  for (const name of ['now-slugs', 'after-slugs', 'now-blocks', 'mine-blocks']) {
     try {
       const dir = sessionDir(project, session, env);
       if (dir) unlinkSync(join(dir, name));
