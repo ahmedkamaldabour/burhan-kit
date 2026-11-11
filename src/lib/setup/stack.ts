@@ -19,25 +19,29 @@ export function stackInstructions(lang: 'en' | 'ar'): string {
   return messages(lang as Lang).stack.instructions;
 }
 
-export interface StackValues { check: string; sensitive: string[]; code?: string; test?: string; evidence?: string }
+/** `check` is left out when only other keys change and a check is already saved (setStack refuses it otherwise). */
+export interface StackValues { check?: string; sensitive: string[]; code?: string; test?: string; evidence?: string; full?: string }
+
+const CHECK_REQUIRED = 'check=<command|none> is required — say which command checks the work before a commit, or none';
 
 const list = (s: string): string[] => s.split(';').map((x) => x.trim()).filter(Boolean);
 
 /** R-2: parse `check=<cmd|none> sensitive=<p;q>` args (each arg is KEY=VALUE). */
 export function parseSetArgs(args: string[]): StackValues {
-  const out: StackValues = { check: '', sensitive: [] };
+  const out: StackValues = { sensitive: [] };
   for (const a of args) {
     const i = a.indexOf('=');
-    if (i <= 0) throw new BurhanError(`"${a}" is not KEY=VALUE — use check=<command|none> [code=<pattern>] [test=<pattern>] [evidence=<pattern>] [sensitive=<p;q>]`);
+    if (i <= 0) throw new BurhanError(`"${a}" is not KEY=VALUE — use check=<command|none> [code=<pattern>] [test=<pattern>] [evidence=<pattern>] [full=<pattern>] [sensitive=<p;q>]`);
     const key = a.slice(0, i);
     const val = a.slice(i + 1);
     if (key === 'check') out.check = val.trim();
     else if (key === 'never-run' || key === 'never-run-regex') throw new BurhanError(`setting "${key}" was removed`);
     else if (key === 'sensitive') out.sensitive = list(val);
-    else if (key === 'code' || key === 'test' || key === 'evidence') out[key] = val.trim();
-    else throw new BurhanError(`unknown setting "${key}" — the choices are check, sensitive, code, test, evidence`);
+    else if (key === 'code' || key === 'test' || key === 'evidence' || key === 'full') out[key] = val.trim();
+    else throw new BurhanError(`unknown setting "${key}" — the choices are check, sensitive, code, test, evidence, full`);
   }
-  if (out.check === '') throw new BurhanError('check=<command|none> is required — say which command checks the work before a commit, or none');
+  // `check=` with no value is an error; `check=` left out is judged by setStack, which knows whether a check is saved.
+  if (args.length === 0 || out.check === '') throw new BurhanError(CHECK_REQUIRED);
   return out;
 }
 
@@ -50,6 +54,9 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
   const configPath = join(real, TEAM_CONFIG);
   const text = existsSync(configPath) ? readFileSync(configPath, 'utf8') : '';
   const have = parseConfig(text).values;
+  // check= may be left out only when a check is already saved: a command, or the explicit "none" of a finished first use.
+  const checkSaved = (have.WF_CHECK_CMD ?? '') !== '' || have.WF_STACK_SETUP === 'done';
+  if (v.check === undefined && !checkSaved) throw new BurhanError(CHECK_REQUIRED);
 
   // Before the check runs and before the config is written: would this save (or the install it triggers) write outside the project?
   const hasBlock = ['CLAUDE.md', 'AGENTS.md'].some((f) => { try { return /^<!-- burhan:start -->\r?$/m.test(readFileSync(join(target, f), 'utf8')); } catch { return false; } });
@@ -63,17 +70,17 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
   for (const f of outside) io.stdout(`  OUTSIDE: ${f.rel} → ${f.real} is outside the project — written because of --allow-outside-links\n`);
 
   const none = v.check === 'none';
-  const check = none ? '' : v.check;
+  const check = v.check === undefined ? undefined : none ? '' : v.check;
   const sensitive = v.sensitive.map((c) => c.trim()).filter(Boolean);
   // R-4: every value that reaches the config is checked before anything runs or is written.
-  assertWritable('the check command', check);
+  assertWritable('the check command', check ?? '');
   sensitive.forEach((c) => assertWritable('a sensitive path', c));
   sensitive.forEach((c) => assertIsPath(c));
   const sens = sensitiveRegex(sensitive);
   assertWritable('the sensitive paths', sens);
-  // The three patterns feed the "done without proof" warning: refuse one the hooks would refuse, before anything runs.
-  const patterns: [string, 'WF_CODE_REGEX' | 'WF_TEST_REGEX' | 'WF_EVIDENCE_REGEX', string | undefined][] = [
-    ['code', 'WF_CODE_REGEX', v.code], ['test', 'WF_TEST_REGEX', v.test], ['evidence', 'WF_EVIDENCE_REGEX', v.evidence]];
+  // The four patterns feed the "done without proof" warning and the whole-suite run: refuse one the hooks would refuse, before anything runs.
+  const patterns: [string, 'WF_CODE_REGEX' | 'WF_TEST_REGEX' | 'WF_EVIDENCE_REGEX' | 'WF_FULL_TEST_REGEX', string | undefined][] = [
+    ['code', 'WF_CODE_REGEX', v.code], ['test', 'WF_TEST_REGEX', v.test], ['evidence', 'WF_EVIDENCE_REGEX', v.evidence], ['full', 'WF_FULL_TEST_REGEX', v.full]];
   for (const [name, , value] of patterns) {
     if (!value) continue;
     assertWritable(`the ${name} pattern`, value);
@@ -81,7 +88,11 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
     if (why) throw new BurhanError(`the ${name} pattern: the hooks refuse it (${why}) — rewrite it`);
   }
 
-  if (check === '') io.stdout(m.none + '\n');
+  // Without check=, a save with no value to write (every value empty) would print "Saved" and write nothing: refuse it before anything runs.
+  if (v.check === undefined && sensitive.length === 0 && !patterns.some(([, , value]) => value))
+    throw new BurhanError('nothing to save: give a value for full=, code=, test=, evidence= or sensitive=, or give check=');
+  if (check === undefined) { /* check= left out: the saved check stays and nothing is run */ }
+  else if (check === '') io.stdout(m.none + '\n');
   else {
     const t = have.WF_CHECK_TIMEOUT !== undefined && /^\d+$/.test(have.WF_CHECK_TIMEOUT) ? Number(have.WF_CHECK_TIMEOUT) : 60;
     io.stdout(m.running(check, t) + '\n');
@@ -91,7 +102,7 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
     if (r.kind !== 'pass' && !o.force) { io.stdout(m.failed(check) + '\n'); return 1; }
   }
 
-  const values: Record<string, string> = { WF_CHECK_CMD: check, WF_STACK_SETUP: 'done' };
+  const values: Record<string, string> = check === undefined ? {} : { WF_CHECK_CMD: check, WF_STACK_SETUP: 'done' };
   if (sensitive.length) {
     values.WF_SENSITIVE_REGEX = sens;
     if ((have.WF_SENSITIVE_NOTE ?? '') === '') values.WF_SENSITIVE_NOTE = DEFAULT_SENSITIVE_NOTE;
@@ -106,6 +117,6 @@ export async function setStack(target: string, v: StackValues, o: { force: boole
   const plan = planInstall({ mode: 'upgrade', target: real, agents: null, apply: true, bootstrap: hasBlock, keepProjectFiles: true });
   assertNoOutside(plan.outside, o.allowOutside); // a backstop: the preview above already judged what this plan writes
   applyPlan(plan);
-  io.stdout(m.saved(check) + '\n');
+  io.stdout((check === undefined ? m.savedSettings : m.saved(check)) + '\n');
   return 0;
 }

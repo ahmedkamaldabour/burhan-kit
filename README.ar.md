@@ -42,6 +42,8 @@ agent  **Route:** feature / bounded. It's one pure function with no scope escala
 
 ## ابدأ بسرعة
 
+**المتطلبات:** Node 22+؛ و Claude Code 2.1.139 أو أحدث و/أو Codex بعد ما توافق على الـ hooks بتاعته؛ والـ kit مسطّب في المشروع (`npm i -D burhan-kit`) أو على الـ PATH (`npm i -g burhan-kit`). في الوثائق دي `burhan` معناها الـ kit command بتاع المشروع، اللي مكتوب في `.burhan/bindings.md`: `npx burhan-kit` بيشغّل النسخة المسطّبة في المشروع، و`burhan` لوحدها بتشتغل بس لو موجودة على الـ PATH. burhan عمره ما بيشغّل npm: ولو الـ setup ما لقاش الـ kit command بيطبع لك أمر التسطيب وإنت اللي تشغّله.
+
 1. اختياري ومُوصى بيه: ثبّت Superpowers الأول، عشان الـ setup يقدر يشغّل الـ skills بتاعته. burhan عمره ما بيثبّته. في Claude Code اكتب `/plugin install superpowers@claude-plugins-official`؛ في Codex استخدم `/plugins` وادوّر على `superpowers` وثبّته؛ وبعد الخطوة 2 حط كمان `WF_SKILLS='superpowers'` في `.burhan/workflow.config` (الـ setup مش بيشوف plugins Codex). Superpowers plugin فيها process skills للـ agent؛ burhan بيربط مراحله بيها.
 
 2. في جذر المشروع، ومعاك Node 22 أو أحدث، شغّل:

@@ -57,6 +57,10 @@ for needle in 'all 6 hooks wired' 'WF_DOCS_DIR' 'WF_DISCOVERY_DIR' 'VERIFICATION
   check "English has $needle" "$(cat "$EN")" has "$needle"
   check "Arabic has $needle" "$(cat "$AR")" has "$needle"
 done
+for needle in '2.1.139' 'npm i -D burhan-kit' 'npm i -g burhan-kit' 'kit command'; do
+  check "English has $needle" "$(cat "$EN")" has "$needle"
+  check "Arabic has $needle" "$(cat "$AR")" has "$needle"
+done
 for f in "$EN" "$AR"; do
   n="$(count_fences "$f")"
   check "$f has balanced fences" "$((n % 2))" has 0

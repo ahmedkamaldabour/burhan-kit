@@ -42,6 +42,8 @@ You choose the proposed checks. The agent names the route (how much process this
 
 ## Quick start
 
+**Requirements:** Node 22+; Claude Code 2.1.139 or newer and/or Codex with its hooks trusted; the kit installed in the project (`npm i -D burhan-kit`) or on the PATH (`npm i -g burhan-kit`). In these docs `burhan` means the project's kit command, the one in `.burhan/bindings.md`: `npx burhan-kit` runs the copy installed in the project, and a plain `burhan` works only where it is on the PATH. burhan does not run npm: when setup finds no kit command it prints the install command for you to run.
+
 1. Optional, recommended: install Superpowers first, so setup can switch its skills on. burhan never installs it. In Claude Code use `/plugin install superpowers@claude-plugins-official`; in Codex use `/plugins`, search `superpowers` and install it; after step 2, also set `WF_SKILLS='superpowers'` in `.burhan/workflow.config` (setup cannot see Codex plugins). Superpowers is a plugin of process skills for the agent; burhan maps its phases to them.
 
 2. In the project root, with Node 22 or newer, run:

@@ -24,13 +24,14 @@ const finish = (dir: string, ...args: string[]) => cli(dir, ['item', 'finish', '
 const status = (dir: string): string => /^- \*\*Overall status:\*\* (.*)$/m.exec(readFileSync(planFile(dir), 'utf8'))?.[1] ?? '';
 
 const OLD_FULL = 'full run: cannot tell — WF_FULL_TEST_REGEX is empty or not usable, so the ledger cannot tell a full run from a run of one file';
+const HINT = "; to say which command runs the whole suite, use the kit command's setup --set full='^<command>$'";
 const FIX = (key: string): string => `put the value in single quotes, as ${key}='…'`;
 const LITERAL = "not a literal KEY=value line (allowed: KEY=word, KEY='text', KEY=\"text\" without $ ` \\ inside)";
 
 test('guide names a refused WF_FULL_TEST_REGEX line and keeps the old words (AC-02)', async () => {
   const dir = await recordProject();
   team(dir, "WF_CODE_REGEX='[.]ts$'\nWF_FULL_TEST_REGEX=\"^npm test$\"\n");
-  assert.equal(await fullLine(dir), `${OLD_FULL}; WF_FULL_TEST_REGEX is empty because its line .burhan/workflow.config:2 was refused by the config parser: ${FIX('WF_FULL_TEST_REGEX')}`);
+  assert.equal(await fullLine(dir), `${OLD_FULL}; WF_FULL_TEST_REGEX is empty because its line .burhan/workflow.config:2 was refused by the config parser: ${FIX('WF_FULL_TEST_REGEX')}${HINT}`);
   ledgerFor(dir, [{ kind: 'edit', ts: '2026-10-27T10:00:00Z', file: 'src/a.ts' }]);
   const ev = await cli(dir, ['evidence', '--item', 'foo']);
   assert.equal(ev.code, 0, ev.err);
@@ -40,7 +41,7 @@ test('guide names a refused WF_FULL_TEST_REGEX line and keeps the old words (AC-
 test('guide does not blame a refused line of another key (AC-01)', async () => {
   const dir = await recordProject();
   team(dir, "WF_CODE_REGEX='[.]ts$'\nWF_TEST_REGEX=\"a$b\"\n");
-  assert.equal(await fullLine(dir), OLD_FULL, 'WF_FULL_TEST_REGEX is plainly absent: the old words, nothing more');
+  assert.equal(await fullLine(dir), `${OLD_FULL}${HINT}`, 'WF_FULL_TEST_REGEX is plainly absent: the old words, nothing more');
   team(dir, "WF_FULL_TEST_REGEX='process[.]exitCode'\nWF_TEST_REGEX=\"a$b\"\n");
   const line = await fullLine(dir);
   assert.doesNotMatch(line, /refused|WF_FULL_TEST_REGEX is empty/, 'WF_FULL_TEST_REGEX has its value; the refused line is WF_TEST_REGEX\'s');
@@ -49,7 +50,7 @@ test('guide does not blame a refused line of another key (AC-01)', async () => {
 test('a plain empty key keeps the old messages and a single-quoted value is unaffected (AC-04)', async () => {
   const dir = await recordProject();
   team(dir, "WF_CODE_REGEX='[.]ts$'\nWF_FULL_TEST_REGEX=''\n");
-  assert.equal(await fullLine(dir), OLD_FULL);
+  assert.equal(await fullLine(dir), `${OLD_FULL}${HINT}`);
   team(dir, "WF_CODE_REGEX='[.]ts$'\nWF_FULL_TEST_REGEX='^npm test$'\n");
   assert.doesNotMatch(await fullLine(dir), /refused|WF_FULL_TEST_REGEX is empty/);
 
@@ -72,7 +73,7 @@ test('guide names a refused line of the local override file (AC-05)', async () =
   const dir = await recordProject();
   team(dir, "WF_CODE_REGEX='[.]ts$'\n");
   local(dir, 'WF_FULL_TEST_REGEX="^npm test$"\n');
-  assert.ok((await fullLine(dir)).endsWith(`WF_FULL_TEST_REGEX is empty because its line .burhan/local/workflow.config:1 was refused by the config parser: ${FIX('WF_FULL_TEST_REGEX')}`));
+  assert.ok((await fullLine(dir)).endsWith(`WF_FULL_TEST_REGEX is empty because its line .burhan/local/workflow.config:1 was refused by the config parser: ${FIX('WF_FULL_TEST_REGEX')}${HINT}`));
   team(dir, "WF_FULL_TEST_REGEX='^npm test$'\n");
   local(dir, 'WF_FULL_TEST_REGEX="^b$"\n');
   assert.doesNotMatch(await fullLine(dir), /refused|WF_FULL_TEST_REGEX is empty/, 'the team value stands; the refused local line changes nothing');
@@ -106,10 +107,10 @@ test('item finish names a refused WF_EVIDENCE_REGEX line in the hint, the stated
 test('a later valid empty line keeps the old messages (AC-04)', async () => {
   const dir = await recordProject();
   team(dir, "WF_CODE_REGEX='[.]ts$'\nWF_FULL_TEST_REGEX=\"^npm test$\"\nWF_FULL_TEST_REGEX=''\n");
-  assert.equal(await fullLine(dir), OLD_FULL, 'same file: the key is plainly empty');
+  assert.equal(await fullLine(dir), `${OLD_FULL}${HINT}`, 'same file: the key is plainly empty');
   team(dir, "WF_CODE_REGEX='[.]ts$'\nWF_FULL_TEST_REGEX=\"^npm test$\"\n");
   local(dir, "WF_FULL_TEST_REGEX=''\n");
-  assert.equal(await fullLine(dir), OLD_FULL, 'other file: the local empty line gives the key its value');
+  assert.equal(await fullLine(dir), `${OLD_FULL}${HINT}`, 'other file: the local empty line gives the key its value');
 
   const empty = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX=\"^node$\"\nWF_EVIDENCE_REGEX=''\n");
   await complete(empty);
@@ -122,7 +123,7 @@ test('a later valid empty line keeps the old messages (AC-04)', async () => {
 test("guide and item finish give the parser's reason for a refusal that single quotes do not fix (AC-04)", async () => {
   const dir = await recordProject();
   team(dir, "WF_CODE_REGEX='[.]ts$'\nWF_FULL_TEST_REGEX='^npm test\n");
-  assert.equal(await fullLine(dir), `${OLD_FULL}; WF_FULL_TEST_REGEX is empty because its line .burhan/workflow.config:2 was refused by the config parser: ${LITERAL}`);
+  assert.equal(await fullLine(dir), `${OLD_FULL}; WF_FULL_TEST_REGEX is empty because its line .burhan/workflow.config:2 was refused by the config parser: ${LITERAL}${HINT}`);
 
   const spaced = await recordProject('process[.]exitCode', "WF_EVIDENCE_REGEX = 'node'\n"); // the third line of the config
   await complete(spaced);

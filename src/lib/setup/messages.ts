@@ -90,6 +90,8 @@ export interface Messages {
   newAgentSession(target: string): string;
   /** Step 3 of the first run, the last block setup prints: a ready-to-copy line per selected agent. */
   onboardStep(agents: readonly Agent[]): string[];
+  /** Printed before the Step 3 block when the kit command is not found without the network: the one command the person runs. */
+  kitInstall(cmd: string): string[];
   ignoredCommittedFiles(lines: readonly string[]): string[];
   outsideWrites(paths: readonly { rel: string; real: string }[], allowed: boolean): string[];
   existingHooks(hooks: readonly ExistingHook[]): string[];
@@ -125,6 +127,7 @@ export interface Messages {
     result(code: number | null, timedOut: boolean): string;
     failed(cmd: string): string;
     saved(check: string): string;
+    savedSettings: string;
   };
   what: {
     kit(created: boolean): string;
@@ -181,6 +184,12 @@ const en: Messages = {
   nothingCommittedOutside: (allowed) => (allowed ? 'Nothing is committed · the files listed above are outside this project and WILL change' : 'Nothing is committed · the files listed above are outside this project (nothing changes unless you allow it)'),
   codexTrust: "Codex: first-use setup starts after you trust burhan's hooks in Codex (open Codex in this project and review them).",
   newAgentSession: (target) => `Start a new agent session in ${target} for burhan's hooks to take effect.`,
+  kitInstall: (cmd) => [
+    'Before step 3 — install burhan where the agent can run it with no network (once)',
+    'burhan is not installed in this project and is not on the PATH, so the agent would run `npx burhan-kit`, which downloads the package: a sandbox or an auto-mode check may stop it.',
+    `Run this once in the project: ${cmd}`,
+    'burhan does not run npm and does not change package.json: you run the command.',
+  ],
   onboardStep: (agents) => [
     'Step 3 — start your first session (once, in a NEW agent session)',
     'Open a NEW agent session inside this project and type any message — for example: start.',
@@ -208,6 +217,7 @@ const en: Messages = {
       '- Under Q3, if CLAUDE.md, AGENTS.md, or project commands name a stories/specs folder, offer: A folder I choose — <path> (already used by this project). Never guess or select that folder.',
       '- For the discovery question, recommend "beside" and tell the person which folder "beside" means: a `discovery` folder next to the work files folder they chose if one exists there, else `<work files folder>-discovery` (the summary names it); if the person names their own folder, put {"kind":"custom","path":"<folder>"} under "discovery".',
       '- After --apply, relay the "Step 3" block it prints exactly as it appears, as its own part of your reply (not folded into the closing report): the person opens a NEW agent session in the project and types any message there.',
+      '- After --apply, if it prints a "Before step 3" block, relay it exactly, before the Step 3 block: it holds a command the person runs. Never run it yourself.',
       "- End with a closing report in the user's writing language: at most six short lines; say what changed, what remains open, and how to undo. No table and no setting names.",
     ],
     readFailed: (f, w) => `cannot read the answers file ${f}: ${w}`,
@@ -228,16 +238,16 @@ const en: Messages = {
     instructions: [
       'burhan first-use setup. Do this now, before other work:',
       '',
-      '1. Read this project (its manifests, scripts and CI files) and decide five things: the one command that checks the work before a commit; which files are code; how test files are named; which command shows a change works (usually the check or the test run); and the paths where a mistake costs the most (security, permissions, money, migrations).',
+      '1. Read this project (its manifests, scripts and CI files) and decide six things: the one command that checks the work before a commit; which files are code; how test files are named; which command shows a change works (usually the check or the test run); the one command that runs the whole test suite, not one file; and the paths where a mistake costs the most (security, permissions, money, migrations).',
       '2. Show the person ONLY this block, filled in, and nothing else (no tables, no setting names, no patterns):',
       '',
       ...BLOCK,
       '',
       '3. If no check command fits, say so and ask which one to use. Never invent one.',
       "4. When the person picks 'Use these' (or changes something and agrees), save it with:",
-      "   npx burhan-kit setup --set check='<command or none>' code='<pattern>' test='<pattern>' evidence='<pattern>' sensitive='<p;q>'",
+      "   npx burhan-kit setup --set check='<command or none>' code='<pattern>' test='<pattern>' evidence='<pattern>' full='^<command>$' sensitive='<p;q>'",
       "   Separate list items with ';'. Leave a list out when it is empty. A value cannot contain a single quote (') or a line break: put the command in a small script instead.",
-      '   code and test are POSIX extended regular expressions on project-relative paths (for example \\.(js|ts)$ and \\.test\\.(js|ts)$); evidence is one on the command text (for example ^npm test). No \\d, \\w, lookarounds or back-references. Leave a pattern out only when nothing fits: with no code pattern the "done without proof" warning stays off, so tell the person.',
+      '   code and test are POSIX extended regular expressions on project-relative paths (for example \\.(js|ts)$ and \\.test\\.(js|ts)$); evidence is one on the command text (for example ^npm test). full is one on the whole-suite command, written ^<command>$ (for example ^npm test$): it lets burhan tell a whole-suite run from a run of one file; leave it out only when no single command runs the whole suite, and tell the person. No \\d, \\w, lookarounds or back-references. Leave a pattern out only when nothing fits: with no code pattern the "done without proof" warning stays off, so tell the person.',
       '5. The command runs the check once and shows its output. If it fails, show the person the output and ask; do not retry with a different command on your own. Add --force only if they confirm a slow but valid check.',
       '6. The agent may edit .burhan/workflow.config only, after showing the diff and getting approval; it is a shared file, so the change reaches the team through review (a pull request) like code; never the kit-owned files.',
     ].join('\n'),
@@ -247,6 +257,7 @@ const en: Messages = {
     result: (code, t) => t ? `The check timed out. exit ${code ?? 'none'}` : `exit ${code ?? 'none'}`,
     failed: (c) => `The check did not pass, so nothing was saved. Fix it and run again, or pick another command. If "${c}" is right but slow, run the same command again with --force to save it anyway.`,
     saved: (c) => c === '' ? 'Saved: no check before commit. First-use setup is done.' : `Saved: check before commit is ${c}. First-use setup is done.`,
+    savedSettings: 'Saved the settings. The check before commit stays as it was.',
   },
   what: {
     kit: (c) => c ? "burhan's workflow text, hooks and commands" : "burhan's own files, refreshed to this version",
@@ -303,6 +314,12 @@ const ar: Messages = {
   nothingCommittedOutside: (allowed) => (allowed ? 'مفيش حاجة بتتعمل لها commit · بس الملفات المذكورة فوق برّه المشروع ده وهتتغيّر' : 'مفيش حاجة بتتعمل لها commit · والملفات المذكورة فوق برّه المشروع ده (مفيش حاجة بتتغيّر إلا لو سمحت)'),
   codexTrust: 'Codex: الـ setup بتاع أول استخدام بيبدأ بعد ما توافق على الـ hooks بتاعة burhan جوّه Codex (افتح Codex في المشروع ده وراجعها).',
   newAgentSession: (target) => `ابدأ session جديدة للـ agent جوّه ${target} عشان hooks burhan تشتغل.`,
+  kitInstall: (cmd) => [
+    'قبل الخطوة 3 — سطّب burhan في مكان الـ agent يقدر يشغّله منه من غير إنترنت (مرة واحدة)',
+    'burhan مش مسطّب في المشروع ده ومش على الـ PATH، فالـ agent هيشغّل `npx burhan-kit` وده بينزّل الباكيدج: ممكن الـ sandbox أو فحص الـ auto mode يمنعه.',
+    `شغّل الأمر ده مرة واحدة في المشروع: ${cmd}`,
+    'burhan مش بيشغّل npm ومش بيعدّل package.json: إنت اللي بتشغّل الأمر.',
+  ],
   onboardStep: (agents) => [
     'الخطوة 3 — ابدأ أول جلسة (مرة واحدة، في جلسة agent جديدة)',
     'افتح جلسة agent جديدة جوّه المشروع ده واكتب أي رسالة — مثلًا: ابدأ.',
@@ -329,6 +346,7 @@ const ar: Messages = {
       '- وصّل سطر Superpowers اللي تحت زي ما هو بالظبط. متعيدش صياغته ومتسيبهوش.',
       '- في سؤال الـ discovery، رشّح "beside" وقول للشخص "beside" يعني أنهي فولدر: فولدر `discovery` جنب فولدر ملفات الشغل اللي اختاره لو موجود هناك، وإلا `<فولدر ملفات الشغل>-discovery` (الملخص بيذكره)؛ ولو الشخص سمّى فولدر بنفسه حط {"kind":"custom","path":"<folder>"} تحت "discovery".',
       '- بعد --apply، وصّل بلوك "الخطوة 3" اللي بيطبعه زي ما هو بالظبط، كجزء لوحده في ردّك (مش جوّه التقرير الختامي): الشخص يفتح جلسة agent جديدة جوّه المشروع ويكتب أي رسالة هناك.',
+      '- بعد --apply، لو طبع بلوك "قبل الخطوة 3" وصّله زي ما هو، قبل بلوك "الخطوة 3": فيه أمر الشخص هو اللي يشغّله. متشغّلوش بنفسك.',
       '- تحت السؤال التالت، لو CLAUDE.md أو AGENTS.md أو أوامر المشروع مسمّيين فولدر stories/specs، اعرض: فولدر أختاره — <path> (المشروع ده بيستخدمه بالفعل). متخمنش أو تختار الفولدر ده.',
       '- اختم بتقرير بلغة كتابة المستخدم: ستة سطور قصيرة بالكتير؛ قول إيه اتغيّر، وإيه لسه مفتوح، وإزاي يرجع. من غير جدول ولا أسماء إعدادات.',
     ],
@@ -350,16 +368,16 @@ const ar: Messages = {
     instructions: [
       'إعداد burhan لأول استخدام. اعمله دلوقتي قبل أي شغل تاني:',
       '',
-      '1. اقرا المشروع ده (ملفات الإعدادات والـ scripts وملفات الـ CI) وطلّع خمس حاجات: الأمر الواحد اللي بيشيّك على الشغل قبل الـ commit؛ إيه الملفات اللي تعتبر كود؛ إزاي بتتسمّى ملفات الاختبار؛ أنهي أمر بيثبت إن التغيير شغّال (غالبًا هو الفحص نفسه أو تشغيل الاختبارات)؛ والأماكن اللي الغلط فيها مكلّف أكتر (الأمان والصلاحيات والفلوس والـ migrations).',
+      '1. اقرا المشروع ده (ملفات الإعدادات والـ scripts وملفات الـ CI) وطلّع ست حاجات: الأمر الواحد اللي بيشيّك على الشغل قبل الـ commit؛ إيه الملفات اللي تعتبر كود؛ إزاي بتتسمّى ملفات الاختبار؛ أنهي أمر بيثبت إن التغيير شغّال (غالبًا هو الفحص نفسه أو تشغيل الاختبارات)؛ الأمر الواحد اللي بيشغّل مجموعة الاختبارات كلها (مش ملف واحد)؛ والأماكن اللي الغلط فيها مكلّف أكتر (الأمان والصلاحيات والفلوس والـ migrations).',
       '2. وري المستخدم الـ block ده بس، بعد ما تملاه، ومفيش أي حاجة غيره (من غير جداول ولا أسماء إعدادات ولا patterns):',
       '',
       ...BLOCK,
       '',
       '3. لو مفيش أمر فحص مناسب للمشروع، قول كده واسأل يستخدم أنهي أمر. وعمرك ما تألّف أمر (never invent).',
       "4. لما المستخدم يختار 'Use these' (أو يعدّل ويوافق)، احفظ بالأمر ده:",
-      "   npx burhan-kit setup --set check='<الأمر أو none>' code='<pattern>' test='<pattern>' evidence='<pattern>' sensitive='<p;q>'",
+      "   npx burhan-kit setup --set check='<الأمر أو none>' code='<pattern>' test='<pattern>' evidence='<pattern>' full='^<command>$' sensitive='<p;q>'",
       "   افصل عناصر القوايم بـ ';'. ولو القايمة فاضية شيلها. القيمة مينفعش يبقى فيها علامة تنصيص مفردة (') ولا سطر جديد: حط الأمر في script صغير واستخدمه.",
-      '   code وtest هما POSIX extended regular expressions على مسارات المشروع النسبية (مثلًا \\.(js|ts)$ و\\.test\\.(js|ts)$)؛ وevidence واحد على نص الأمر (مثلًا ^npm test). من غير \\d ولا \\w ولا lookarounds ولا back-references. سيب pattern بس لو مفيش حاجة تناسب: من غير code pattern إنذار "done من غير دليل" بيفضل مقفول، فقول للمستخدم.',
+      '   code وtest هما POSIX extended regular expressions على مسارات المشروع النسبية (مثلًا \\.(js|ts)$ و\\.test\\.(js|ts)$)؛ وevidence واحد على نص الأمر (مثلًا ^npm test). وfull واحد على نص أمر المجموعة كلها، مكتوب ^<command>$ (مثلًا ^npm test$): بيخلّي burhan يفرّق بين تشغيل المجموعة كلها وتشغيل ملف واحد؛ سيبه بس لو مفيش أمر واحد بيشغّلها كلها، وقول للمستخدم. من غير \\d ولا \\w ولا lookarounds ولا back-references. سيب pattern بس لو مفيش حاجة تناسب: من غير code pattern إنذار "done من غير دليل" بيفضل مقفول، فقول للمستخدم.',
       '5. الأمر ده بيشغّل الفحص مرة واحدة ويطبع النتيجة. لو فشل، وري النتيجة للمستخدم واسأله؛ ومتجرّبش أمر تاني من دماغك. ضيف --force بس لو هو أكّد إن الفحص صح بس بطيء.',
       '6. الـ agent يقدر يعدّل .burhan/workflow.config بس، بعد ما يورّي الـ diff وياخد موافقة؛ ده ملف مشترك، فالتغيير يوصل للفريق من خلال review (pull request) زي الكود؛ عمره ما يعدّل ملفات الـ kit.',
     ].join('\n'),
@@ -369,6 +387,7 @@ const ar: Messages = {
     result: (code, t) => t ? `الفحص خد وقت أكتر من المسموح. exit ${code ?? 'none'}` : `exit ${code ?? 'none'}`,
     failed: (c) => `الفحص منجحش، فمفيش حاجة اتحفظت. صلّحه وشغّله تاني، أو اختار أمر تاني. ولو "${c}" صح بس بطيء، شغّل نفس الأمر بـ --force عشان يتحفظ.`,
     saved: (c) => c === '' ? 'اتحفظ: من غير فحص قبل الـ commit. إعداد أول استخدام خلص.' : `اتحفظ: الفحص قبل الـ commit هو ${c}. إعداد أول استخدام خلص.`,
+    savedSettings: 'اتحفظت الإعدادات. الفحص قبل الـ commit زي ما هو.',
   },
   what: {
     kit: (c) => c ? 'نص طريقة الشغل والـ hooks والأوامر بتاعة burhan' : 'ملفات burhan نفسها، متحدّثة للنسخة دي',

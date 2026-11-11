@@ -1,8 +1,10 @@
 /** Session start (also after compaction): re-inject the gates, filled from the config, and surface the
  *  state file's "Now" section (port of session-gates.sh). */
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, stateNow, type Check } from './lib.mjs';
+import { kitMissing, realKitProbe } from './kit-command.mjs';
 import { clearStateSnapshot, fingerprintSnapshot, linkedItem } from './store.mjs';
 
 const STATE_LINES_MAX = 30;
@@ -28,6 +30,20 @@ function fill(v: Record<string, string>, skillsOn: boolean): string {
     out.push(line);
   }
   return out.join('\n');
+}
+
+/** One line when the kit command is not found without the network ('' when it is, and '' on any error: the hook fails open). The version comes from the
+ *  stamp `init` wrote and goes into the line only when it looks like a version, so no file text is echoed. */
+function kitLine(project: string, env: NodeJS.ProcessEnv): string {
+  try {
+    let version: string | null = null;
+    try { version = readFileSync(join(project, '.burhan/VERSION'), 'utf8').trim(); } catch { /* no stamp: the command carries no version */ }
+    if (version !== null && !/^\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$/.test(version)) version = null;
+    const cmd = kitMissing(project, realKitProbe(env), version);
+    if (cmd === null) return '';
+    const after = cmd.startsWith('npm i -g') ? 'run `burhan`, which is then on the PATH' : '`npx burhan-kit` runs the copy installed in the project';
+    return `⚑ KIT COMMAND NOT FOUND: burhan is not installed in this project and is not on the PATH, so \`npx burhan-kit\` would download the package. That needs the network and may be blocked (a sandbox, an auto-mode check). This holds for every burhan command, the first-use setup too: do not install it yourself without the person's yes. Ask them to run \`${cmd}\` once in the project; after that ${after}.`;
+  } catch { return ''; }
 }
 
 const isPlanOnly = (s: string): boolean => /^[ \t\n\v\f\r]*plan[-_ ]?only[ \t\n\v\f\r]*$/i.test(s.replace(/[`*]/g, ''));
@@ -59,6 +75,8 @@ export const sessionGates: Check = ({ cfg, project, ev, env }) => {
   }
   out.push(fill({ DOCS_DIR: cfg.WF_DOCS_DIR ?? '', STATE_FILE: cfg.WF_STATE_FILE ?? '', CHECK_CMD: cfg.WF_CHECK_CMD ?? '', MODE: mode },
     cfg.WF_SKILLS === 'superpowers'));
+  const kit = kitLine(project, env);
+  if (kit !== '') out.push(kit);
   if (cfg.WF_STACK_SETUP === 'pending') out.push("⚑ FIRST USE: burhan's project checks are not set up yet. Do this FIRST, whatever the person's first message says (a greeting too): run `npx burhan-kit setup --stack` and follow it. That command only prints instructions and writes no file, so run it without asking and show the person the block it describes at once. Do not ask what they want to work on before it. When it finishes, go on to the project onboarding in this same session without stopping to ask (Claude Code: /burhan:onboard · Codex: follow .burhan/commands/onboard.md), then go on with their request.");
   if (oldPlanOnly) out.push(oldPlanOnly);
 

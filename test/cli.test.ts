@@ -21,7 +21,7 @@ test('--help prints usage and exits 0; no command exits 2', async () => {
   const a = capture();
   assert.equal(await runCli(['--help'], a.io), 0);
   assert.match(a.o.out, /usage: burhan <command>/);
-  assert.match(a.o.out, /--set check=<cmd\|none> \[code=<re>\] \[test=<re>\] \[evidence=<re>\] \[sensitive=<p;q>\]/);
+  assert.match(a.o.out, /--set check=<cmd\|none> \[code=<re>\] \[test=<re>\] \[evidence=<re>\] \[full=<re>\] \[sensitive=<p;q>\]/);
   assert.doesNotMatch(a.o.out, /never-run|neverRun|WF_FORBIDDEN|WF_SINGLE_TEST_HINT/i);
   const b = capture();
   assert.equal(await runCli([], b.io), 2);

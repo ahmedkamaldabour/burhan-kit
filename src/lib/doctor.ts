@@ -9,6 +9,7 @@ import { realTarget } from './fs-safe.js';
 import { folderNames } from './item-files.js';
 import { sharedNumbers } from '../hooks/core/item-id.mjs';
 import { docsLocation } from './status.js';
+import { kitMissing, realKitProbe, type KitProbe } from '../hooks/core/kit-command.mjs';
 import { agentInstalled, hookKey, type HookEntry, type Settings } from './hooks-merge.js';
 import { kitDir, nodeHooksDir, readVersion } from './kit.js';
 import { ignoredCommittedSetupFiles } from './setup/engine.js';
@@ -24,7 +25,7 @@ import { countMatches, listProjectFiles } from './project-files.js';
 
 export interface Check { status: 'ok' | 'warn' | 'fail' | 'skip'; text: string }
 /** What the doctor asks of the machine; injected so tests need no particular PATH. */
-export interface Probe { nodeVersion(): string | null; claudeVersion(): string | null; home(): string; platform?(): NodeJS.Platform }
+export interface Probe { nodeVersion(): string | null; claudeVersion(): string | null; home(): string; platform?(): NodeJS.Platform; kitProbe?(): KitProbe }
 
 export const realProbe: Probe = {
   nodeVersion: () => {
@@ -135,6 +136,11 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
   if (differ.length) add('warn', `kit files differ from this CLI's kit (${differ.slice(0, 5).map((f) => `.burhan/${f}`).join(', ')}${differ.length > 5 ? ` and ${differ.length - 5} more` : ''}) — edited in place or another build; run burhan upgrade --apply`);
   else add('ok', 'kit files match this CLI');
 
+  // The kit command must run without the network (the trial: `npx` was blocked in a sandbox): a warning with the command, never a failure.
+  const kitCmd = kitMissing(target, probe.kitProbe?.() ?? realKitProbe(), version);
+  if (kitCmd === null) add('ok', 'kit command found without the network (node_modules/.bin in the project or the PATH)');
+  else add('warn', `kit command not found without the network: no node_modules/.bin/burhan in the project and no burhan on the PATH, so \`npx burhan-kit\` downloads the package and a sandbox may block it — run once, yourself, in the project: ${kitCmd} (burhan does not run npm)`);
+
   // ---- config: the same parser the CLI uses, mirroring what the hooks read (team, then local)
   const cfg: ParsedConfig = { values: {}, problems: [] };
   let team: Record<string, string> | null = null;
@@ -182,6 +188,9 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
   const ev = cfg.values.WF_EVIDENCE_DIR;
   if (ev && !isAbsolute(ev)) add('warn', `WF_EVIDENCE_DIR "${ev}" is not an absolute literal path — it is ignored and the default ledger is used`);
   if (cfg.values.WF_SENSITIVE_REGEX && !cfg.values.WF_SENSITIVE_NOTE) add('warn', 'WF_SENSITIVE_REGEX is set but WF_SENSITIVE_NOTE is empty — add the access-control reminder');
+  // The whole-suite pattern: with a test or evidence pattern set and no full pattern, `full run:` says "cannot tell" — a warning, never a failure.
+  if (((cfg.values.WF_TEST_REGEX ?? '') !== '' || (cfg.values.WF_EVIDENCE_REGEX ?? '') !== '') && (cfg.values.WF_FULL_TEST_REGEX ?? '') === '')
+    add('warn', "WF_FULL_TEST_REGEX is empty while WF_TEST_REGEX or WF_EVIDENCE_REGEX is set — `full run:` in guide and evidence says \"cannot tell\"; name the command that runs the whole test suite: setup --set full='^<command>$'");
 
   // ---- per agent (only the agents burhan is installed for)
   for (const agent of ['claude', 'codex'] as const) {

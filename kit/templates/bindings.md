@@ -11,7 +11,7 @@ The project-specific half of the working agreement (`.burhan/WORKFLOW.md` §1). 
 | **Discovery location** | *(dated files for things found mid-task)* | `WF_DISCOVERY_DIR` |
 | **Live state file** | *(per developer — default `.burhan/local/PROGRESS.md`, git-ignored — §5)* | `WF_STATE_FILE`, `WF_STATE_BUDGET` |
 | **Work-item index** | *(generated — `<docs>/README.md`, written by the kit's status command; never hand-edited)* | — |
-| **Kit command** | *(how this project runs the kit CLI, e.g. `npx burhan-kit` or `burhan`)* | — |
+| **Kit command** | *(how this project runs the kit CLI, e.g. `npx burhan-kit` runs the copy installed in the project, `burhan` works only where it is on the PATH)* | — |
 | **Discovery index** | *(default `<discovery>/README.md` — one line per discovery)* | — |
 | **Project memory location** | *(.burhan/PROJECT.md + .burhan/context/ — phases/memory.md)* | — |
 | **Fast check command** | *(non-mutating, seconds — run before every commit)* | `WF_CHECK_CMD` |

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { KitProbe } from '../src/hooks/core/kit-command.mjs';
 import { runChecks, type Check, type Probe } from '../src/lib/doctor.js';
 import { install } from '../src/lib/install.js';
 import { readVersion } from '../src/lib/kit.js';
@@ -10,7 +11,8 @@ import { runCli } from '../src/main.js';
 import { capture, posixOnly, tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-doctor-home-');
-const good: Probe = { nodeVersion: () => '24.13.0', claudeVersion: () => '2.1.296', home: () => home };
+const foundKit: KitProbe = { isFile: () => true, isRunnable: () => true, env: {}, platform: process.platform };
+const good: Probe = { nodeVersion: () => '24.13.0', claudeVersion: () => '2.1.296', home: () => home, kitProbe: () => foundKit };
 const probe = (o: Partial<Probe> = {}): Probe => ({ ...good, ...o });
 
 function project(agents: ('claude' | 'codex')[] = ['claude'], prefix = 'burhan-doctor-'): string {
@@ -385,7 +387,7 @@ test('a WF_*_REGEX the hooks refuse warns once, naming the key and the reason; a
   const p = project();
   assert.ok(!bad(runChecks(p, probe())).some((t) => t.includes('_REGEX')), 'nothing before');
   // Function replacements: a `$'` in a replacement string is a special pattern.
-  edit(cfg(p), (t) => t.replace(/^WF_CODE_REGEX=.*$/m, () => "WF_CODE_REGEX='(src)/\\1\\.ts$'").replace(/^WF_TEST_REGEX=.*$/m, () => "WF_TEST_REGEX='^test/'"));
+  edit(cfg(p), (t) => t.replace(/^WF_CODE_REGEX=.*$/m, () => "WF_CODE_REGEX='(src)/\\1\\.ts$'").replace(/^WF_TEST_REGEX=.*$/m, () => "WF_TEST_REGEX='^test/'").replace(/^WF_FULL_TEST_REGEX=.*$/m, () => "WF_FULL_TEST_REGEX='^npm test$'"));
   mkdirSync(join(p, '.burhan/local'), { recursive: true });
   writeFileSync(join(p, '.burhan/local/workflow.config'), "WF_EVIDENCE_REGEX='.{30000}'\n");
   const lines = bad(runChecks(p, probe())).filter((t) => t.includes('_REGEX'));
@@ -443,7 +445,7 @@ test('no judgement without a file list, and never for the evidence pattern', () 
   spawnSync('git', ['init', '-q'], { cwd: p });
   mkdirSync(join(p, 'src'), { recursive: true });
   writeFileSync(join(p, 'src/a.ts'), 'x');
-  edit(cfg(p), (s) => s.replace(/^WF_EVIDENCE_REGEX=.*$/m, "WF_EVIDENCE_REGEX='no-such-command'").replace(/^WF_SENSITIVE_REGEX=.*$/m, 'WF_SENSITIVE_REGEX=""'));
+  edit(cfg(p), (s) => s.replace(/^WF_EVIDENCE_REGEX=.*$/m, "WF_EVIDENCE_REGEX='no-such-command'").replace(/^WF_SENSITIVE_REGEX=.*$/m, 'WF_SENSITIVE_REGEX=""').replace(/^WF_FULL_TEST_REGEX=.*$/m, () => "WF_FULL_TEST_REGEX='^npm test$'"));
   assert.equal(runChecks(p, probe()).filter((c) => c.text.includes('WF_EVIDENCE_REGEX')).length, 0);
 });
 

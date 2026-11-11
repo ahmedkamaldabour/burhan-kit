@@ -32,12 +32,15 @@ export const UNREADABLE = 'the evidence ledger could not be read';
 
 const compile = (ere: string | undefined): RegExp | null => { try { return ere ? new RegExp(ereToJs(ere)) : null; } catch { return null; } };
 
+/** Said after "cannot tell" when the full-run pattern is empty or not usable: the command that fixes it (the kit command is in `.burhan/bindings.md`). */
+export const FULL_HINT = "to say which command runs the whole suite, use the kit command's setup --set full='^<command>$'";
+
 /** `recs`: the project's ledger, oldest first. A code edit is an edit of a path matching `code` or `test`; with neither usable every edit counts.
  *  A full run is a command a line runs (not a mention) that matches `full`, passed, and was not piped; a run with status `background` has no result and never counts.
  *  `fullRefused` is the sentence of `refusedLineOf` for WF_FULL_TEST_REGEX; it is added to the message when the key is empty. */
 export function fullRunOf(recs: LedgerRecord[], cfg: { code?: string; test?: string; full?: string; fullRefused?: string | null }): FullRun {
   const full = compile(cfg.full);
-  if (full === null) return { state: 'unknown', why: `WF_FULL_TEST_REGEX is empty or not usable, so the ledger cannot tell a full run from a run of one file${cfg.fullRefused ? `; ${cfg.fullRefused}` : ''}` };
+  if (full === null) return { state: 'unknown', why: `WF_FULL_TEST_REGEX is empty or not usable, so the ledger cannot tell a full run from a run of one file${cfg.fullRefused ? `; ${cfg.fullRefused}` : ''}; ${FULL_HINT}` };
   if (recs.length === 0) return { state: 'unknown', why: 'the evidence ledger has no record for this project yet' };
   const code = compile(cfg.code);
   const test = compile(cfg.test);

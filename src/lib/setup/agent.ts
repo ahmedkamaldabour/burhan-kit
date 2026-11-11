@@ -4,6 +4,8 @@ import { BurhanError } from '../errors.js';
 import { applySetup, currentAnswers, discoveryPathError, docsPathError, planSetup, recommended, renderSummary, type DiscoveryChoice, type DocsChoice, type SetupAnswers, type SetupFilesystem } from './engine.js';
 import { superpowersLine } from './summary.js';
 import { messages, QUESTIONS, REVIEWER_QUESTION, type Lang } from './messages.js';
+import type { KitProbe } from '../../hooks/core/kit-command.mjs';
+import { kitStepLines } from './kit-step.js';
 
 /** `setup --agent`: the rules for the agent, then one json block with the questions and the recommended answers. */
 export function agentInstructions(target: string, lang: Lang, home: string): string {
@@ -83,7 +85,7 @@ export function readAnswers(file: string, lang: Lang): SetupAnswers {
 }
 
 /** `setup --answers <file> [--apply]`: the summary, or (with --apply) write it and print the after-apply lines. */
-export function runAnswers(target: string, file: string, apply: boolean, io: Io, lang: Lang, home: string, fs?: SetupFilesystem, o: { allowOutside?: boolean } = {}): number {
+export function runAnswers(target: string, file: string, apply: boolean, io: Io, lang: Lang, home: string, fs?: SetupFilesystem, o: { allowOutside?: boolean; kit?: KitProbe } = {}): number {
   const a = readAnswers(file, lang);
   const m = messages(a.lang);
   const plan = planSetup(target, a, home);
@@ -91,6 +93,8 @@ export function runAnswers(target: string, file: string, apply: boolean, io: Io,
   if (!apply) return 0;
   applySetup(plan, fs, o);
   io.stdout(`\n${m.wizard.done}\n${m.changeUndo}\n${m.wizard.askAgent}\n`);
+  const kitLines = kitStepLines(plan.install.target, a.lang, o.kit);
+  if (kitLines.length) io.stdout(`\n${kitLines.join('\n')}\n`);
   io.stdout(`\n${m.onboardStep(a.agents).join('\n')}\n`);
   return 0;
 }

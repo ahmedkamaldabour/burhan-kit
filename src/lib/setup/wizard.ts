@@ -5,6 +5,8 @@ import type { Agent } from '../bootstrap.js';
 import { parseConfig, TEAM_CONFIG } from '../config.js';
 import { realTarget } from '../fs-safe.js';
 import { runCheck } from '../../hooks/core/run-check.mjs';
+import { realKitProbe, type KitProbe } from '../../hooks/core/kit-command.mjs';
+import { kitStepLines } from './kit-step.js';
 import { applySetup, currentAnswers, discoveryBeside, discoveryPathError, docsPathError, planSetup, recommended, renderSummary, type SetupAnswers } from './engine.js';
 import { PRIVATE_DOCS, SHARED_DOCS } from './answers.js';
 import { messages, QUESTIONS, REVIEWER_QUESTION, type Lang } from './messages.js';
@@ -51,7 +53,7 @@ async function ask(p: Prompter, a: SetupAnswers, lang: Lang, target: string): Pr
 }
 
 /** AC-01–03, 04, 06: what you get → recommended or choose → summary → apply / change / cancel. Cancel anywhere writes nothing and exits 0. */
-export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' | 'ar', home: string, allowOutside = false): Promise<number> {
+export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' | 'ar', home: string, allowOutside = false, kit: KitProbe = realKitProbe()): Promise<number> {
   const m = messages(lang);
   const w = m.wizard;
   const installed = currentAnswers(target);
@@ -97,6 +99,8 @@ export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' 
       io.stdout(m.stack.result(r.code, r.kind === 'timeout') + '\n');
     }
   }
+  const kitLines = kitStepLines(real, lang, kit);
+  if (kitLines.length) io.stdout(`\n${kitLines.join('\n')}\n`);
   io.stdout(`\n${m.onboardStep(a.agents).join('\n')}\n`);
   return 0;
 }

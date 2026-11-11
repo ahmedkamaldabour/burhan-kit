@@ -298,4 +298,11 @@ check "features: item new numbers the folder <docs>/NNN-slug/ and a command take
 check "features: every command takes the id, the number or the plain slug and refuses a shared number" "$(cat docs/features.md)" has 'every command takes the id, the number or the plain slug, and refuses one that two items share'
 check "features: the index example shows the number as #003 · slugify" "$(cat docs/features.md)" has '[#003 · slugify](003-slugify/)'
 
+echo "kit-command-and-full-run: the kit command, the requirements and the full= key"
+check "configuration: burhan means the project's kit command" "$cfgdoc" has "\`burhan\` means the project's kit command"
+check "configuration: the install commands" "$cfgdoc" has 'npm i -D burhan-kit'
+check "configuration: burhan does not run npm" "$cfgdoc" has 'burhan does not run npm'
+check "configuration: setup --set lists full=" "$cfgdoc" has '[evidence=<re>] [full=<re>]'
+check "configuration: setup --set full= saves the whole-suite pattern" "$cfgdoc" has "setup --set full='^<command>\$'"
+
 t_summary
