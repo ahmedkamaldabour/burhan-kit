@@ -17,7 +17,7 @@ export function project(): string {
 
 export async function cli(dir: string, args: string[]): Promise<{ code: number; out: string; err: string }> {
   const c = capture(dir);
-  const code = await runCli(args, c.io);
+  const code = await runCli(args, c.io, undefined, { unnumberedItems: true }); // items made here keep the plain slug as folder name (the older shape): the numbered shape is tested in item-new.test.ts and numbered-items.test.ts
   return { code, ...c.o };
 }
 

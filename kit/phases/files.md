@@ -4,6 +4,8 @@
 One folder per item under the docs location: `<docs>/<slug>/`. **Every file name starts with the
 slug** — a file opened in an editor tab, pasted into a diff or found by search keeps its context.
 
+In these paths `<slug>` is the item's id, its folder name: `NNN-slug` for an item that `burhan item new` made (three digits, the highest number in the folder + 1), the plain slug for an older folder. A command takes the id, the number (`12`) or the plain slug, and refuses a number or a slug that two items share, naming them. Shown for reading as `#012 · slug`, never matched.
+
 | File | Template | Written at |
 |---|---|---|
 | `<slug>-story.md` | `templates/story.md` | ② |

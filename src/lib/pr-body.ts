@@ -4,6 +4,7 @@ import type { Io } from '../main.js';
 import { BurhanError } from './errors.js';
 import { performedBy, qcVerdict, reviewFiles } from './facts.js';
 import { realTarget } from './fs-safe.js';
+import { resolveId } from './item-files.js';
 import { accepted, fieldLine, filled, given, itemRoute, latestQcFile, read } from './items.js';
 import { docsLocation } from './status.js';
 
@@ -51,7 +52,7 @@ export function prBody(o: { target: string; item?: string; docs?: string }, io: 
   if (!/^[a-z0-9][a-z0-9._-]*$/i.test(o.item) || o.item.includes('..')) throw new BurhanError(`not a work-item slug: ${o.item}`);
   const target = realTarget(o.target);
   const { abs: docs } = docsLocation(target, o.docs);
-  const slug = o.item;
+  const slug = resolveId(docs, o.item) ?? o.item; // the full id when the argument is a number or the plain slug of a numbered item
   const dir = join(docs, slug);
   if (!existsSync(dir)) throw new BurhanError(`no work item ${slug} under ${relative(target, docs) || '.'}/`);
   const realDir = realTarget(dir);

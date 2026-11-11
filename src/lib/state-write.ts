@@ -35,8 +35,10 @@ const sleepSync = (ms: number): void => { Atomics.wait(new Int32Array(new Shared
 const codeOf = (e: unknown): string => (e as NodeJS.ErrnoException).code ?? 'error';
 const quiet = (f: () => void): void => { try { f(); } catch { /* best effort */ } };
 
+const writeTokenTo = (fd: number, token: string): void => { writeSync(fd, token); };
+
 /** Creates `lock` with `wx`; waits up to `waitMs`; takes over a lock older than `staleMs`. Returns the release, which removes the lock only when it still holds this writer's token. */
-function takeLock(lock: string, waitMs: number, staleMs: number, writeToken: (fd: number, token: string) => void): () => void {
+function takeLock(lock: string, what: string, waitMs: number, staleMs: number, writeToken: (fd: number, token: string) => void): () => void {
   const token = `${process.pid} ${Date.now()} ${randomBytes(4).toString('hex')}\n`;
   const until = Date.now() + waitMs;
   for (;;) {
@@ -56,7 +58,7 @@ function takeLock(lock: string, waitMs: number, staleMs: number, writeToken: (fd
       quiet(() => unlinkSync(gone));
       continue;
     }
-    if (Date.now() >= until) throw new BurhanError(`the state file is locked by another writer (${lock}): run the command again in a moment; if no burhan command is running, delete that file`);
+    if (Date.now() >= until) throw new BurhanError(`${what} is locked by another writer (${lock}): run the command again in a moment; if no burhan command is running, delete that file`);
     sleepSync(POLL_MS);
   }
 }
@@ -90,7 +92,7 @@ function replaceAtomically(real: string, data: string | Buffer, o: WriteOptions,
 export function editStateFile(statePath: string, edit: (text: string) => string | null, o: WriteOptions = {}): 'written' | 'unchanged' {
   const real = realTarget(statePath);
   const label = o.label ?? basename(real);
-  const release = takeLock(`${real}.lock`, o.waitMs ?? LOCK_WAIT_MS, o.staleMs ?? LOCK_STALE_MS, o.writeToken ?? ((fd, token) => { writeSync(fd, token); }));
+  const release = takeLock(`${real}.lock`, 'the state file', o.waitMs ?? LOCK_WAIT_MS, o.staleMs ?? LOCK_STALE_MS, o.writeToken ?? writeTokenTo);
   try {
     for (let attempt = 1; ; attempt++) {
       let raw: Buffer;
@@ -104,6 +106,13 @@ export function editStateFile(statePath: string, edit: (text: string) => string 
       if (attempt >= EDIT_TRIES) throw new BurhanError(`${label} kept changing while it was being written: nothing was written; run the command again`);
     }
   } finally { release(); }
+}
+
+/** Run `fn` while this process holds the lock file `lock`: the same lock as the state file's (exclusive create, a 5 s wait, a leftover older than 4 s taken over,
+ *  released only with its own token). `what` names the guarded thing in the refusal ("the docs folder"). The lock guards only writers that take it. */
+export function withLock<T>(lock: string, what: string, fn: () => T, o: WriteOptions = {}): T {
+  const release = takeLock(lock, what, o.waitMs ?? LOCK_WAIT_MS, o.staleMs ?? LOCK_STALE_MS, o.writeToken ?? writeTokenTo);
+  try { return fn(); } finally { release(); }
 }
 
 /** The same temp file and rename for a file that nobody else edits (the `.bak` of `state compact`); no lock. */

@@ -23,7 +23,7 @@ import { approve } from './lib/approve.js';
 import { deviationAdd, deviationResolve } from './lib/deviation.js';
 import { findingAdd, findingDecide, findingDiscover, findingList } from './lib/finding.js';
 import { itemFinish } from './lib/item-finish.js';
-import { itemRecordsQuiet, verify } from './lib/verify.js';
+import { itemIdForReport, itemRecordsQuiet, verify } from './lib/verify.js';
 import { guide } from './lib/guide.js';
 import { printAdvice } from './lib/skill-advice.js';
 import { memoryAffected, memoryCheck, memoryStatus } from './lib/memory.js';
@@ -134,7 +134,10 @@ export const USAGE = `usage: burhan <command> [options]
 Without --apply, init, upgrade and uninstall are a dry run: they print what they would do and change nothing.
 `;
 
-export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFilesystem): Promise<number> {
+/** `seams` are for tests: `unnumberedItems` makes `item new` use the plain slug as the folder name (an item in the older shape), so the tests of the other commands keep their names. */
+export interface Seams { unnumberedItems?: boolean }
+
+export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFilesystem, seams: Seams = {}): Promise<number> {
   const [cmd, ...rest] = argv;
   let here: string | undefined;
   /** The folder a command works on: the nearest folder at or above `dir` (default: the current one) that holds .burhan/WORKFLOW.md, said on
@@ -187,9 +190,10 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         const target = at(positionals[0]);
         const root = projectRoot(target);
-        const records = values.item !== undefined && values.json !== true ? itemRecordsQuiet(root, values.item) : undefined;
-        const code = evidence({ target, item: values.item, session: values.session, last: values.last, json: values.json === true, records }, io);
-        if (code === 0 && values.item !== undefined && values.json !== true) io.stdout(`${fullRunLine(fullRunFor(root, process.env, { slug: values.item, records }))}\n`);
+        const item = values.item === undefined ? undefined : itemIdForReport(root, values.item); // a number or a plain slug names the item's full id
+        const records = item !== undefined && values.json !== true ? itemRecordsQuiet(root, item) : undefined;
+        const code = evidence({ target, item, session: values.session, last: values.last, json: values.json === true, records }, io);
+        if (code === 0 && item !== undefined && values.json !== true) io.stdout(`${fullRunLine(fullRunFor(root, process.env, { slug: item, records }))}\n`);
         return code;
       }
       case 'stats': {
@@ -243,7 +247,7 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
         if (sub === 'set') return advise(itemSet(at(), positionals[0], positionals.slice(1), io, values.docs, (values as { reopen?: string }).reopen), positionals[0], values.docs);
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         if (sub === 'finish') return advise(itemFinish(at(), positionals[0], io, { evidence: (values as { evidence?: string }).evidence, docs: values.docs }), positionals[0], values.docs, false);
-        if (sub === 'new') return advise(itemNew(at(), { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io), positionals[0], values.docs, false);
+        if (sub === 'new') return advise(itemNew(at(), { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io, seams.unnumberedItems === true ? positionals[0] ?? null : null), positionals[0], values.docs, false);
         return itemCheck(at(), positionals[0], io, values.docs);
       }
       case 'guide': {

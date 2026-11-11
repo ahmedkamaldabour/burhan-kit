@@ -4,6 +4,8 @@ import type { Io } from '../main.js';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { realTarget } from './fs-safe.js';
+import { ambiguous } from './item-files.js';
+import { matchItem } from '../hooks/core/item-id.mjs';
 
 function slugs(text: string): string[] {
   const out: string[] = [];
@@ -23,7 +25,9 @@ export function useItem(target: string, slug: string | undefined, io: Io): numbe
   const stateRel = readProjectConfig(project).values.WF_STATE_FILE || '.burhan/local/PROGRESS.md';
   const state = join(project, stateRel);
   const available = existsSync(state) ? slugs(readFileSync(state, 'utf8')) : [];
-  if (!available.includes(slug)) throw new BurhanError(`item "${slug}" is not in Now; available: ${available.join(', ') || '(none)'}`);
+  const m = matchItem(slug, available);
+  if (m.kind === 'many') throw ambiguous(slug, m);
+  if (m.kind === 'none') throw new BurhanError(`item "${slug}" is not in Now; available: ${available.join(', ') || '(none)'}`);
   io.stdout('linked at the end of this turn\n');
   return 0;
 }

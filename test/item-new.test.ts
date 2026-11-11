@@ -21,25 +21,25 @@ function project(o: { state?: string | null; config?: string } = {}): string {
   return dir;
 }
 const run = async (dir: string, args: string[]) => { const c = capture(dir); const code = await runCli(['item', 'new', ...args], c.io); return { code, ...c.o }; };
-const files = (dir: string, slug = 'foo'): string[] => {
+const files = (dir: string, slug = '001-foo'): string[] => {
   const d = join(dir, WORK, slug);
   if (!existsSync(d)) return [];
   return readdirSync(d).sort();
 };
 
 const ROUTES: Array<[string, string, string[]]> = [
-  ['feature', 'architectural', ['foo-build-spec.md', 'foo-implementation-plan.md', 'foo-story.md']],
-  ['feature', 'bounded', ['foo-build-spec.md', 'foo-implementation-plan.md', 'foo-story.md']],
-  ['bug', 'bounded', ['foo-build-spec.md', 'foo-implementation-plan.md', 'foo-story.md']],
-  ['bug', 'spike', ['foo-findings.md']],
-  ['investigation', 'bounded', ['foo-findings.md']],
-  ['change', 'bounded', ['foo-build-spec.md', 'foo-implementation-plan.md', 'foo-story.md']],
-  ['refactor', 'bounded', ['foo-build-spec.md', 'foo-implementation-plan.md']],
-  ['release', 'architectural', ['foo-build-spec.md', 'foo-implementation-plan.md']],
+  ['feature', 'architectural', ['001-foo-build-spec.md', '001-foo-implementation-plan.md', '001-foo-story.md']],
+  ['feature', 'bounded', ['001-foo-build-spec.md', '001-foo-implementation-plan.md', '001-foo-story.md']],
+  ['bug', 'bounded', ['001-foo-build-spec.md', '001-foo-implementation-plan.md', '001-foo-story.md']],
+  ['bug', 'spike', ['001-foo-findings.md']],
+  ['investigation', 'bounded', ['001-foo-findings.md']],
+  ['change', 'bounded', ['001-foo-build-spec.md', '001-foo-implementation-plan.md', '001-foo-story.md']],
+  ['refactor', 'bounded', ['001-foo-build-spec.md', '001-foo-implementation-plan.md']],
+  ['release', 'architectural', ['001-foo-build-spec.md', '001-foo-implementation-plan.md']],
 ];
 
 for (const [type, scope, expected] of ROUTES) {
-  test(`item new ${type} / ${scope} creates ${expected.map((f) => f.replace('foo-', '')).join(' and ')}, and they follow the contract`, async () => {
+  test(`item new ${type} / ${scope} creates ${expected.map((f) => f.replace('001-foo-', '')).join(' and ')}, and they follow the contract`, async () => {
     const dir = project();
     const r = await run(dir, ['foo', '--type', type, '--scope', scope]);
     assert.equal(r.code, 0, r.err);
@@ -47,7 +47,7 @@ for (const [type, scope, expected] of ROUTES) {
     const check = capture(dir);
     assert.equal(await runCli(['item', 'check', 'foo'], check.io), 0, check.o.out);
     for (const f of expected) {
-      const text = readFileSync(join(dir, WORK, 'foo', f), 'utf8');
+      const text = readFileSync(join(dir, WORK, '001-foo', f), 'utf8');
       assert.match(text, /\*\*Contract:\*\* 1/);
       if (!f.endsWith('-build-spec.md')) assert.match(text, new RegExp(`\\*\\*Route:\\*\\* ${type} / ${scope}`));
     }
@@ -58,15 +58,15 @@ test('item new adds the item to Now, before the next section, with its route, mo
   const dir = project();
   await run(dir, ['foo', '--type', 'feature', '--scope', 'bounded']);
   const text = readFileSync(join(dir, STATE), 'utf8');
-  assert.match(text, /## Now\n[\s\S]*### foo\n- \*\*Route:\*\* feature \/ bounded · \*\*Mode:\*\* step · intake \d{4}-\d{2}-\d{2}[\s\S]*## Waiting on you/);
+  assert.match(text, /## Now\n[\s\S]*### 001-foo\n- \*\*Route:\*\* feature \/ bounded · \*\*Mode:\*\* step · intake \d{4}-\d{2}-\d{2}[\s\S]*## Waiting on you/);
 });
 
 test('the mode comes from the route key, then WF_MODE_DEFAULT, then step', async () => {
   const dir = project({ config: 'WF_MODE_DEFAULT="auto"\nWF_MODE_BUG_BOUNDED="step"\n' });
   await run(dir, ['a', '--type', 'feature', '--scope', 'bounded']);
   await run(dir, ['b', '--type', 'bug', '--scope', 'bounded']);
-  assert.match(readFileSync(join(dir, WORK, 'a', 'a-story.md'), 'utf8'), /\*\*Mode:\*\* auto/);
-  assert.match(readFileSync(join(dir, WORK, 'b', 'b-story.md'), 'utf8'), /\*\*Mode:\*\* step/);
+  assert.match(readFileSync(join(dir, WORK, '001-a', '001-a-story.md'), 'utf8'), /\*\*Mode:\*\* auto/);
+  assert.match(readFileSync(join(dir, WORK, '002-b', '002-b-story.md'), 'utf8'), /\*\*Mode:\*\* step/);
 });
 
 test('item new refuses what the routing matrix does not allow, says why, and writes nothing', async () => {
@@ -143,7 +143,7 @@ test('a failed write leaves nothing behind, and the error says so (a read-only s
   chmodSync(join(dir, STATE), 0o644);
   assert.equal(r.code, 2, r.out + r.err);
   assert.match(r.err, /nothing was left behind/);
-  assert.equal(existsSync(join(dir, WORK, 'foo')), false);
+  assert.equal(existsSync(join(dir, WORK, '001-foo')), false);
   assert.equal((await run(dir, ['foo', '--type', 'bug', '--scope', 'bounded'])).code, 0); // and a retry works
 });
 
@@ -189,7 +189,7 @@ test('a template with Windows line endings gives files with one kind of line end
     writeFileSync(p, readFileSync(p, 'utf8').replace(/\n/g, '\r\n'));
   }
   await run(dir, ['foo', '--type', 'feature', '--scope', 'bounded']);
-  const text = readFileSync(join(dir, WORK, 'foo', 'foo-story.md'), 'utf8');
+  const text = readFileSync(join(dir, WORK, '001-foo', '001-foo-story.md'), 'utf8');
   assert.equal(/(^|[^\r])\n/.test(text), false, 'a bare \\n in a CRLF file');
 });
 
@@ -198,24 +198,24 @@ test('a project template that is missing falls back to the kit one, file by file
   rmSync(join(dir, '.burhan', 'templates', 'findings.md'));
   const r = await run(dir, ['foo', '--type', 'investigation', '--scope', 'bounded']);
   assert.equal(r.code, 0, r.err);
-  assert.deepEqual(files(dir), ['foo-findings.md']);
+  assert.deepEqual(files(dir), ['001-foo-findings.md']);
 });
 
 // ---- plan shape (sub-unit 10) ----
 test('the build spec made with a plan names the plan, carries the marker, and the plan names the spec', async () => {
   const dir = project();
   assert.equal((await run(dir, ['foo', '--type', 'feature', '--scope', 'bounded'])).code, 0);
-  const spec = readFileSync(join(dir, WORK, 'foo', 'foo-build-spec.md'), 'utf8');
-  assert.match(spec, /^- \*\*Plan:\*\* \.\/foo-implementation-plan\.md$/m);
+  const spec = readFileSync(join(dir, WORK, '001-foo', '001-foo-build-spec.md'), 'utf8');
+  assert.match(spec, /^- \*\*Plan:\*\* \.\/001-foo-implementation-plan\.md$/m);
   assert.match(spec, /^- \*\*Contract:\*\* 1$/m);
-  assert.match(readFileSync(join(dir, WORK, 'foo', 'foo-implementation-plan.md'), 'utf8'), /^- \*\*Build spec:\*\* \.\/foo-build-spec\.md/m);
+  assert.match(readFileSync(join(dir, WORK, '001-foo', '001-foo-implementation-plan.md'), 'utf8'), /^- \*\*Build spec:\*\* \.\/001-foo-build-spec\.md/m);
 });
 
 test('a project template for the build spec is used, and the kit one is the fallback', async () => {
   const dir = project();
   rmSync(join(dir, '.burhan', 'templates', 'build-spec.md'));
   assert.equal((await run(dir, ['foo', '--type', 'bug', '--scope', 'bounded'])).code, 0);
-  assert.deepEqual(files(dir), ['foo-build-spec.md', 'foo-implementation-plan.md', 'foo-story.md']);
+  assert.deepEqual(files(dir), ['001-foo-build-spec.md', '001-foo-implementation-plan.md', '001-foo-story.md']);
 });
 
 test('a project plan template without the Overall status line says the Contract line is written there (Deviation 18, review Minor 13)', async () => {
@@ -236,5 +236,5 @@ test('item new refuses a state file that is not valid UTF-8 instead of rewriting
   assert.match(r.err, /nothing was left behind/);
   assert.match(r.err, /not valid UTF-8/);
   assert.ok(readFileSync(join(dir, STATE)).equals(bytes));
-  assert.equal(existsSync(join(dir, WORK, 'foo')), false);
+  assert.equal(existsSync(join(dir, WORK, '001-foo')), false);
 });

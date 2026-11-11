@@ -5,7 +5,10 @@ import { readProjectConfig } from './config.js';
 import { fenced, gatesFor } from '../hooks/core/item-model.mjs';
 import { BurhanError } from './errors.js';
 import { putFile, realTarget } from './fs-safe.js';
-import { editStateFile } from './state-write.js';
+import { editStateFile, withLock } from './state-write.js';
+import { displayId, matchItem, nextNumber, readsAsNumber } from '../hooks/core/item-id.mjs';
+import { folderNames } from './item-files.js';
+import { headingIds } from './state-set.js';
 import { assertInside, isSlug, SLUG_RULE, today } from './item-io.js';
 import { kitDir } from './kit.js';
 import { docsLocation } from './status.js';
@@ -98,9 +101,33 @@ const hasBlock = (state: string, slug: string): boolean => {
   return false;
 };
 
-export function itemNew(target: string, o: { slug?: string; type?: string; scope?: string; docs?: string }, io: Io): number {
+/** The folder name of the lock that makes "read the numbers, take the next, make the folder" one step (the lock of src/lib/state-write.ts, on the docs folder). */
+export const DOCS_LOCK = '.item-new.lock';
+
+/** Under the docs-folder lock: refuse a slug another item already has (with or without its number), take the next number (the highest + 1) and make the folder.
+ *  The folder is the claim: a second `item new` that waited for the lock finds it and takes the number after. Returns the full id `NNN-slug`. */
+function claimFolder(docsAbs: string, slug: string, relDocs: string): string {
+  mkdirSync(docsAbs, { recursive: true });
+  return withLock(join(docsAbs, DOCS_LOCK), 'the docs folder', () => {
+    const names = folderNames(docsAbs);
+    const clash = matchItem(slug, names);
+    if (clash.kind === 'one') throw new BurhanError(`item "${slug}" already has a folder: ${relDocs}/${clash.id}`);
+    if (clash.kind === 'many') throw new BurhanError(`item "${slug}" already has folders: ${clash.ids.join(', ')}`);
+    const number = nextNumber(names);
+    if (number === null) throw new BurhanError('the docs folder already has an item numbered 999: no number is left for a new item');
+    const id = `${number}-${slug}`;
+    mkdirSync(join(docsAbs, id)); // not recursive: a folder that appeared meanwhile is an error, never shared
+    return id;
+  });
+}
+
+/** `burhan item new <slug> --type <t> --scope <s>`: validates, takes the next number under the lock, and writes the item's files and its block in Now.
+ *  `folder` (a test seam, never a CLI flag) is the whole folder name to use instead of a number: it makes an item in the older, unnumbered shape. */
+export function itemNew(target: string, o: { slug?: string; type?: string; scope?: string; docs?: string }, io: Io, folder: string | null = null): number {
   if (!isSlug(o.slug)) throw new BurhanError(`item new needs an item slug (${SLUG_RULE})`);
-  const slug = o.slug;
+  if (readsAsNumber(o.slug)) throw new BurhanError(`the slug "${o.slug}" reads as an item number (only digits, or three digits and a dash): item new adds the number itself, so give a slug with a word in it, such as fix-login`);
+  const bare = o.slug;
+  const id = folder;
   if (!o.type) throw new BurhanError(`item new needs --type (${TYPES.join(', ')})`);
   if (!o.scope) throw new BurhanError(`item new needs --scope (${SCOPES.join(', ')})`);
   if (!TYPES.includes(o.type)) throw new BurhanError(`--type "${o.type}" is not one of ${TYPES.join(', ')}`);
@@ -111,8 +138,6 @@ export function itemNew(target: string, o: { slug?: string; type?: string; scope
 
   const project = realTarget(target);
   const docs = docsLocation(target, o.docs);
-  const dir = join(docs.abs, slug);
-  if (existsSync(dir)) throw new BurhanError(`item "${slug}" already has a folder: ${relative(target, dir).split('\\').join('/')}`);
 
   const values = readProjectConfig(project).values;
   const stateRel = values.WF_STATE_FILE || '.burhan/local/PROGRESS.md';
@@ -120,7 +145,7 @@ export function itemNew(target: string, o: { slug?: string; type?: string; scope
   const stateStat = ((): { isFile(): boolean } | null => { try { return statSync(statePath); } catch { return null; } })();
   if (stateStat !== null && !stateStat.isFile()) throw new BurhanError(`the state file ${stateRel} is not a plain file`);
   const state = existsSync(statePath) ? readFileSync(statePath, 'utf8') : null;
-  if (state !== null && hasBlock(state, slug)) throw new BurhanError(`item "${slug}" already has a block in Now (${stateRel})`);
+  if (state !== null && matchItem(bare, headingIds(state)).kind !== 'none') throw new BurhanError(`item "${bare}" already has a block in Now (${stateRel})`);
 
   const route = `${o.type} / ${o.scope}`;
   const asked = values[`WF_MODE_${o.type.toUpperCase()}_${o.scope.toUpperCase()}`] || values.WF_MODE_DEFAULT || 'step';
@@ -129,19 +154,27 @@ export function itemNew(target: string, o: { slug?: string; type?: string; scope
     const own = join(project, '.burhan', 'templates', TEMPLATE[kind]);
     return readFileSync(existsSync(own) ? own : join(kitDir(), 'templates', TEMPLATE[kind]), 'utf8');
   };
+  const templates = make.map((kind) => ({ kind, text: template(kind) })); // read before the folder is claimed: a missing template leaves nothing behind
 
-  // Everything is computed and checked before the first write.
-  const out = make.map((kind) => ({ path: join(dir, NAME[kind](slug)), text: fill(kind, template(kind), slug, route, mode, make.includes('story')) }));
-  for (const f of out) assertInside(project, f.path);
+  // The folder is claimed now (a number taken under the lock); from here on a refusal or a failure removes it whole and nothing is left half-made.
+  const slug = id ?? claimFolder(docs.abs, bare, docs.rel);
+  const dir = join(docs.abs, slug);
+  if (id !== null && existsSync(dir)) throw new BurhanError(`item "${slug}" already has a folder: ${relative(target, dir).split('\\').join('/')}`);
+  const undo = (): void => { try { rmSync(dir, { recursive: true, force: true }); } catch { /* best effort: the message tells what to check */ } };
+
+  let out: Array<{ path: string; text: string }>;
   let blockLines: string[] | null = null;
+  try {
+    out = templates.map((t) => ({ path: join(dir, NAME[t.kind](slug)), text: fill(t.kind, t.text, slug, route, mode, make.includes('story')) }));
+    for (const f of out) assertInside(project, f.path);
+    if (state !== null) {
+      assertInside(project, statePath);
+      blockLines = [`### ${slug}`, `- **Route:** ${route} · **Mode:** ${mode} · intake ${today()}`, `- Created by \`burhan item new\`; fill ${make.includes('story') ? 'the story' : 'the files'} next, then \`burhan item check ${slug}\``];
+    }
+  } catch (error) { undo(); throw error; }
+
   let stateWritten = false;
   let noNow = false;
-  if (state !== null) {
-    assertInside(project, statePath);
-    blockLines = [`### ${slug}`, `- **Route:** ${route} · **Mode:** ${mode} · intake ${today()}`, `- Created by \`burhan item new\`; fill ${make.includes('story') ? 'the story' : 'the files'} next, then \`burhan item check ${slug}\``];
-  }
-
-  // The folder did not exist, so on any failure it is removed whole and nothing is left half-made.
   try {
     mkdirSync(dir, { recursive: true });
     for (const f of out) { mkdirSync(dirname(f.path), { recursive: true }); putFile(f.path, f.text); }
@@ -155,10 +188,10 @@ export function itemNew(target: string, o: { slug?: string; type?: string; scope
       noNow = !stateWritten;
     }
   } catch (error) {
-    try { rmSync(dir, { recursive: true, force: true }); } catch { /* best effort: the message below tells what to check */ }
+    undo();
     throw new BurhanError(`item new failed (${(error as NodeJS.ErrnoException).code ?? 'file system error'}) and nothing was left behind: ${(error as Error).message}`);
   }
-  io.stdout(`item new: created ${slug} (${route}, mode ${mode})\n`);
+  io.stdout(`item new: created ${displayId(slug)} (${route}, mode ${mode})\n`);
   for (const f of out) io.stdout(`  ${relative(target, f.path).split('\\').join('/')}\n`);
   if (stateWritten) io.stdout(`  state: added "### ${slug}" under Now in ${stateRel}\n`);
   else if (noNow) io.stdout(`  ${stateRel} has no "## Now" section: add the "### ${slug}" block yourself\n`);

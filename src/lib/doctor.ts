@@ -6,6 +6,9 @@ import type { Io } from '../main.js';
 import { isManagedCommand } from './commands.js';
 import { LOCAL_CONFIG, parseConfig, TEAM_CONFIG, type ParsedConfig } from './config.js';
 import { realTarget } from './fs-safe.js';
+import { folderNames } from './item-files.js';
+import { sharedNumbers } from '../hooks/core/item-id.mjs';
+import { docsLocation } from './status.js';
 import { agentInstalled, hookKey, type HookEntry, type Settings } from './hooks-merge.js';
 import { kitDir, nodeHooksDir, readVersion } from './kit.js';
 import { ignoredCommittedSetupFiles } from './setup/engine.js';
@@ -255,6 +258,9 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
 
   const ignoredCommitted = ignoredCommittedSetupFiles(target);
   if (ignoredCommitted.length) add('warn', `git ignores setup files. Add these exact lines to .gitignore; burhan did not edit it:\n${ignoredCommitted.join('\n')}`);
+
+  // ---- work items: a shared number is a warning (the full id stays unique); nothing is said when no number is shared
+  try { for (const s of sharedNumbers(folderNames(docsLocation(target).abs))) add('warn', `work items: the number ${s.number} is used by more than one item (${s.ids.join(', ')}) — a number alone is refused for them: use the full id`); } catch { /* no docs location to read */ }
 
   // ---- state
   const gi = join(W, '.gitignore');

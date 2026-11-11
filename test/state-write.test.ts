@@ -5,7 +5,7 @@ import { chmodSync, existsSync, lstatSync, readdirSync, readFileSync, realpathSy
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BurhanError } from '../src/lib/errors.js';
-import { editStateFile, ReplaceFailed } from '../src/lib/state-write.js';
+import { editStateFile, ReplaceFailed, withLock } from '../src/lib/state-write.js';
 import { project, STATE } from './item-fixture.js';
 import { posixOnly, symlinkSkip, tmpDir } from './helpers.js';
 
@@ -155,7 +155,9 @@ test('six processes adding six items at once leave every block', async () => {
   const results = await Promise.all(slugs.map((slug) => run(dir, ['item', 'new', slug, '--type', 'change', '--scope', 'bounded'])));
   for (const r of results) assert.equal(r.code, 0, r.err);
   const text = readFileSync(join(dir, STATE), 'utf8');
-  for (const slug of slugs) assert.equal(text.split(`### ${slug}\n`).length - 1, 1, `${slug} once`);
+  const heads = text.split('\n').filter((l) => l.startsWith('### '));
+  for (const slug of slugs) assert.equal(heads.filter((h) => h.endsWith(`-${slug}`)).length, 1, `${slug} once`);
+  assert.deepEqual(heads.map((h) => h.slice(4, 7)).sort(), ['001', '002', '003', '004', '005', '006']); // six numbers, none twice (the docs-folder lock)
   assert.match(text, /## Waiting on you\n- nothing\n/);
   assert.deepEqual(names(join(dir, '.burhan', 'local')), ['PROGRESS.md']);
 });
@@ -173,7 +175,7 @@ test('a block added by another writer while this one waits for the lock is still
   assert.equal(r.code, 0, r.err);
   const text = readFileSync(state, 'utf8');
   assert.match(text, /### other\n- written by hand while the child waited\n/);
-  assert.match(text, /### late\n/);
+  assert.match(text, /### 001-late\n/);
 });
 
 test('item new and state compact do not write the state path with putFile', () => {
@@ -195,4 +197,16 @@ test('a token write that fails leaves no lock behind, and the next writer goes a
   assert.ok(Date.now() - started < 1000, 'the next writer did not wait for a lock left by the failed write');
   assert.equal(readFileSync(file, 'utf8'), 'a\nb\nx\n');
   assert.deepEqual(names(dir), ['PROGRESS.md']);
+});
+
+test('withLock runs the function under the lock, removes the lock after it (also when the function throws), and refuses while another holds it, naming what it guards', () => {
+  const { dir } = scratch();
+  const lock = join(dir, 'x.lock');
+  assert.equal(withLock(lock, 'the thing', () => { assert.equal(existsSync(lock), true); return 7; }), 7);
+  assert.equal(existsSync(lock), false);
+  assert.throws(() => withLock(lock, 'the thing', () => { throw new Error('boom'); }), /boom/);
+  assert.equal(existsSync(lock), false);
+  writeFileSync(lock, `${process.pid} ${Date.now()} held\n`);
+  assert.throws(() => withLock(lock, 'the docs folder', () => 1, { waitMs: 150 }), (e: unknown) => e instanceof BurhanError && /^the docs folder is locked by another writer/.test(e.message) && e.message.includes(lock));
+  assert.equal(existsSync(lock), true); // the holder's lock is untouched
 });

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { ere, ereTest } from './ere.mjs';
 import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stateNow, type Check, type Ctx } from './lib.mjs';
 import { explicitLink } from './link.mjs';
+import { linkTarget } from './item-id.mjs';
 import { shellWrites } from './shell-writes.mjs';
 import { agoText, liveOwnerAge, slugText } from './state-blocks.mjs';
 import { approvalWordSeen, decisionWordSeen, rememberApprovalWord, rememberDecisionWord, clearShellCreated, clearStateSnapshot, fingerprintRefresh, linkedItem, linkItem, rememberedPhaseSkills, rememberedSkills, rememberPhaseSkills, rememberSkills, shellCreated, stateAfterSlugs, stateMineBlockSlugs, stateSnapshotFile } from './store.mjs';
@@ -530,7 +531,11 @@ export const turnAudit: Check = (ctx) => {
         if (candidate !== '') item = candidate;
       }
     }
-    if (item !== '') linkItem(auditCtx.project, auditCtx.ev.get('.session'), item, itemSlugs(stateNow(auditCtx.project, auditCtx.cfg)), auditCtx.env);
+    if (item !== '') {
+      const live = itemSlugs(stateNow(auditCtx.project, auditCtx.cfg));
+      const heading = linkTarget(item, live); // `burhan use 12` and `use <slug>` name the block's full id
+      if (heading !== null) linkItem(auditCtx.project, auditCtx.ev.get('.session'), heading, live, auditCtx.env);
+    }
     const subWritten = steps.filter((step) => step.kind === 'edit' && step.by !== '').map((step) => step.file).filter((file) => !isSource(file));
     let skillsBefore: string[] = [];
     try { skillsBefore = rememberedSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.env); } catch { /* fail open */ }

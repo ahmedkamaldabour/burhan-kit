@@ -1,6 +1,8 @@
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { accepted, choice, dated, exactRoute, field, fieldLine, filled, given, itemRoute, latestQcFile, read } from './items.js';
+import { folderNames } from './item-files.js';
+import { matchItem } from '../hooks/core/item-id.mjs';
 
 export type Independence = 'self' | 'independent' | 'unknown';
 export interface PhaseSpan { phase: string; minutes: number | null; tokens: number | null }
@@ -72,11 +74,11 @@ const when = (s: string): number | null => {
 const slugs = (v: string | null, itemDir: string): string[] => {
   if (v === null) return [];
   const docs = dirname(itemDir); const self = basename(itemDir);
-  const isItem = (t: string): boolean => {
-    try { return t !== self && existsSync(join(docs, t)) && statSync(join(docs, t)).isDirectory(); } catch { return false; }
-  };
+  const names = folderNames(docs);
   const words = v.match(/[a-z0-9]+(?:[-_.][a-z0-9]+)*/gi) ?? [];
-  return [...new Set(words.filter((t) => !t.startsWith('.') && isItem(t)))];
+  // The same matcher as the CLI: a word is an item when it resolves to exactly one folder (full id, number or plain slug); never a guess.
+  const ids = words.filter((t) => !t.startsWith('.')).map((t) => matchItem(t, names)).flatMap((m) => (m.kind === 'one' ? [m.id] : []));
+  return [...new Set(ids.filter((id) => id !== self))];
 };
 
 /** Rows of the plan's "Phase log" table (phases/close-out.md). */

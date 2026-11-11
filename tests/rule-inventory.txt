@@ -261,3 +261,6 @@ R258|core|Write it with `burhan state`.
 R259|phases/close-out.md|burhan state close <slug>
 R260|phases/enforcement.md|A block of another live session is reported at the turn end only when it is sure
 R261|phases/close-out.md|A direct edit of the state file is still possible: it is reported at the turn end only when the edit tool's own write shows it, never prevented.
+R262|phases/files.md|`NNN-slug` for an item that `burhan item new` made
+R263|phases/files.md|refuses a number or a slug that two items share, naming them
+R264|commands/e2e.md|Try `$ARGUMENTS` as an id, a number or a slug

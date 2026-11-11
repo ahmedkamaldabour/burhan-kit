@@ -446,3 +446,13 @@ test('no judgement without a file list, and never for the evidence pattern', () 
   edit(cfg(p), (s) => s.replace(/^WF_EVIDENCE_REGEX=.*$/m, "WF_EVIDENCE_REGEX='no-such-command'").replace(/^WF_SENSITIVE_REGEX=.*$/m, 'WF_SENSITIVE_REGEX=""'));
   assert.equal(runChecks(p, probe()).filter((c) => c.text.includes('WF_EVIDENCE_REGEX')).length, 0);
 });
+
+test('a number used by more than one item is a warning that names the items; a project with no shared number says nothing', () => {
+  const p = project();
+  assert.equal(find(runChecks(p, probe()), 'warn', 'work items'), undefined);
+  for (const id of ['013-a', '013-b', '014-c']) mkdirSync(join(p, '.burhan/work', id), { recursive: true });
+  const cs = runChecks(p, probe());
+  assert.ok(find(cs, 'warn', 'work items: the number 013 is used by more than one item (013-a, 013-b)'), bad(cs).join('\n'));
+  assert.equal(cs.filter((c) => c.text.startsWith('work items')).length, 1); // 014 is used once
+  assert.equal(cs.filter((c) => c.status === 'fail').length, 0);
+});

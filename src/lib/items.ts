@@ -1,4 +1,5 @@
 import { acceptedForm } from '../hooks/core/item-model.mjs';
+import { displayId } from '../hooks/core/item-id.mjs';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -160,6 +161,6 @@ export function listItems(docsDir: string, projectDir: string): Item[] {
 
 export function renderIndex(items: Item[]): string {
   const cell = (s: string) => s.replace(/\|/g, '\\|');
-  const rows = items.map((i) => `| [${cell(i.slug)}](${encodeURI(i.slug)}/) | ${cell(i.typeScope)} | ${cell(i.parent)} | ${cell(i.dependsOn)} | ${i.state} | ${i.lastActivity} |`);
+  const rows = items.map((i) => `| [${cell(displayId(i.slug))}](${encodeURI(i.slug)}/) | ${cell(i.typeScope)} | ${cell(i.parent)} | ${cell(i.dependsOn)} | ${i.state} | ${i.lastActivity} |`);
   return [...INDEX_HEADER, ...rows].join('\n') + '\n';
 }

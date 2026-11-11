@@ -4,7 +4,8 @@ import type { Io } from '../main.js';
 import { checkText, crossCheck, hasContractMarker, kindOf, storyIsApproved, type Fault, type Kind } from '../hooks/core/item-contract.mjs';
 import { BurhanError } from './errors.js';
 import { readItemFindings } from './findings.js';
-import { overallStatus, readOr } from './item-files.js';
+import { folderNames, itemFolder, overallStatus, readOr } from './item-files.js';
+import { sharedNumbers, parseId } from '../hooks/core/item-id.mjs';
 import { isSlug, SLUG_RULE } from './item-io.js';
 import { placeholderReport } from './placeholders.js';
 import { docsLocation } from './status.js';
@@ -79,12 +80,17 @@ export function checkItem(docsAbs: string, slug: string, project?: string): File
 /** `burhan item check <slug>`: prints every fault by name; exit 1 only when a file that carries the marker has one. */
 export function itemCheck(target: string, slug: string | undefined, io: Io, docs?: string): number {
   if (!isSlug(slug)) throw new BurhanError(`item check needs one item slug (${SLUG_RULE})`);
-  const results = checkItem(docsLocation(target, docs).abs, slug, target);
+  const abs = docsLocation(target, docs).abs;
+  const { slug: id } = itemFolder(abs, slug, 'item check');
+  const results = checkItem(abs, id, target);
   const faulty = results.filter((r) => r.faults.length > 0);
+  const shared = sharedNumbers(folderNames(abs)).find((s) => s.number === parseId(id).number); // a warning only: the full id stays unique
+  const warning = shared === undefined ? '' : `warning: the number ${shared.number} is used by more than one item: ${shared.ids.join(', ')}\n`;
   if (faulty.length === 0) {
-    io.stdout(`item check: ok — ${slug} (${results.length} file${results.length === 1 ? '' : 's'})\n`);
+    io.stdout(`item check: ok — ${id} (${results.length} file${results.length === 1 ? '' : 's'})\n${warning}`);
     return 0;
   }
+  io.stdout(warning);
   for (const r of faulty) {
     io.stdout(`${r.file} (${r.kind}${r.legacy ? ', legacy: no **Contract:** 1, so advice only' : ''})\n`);
     for (const f of r.faults) io.stdout(`  ${f.code}: ${f.message}\n`);

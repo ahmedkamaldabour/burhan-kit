@@ -6,7 +6,7 @@ import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { codeState, type CodeState } from './fingerprint.js';
 import { realTarget } from './fs-safe.js';
-import { itemFolder } from './item-files.js';
+import { itemFolder, resolveId } from './item-files.js';
 import { assertInside, isSlug } from './item-io.js';
 import { docsLocation } from './status.js';
 import { launchFor, runLaunch } from './verify-run.js';
@@ -99,6 +99,15 @@ export function itemRecords(target: string, dir: string, slug: string, docs?: st
 export function itemDirQuiet(target: string, slug: string, docs?: string): string | null {
   if (!isSlug(slug)) return null;
   try { return join(docsLocation(target, docs).abs, slug); } catch { return null; }
+}
+
+/** The full id of the item an argument names, for the commands that only report (`evidence --item`): the argument itself when no folder matches or the docs location
+ *  is not usable (the ledger may name an item whose folder is gone); an argument that names more than one item is refused with the candidates. */
+export function itemIdForReport(target: string, arg: string, docs?: string): string {
+  if (!isSlug(arg)) return arg;
+  let abs: string;
+  try { abs = docsLocation(target, docs).abs; } catch { return arg; }
+  return resolveId(abs, arg) ?? arg;
 }
 
 /** The item's records for the commands that only report: null when the slug or the docs location is not usable. One call reads the records and takes the code state once. */

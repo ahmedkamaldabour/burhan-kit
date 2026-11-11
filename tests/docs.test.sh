@@ -294,5 +294,8 @@ check "configuration: a failed record decides no even when a later ledger run pa
 check "configuration: a record in an item folder that leads outside the project is not read" "$cfgdoc" has 'one that is a link leading outside is not read'
 check "configuration: the finding limits left on purpose are named" "$cfgdoc" has 'shows wording, not consent'
 check "configuration: the --by name filter limit is named" "$cfgdoc" has 'starts with a model or tool word'
+check "features: item new numbers the folder <docs>/NNN-slug/ and a command takes the id, the number or the plain slug" "$(cat docs/features.md)" has '<docs>/NNN-slug/'
+check "features: every command takes the id, the number or the plain slug and refuses a shared number" "$(cat docs/features.md)" has 'every command takes the id, the number or the plain slug, and refuses one that two items share'
+check "features: the index example shows the number as #003 · slugify" "$(cat docs/features.md)" has '[#003 · slugify](003-slugify/)'
 
 t_summary

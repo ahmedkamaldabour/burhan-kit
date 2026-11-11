@@ -6,7 +6,9 @@ import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { realTarget } from './fs-safe.js';
 import { assertInside, isSlug, SLUG_RULE } from './item-io.js';
+import { ambiguous, itemFolder } from './item-files.js';
 import { readItem } from './items.js';
+import { matchItem } from '../hooks/core/item-id.mjs';
 import { editStateFile } from './state-write.js';
 import { docsLocation } from './status.js';
 
@@ -46,6 +48,24 @@ export function nowSlugs(text: string): string[] {
   if (now === -1) return out;
   for (let i = now + 1; i < lines.length && !/^##\s/.test(lines[i]!); i++) { const m = /^###\s+(\S+)/.exec(lines[i]!); if (m) out.push(m[1]!); }
   return out;
+}
+
+/** The ids of the `### ` blocks under Now: the run of letters, digits, `.`, `_` and `-` after the marks (what the block matching reads). */
+export function headingIds(text: string): string[] {
+  const { lines } = split(text);
+  const now = lines.findIndex((l) => NOW.test(l));
+  const out: string[] = [];
+  if (now === -1) return out;
+  for (let i = now + 1; i < lines.length && !/^##\s/.test(lines[i]!); i++) { const m = /^###\s+([A-Za-z0-9._-]+)/.exec(lines[i]!); if (m) out.push(m[1]!); }
+  return out;
+}
+
+/** The heading an argument (the full id, the number or the plain slug) names under Now: none is the no-block error, several are refused with the candidates. */
+function headingFor(text: string, arg: string, where: string): string {
+  const m = matchItem(arg, headingIds(text));
+  if (m.kind === 'many') throw ambiguous(arg, m);
+  if (m.kind === 'none') throw noBlock(arg, where);
+  return m.id;
 }
 
 /** The block's lines (heading to last non-blank line), or null. */
@@ -101,7 +121,7 @@ export function stateShow(target: string, slug: string | undefined, io: Io): num
     return 0;
   }
   checkSlug(slug);
-  const block = showBlock(text, slug);
+  const block = showBlock(text, headingFor(text, slug, stateRel));
   if (block === null) throw noBlock(slug, stateRel);
   io.stdout(`${block}\n`);
   return 0;
@@ -115,8 +135,9 @@ export function stateSet(target: string, slug: string, label: string, value: str
   if (CONTROL.test(value)) throw new BurhanError('the value holds a line break or another control character: a line is one line');
   const { stateRel, statePath } = statePathOf(target);
   const seen = { added: false };
-  const result = editStateFile(statePath, (text) => setBlockLine(text, slug, label, value, seen), { label: stateRel });
-  io.stdout(result === 'unchanged' ? `state set: ${slug} · ${label} already has that value in ${stateRel}\n` : `state set: ${slug} · ${label} ${seen.added ? 'added' : 'changed'} in ${stateRel}\n`);
+  let id = slug;
+  const result = editStateFile(statePath, (text) => { id = headingFor(text, slug, stateRel); return setBlockLine(text, id, label, value, seen); }, { label: stateRel });
+  io.stdout(result === 'unchanged' ? `state set: ${id} · ${label} already has that value in ${stateRel}\n` : `state set: ${id} · ${label} ${seen.added ? 'added' : 'changed'} in ${stateRel}\n`);
   return 0;
 }
 
@@ -127,14 +148,13 @@ export function stateClose(target: string, slug: string, o: { outcome?: string; 
   if (!isOutcome(o.outcome)) throw new BurhanError(`--outcome "${o.outcome}" is not one of ${OUTCOMES.join(', ')}`);
   if (CONTROL.test(o.commit) || CONTROL.test(o.folder)) throw new BurhanError('--commit and --folder hold a line break or another control character');
   const { project, stateRel, statePath } = statePathOf(target);
-  const dir = join(docsLocation(project, o.docs).abs, slug);
-  if (!existsSync(dir)) throw new BurhanError(`item "${slug}" has no folder, so its route cannot be read`);
-  const item = readItem(dir, slug, project);
-  if (item.typeScope === '—') throw new BurhanError(`the route of item "${slug}" cannot be read, so its closed line cannot be written`);
-  if (item.state !== o.outcome) throw new BurhanError(`item "${slug}" is "${item.state}", not "${o.outcome}": the closed line records where the item really is (finish it or approve its QC first)`);
-  const line = formatClosedLine({ slug, route: item.typeScope, outcome: o.outcome, commit: o.commit, folder: o.folder });
+  const { slug: id, dir } = itemFolder(docsLocation(project, o.docs).abs, slug, 'state close'); // "has no folder": the route cannot be read without it
+  const item = readItem(dir, id, project);
+  if (item.typeScope === '—') throw new BurhanError(`the route of item "${id}" cannot be read, so its closed line cannot be written`);
+  if (item.state !== o.outcome) throw new BurhanError(`item "${id}" is "${item.state}", not "${o.outcome}": the closed line records where the item really is (finish it or approve its QC first)`);
+  const line = formatClosedLine({ slug: id, route: item.typeScope, outcome: o.outcome, commit: o.commit, folder: o.folder });
   if (parseClosedLine(line) === null) throw new BurhanError('that would not be a closed line: --commit is 7 to 40 hex characters or "uncommitted", --folder is a path with no " · " and no space at either end');
-  editStateFile(statePath, (text) => closeBlock(text, slug, line), { label: stateRel });
-  io.stdout(`state close: ${slug} is now one line in ${stateRel}\n  ${line}\n`);
+  editStateFile(statePath, (text) => closeBlock(text, headingFor(text, id, stateRel), line), { label: stateRel });
+  io.stdout(`state close: ${id} is now one line in ${stateRel}\n  ${line}\n`);
   return 0;
 }

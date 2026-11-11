@@ -18,7 +18,7 @@ in-flight block; the turn-end hook writes this session's external link.
 
 - Read the state file first. A hook's finding in the context is explained in
   `.burhan/phases/enforcement.md`.
-- Does `<docs>/<slug>/` exist? Try `$ARGUMENTS` as a slug (kebab-case a title).
+- Does `<docs>/<slug>/` exist? Try `$ARGUMENTS` as an id, a number or a slug (kebab-case a title).
 - If it exists, read `<slug>-story.md`, `<slug>-implementation-plan.md` or `<slug>-findings.md`, and `reviews/` by need: the QC and verification reports in full, and of the review file its headings, the sections of sub-units not yet Reviewed and the latest fix round; open a closed section only when a finding of it is named or the plan says so (QC reads everything). **Cross-check against the actual code** — don't trust status markers
   alone.
 - Print a short status: route (type / scope), which gates are done, sub-units done / in progress /

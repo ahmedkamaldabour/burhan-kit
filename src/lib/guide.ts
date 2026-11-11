@@ -1,6 +1,7 @@
 import type { Io } from '../main.js';
 import { skillFor } from '../hooks/core/item-stage.mjs';
 import { realTarget } from './fs-safe.js';
+import { displayId } from '../hooks/core/item-id.mjs';
 import { appliedSentence } from './deviation.js';
 import { questionLines } from './finding.js';
 import { fullRunFor, fullRunLine } from './full-run.js';
@@ -43,7 +44,7 @@ export function guide(target: string, slug: string | undefined, io: Io, o: { jso
   const full = fullRunFor(realTarget(target), process.env, { slug: s, docs: o.docs });
   if (o.json) { io.stdout(`${JSON.stringify({ item: s, route, stage: st.stage, authorized: st.authorized, why: st.why, next: st.next, skill: advice?.skill ?? null, fullRun: full })}\n`); return 0; }
   const mode = /^- \*\*Mode:\*\*[ \t]*(step|auto)(?![A-Za-z])/m.exec(story ?? '')?.[1];
-  io.stdout(`guide: ${s} — ${route || 'no exact route'}${mode ? ` (mode ${mode})` : ''}\n`);
+  io.stdout(`guide: ${displayId(s)} — ${route || 'no exact route'}${mode ? ` (mode ${mode})` : ''}\n`);
   io.stdout(`stage: ${st.stage}\n`);
   io.stdout(`code edits: ${st.authorized ? 'AUTHORIZED' : 'NOT authorized'} — ${st.why}\n`);
   if (advice !== null) io.stdout(`${skillAdviceLine(advice)}\n`);
