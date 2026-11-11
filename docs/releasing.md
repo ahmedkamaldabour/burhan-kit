@@ -46,4 +46,4 @@ Every `uses:` in `ci.yml` and `release.yml` is a commit SHA with its tag in a co
 
 ## Not verified here
 
-The workflow ran end to end for v0.6.0, v0.7.0 and v0.7.1 (runs 40498521668, 40781954749 and 40898804293: the guard, lint and tests on Node 22 and 24, the pack check, and the publish with provenance). The version and CHANGELOG checks of the guard, the dist-tag check and the checkout in `publish`, the `github-release` job and the per-job token rights came after those runs and have not run in a real release yet: the first tag after them is their first run. No prerelease has been published. The Windows and macOS jobs of `ci.yml` run on a push and on a pull request.
+The workflow ran end to end for v0.6.0, v0.7.0, v0.7.1, v0.8.0 and v0.8.1 (the last two with the guard, the dist-tag check, the `github-release` job and the per-job token rights, runs 41602881023 and 41852807613). No prerelease has been published. The Windows and macOS jobs of `ci.yml` run on a push and on a pull request.

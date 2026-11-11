@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.9.0 — 2026-11-11
+
+Review findings you decide, shared state written safely, numbered work items, and a plan split by written criteria.
+
+### Review findings need your decision
+- Every review and QC finding now needs a decision of the owner before `burhan item finish` and `burhan approve qc`: `finding add|list|decide|discover` write and read a Findings table in each review and QC report. A decision is fixed, a discovery, or accepted with a written reason; a Critical is never accepted. `finding list` puts the open ones to you as one question with the ready commands and a recommendation.
+- The gate is always on: the plan line `- **Findings gate:** on` is gone and nothing reads it. An item made by an older version has a plan without that line and is now gated when it is finished.
+
+### A problem with a known fix is fixed, not stopped on
+- `burhan deviation add --apply "<why no decision is needed>"` records a row as `applied`: the agent fixed a problem whose answer was known, says so, and the build goes on in step and in auto mode. A row without `--apply` stays open and stops the build until you decide. `guide` and `item finish` list the applied rows for you.
+
+### A plan is split into few real sub-units
+- A piece is its own sub-unit only when it touches a sensitive path or a scope escalator (A1), writes your decision or a gate state (A2), or needs its own failing and passing test (A3). `burhan item check` reports a sub-unit with no `- **Why separate:**` line, and more than 6 sub-units with no `- **More than 6 because:**` line. The 400-line condition of review groups is gone.
+
+### The shared state file is written safely
+- Every write of the state file by the CLI takes a lock and replaces only the named block with one atomic rename, so two sessions on two items no longer lose each other's block. `burhan state show|set|close` let an agent change its own item block through the CLI. A direct edit of the file is still possible and nothing stops it; the turn-end report names some of them, not all.
+
+### Work items are numbered
+- `burhan item new` makes `<docs>/NNN-slug/` (three digits, the highest number + 1, `001` when there is none). Every command takes the full id, the number (`12` or `012`) or the plain slug, and refuses one that two items share, naming them. Older folders keep their name and sort after the numbered ones; nothing is renamed. The same number can still appear on two clones: `item check` and `doctor` warn about it, nothing prevents it.
+
+### Smaller changes
+- `burhan guide`, `burhan evidence` and `burhan item finish` name the config line the parser refused when a pattern key is empty because of it (for example a `$` inside double quotes), with the one-line fix.
+- The `onboard` command does the first-use setup itself when `WF_STACK_SETUP` is `pending`, and goes on to the onboarding in the same turn.
+
+### Not measured
+- Windows and macOS for the new commands, two real Claude sessions writing at once, a weak model following the new kit text, and the turn-end report on Codex.
+
+### Upgrading from 0.8.1
+- Installed projects need `upgrade --apply` for the kit text (`npx burhan-kit upgrade --apply`); the commands ship with the package.
+
 ## 0.8.1 — 2026-11-04
 
 Fixes to how `burhan guide`, `burhan evidence` and `burhan item finish` read the proof, and a few commands made more careful.
