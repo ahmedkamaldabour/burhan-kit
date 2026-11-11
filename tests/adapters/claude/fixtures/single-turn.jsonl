@@ -1,5 +1,5 @@
 {"type":"user","isSidechain":false,"message":{"role":"user","content":"add the export"}}
-{"type":"assistant","isSidechain":false,"message":{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Skill","input":{"skill":"superpowers:test-driven-development"}}]}}
+{"type":"assistant","isSidechain":false,"message":{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Skill","input":{"skill":"burhan-build"}}]}}
 {"type":"user","isMeta":true,"isSidechain":false,"message":{"role":"user","content":[{"type":"text","text":"Base directory for this skill: ..."}]}}
 {"type":"user","isSidechain":false,"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"ok"}]}}
 {"type":"assistant","isSidechain":false,"message":{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Write","input":{"file_path":"/proj/src/new.src","content":"x"}}]}}

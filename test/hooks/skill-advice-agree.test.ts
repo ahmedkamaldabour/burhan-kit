@@ -33,7 +33,7 @@ async function hookSkill(route: string, storyText: string | null, planText: stri
   const project = tmpDir('burhan-agree-project-');
   const store = tmpDir('burhan-agree-store-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
-  writeFileSync(join(project, '.burhan/workflow.config'), [`WF_DOCS_DIR=${D}`, 'WF_STATE_FILE=.burhan/local/PROGRESS.md', 'WF_SKILLS=superpowers', `WF_EVIDENCE_DIR='${store}'`].join('\n') + '\n');
+  writeFileSync(join(project, '.burhan/workflow.config'), [`WF_DOCS_DIR=${D}`, 'WF_STATE_FILE=.burhan/local/PROGRESS.md', `WF_EVIDENCE_DIR='${store}'`].join('\n') + '\n');
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), `# s\n## Now\n### foo\n- **Route:** ${route}\n## Waiting on you\n`);
   const link = join(store, projectKey(project), 'S', 'item');
   mkdirSync(dirname(link), { recursive: true });
@@ -43,7 +43,7 @@ async function hookSkill(route: string, storyText: string | null, planText: stri
   if (storyText !== null) writeFileSync(join(dir, 'foo-story.md'), storyText);
   if (planText !== null) writeFileSync(join(dir, 'foo-implementation-plan.md'), planText);
   const out = (await run(['core', 'prompt-router'], JSON.stringify({ event: 'prompt', prompt: 'hello', project_dir: project, session: 'S' }), { ...process.env, WF_EVIDENCE_DIR: store })).stdout;
-  return /Skill \([^)]*\): invoke (\S+) and read/.exec(out)?.[1] ?? null;
+  return /Skill \([^)]*\): invoke (\S+) \(the Skill tool/.exec(out)?.[1] ?? null;
 }
 
 test('the table agrees with the prompt router wherever both name a skill; it differs only in the four finer stages', async () => {

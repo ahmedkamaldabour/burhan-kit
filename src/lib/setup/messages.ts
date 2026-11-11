@@ -79,8 +79,8 @@ export interface Messages {
   reviewer(value: 'other' | 'same' | 'claude' | 'codex'): string;
   docsPrivate: string; docsShared: string; docsCustom: string;
   models: string;
-  /** One line. Detection is Claude Code only, so the Codex route is printed, worded conditionally, whenever Codex is selected. */
-  superpowers(available: boolean, disabled: boolean, agents: readonly Agent[]): string;
+  /** One line: the six skills burhan installs and where. */
+  skills(): string;
   branches: string;
   check(pending: boolean, cmd: string): string;
   changeUndo: string;
@@ -168,15 +168,7 @@ const en: Messages = {
   reviewer: (v) => v === 'other' ? 'Review and QC: the other agent' : v === 'claude' || v === 'codex' ? `Review and QC: ${v === 'claude' ? 'Claude' : 'Codex'} (kept from your existing settings)` : 'Review and QC: the same agent in a fresh context',
   docsPrivate: 'private, not in git', docsShared: 'shared in git', docsCustom: 'your folder',
   models: 'Models: same as your session',
-  superpowers: (available, disabled, agents) => available && disabled
-    ? "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'."
-    : [
-      available
-        ? "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Strongly recommended; turn off with WF_SKILLS='none'."
-        : 'Superpowers is strongly recommended, and optional: burhan never installs it',
-      ...(!available && agents.includes('claude') ? ['Claude Code: /plugin install superpowers@claude-plugins-official'] : []),
-      ...(agents.includes('codex') ? ['Codex — if it is not installed yet: in Codex CLI run /plugins, search superpowers, choose Install Plugin.'] : []),
-    ].join(' · '),
+  skills: () => 'Process skills: burhan installs its own six (burhan-story, burhan-plan, burhan-build, burhan-debug, burhan-review, burhan-done) in .burhan/skills/ and, for Claude Code, in .claude/skills/ — nothing else to install',
   branches: 'Branches: feature branches + pull requests; commit only after the a/b/c checkpoint',
   check: (p, c) => p ? 'Check before commit: your agent sets this up on first use' : `Check before commit: ${c} (kept)`,
   changeUndo: 'Change anytime: npx burhan-kit setup · Undo: npx burhan-kit uninstall',
@@ -213,7 +205,7 @@ const en: Messages = {
       '- Never edit .burhan/ yourself; burhan writes it.',
       '- Put the answers in a JSON file shaped like "recommended" below, then run: npx burhan-kit setup --answers <file>',
       '- Show its summary to the person. Run it again with --apply only after the user says yes.',
-      '- Relay the Superpowers line below exactly as it appears. Do not paraphrase or omit it.',
+      '- Relay the skills line below exactly as it appears. Do not paraphrase or omit it.',
       '- Under Q3, if CLAUDE.md, AGENTS.md, or project commands name a stories/specs folder, offer: A folder I choose — <path> (already used by this project). Never guess or select that folder.',
       '- For the discovery question, recommend "beside" and tell the person which folder "beside" means: a `discovery` folder next to the work files folder they chose if one exists there, else `<work files folder>-discovery` (the summary names it); if the person names their own folder, put {"kind":"custom","path":"<folder>"} under "discovery".',
       '- After --apply, relay the "Step 3" block it prints exactly as it appears, as its own part of your reply (not folded into the closing report): the person opens a NEW agent session in the project and types any message there.',
@@ -298,15 +290,7 @@ const ar: Messages = {
   reviewer: (v) => v === 'other' ? 'المراجعة والـ QC: الـ agent التاني' : v === 'claude' || v === 'codex' ? `المراجعة والـ QC: ${v === 'claude' ? 'Claude' : 'Codex'} (متسابة زي ما هي من إعداداتك)` : 'المراجعة والـ QC: نفس الـ agent في context جديد',
   docsPrivate: 'خاصة بيك، بره git', docsShared: 'مشتركة في git', docsCustom: 'الفولدر بتاعك',
   models: 'الموديلات: نفس موديل الـ session بتاعتك',
-  superpowers: (available, disabled, agents) => available && disabled
-    ? "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'."
-    : [
-      available
-        ? "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". موصى به بقوة؛ وتقدر تقفله بـ WF_SKILLS='none'."
-        : 'Superpowers موصى به بقوة، وهو اختياري: burhan مش بيسطّبه خالص',
-      ...(!available && agents.includes('claude') ? ['Claude Code: /plugin install superpowers@claude-plugins-official'] : []),
-      ...(agents.includes('codex') ? ['Codex — لو لسه مش متسطّب: في Codex CLI شغّل /plugins، دوّر على superpowers، واختار Install Plugin.'] : []),
-    ].join(' · '),
+  skills: () => 'الـ process skills: burhan بيسطّب 6 skills بتاعته (burhan-story وburhan-plan وburhan-build وburhan-debug وburhan-review وburhan-done) في .burhan/skills/ وكمان في .claude/skills/ لـ Claude Code — مفيش حاجة تانية تسطّبها',
   branches: 'الـ branches: branch لكل ميزة + pull request؛ ومفيش commit غير بعد ما تختار a/b/c',
   check: (p, c) => p ? 'الفحص قبل الـ commit: الـ agent بتاعك هيظبطه أول ما يشتغل' : `الفحص قبل الـ commit: ${c} (زي ما هو)`,
   changeUndo: 'تغيّر في أي وقت: npx burhan-kit setup · ترجع في كلامك: npx burhan-kit uninstall',
@@ -343,7 +327,7 @@ const ar: Messages = {
       '- متعدّلش فولدر .burhan/ بنفسك؛ burhan هو اللي بيكتبه.',
       '- حط الإجابات في ملف JSON بنفس شكل "recommended" اللي تحت، وبعدين شغّل: npx burhan-kit setup --answers <file>',
       '- وري الشخص الملخص. ومتشغّلوش بـ --apply غير لما المستخدم يقول أيوه.',
-      '- وصّل سطر Superpowers اللي تحت زي ما هو بالظبط. متعيدش صياغته ومتسيبهوش.',
+      '- وصّل سطر الـ skills اللي تحت زي ما هو بالظبط. متعيدش صياغته ومتسيبهوش.',
       '- في سؤال الـ discovery، رشّح "beside" وقول للشخص "beside" يعني أنهي فولدر: فولدر `discovery` جنب فولدر ملفات الشغل اللي اختاره لو موجود هناك، وإلا `<فولدر ملفات الشغل>-discovery` (الملخص بيذكره)؛ ولو الشخص سمّى فولدر بنفسه حط {"kind":"custom","path":"<folder>"} تحت "discovery".',
       '- بعد --apply، وصّل بلوك "الخطوة 3" اللي بيطبعه زي ما هو بالظبط، كجزء لوحده في ردّك (مش جوّه التقرير الختامي): الشخص يفتح جلسة agent جديدة جوّه المشروع ويكتب أي رسالة هناك.',
       '- بعد --apply، لو طبع بلوك "قبل الخطوة 3" وصّله زي ما هو، قبل بلوك "الخطوة 3": فيه أمر الشخص هو اللي يشغّله. متشغّلوش بنفسك.',

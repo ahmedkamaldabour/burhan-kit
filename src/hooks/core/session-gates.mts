@@ -12,14 +12,12 @@ const STATE_LINE_CHARS = 300;
 // gates.txt is copied next to the entry at build time (dist/hooks/gates.txt).
 const GATES = fileURLToPath(new URL('../gates.txt', import.meta.url));
 
-/** fill(): every gate line, with {{KEY}} filled from WF_KEY; a line whose value is empty is dropped, and a
- *  "[skills]" line is kept only when the skills mapping is bound. */
-function fill(v: Record<string, string>, skillsOn: boolean): string {
+/** fill(): every gate line, with {{KEY}} filled from WF_KEY; a line whose value is empty is dropped. */
+function fill(v: Record<string, string>): string {
   const lines = readFileSync(GATES, 'utf8').split('\n');
   lines.pop(); // `read` sees only complete lines
   const out: string[] = [];
   next: for (let line of lines) {
-    if (line.startsWith('[skills]')) { if (!skillsOn) continue; line = line.slice('[skills]'.length); }
     for (const key of ['DOCS_DIR', 'STATE_FILE', 'CHECK_CMD', 'MODE']) {
       if (line.includes(`{{${key}}}`)) {
         const val = v[key] ?? '';
@@ -73,8 +71,7 @@ export const sessionGates: Check = ({ cfg, project, ev, env }) => {
       break;
     }
   }
-  out.push(fill({ DOCS_DIR: cfg.WF_DOCS_DIR ?? '', STATE_FILE: cfg.WF_STATE_FILE ?? '', CHECK_CMD: cfg.WF_CHECK_CMD ?? '', MODE: mode },
-    cfg.WF_SKILLS === 'superpowers'));
+  out.push(fill({ DOCS_DIR: cfg.WF_DOCS_DIR ?? '', STATE_FILE: cfg.WF_STATE_FILE ?? '', CHECK_CMD: cfg.WF_CHECK_CMD ?? '', MODE: mode }));
   const kit = kitLine(project, env);
   if (kit !== '') out.push(kit);
   if (cfg.WF_STACK_SETUP === 'pending') out.push("⚑ FIRST USE: burhan's project checks are not set up yet. Do this FIRST, whatever the person's first message says (a greeting too): run `npx burhan-kit setup --stack` and follow it. That command only prints instructions and writes no file, so run it without asking and show the person the block it describes at once. Do not ask what they want to work on before it. When it finishes, go on to the project onboarding in this same session without stopping to ask (Claude Code: /burhan:onboard · Codex: follow .burhan/commands/onboard.md), then go on with their request.");

@@ -1,6 +1,7 @@
 /** User prompt phase suggestions (port of prompt-router.sh). */
 import { ere } from './ere.mjs';
 import type { Check } from './lib.mjs';
+import { SKILLS } from './skill-table.mjs';
 import { skillLine, skillLineText } from './skill-line.mjs';
 import { clearStateSnapshot, rememberApprovalWord, rememberDecisionWord } from './store.mjs';
 import { reminderLine, undecided } from './understanding.mjs';
@@ -26,6 +27,7 @@ const DECISION_WORDS = '(^|[^[:alnum:]_])(approve[ds]?|approval|yes|yep|ok|okay|
 const TASHKEEL = /[ً-ْـ]/g;
 /** A negation and the word after it: "مش موافق" and "don't fix" are no decision. Removed before the decision words are looked for. */
 const NEGATED = '(^|[^a-z0-9_])(don.?t|do not|never|not|no)\\s+\\S+|(^|\\s)(مش|لا|ما|لن|بلاش)\\s+\\S+';
+const skn = (...p: Array<keyof typeof SKILLS>): string => p.map((x) => SKILLS[x].name).join(', then ');
 
 export const promptRouter: Check = (ctx) => {
   const { ev, cfg } = ctx;
@@ -38,12 +40,11 @@ export const promptRouter: Check = (ctx) => {
   // The turn audit asks "did the owner say yes?" when the agent runs an approve command: record only whether such wording is here (a heuristic).
   rememberApprovalWord(ctx.project, ev.get('.session'), ere(APPROVAL_WORDS)?.test(p) ?? false, { ...ctx.env, ...cfg });
   rememberDecisionWord(ctx.project, ev.get('.session'), ere(DECISION_WORDS)?.test(sedGlobal(p.replace(TASHKEEL, ''), NEGATED, ' ')) ?? false, { ...ctx.env, ...cfg });
-  const skills = cfg.WF_SKILLS === 'superpowers';
   let n = 0;
   let out = '';
   const add = (line: string, skill: string): void => {
     if (n >= 2) return;
-    if (skills && skill !== '') line += ` Skill: ${skill}.`;
+    if (skill !== '') line += ` Skill: ${skill}.`;
     out += (out === '' ? '' : '\n') + line;
     n++;
   };
@@ -89,24 +90,23 @@ export const promptRouter: Check = (ctx) => {
     add('• Trivial change → the patch lane only if no scope escalator and nothing sensitive: a routing line (patch — reason), the change, evidence after it, the (a)/(b)/(c) checkpoint. Any escalator or any doubt → bounded.', '');
   }
   if (m(`${W}(investigate|investigation|why does|how does|what causes|understand)${WE}|ليه بيحصل|${AB}(ازاي|إزاي|افهم|فهمني|تحقيق)${AE}`)) {
-    add('• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.burhan/phases/stage-story.md).', 'superpowers:systematic-debugging');
+    add('• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.burhan/phases/stage-story.md).', skn('debug'));
   }
   if (m(`${W}(bug|fix|error|broken|fail|fails|failing|crash|regress|exception|wrong|incorrect)${WE}|not work|doesn.t work|مش شغال|${AB}(مشكلة|مشكله|خطأ|غلط|باظ|باظت|عطل)${AE}`)) {
-    add('• Bug → reproduce and find the root cause with evidence before proposing a fix; then a failing regression test first.', 'superpowers:systematic-debugging, then superpowers:test-driven-development');
+    add('• Bug → reproduce and find the root cause with evidence before proposing a fix; then a failing regression test first.', skn('debug', 'build'));
   }
   if (m(`burhan:e2e|burhan:qc|${W}(story|subtasks?|sub-units?)${WE}|ستوري|سب.?تاسك`)) {
     add('• Work-item flow → burhan:e2e <slug>, then burhan:qc <slug>; read the state file first.', '');
   }
   if (m(`${W}(build|implement|feature|refactor|add|new|create|support|modify|change|update|enable|rename)${WE}|${AB}(بناء|اضف|أضف|ضيف|ميزة|فيتشر|انشئ|عدل|عدّل|غيّر)${AE}`)) {
-    add('• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.burhan/phases/stage-story.md).', 'superpowers:brainstorming → superpowers:writing-plans → superpowers:test-driven-development');
+    add('• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.burhan/phases/stage-story.md).', skn('story', 'plan', 'build').split(', then ').join(' → '));
   }
   if (m(`${W}(review|done|finish|finished|complete|commit|ship)${WE}|${AB}(راجع|مراجعة|خلص|خلصت|خلصنا|سلّم|سلم)${AE}`)) {
-    add('• Wrapping up → review (.burhan/phases/review.md), then run the checks and SHOW the output before claiming done; commit only after the (a)/(b)/(c) checkpoint (.burhan/phases/close-out.md).', 'superpowers:requesting-code-review, then superpowers:verification-before-completion');
+    add('• Wrapping up → no item yet: route first (type, scope, reason: .burhan/phases/stage-story.md); with one, review (.burhan/phases/review.md), then run the checks and SHOW the output before claiming done; commit only after the (a)/(b)/(c) checkpoint (.burhan/phases/close-out.md).', skn('review', 'done'));
   }
   if (m(`${W}(merge|branch)${WE}|pull request|دمج|فرع|ميرج`)) {
-    add('• Finishing a branch → merge / PR / cleanup is the human\'s decision.', 'superpowers:finishing-a-development-branch');
+    add('• Finishing a branch → merge / PR / cleanup is the human\'s decision.', '');
   }
-  if (out === '' && skills) out = '• No phase keyword matched — run superpowers:using-superpowers before acting.';
   const found = out === '' ? [] : [`⚑ Router — before acting:\n${out}`];
   // The understanding reminder is its own line, outside the two-line cap; not while the person runs the onboarding.
   let state: ReturnType<typeof undecided> = null;

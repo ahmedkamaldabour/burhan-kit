@@ -25,7 +25,7 @@ test('a project made by init starts with the item contract on, and the hooks rea
 });
 
 test('an existing project that never set the key is left exactly as it is by upgrade, and the hooks read it as off', () => {
-  const config = 'WF_CHECK_CMD="npm run lint"\nWF_SKILLS="none"\n';
+  const config = 'WF_CHECK_CMD="npm run lint"\n';
   const d = project(config);
   install('init', d);
   writeFileSync(join(d, '.burhan/workflow.config'), config); // the team file as an older version left it

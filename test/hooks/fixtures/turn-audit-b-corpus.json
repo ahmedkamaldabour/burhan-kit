@@ -557,7 +557,6 @@
   {
    "name": "F story created without brainstorming warns",
    "config": [
-    "WF_SKILLS=superpowers"
    ],
    "state": null,
    "files": {},
@@ -577,13 +576,12 @@
      "steps": []
     }
    },
-   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.\"}\n",
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ SKILL GATE (story): a story was CREATED this turn without burhan-story. Invoke it now if it was skipped, or say when it ran.\"}\n",
    "linked": null
   },
   {
    "name": "F plan created without writing plans warns",
    "config": [
-    "WF_SKILLS=superpowers"
    ],
    "state": null,
    "files": {},
@@ -603,13 +601,12 @@
      "steps": []
     }
    },
-   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ SKILL GATE (plan): a plan was CREATED this turn without superpowers:writing-plans.\"}\n",
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ SKILL GATE (plan): a plan was CREATED this turn without burhan-plan.\"}\n",
    "linked": null
   },
   {
    "name": "F code without TDD or debugging warns",
    "config": [
-    "WF_SKILLS=superpowers",
     "WF_CODE_REGEX='\\.src$'"
    ],
    "state": null,
@@ -630,13 +627,12 @@
      "steps": []
     }
    },
-   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\"}\n",
+   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without burhan-build or burhan-debug. Confirm the skill was used, or invoke it before continuing.\"}\n",
    "linked": null
   },
   {
    "name": "F declared patch without item suppresses code skill warning",
    "config": [
-    "WF_SKILLS=superpowers",
     "WF_CODE_REGEX='\\.src$'"
    ],
    "state": null,
@@ -663,7 +659,6 @@
   {
    "name": "F declared patch with non patch routed item still warns",
    "config": [
-    "WF_SKILLS=superpowers",
     "WF_CODE_REGEX='\\.src$'"
    ],
    "state": "## Now\n### foo\n- **Route:** change / bounded\n",
@@ -684,13 +679,12 @@
      "steps": []
     }
    },
-   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\"}\n",
+   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without burhan-build or burhan-debug. Confirm the skill was used, or invoke it before continuing.\"}\n",
    "linked": null
   },
   {
    "name": "F declared patch with patch routed item is silent",
    "config": [
-    "WF_SKILLS=superpowers",
     "WF_CODE_REGEX='\\.src$'"
    ],
    "state": "## Now\n### foo\n- **Route:** change / patch\n",
@@ -717,7 +711,6 @@
   {
    "name": "F sensitive patch route still warns",
    "config": [
-    "WF_SKILLS=superpowers",
     "WF_CODE_REGEX='\\.src$'",
     "WF_SENSITIVE_REGEX='secret'"
    ],
@@ -739,13 +732,12 @@
      "steps": []
     }
    },
-   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\"}\n",
+   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without burhan-build or burhan-debug. Confirm the skill was used, or invoke it before continuing.\"}\n",
    "linked": null
   },
   {
    "name": "F review without requesting code review warns",
    "config": [
-    "WF_SKILLS=superpowers"
    ],
    "state": null,
    "files": {},
@@ -765,13 +757,12 @@
      "steps": []
     }
    },
-   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review.\"}\n",
+   "expected": "{\"message\":\"⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ SKILL GATE: a review file was written this turn without burhan-review.\"}\n",
    "linked": null
   },
   {
    "name": "F required skills used is silent",
    "config": [
-    "WF_SKILLS=superpowers",
     "WF_CODE_REGEX='\\.src$'"
    ],
    "state": null,
@@ -792,10 +783,10 @@
      ],
      "shell_commands": [],
      "skills_used": [
-      "superpowers:brainstorming",
-      "superpowers:writing-plans",
-      "superpowers:test-driven-development",
-      "superpowers:requesting-code-review"
+      "burhan-story",
+      "burhan-plan",
+      "burhan-build",
+      "burhan-review"
      ],
      "assistant_text": "",
      "steps": []
@@ -807,7 +798,6 @@
   {
    "name": "F subagent code does not judge main agent skills",
    "config": [
-    "WF_SKILLS=superpowers",
     "WF_CODE_REGEX='\\.src$'"
    ],
    "state": null,
@@ -854,7 +844,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-build"],
      "assistant_text": "",
      "steps": []
     }
@@ -880,7 +870,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-build"],
      "assistant_text": "",
      "steps": []
     }
@@ -906,7 +896,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-build"],
      "assistant_text": "",
      "steps": []
     }
@@ -932,7 +922,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-build"],
      "assistant_text": "",
      "steps": []
     }
@@ -958,7 +948,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-build"],
      "assistant_text": "",
      "steps": []
     }
@@ -1428,7 +1418,7 @@
       ".burhan/work/foo/reviews/foo-qc.md"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-build"],
      "assistant_text": "",
      "steps": []
     }
@@ -1457,7 +1447,7 @@
       ".burhan/work/foo/reviews/foo-qc.md"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-build"],
      "assistant_text": "",
      "steps": []
     }
@@ -1485,7 +1475,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-build"],
      "assistant_text": "",
      "steps": [
       {
@@ -1584,7 +1574,6 @@
   {
    "name": "F review with requesting code review is silent",
    "config": [
-    "WF_SKILLS=superpowers"
    ],
    "state": null,
    "files": {},
@@ -1600,7 +1589,7 @@
      ],
      "shell_commands": [],
      "skills_used": [
-      "superpowers:requesting-code-review"
+      "burhan-review"
      ],
      "assistant_text": "",
      "steps": []
@@ -1627,7 +1616,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-build"],
      "assistant_text": "",
      "steps": []
     }
@@ -1699,7 +1688,6 @@
    "config": [
     "WF_CODE_REGEX='\\.src$'",
     "WF_EVIDENCE_REGEX='^verify'",
-    "WF_SKILLS=superpowers",
     "WF_STATE_BUDGET=1"
    ],
    "state": "## Now\n### foo\n- **Read-only:** yes\nextra\n",
@@ -1727,14 +1715,13 @@
      "steps": []
     }
    },
-   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\\n\\n⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ STATE-SIZE GATE: `.burhan/local/PROGRESS.md` is 4 lines (budget: 1). It is a snapshot, not a journal (WORKFLOW §5): close out items no longer in flight, keep one-line pointers, delete resolved lines.\\n\\n⚠ STALE-STATUS GATE: `.burhan/work/foo/foo-story.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\\n\\n⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.\\n\\n⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\\n\\n⚠ SKILL GATE (verify): completion was claimed after work this turn without superpowers:verification-before-completion. Invoke it before claiming done, or retract the claim.\\n\\n🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\\n\\n⚠ QC PROVENANCE: `.burhan/work/foo/reviews/foo-qc.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\\n\\n⚠ QC INDEPENDENCE: a QC report was written in the same turn as code, so it is not independent. Re-run QC in a fresh context (Claude Code: the burhan-reviewer subagent), or record 'same session' as a limitation.\"}\n",
+   "expected": "{\"message\":\"⚠ VERIFICATION GATE: code changed and completion was claimed, but no verification command ran this turn. Run the checks now and show the real output, or explicitly retract the claim.\\n\\n⚠ STATE-TRANSITION GATE: a work-item file changed this turn but `.burhan/local/PROGRESS.md` was not updated. Write every transition before the turn ends (WORKFLOW §5): edit the existing line in place — no new paragraph, no copied detail (link the file).\\n\\n⚠ STATE-SIZE GATE: `.burhan/local/PROGRESS.md` is 4 lines (budget: 1). It is a snapshot, not a journal (WORKFLOW §5): close out items no longer in flight, keep one-line pointers, delete resolved lines.\\n\\n⚠ STALE-STATUS GATE: `.burhan/work/foo/foo-story.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\\n\\n⚠ SKILL GATE (story): a story was CREATED this turn without burhan-story. Invoke it now if it was skipped, or say when it ran.\\n\\n⚠ SKILL GATE (code): code was written this turn without burhan-build or burhan-debug. Confirm the skill was used, or invoke it before continuing.\\n\\n⚠ SKILL GATE (verify): completion was claimed after work this turn without burhan-done. Invoke it before claiming done, or retract the claim.\\n\\n🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\\n\\n⚠ QC PROVENANCE: `.burhan/work/foo/reviews/foo-qc.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\\n\\n⚠ QC INDEPENDENCE: a QC report was written in the same turn as code, so it is not independent. Re-run QC in a fresh context (Claude Code: the burhan-reviewer subagent), or record 'same session' as a limitation.\"}\n",
    "linked": "foo"
   },
   {
    "name": "order D E F G I H",
    "config": [
     "WF_CODE_REGEX='\\.src$'",
-    "WF_SKILLS=superpowers",
     "WF_STATE_BUDGET=1"
    ],
    "state": "## Now\n### beta\n- **Read-only:** yes\nextra\n",
@@ -1772,15 +1759,14 @@
      "steps": []
     }
    },
-   "expected": "{\"message\":\"⚠ STATE-SIZE GATE: `.burhan/local/PROGRESS.md` is 4 lines (budget: 1). It is a snapshot, not a journal (WORKFLOW §5): close out items no longer in flight, keep one-line pointers, delete resolved lines.\\n\\n⚠ STALE-STATUS GATE: `.burhan/work/alpha/alpha-story.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\\n\\n⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.\\n\\n⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\\n\\n🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\\n\\n⚠ You removed the `beta` block — another session (active 2h ago) is working on it. Put it back.\\n\\n⚠ QC PROVENANCE: `.burhan/work/alpha/reviews/alpha-qc.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\\n\\n⚠ QC INDEPENDENCE: a QC report was written in the same turn as code, so it is not independent. Re-run QC in a fresh context (Claude Code: the burhan-reviewer subagent), or record 'same session' as a limitation.\"}\n",
+   "expected": "{\"message\":\"⚠ STATE-SIZE GATE: `.burhan/local/PROGRESS.md` is 4 lines (budget: 1). It is a snapshot, not a journal (WORKFLOW §5): close out items no longer in flight, keep one-line pointers, delete resolved lines.\\n\\n⚠ STALE-STATUS GATE: `.burhan/work/alpha/alpha-story.md` says both pending (status Draft/Planned) and done (✅ Reviewed/Completed, or a Completed/Resolved/QC PASS status). Fix the status line that was never revisited.\\n\\n⚠ SKILL GATE (story): a story was CREATED this turn without burhan-story. Invoke it now if it was skipped, or say when it ran.\\n\\n⚠ SKILL GATE (code): code was written this turn without burhan-build or burhan-debug. Confirm the skill was used, or invoke it before continuing.\\n\\n🛑 READ-ONLY GATE: the work in flight is marked read-only (investigation / bug + spike) but code was written this turn. Revert it or open a new routed item to implement the finding (WORKFLOW §3).\\n\\n⚠ You removed the `beta` block — another session (active 2h ago) is working on it. Put it back.\\n\\n⚠ QC PROVENANCE: `.burhan/work/alpha/reviews/alpha-qc.md` does not say who performed the QC. Fill **Performed by** (agent · model · context: fresh subagent / other agent / human / same session); same session must also be listed under Limitations (WORKFLOW §2 · 8).\\n\\n⚠ QC INDEPENDENCE: a QC report was written in the same turn as code, so it is not independent. Re-run QC in a fresh context (Claude Code: the burhan-reviewer subagent), or record 'same session' as a limitation.\"}\n",
    "linked": "alpha"
   },
   {
    "name": "F several blocks and no link: a patch line keeps its exemption",
    "config": [
     "WF_CODE_REGEX='\\.src$'",
-    "WF_EVIDENCE_REGEX='^verify-it'",
-    "WF_SKILLS=superpowers"
+    "WF_EVIDENCE_REGEX='^verify-it'"
    ],
    "state": "## Now\n### alpha\n- **Route:** feature / architectural\n- **Read-only:** yes\n### beta\n- **Route:** change / patch\n",
    "files": {},
@@ -1810,8 +1796,7 @@
    "name": "G several blocks and no link: no item, so not read-only",
    "config": [
     "WF_CODE_REGEX='\\.src$'",
-    "WF_EVIDENCE_REGEX='^verify-it'",
-    "WF_SKILLS=superpowers"
+    "WF_EVIDENCE_REGEX='^verify-it'"
    ],
    "state": "## Now\n### alpha\n- **Route:** feature / architectural\n- **Read-only:** yes\n### beta\n- **Route:** change / patch\n",
    "files": {},
@@ -1834,7 +1819,7 @@
      "steps": []
     }
    },
-   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.\\n\\n⚠ SKILL GATE (verify): completion was claimed after work this turn without superpowers:verification-before-completion. Invoke it before claiming done, or retract the claim.\"}\n",
+   "expected": "{\"message\":\"⚠ SKILL GATE (code): code was written this turn without burhan-build or burhan-debug. Confirm the skill was used, or invoke it before continuing.\\n\\n⚠ SKILL GATE (verify): completion was claimed after work this turn without burhan-done. Invoke it before claiming done, or retract the claim.\"}\n",
    "linked": null
   }
  ]

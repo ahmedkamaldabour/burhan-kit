@@ -5,7 +5,7 @@ import { displayId } from '../hooks/core/item-id.mjs';
 import { appliedSentence } from './deviation.js';
 import { questionLines } from './finding.js';
 import { fullRunFor, fullRunLine } from './full-run.js';
-import { skillAdvice, skillAdviceLine, wantsSkills } from './skill-advice.js';
+import { skillAdvice, skillAdviceLine } from './skill-advice.js';
 import { nowSlugs, readItemStage } from './stage-read.js';
 
 const NEW_ITEM = 'burhan item new <slug> --type <feature|bug|investigation|change|refactor|release> --scope <spike|bounded|architectural>';
@@ -20,7 +20,7 @@ function guideWithoutItem(project: string, slugs: string[], io: Io, json: boolea
   const next = none
     ? `route the request with ${NEW_ITEM}; for one obvious change with no escalator, state the routing line "patch — <reason>" and make it`
     : `burhan guide <slug>, with one of: ${slugs.join(', ')}`;
-  const choice = none && wantsSkills(project) ? skillFor({ stage: 'no item files' }, '') : null;
+  const choice = none ? skillFor({ stage: 'no item files' }, '') : null;
   const full = fullRunFor(project);
   if (json) { io.stdout(`${JSON.stringify({ item: null, items: slugs, route: '', stage, authorized: false, why, next, skill: choice?.skill ?? null, fullRun: full })}\n`); return 0; }
   io.stdout(`guide: ${none ? 'no item in Now' : `${slugs.length} items in Now: ${slugs.join(', ')}`}\n`);

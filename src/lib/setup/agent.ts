@@ -2,7 +2,7 @@ import { readFileSync, statSync } from 'node:fs';
 import type { Io } from '../../main.js';
 import { BurhanError } from '../errors.js';
 import { applySetup, currentAnswers, discoveryPathError, docsPathError, planSetup, recommended, renderSummary, type DiscoveryChoice, type DocsChoice, type SetupAnswers, type SetupFilesystem } from './engine.js';
-import { superpowersLine } from './summary.js';
+import { skillsLine } from './summary.js';
 import { messages, QUESTIONS, REVIEWER_QUESTION, type Lang } from './messages.js';
 import type { KitProbe } from '../../hooks/core/kit-command.mjs';
 import { kitStepLines } from './kit-step.js';
@@ -19,9 +19,7 @@ export function agentInstructions(target: string, lang: Lang, home: string): str
     recommended: recommendedAnswers,
     questions,
   };
-  // The agents are not answered yet, so the Superpowers line carries both routes (install-flow F-1).
-  const both = ['claude', 'codex'] as const;
-  const details = plan.existingHooks.length ? renderSummary(plan, lang, both) : superpowersLine(plan, lang, both);
+  const details = plan.existingHooks.length ? renderSummary(plan, lang) : skillsLine(lang);
   return `${m.agent.rules.join('\n')}${details ? `\n\n${details}` : ''}\n\n\`\`\`json\n${JSON.stringify(body, null, 2)}\n\`\`\`\n`;
 }
 
@@ -89,7 +87,7 @@ export function runAnswers(target: string, file: string, apply: boolean, io: Io,
   const a = readAnswers(file, lang);
   const m = messages(a.lang);
   const plan = planSetup(target, a, home);
-  io.stdout(renderSummary(plan, a.lang, undefined, o.allowOutside === true) + '\n');
+  io.stdout(renderSummary(plan, a.lang, o.allowOutside === true) + '\n');
   if (!apply) return 0;
   applySetup(plan, fs, o);
   io.stdout(`\n${m.wizard.done}\n${m.changeUndo}\n${m.wizard.askAgent}\n`);

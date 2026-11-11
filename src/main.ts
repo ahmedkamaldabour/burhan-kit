@@ -107,7 +107,7 @@ export const USAGE = `usage: burhan <command> [options]
   state close <slug> --outcome <state> --commit <id> --folder <path> [--docs <path>]
                        replace the item's block with its one closed line; the outcome must be the item's index state
   guide [slug] [--json]
-                       the item's stage, whether code edits are authorized now, the process skill to run (with WF_SKILLS=superpowers), the next step, and whether a passing full run exists after the last code edit
+                       the item's stage, whether code edits are authorized now, the process skill to run, the next step, and whether a passing full run exists after the last code edit
   verify <slug> [--docs <path>] -- <command> [args]
                        run a proof command without a shell, show how it ended, and record it in the item's folder (command, exit code, time, code state)
   item finish <slug> [--evidence <text>]

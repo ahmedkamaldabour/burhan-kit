@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { isAbsolute, join, win32 } from 'node:path';
+import { phaseSkillRe } from './skill-table.mjs';
 
 type Env = NodeJS.ProcessEnv;
 
@@ -242,7 +243,7 @@ export function fingerprintRefresh(project: string, session: string, stateFile: 
 
 // The code skill gate's memory: which of its skills ran in this session while an item was the session's item.
 // One file per session (`skills`, lines `<slug>\t<skill>`), read and written by turn-audit only.
-const CODE_SKILLS = /(^|:)(test-driven-development|systematic-debugging)$/;
+const CODE_SKILLS = phaseSkillRe('build', 'debug');
 const SKILL_LINES_MAX = 200;
 const skillsFile = (project: string, session: string, env: Env): string => {
   const dir = sessionDir(project, session, env);
@@ -278,7 +279,7 @@ export function rememberSkills(project: string, session: string, item: string, s
 // The memory of the phase skills a session used for an item (any turn): lines `<item>\t<skill>` in `phaseskills`. A skill run while no item
 // was resolved is kept under `*` (not a slug) and counts for the session's item. It answers "was the skill invoked", never "was the work done".
 const NO_ITEM = '*';
-const PHASE_SKILLS = /(^|:)(brainstorming|writing-plans|requesting-code-review|test-driven-development|systematic-debugging|verification-before-completion)$/;
+const PHASE_SKILLS = phaseSkillRe('story', 'plan', 'build', 'debug', 'review', 'done');
 const phaseFile = (project: string, session: string, env: Env): string => {
   const dir = sessionDir(project, session, env);
   return dir ? join(dir, 'phaseskills') : '';

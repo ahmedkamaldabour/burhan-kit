@@ -21,7 +21,7 @@ The project-specific half of the working agreement (`.burhan/WORKFLOW.md` §1). 
 | **What counts as code / tests** | *(file patterns)* | `WF_CODE_REGEX`, `WF_TEST_REGEX` |
 | **Verification evidence** | *(commands whose output proves a change)* | `WF_EVIDENCE_REGEX` |
 | **Sensitive paths** | *(files that affect access control or visibility)* | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` |
-| **Process skills** | *(a skills plugin, or `none` — phases/skills.md)* | `WF_SKILLS` |
+| **Process skills** | burhan's own six skills, always on: `.burhan/skills/` — phases/skills.md | — |
 | **Docs / content language** | | — |
 | **Branching rule** | *(e.g. never commit to the default branch; branch first)* | — |
 

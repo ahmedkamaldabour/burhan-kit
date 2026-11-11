@@ -20,14 +20,13 @@ check_eq "project_dir falls back to cwd" \
   "$(jq -c '.cwd="/other"' "$FX/p-session.json" | env -u CLAUDE_PROJECT_DIR "${IMPL[@]}" normalize | jq -r .project_dir)" "/other"
 check_eq "UserPromptSubmit -> prompt" "$(norm "$FX/p-prompt.json" | jq -c '[.event,.prompt]')" '["prompt","fix the bug"]'
 check_eq "PreToolUse Bash -> pre_shell" "$(norm "$FX/p-pre-bash.json" | jq -c '[.event,.command]')" '["pre_shell","git commit -m x"]'
-# the pre-write event needs a project that turned the skills on (the transcript is read only then)
-PSK="$(t_tmp)"; mkdir -p "$PSK/.burhan"; printf 'WF_SKILLS=superpowers\n' > "$PSK/.burhan/workflow.config"
+# the pre-write event carries this turn's skills (the transcript is read for every write)
+PSK="$(t_tmp)"; mkdir -p "$PSK/.burhan"
 normp() { local tp="${2:-/nonexistent}"; jq -c --arg tp "$tp" '.transcript_path = $tp' "$1" | CLAUDE_PROJECT_DIR="$PSK" "${IMPL[@]}" normalize 2>/dev/null; }
 check_eq "PreToolUse Write -> pre_edit" "$(normp "$FX/p-pre-write.json" | jq -c '[.event,.file]')" '["pre_edit","/proj/src/a.src"]'
-check_eq "PreToolUse Write carries this turn's skills" "$(normp "$FX/p-pre-write.json" "$FX/single-turn.jsonl" | jq -c '.turn.skills_used')" '["superpowers:test-driven-development"]'
+check_eq "PreToolUse Write carries this turn's skills" "$(normp "$FX/p-pre-write.json" "$FX/single-turn.jsonl" | jq -c '.turn.skills_used')" '["burhan-build"]'
 check_eq "PreToolUse Write without a transcript -> no skills" "$(normp "$FX/p-pre-write.json" | jq -c '.turn.skills_used')" '[]'
 check_eq "PreToolUse Write inside a subagent carries agent_id" "$(jq -c '.agent_id="a1"' "$FX/p-pre-write.json" | CLAUDE_PROJECT_DIR="$PSK" "${IMPL[@]}" normalize 2>/dev/null | jq -r '.agent_id')" "a1"
-check_eq "PreToolUse Write with the skills off -> nothing (no transcript is read)" "$(norm "$FX/p-pre-write.json" "$FX/single-turn.jsonl")" ""
 check_eq "PreToolUse other tool -> nothing" "$(norm "$FX/p-pre-read.json")" ""
 check_eq "PostToolUse Edit -> post_edit" "$(norm "$FX/p-post-edit.json" | jq -c '[.event,.file]')" '["post_edit","/proj/src/a.src"]'
 check_eq "PostToolUse NotebookEdit -> notebook path" "$(norm "$FX/p-post-notebook.json" | jq -r .file)" "/proj/nb.ipynb"
@@ -42,9 +41,9 @@ t="$(turn single-turn.jsonl)"
 check_eq "Write -> created" "$(jq -c .files_created <<<"$t")" '["/proj/src/new.src"]'
 check_eq "Edit/MultiEdit/NotebookEdit -> edited" "$(jq -c .files_edited <<<"$t")" '["/proj/src/old.src","/proj/src/multi.src","/proj/nb.ipynb"]'
 check_eq "Bash -> shell_commands" "$(jq -c .shell_commands <<<"$t")" '["verify-it src/new.src"]'
-check_eq "Skill -> skills_used" "$(jq -c .skills_used <<<"$t")" '["superpowers:test-driven-development"]'
+check_eq "Skill -> skills_used" "$(jq -c .skills_used <<<"$t")" '["burhan-build"]'
 check "assistant text captured" "$(jq -r .assistant_text <<<"$t")" has "All done ✅"
-check_eq "skill expansion (isMeta) does not reset the turn" "$(jq -c .skills_used <<<"$t")" '["superpowers:test-driven-development"]'
+check_eq "skill expansion (isMeta) does not reset the turn" "$(jq -c .skills_used <<<"$t")" '["burhan-build"]'
 
 t="$(turn prior-turn-edit.jsonl)"
 check_eq "PRIOR turn's edit is NOT in this turn (measured false positive)" "$(jq -c .files_edited <<<"$t")" "[]"

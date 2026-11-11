@@ -134,7 +134,7 @@ test('currentAnswers: null when not installed; prefilled saved private, shared, 
 test('an existing check command is kept, gets no pending, and the verify skill exists after ONE apply (AC-07)', () => {
   const t = fresh();
   mkdirSync(join(t, '.burhan'));
-  writeFileSync(join(t, '.burhan/workflow.config'), "# mine\nWF_CHECK_CMD='make lint'\nWF_SKILLS='none'\n");
+  writeFileSync(join(t, '.burhan/workflow.config'), "# mine\nWF_CHECK_CMD='make lint'\n");
   applySetup(planSetup(t, answers(), home));
   const c = cfgOf(t);
   assert.equal(c.values.WF_CHECK_CMD, 'make lint');
@@ -143,65 +143,13 @@ test('an existing check command is kept, gets no pending, and the verify skill e
   assert.ok(readFileSync(join(t, '.claude/skills/burhan-verify/SKILL.md'), 'utf8').includes('make lint'));
 });
 
-test('an existing non-empty skills value is kept; a pending marker is not reset to done-less', () => {
+test('a pending marker is not reset to done-less', () => {
   const t = fresh();
   mkdirSync(join(t, '.burhan'));
-  writeFileSync(join(t, '.burhan/workflow.config'), "WF_SKILLS='other'\nWF_STACK_SETUP='done'\n");
+  writeFileSync(join(t, '.burhan/workflow.config'), "WF_STACK_SETUP='done'\n");
   applySetup(planSetup(t, answers(), home));
-  assert.equal(cfgOf(t).values.WF_SKILLS, 'other');
   assert.equal(cfgOf(t).values.WF_STACK_SETUP, 'done');
 });
-
-test('R-6: superpowers is detected read-only from the home plugins folder', () => {
-  const h = tmpDir('burhan-home-');
-  const t = fresh();
-  assert.equal(planSetup(t, answers(), h).skills, 'none');
-  mkdirSync(join(h, '.claude/plugins/cache/x/superpowers/1.0'), { recursive: true });
-  const before = tree(h);
-  const p = planSetup(t, answers(), h);
-  assert.equal(p.skills, 'superpowers');
-  assert.deepEqual(tree(h), before);
-  applySetup(p);
-  assert.equal(cfgOf(t).values.WF_SKILLS, 'superpowers');
-});
-
-const SUPERPOWERS_LINES = {
-  en: {
-    found: "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Strongly recommended; turn off with WF_SKILLS='none'.",
-    disabled: "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'.",
-    absent: 'Superpowers is strongly recommended, and optional: burhan never installs it · Claude Code: /plugin install superpowers@claude-plugins-official',
-  },
-  ar: {
-    found: "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". موصى به بقوة؛ وتقدر تقفله بـ WF_SKILLS='none'.",
-    disabled: "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'.",
-    absent: 'Superpowers موصى به بقوة، وهو اختياري: burhan مش بيسطّبه خالص · Claude Code: /plugin install superpowers@claude-plugins-official',
-  },
-} as const;
-
-for (const present of [false, true]) for (const skills of ['none', 'superpowers']) {
-test(`Superpowers summary has exactly one availability line for configured ${skills}, present=${present}`, () => {
-    const target = fresh();
-    const suppliedHome = tmpDir('burhan-optional-home-');
-    if (present) mkdirSync(join(suppliedHome, '.claude/plugins/cache/vendor/superpowers'), { recursive: true });
-    mkdirSync(join(target, '.burhan'));
-    writeFileSync(join(target, '.burhan/workflow.config'), `WF_SKILLS='${skills}'\n`);
-    const beforeHome = tree(suppliedHome);
-    const plan = planSetup(target, answers(), suppliedHome);
-    assert.equal(plan.skills, skills);
-    assert.equal(plan.superpowersAvailable, present);
-    for (const lang of ['en', 'ar'] as const) {
-      const summary = renderSummary(plan, lang);
-      const expected = present ? skills === 'none' ? SUPERPOWERS_LINES[lang].disabled : SUPERPOWERS_LINES[lang].found : SUPERPOWERS_LINES[lang].absent;
-      const allLines = Object.values(SUPERPOWERS_LINES[lang]);
-      assert.equal(summary.split(expected).length - 1, 1);
-      assert.equal(allLines.reduce((count, line) => count + (summary.includes(line) ? 1 : 0), 0), 1);
-    }
-    applySetup(plan);
-    assert.equal(cfgOf(target).values.WF_SKILLS, skills);
-    assert.deepEqual(tree(suppliedHome), beforeHome);
-    assert.equal(existsSync(join(target, '.claude/plugins')), false);
-  });
-}
 
 test('summary: Created / Changed / Removed, change and undo lines, no WF_ (en and ar)', () => {
   const t = fresh();
@@ -212,7 +160,6 @@ test('summary: Created / Changed / Removed, change and undo lines, no WF_ (en an
     assert.ok(!s.includes('WF_'), lang);
     assert.ok(s.includes('npx burhan-kit setup'), lang);
     assert.ok(s.includes('npx burhan-kit uninstall'), lang);
-    assert.ok(!/superpowers.*(faster|cheaper|token)/i.test(s), lang);
   }
   const en = renderSummary(p, 'en');
   assert.match(section(en, 'Changed'), /CLAUDE\.md[^\n]*a short block at the end, your text untouched/);

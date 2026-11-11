@@ -7,14 +7,14 @@ import { run } from '../../src/hooks/main.mjs';
 
 // `burhan use 1` and `burhan use foo` link the session to the block `### 001-foo`: the turn-end hook turns what was typed into the heading (item numbered-item-ids).
 const GATE = /SKILL GATE \(code\)/;
-const TDD = 'superpowers:test-driven-development';
+const TDD = 'burhan-build';
 
 function setup(now: string): { project: string; env: NodeJS.ProcessEnv } {
   const project = tmpDir('burhan-numbered-link-project-');
   const root = tmpDir('burhan-numbered-link-evidence-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), `## Now\n${now}`);
-  return { project, env: { ...process.env, WF_EVIDENCE_DIR: root, WF_SKILLS: 'superpowers', WF_CODE_REGEX: '\\.src$', WF_EVIDENCE_LEDGER: 'on' } };
+  return { project, env: { ...process.env, WF_EVIDENCE_DIR: root, WF_CODE_REGEX: '\\.src$', WF_EVIDENCE_LEDGER: 'on' } };
 }
 let n = 0;
 async function stop(s: ReturnType<typeof setup>, o: { skills?: string[]; code?: boolean; link?: string } = {}): Promise<string> {

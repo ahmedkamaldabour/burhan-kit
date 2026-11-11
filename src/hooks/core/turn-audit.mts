@@ -15,6 +15,7 @@ import { gateLine, undecided } from './understanding.mjs';
 import { checkText, hasContractMarker, kindOf } from './item-contract.mjs';
 import { deviations, executableHash, openDeviations, overallStatus, recordedHash } from './item-model.mjs';
 import { routeOf, stageOf } from './item-stage.mjs';
+import { SKILLS, phaseSkillRe, type Phase } from './skill-table.mjs';
 
 const CLAIM = '(^|[^[:alnum:]_])(done|fixed|passing|passes|complete|completed|works now)([^[:alnum:]_]|$)|✅|(^|[[:space:][:punct:]])(خلص|خلصت|اتصلح)([[:space:][:punct:]]|$)';
 const PERFORMED = '[^·<>]*[^·<>[:space:]] · [^·<>]*[^·<>[:space:]] · (fresh subagent|other agent|human|same session)';
@@ -187,23 +188,24 @@ const patchTurn = (audit: Audit): boolean => {
 
 // ---- F ---------------------------------------------------------------------
 const gateF: Gate = (audit) => {
-  if (audit.ctx.cfg.WF_SKILLS !== 'superpowers') return [];
   const out: string[] = [];
   const docs = docsRe(audit);
-  const used = (pattern: string): boolean => ereTest(pattern, audit.skillsUsed.join('\n'));
+  // A skill id counts only whole (`burhan-build`, or behind a plugin prefix), never as part of another id: the same anchoring as store.mts and pre-edit-skill.mts.
+  const hasSkill = (ids: string[], ...phases: Phase[]): boolean => ids.some((id) => phaseSkillRe(...phases).test(id));
+  const used = (...phases: Phase[]): boolean => hasSkill(audit.skillsUsed, ...phases);
   // The story, plan and review checks read the same memory as the pre-write check: this turn plus the session's earlier turns.
-  const usedEver = (pattern: string): boolean => ereTest(pattern, [...audit.skillsUsed, ...audit.skillsEarlier].join('\n'));
-  if (ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && !usedEver('brainstorming')) out.push('⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.');
-  if (ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && !usedEver('writing-plans')) out.push('⚠ SKILL GATE (plan): a plan was CREATED this turn without superpowers:writing-plans.');
+  const usedEver = (...phases: Phase[]): boolean => hasSkill([...audit.skillsUsed, ...audit.skillsEarlier], ...phases);
+  if (ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && !usedEver('story')) out.push(`⚠ SKILL GATE (story): a story was CREATED this turn without ${SKILLS.story.name}. Invoke it now if it was skipped, or say when it ran.`);
+  if (ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && !usedEver('plan')) out.push(`⚠ SKILL GATE (plan): a plan was CREATED this turn without ${SKILLS.plan.name}.`);
   // The same two checks for a story or plan CREATED through the shell. The turn end cannot tell a new file from an appended one; the Bash pre-write hook
   // measured it before the command ran and left a marker. No marker (the hook did not run) → silent. The wording differs from the edit-tool one.
   const marked = shellCreated(audit.ctx.project, audit.ctx.ev.get('.session'), audit.ctx.env);
   const shellNew = audit.shellWritten.filter((file) => marked.includes(file));
-  if (!ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && ereTest(`${docs}.*-story\\.md$`, shellNew.join('\n')) && !usedEver('brainstorming')) out.push('⚠ SKILL GATE (story): a story was written through the shell this turn without superpowers:brainstorming. Invoke it now if it was skipped, or say when it ran.');
-  if (!ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && ereTest(`${docs}.*-implementation-plan\\.md$`, shellNew.join('\n')) && !usedEver('writing-plans')) out.push('⚠ SKILL GATE (plan): a plan was written through the shell this turn without superpowers:writing-plans.');
+  if (!ereTest(`${docs}.*-story\\.md$`, audit.created.join('\n')) && ereTest(`${docs}.*-story\\.md$`, shellNew.join('\n')) && !usedEver('story')) out.push(`⚠ SKILL GATE (story): a story was written through the shell this turn without ${SKILLS.story.name}. Invoke it now if it was skipped, or say when it ran.`);
+  if (!ereTest(`${docs}.*-implementation-plan\\.md$`, audit.created.join('\n')) && ereTest(`${docs}.*-implementation-plan\\.md$`, shellNew.join('\n')) && !usedEver('plan')) out.push(`⚠ SKILL GATE (plan): a plan was written through the shell this turn without ${SKILLS.plan.name}.`);
   const patch = patchTurn(audit);
-  const usedForCode = ereTest('test-driven-development|systematic-debugging', [...audit.skillsUsed, ...audit.skillsBefore].join('\n'));
-  if (matches(audit.ctx.cfg.WF_CODE_REGEX ?? '', audit.written.join('\n')) && !patch && !usedForCode) out.push('⚠ SKILL GATE (code): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging. Confirm the skill was used, or invoke it before continuing.');
+  const usedForCode = hasSkill([...audit.skillsUsed, ...audit.skillsBefore], 'build', 'debug');
+  if (matches(audit.ctx.cfg.WF_CODE_REGEX ?? '', audit.written.join('\n')) && !patch && !usedForCode) out.push(`⚠ SKILL GATE (code): code was written this turn without ${SKILLS.build.name} or ${SKILLS.debug.name}. Confirm the skill was used, or invoke it before continuing.`);
   // A review file counts when the main agent created it or added a `**Performed by:**` line to it; a fix note in a review
   // the reviewer wrote does not. Only the Claude adapter reports what was written, so Codex keeps the older rule.
   const claude = audit.ctx.ev.get('.agent') === 'claude';
@@ -212,12 +214,12 @@ const gateF: Gate = (audit) => {
     || audit.steps.some((step) => step.kind === 'edit' && step.by === '' && step.file === file && step.performedBy)
     || audit.cmds.some((cmd) => performedBy(cmd) && shellWrites([cmd]).map((f) => relPath(f, audit.ctx.project)).includes(file));
   const reviews = audit.written.filter((file) => ereTest('/reviews/[^/]+\\.md$', file) && !ereTest('-(qc|verification)(-r[0-9]+)?\\.md$', file) && (!claude || addsReview(file)));
-  if (reviews.length > 0 && !usedEver('requesting-code-review')) out.push('⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review.');
+  if (reviews.length > 0 && !usedEver('review')) out.push(`⚠ SKILL GATE: a review file was written this turn without ${SKILLS.review.name}.`);
   // "After work": a file other than the state file and the discoveries, outside the patch lane (a state-only "✅" is bookkeeping, not a claim).
   const state = audit.ctx.cfg.WF_STATE_FILE ?? '';
   const discovery = audit.ctx.cfg.WF_DISCOVERY_DIR ?? '\u0000';
   const worked = audit.written.some((file) => file !== state && !file.startsWith(`${discovery}/`));
-  if (worked && !patch && completionClaim(audit.text) && !used('verification-before-completion')) out.push('⚠ SKILL GATE (verify): completion was claimed after work this turn without superpowers:verification-before-completion. Invoke it before claiming done, or retract the claim.');
+  if (worked && !patch && completionClaim(audit.text) && !used('done')) out.push(`⚠ SKILL GATE (verify): completion was claimed after work this turn without ${SKILLS.done.name}. Invoke it before claiming done, or retract the claim.`);
   return out;
 };
 

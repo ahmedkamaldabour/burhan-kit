@@ -3,8 +3,13 @@
 . "$(dirname "$0")/lib.sh"
 cd "$T_ROOT" || exit 1
 
-check "configuration documents the conditional Codex route" "$(cat docs/configuration.md)" has 'if it is not installed yet: in Codex CLI run `/plugins`, search `superpowers`, choose Install Plugin'
-check "configuration: never reads the Codex config" "$(cat docs/configuration.md)" has 'never reads `~/.codex`'
+check "configuration documents the process skills and that WF_SKILLS is gone" "$(cat docs/configuration.md)" has '## Process skills'
+check "configuration: no WF_SKILLS row" "$(cat docs/configuration.md)" lacks '| `WF_SKILLS` |'
+check "configuration: no Superpowers install route" "$(cat docs/configuration.md)" lacks '/plugin install superpowers'
+check "README: no Superpowers install step" "$(cat README.md)" lacks '/plugin install superpowers'
+check "skills: the table names the six skills" "$(cat kit/phases/skills.md)" has '`burhan-story`'
+check "skills: the kit's rules win over any other skill" "$(cat kit/phases/skills.md)" has "the kit's rules win over any other skill"
+check "upgrading: the first section says WF_SKILLS is gone" "$(cat docs/upgrading.md)" has '`WF_SKILLS` is gone'
 
 echo "project memory docs (project-scan-and-memory SU7)"
 cfgdoc="$(cat docs/configuration.md)"

@@ -145,7 +145,7 @@ test('setup --set with the allow flag saves the config and writes the verify ski
   assert.match(readFileSync(join(s.away, 'SKILL.md'), 'utf8'), /node -v/u);
 });
 
-test('setup --set check=none with a link at the skills folder and no skill behind it writes nothing outside, so it is not refused', { skip }, async () => {
+test('setup --set check=none with a link at the skills folder is refused, because the six skills are always written', { skip }, async () => {
   const s = fresh();
   assert.equal((await runWriter('init', s)).code, 0);
   mkdirSync(join(s.project, '.claude/skills'), { recursive: true });
@@ -153,7 +153,9 @@ test('setup --set check=none with a link at the skills folder and no skill behin
   symlinkSync(s.away, join(s.project, '.claude/skills'));
   const outsideBefore = snap(s.away);
   const c = capture(s.project);
-  assert.equal(await runCli(['setup', s.project, '--set', 'check=none'], c.io), 0, c.o.out + c.o.err);
+  const code = await runCli(['setup', s.project, '--set', 'check=none'], c.io);
+  assert.notEqual(code, 0, c.o.out + c.o.err);
+  assert.match(c.o.out + c.o.err, /outside the project/u);
   assert.equal(snap(s.away), outsideBefore);
 });
 

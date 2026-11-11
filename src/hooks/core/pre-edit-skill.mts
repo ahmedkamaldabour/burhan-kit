@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ereTest } from './ere.mjs';
 import { itemBlock, itemRoute, relPath, type Check, type Ctx } from './lib.mjs';
+import { SKILLS, skillAlternation } from './skill-table.mjs';
 import { shellWrites } from './shell-writes.mjs';
 import { currentItem, skillLineText, storeEnv } from './skill-line.mjs';
 import { markSkillTold, rememberedPhaseSkills, rememberedSkills, rememberShellCreated, skillTold } from './store.mjs';
@@ -12,7 +13,6 @@ const outside = (rel: string): boolean => rel.startsWith('/') || rel.startsWith(
 
 /** The edit tools: the file comes with the event. */
 export const preEditSkill: Check = (ctx) => {
-  if (ctx.cfg.WF_SKILLS !== 'superpowers') return [];
   const raw = ctx.ev.get('.file');
   if (raw === '' || ctx.ev.get('.agent_id') !== '') return [];
   return lineFor(ctx, raw, false);
@@ -21,7 +21,7 @@ export const preEditSkill: Check = (ctx) => {
 /** A shell command that writes a story, plan or review (`>`, `>>`, `tee`): the same line, once per session, item and skill. Code files are not
  *  covered here (a redirect is not a build step). The adapter attaches the turn's skills only for such a command. */
 export const preShellSkill: Check = (ctx) => {
-  if (ctx.cfg.WF_SKILLS !== 'superpowers' || ctx.ev.get('.agent_id') !== '') return [];
+  if (ctx.ev.get('.agent_id') !== '') return [];
   const targets = shellWrites([ctx.ev.get('.command')]);
   // The turn end cannot tell a new story from an appended one; only here, before the command runs, is that known.
   for (const target of targets) {
@@ -58,17 +58,17 @@ function lineFor(ctx: Ctx, raw: string, workFilesOnly: boolean): string[] {
   const parts = docs !== '' && rel.startsWith(`${docs}/`) ? rel.slice(docs.length + 1).split('/') : [];
   if (parts.length === 0 && rel.startsWith('.burhan/')) return [];
   if (parts.length === 2 && !existsSync(join(project, rel))) {
-    if (parts[1] === `${parts[0]}-story.md` && !has('brainstorming')) { label = 'story'; skill = 'superpowers:brainstorming'; }
-    else if (parts[1] === `${parts[0]}-implementation-plan.md` && !has('writing-plans')) { label = 'plan'; skill = 'superpowers:writing-plans'; }
-  } else if (parts.length === 3 && parts[1] === 'reviews' && /\.md$/.test(parts[2]) && !/-(qc|verification)(-r[0-9]+)?\.md$/.test(parts[2]) && !has('requesting-code-review')) {
-    label = 'review'; skill = 'superpowers:requesting-code-review';
+    if (parts[1] === `${parts[0]}-story.md` && !has(skillAlternation('story'))) { label = 'story'; skill = SKILLS.story.name; }
+    else if (parts[1] === `${parts[0]}-implementation-plan.md` && !has(skillAlternation('plan'))) { label = 'plan'; skill = SKILLS.plan.name; }
+  } else if (parts.length === 3 && parts[1] === 'reviews' && /\.md$/.test(parts[2]) && !/-(qc|verification)(-r[0-9]+)?\.md$/.test(parts[2]) && !has(skillAlternation('review'))) {
+    label = 'review'; skill = SKILLS.review.name;
   } else if (!workFilesOnly && parts.length === 0 && ereTest(cfg.WF_CODE_REGEX ?? '', rel) && !ereTest(cfg.WF_TEST_REGEX ?? '', rel)) {
     const remembered = item === '' ? [] : rememberedSkills(project, ev.get('.session'), item, storeEnv(ctx));
-    const done = has('test-driven-development|systematic-debugging') || remembered.length > 0;
+    const done = has(skillAlternation('build', 'debug')) || remembered.length > 0;
     let patch = ereTest('^[[:space:]>*_-]*patch\\**[[:space:]]*(—|–)', ev.get('.turn.assistant_text'), { i: true });
     if (patch && item !== '') patch = ['change / patch', 'bug / patch', 'refactor / patch'].includes(itemRoute(itemBlock(now, item)));
     if (patch && ereTest(cfg.WF_SENSITIVE_REGEX ?? '', rel)) patch = false;
-    if (!done && !patch) { label = 'build'; skill = 'superpowers:test-driven-development'; }
+    if (!done && !patch) { label = 'build'; skill = SKILLS.build.name; }
   }
   if (skill === '') return [];
   const session = ev.get('.session');

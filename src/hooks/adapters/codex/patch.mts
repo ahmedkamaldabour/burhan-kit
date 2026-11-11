@@ -31,8 +31,6 @@ export function patchFiles(text: string): PatchFile[] {
 const SKILL_PATH = /[^\s"']*\/SKILL\.md/gu;
 const SKILL_RULES: [RegExp, string][] = [
   [/^.*\/plugins\/cache\/[^/]+\/([^/]+)\/[^/]+\/skills\/([^/]+)\/SKILL\.md$/u, '$1:$2'],
-  [/^.*\/superpowers\/skills\/([^/]+)\/SKILL\.md$/u, 'superpowers:$1'],
-  [/^.*\/skills\/superpowers\/([^/]+)\/SKILL\.md$/u, 'superpowers:$1'],
   [/^.*\/([^/]+)\/SKILL\.md$/u, '$1'],
 ];
 

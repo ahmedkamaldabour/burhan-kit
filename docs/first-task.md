@@ -8,7 +8,7 @@ This is one small real task, from the request to the commit, copied from a recor
 
 - A throw-away Node project (a `package.json` whose only script is `npm test` = `node --test`), set up with the recommended answers: Claude Code, pause after each part (`step`), task files in git under `docs/burhan/work/`. The same answers the setup wizard proposes; the run used `npx burhan-kit setup --answers answers.json --apply`.
 - Claude Code 2.1.296, model claude-sonnet-5-5, run headless (`claude -p`), one `--resume` turn per message. The messages in "you" were typed by the maintainer's script, as a user would.
-- Superpowers was **off** for the run (`WF_SKILLS='none'`): this is what you get if you skip step 1 of the install.
+- No process skill was installed for the run (it predates burhan's own skills), so the story and plan steps ran without them.
 - Hook messages were read from the saved session transcript; ledger and index output come from `npx burhan-kit …` in that project. Long session ids are shortened to `…`.
 - **Not recorded:** Codex (its trust step is interactive), Windows, macOS.
 

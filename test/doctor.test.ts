@@ -458,3 +458,15 @@ test('a number used by more than one item is a warning that names the items; a p
   assert.equal(cs.filter((c) => c.text.startsWith('work items')).length, 1); // 014 is used once
   assert.equal(cs.filter((c) => c.status === 'fail').length, 0);
 });
+
+test('a leftover WF_SKILLS is named with its line and breaks nothing; no WF_SKILLS is silent', () => {
+  const p = project();
+  assert.equal(find(runChecks(p, probe()), 'warn', 'WF_SKILLS'), undefined, 'a fresh install has none');
+  edit(cfg(p), (t) => t + 'WF_SKILLS=superpowers\n');
+  const line = readFileSync(cfg(p), 'utf8').split('\n').findIndex((l) => l.startsWith('WF_SKILLS=')) + 1;
+  const warns = runChecks(p, probe()).filter((c) => c.status === 'warn' && c.text.includes('WF_SKILLS'));
+  assert.equal(warns.length, 1, warns.map((c) => c.text).join('\n'));
+  assert.ok(warns[0]!.text.includes(`.burhan/workflow.config:${line}`) && /no longer reads/.test(warns[0]!.text) && /delete that line/.test(warns[0]!.text), warns[0]!.text);
+  assert.ok(!bad(runChecks(p, probe())).some((t) => t.includes('unknown config keys')), 'a known leftover key, not a typo');
+  assert.ok(!runChecks(p, probe()).some((c) => c.status === 'fail'), 'nothing else breaks');
+});

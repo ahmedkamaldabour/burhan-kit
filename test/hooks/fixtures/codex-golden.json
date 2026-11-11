@@ -34,7 +34,7 @@
    "name": "normalize p-post-bash-skill.json",
    "sub": "normalize",
    "arg": null,
-   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"sed -n 1,200p /tmp/project/.codex/plugins/cache/x/superpowers/6.3.0/skills/test-driven-development/SKILL.md\"}, \"tool_response\": \"...\", \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"sed -n 1,200p /tmp/project/.burhan/skills/burhan-build/SKILL.md\"}, \"tool_response\": \"...\", \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
    "ledger": null,
    "rollout": null,
    "session": "S1",
@@ -45,13 +45,13 @@
    "name": "record p-post-bash-skill.json",
    "sub": "record",
    "arg": null,
-   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"sed -n 1,200p /tmp/project/.codex/plugins/cache/x/superpowers/6.3.0/skills/test-driven-development/SKILL.md\"}, \"tool_response\": \"...\", \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
+   "stdin": "{\"session_id\": \"S1\", \"turn_id\": \"U1\", \"transcript_path\": \"T\", \"cwd\": \"/proj\", \"hook_event_name\": \"PostToolUse\", \"permission_mode\": \"bypassPermissions\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"sed -n 1,200p /tmp/project/.burhan/skills/burhan-build/SKILL.md\"}, \"tool_response\": \"...\", \"tool_use_id\": \"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\"}",
    "ledger": null,
    "rollout": null,
    "session": "S1",
    "turn": "U1",
    "files": {
-    "S1/U1.jsonl": "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"sed -n 1,200p /tmp/project/.codex/plugins/cache/x/superpowers/6.3.0/skills/test-driven-development/SKILL.md\"},\"tool_use_id\":\"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\",\"patch_exit\":null}\n"
+    "S1/U1.jsonl": "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"sed -n 1,200p /tmp/project/.burhan/skills/burhan-build/SKILL.md\"},\"tool_use_id\":\"exec-63386e9a-4cd5-41ca-a4be-56eee5141a34\",\"patch_exit\":null}\n"
    },
    "mode": {
     "S1": "0o700",
@@ -232,7 +232,7 @@
    "rollout": null,
    "session": "S1",
    "turn": "U1",
-   "expected": ""
+   "expected": "{\"event\":\"pre_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/proj/notes.txt\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
   },
   {
    "name": "record p-pre-patch-add.json",
@@ -256,7 +256,7 @@
    "rollout": null,
    "session": "S1",
    "turn": "U1",
-   "expected": ""
+   "expected": "{\"event\":\"pre_edit\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"/proj/notes.txt\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"\",\"steps\":[]},\"reentrant\":false}\n"
   },
   {
    "name": "record p-pre-patch-update.json",
@@ -1177,9 +1177,9 @@
    "arg": null,
    "stdin": "{\"hook_event_name\": \"Stop\", \"session_id\": \"S1\", \"turn_id\": \"U1\", \"cwd\": \"/proj\", \"last_assistant_message\": \"All done \\u2705\", \"transcript_path\": \"@ROLLOUT\"}",
    "ledger": [
-    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/plugins/cache/mkt/superpowers/6.3.0/skills/brainstorming/SKILL.md\"}, \"tool_use_id\": \"k0\", \"patch_exit\": null}",
-    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/superpowers/skills/test-driven-development/SKILL.md\"}, \"tool_use_id\": \"k1\", \"patch_exit\": null}",
-    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.agents/skills/superpowers/writing-plans/SKILL.md\"}, \"tool_use_id\": \"k2\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/plugins/cache/mkt/plug/6.3.0/skills/burhan-story/SKILL.md\"}, \"tool_use_id\": \"k0\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/skills/burhan-build/SKILL.md\"}, \"tool_use_id\": \"k1\", \"patch_exit\": null}",
+    "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.agents/skills/burhan-plan/SKILL.md\"}, \"tool_use_id\": \"k2\", \"patch_exit\": null}",
     "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/skills/foo/SKILL.md\"}, \"tool_use_id\": \"k3\", \"patch_exit\": null}",
     "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /proj/.agents/skills/bar/SKILL.md\"}, \"tool_use_id\": \"k4\", \"patch_exit\": null}",
     "{\"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"cat /h/.codex/skills/.system/baz/SKILL.md\"}, \"tool_use_id\": \"k5\", \"patch_exit\": null}",
@@ -1190,7 +1190,7 @@
    "rollout": null,
    "session": "S1",
    "turn": "U1",
-   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"cat /h/.codex/plugins/cache/mkt/superpowers/6.3.0/skills/brainstorming/SKILL.md\",\"cat /h/.codex/superpowers/skills/test-driven-development/SKILL.md\",\"cat /h/.agents/skills/superpowers/writing-plans/SKILL.md\",\"cat /h/.codex/skills/foo/SKILL.md\",\"cat /proj/.agents/skills/bar/SKILL.md\",\"cat /h/.codex/skills/.system/baz/SKILL.md\",\"cat /h/.codex/plugins/cache/m/pl/1/skills/s1/SKILL.md\",\"cat SKILL.md\",\"cat ./skills/rel/SKILL.md\"],\"skills_used\":[\"superpowers:brainstorming\",\"superpowers:test-driven-development\",\"superpowers:writing-plans\",\"foo\",\"bar\",\"baz\",\"pl:s1\",\"rel\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/plugins/cache/mkt/superpowers/6.3.0/skills/brainstorming/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/superpowers/skills/test-driven-development/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.agents/skills/superpowers/writing-plans/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":3},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/skills/foo/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"cat /proj/.agents/skills/bar/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":5},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/skills/.system/baz/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":6},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/plugins/cache/m/pl/1/skills/s1/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":7},{\"kind\":\"cmd\",\"cmd\":\"cat SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":8},{\"kind\":\"cmd\",\"cmd\":\"cat ./skills/rel/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":9}]},\"reentrant\":false}\n"
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"codex\",\"project_dir\":\"/proj\",\"session\":\"S1\",\"turn_id\":\"U1\",\"turn_scope\":\"since_last_stop\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[],\"shell_commands\":[\"cat /h/.codex/plugins/cache/mkt/plug/6.3.0/skills/burhan-story/SKILL.md\",\"cat /h/.codex/skills/burhan-build/SKILL.md\",\"cat /h/.agents/skills/burhan-plan/SKILL.md\",\"cat /h/.codex/skills/foo/SKILL.md\",\"cat /proj/.agents/skills/bar/SKILL.md\",\"cat /h/.codex/skills/.system/baz/SKILL.md\",\"cat /h/.codex/plugins/cache/m/pl/1/skills/s1/SKILL.md\",\"cat SKILL.md\",\"cat ./skills/rel/SKILL.md\"],\"skills_used\":[\"plug:burhan-story\",\"burhan-build\",\"burhan-plan\",\"foo\",\"bar\",\"baz\",\"pl:s1\",\"rel\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/plugins/cache/mkt/plug/6.3.0/skills/burhan-story/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":1},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/skills/burhan-build/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":2},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.agents/skills/burhan-plan/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":3},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/skills/foo/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"cat /proj/.agents/skills/bar/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":5},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/skills/.system/baz/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":6},{\"kind\":\"cmd\",\"cmd\":\"cat /h/.codex/plugins/cache/m/pl/1/skills/s1/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":7},{\"kind\":\"cmd\",\"cmd\":\"cat SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":8},{\"kind\":\"cmd\",\"cmd\":\"cat ./skills/rel/SKILL.md\",\"exit\":null,\"status\":\"unknown\",\"seq\":9}]},\"reentrant\":false}\n"
   },
   {
    "name": "stop skills: quotes, several per line, duplicates",

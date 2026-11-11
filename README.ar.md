@@ -44,7 +44,7 @@ agent  **Route:** feature / bounded. It's one pure function with no scope escala
 
 **المتطلبات:** Node 22+؛ و Claude Code 2.1.139 أو أحدث و/أو Codex بعد ما توافق على الـ hooks بتاعته؛ والـ kit مسطّب في المشروع (`npm i -D burhan-kit`) أو على الـ PATH (`npm i -g burhan-kit`). في الوثائق دي `burhan` معناها الـ kit command بتاع المشروع، اللي مكتوب في `.burhan/bindings.md`: `npx burhan-kit` بيشغّل النسخة المسطّبة في المشروع، و`burhan` لوحدها بتشتغل بس لو موجودة على الـ PATH. burhan عمره ما بيشغّل npm: ولو الـ setup ما لقاش الـ kit command بيطبع لك أمر التسطيب وإنت اللي تشغّله.
 
-1. اختياري ومُوصى بيه: ثبّت Superpowers الأول، عشان الـ setup يقدر يشغّل الـ skills بتاعته. burhan عمره ما بيثبّته. في Claude Code اكتب `/plugin install superpowers@claude-plugins-official`؛ في Codex استخدم `/plugins` وادوّر على `superpowers` وثبّته؛ وبعد الخطوة 2 حط كمان `WF_SKILLS='superpowers'` في `.burhan/workflow.config` (الـ setup مش بيشوف plugins Codex). Superpowers plugin فيها process skills للـ agent؛ burhan بيربط مراحله بيها.
+1. مفيش حاجة تسطّبها الأول: burhan جاي بـ process skills بتاعته (story وplan وbuild وdebug وreview وdone) والخطوة 2 بتسطّبها.
 
 2. في جذر المشروع، ومعاك Node 22 أو أحدث، شغّل:
 
@@ -230,7 +230,7 @@ work/<task>/
 
 ‏Claude Code بيستخدم `/burhan:e2e` و`/burhan:qc` و`/burhan:onboard`؛ Codex بيتبع command files المثبتة من خلال `AGENTS.md`. نتائج Codex hooks محتاجة trust. command من غير نتيجة مسجلة مش passing.
 
-‏Superpowers اختياري. لما يتفعل، burhan بيربط المراحل بـ skills brainstorming وplanning وtest-first وdebugging وreview وverification. Claude Code يقدر يولّد roles planner وbuilder وexplorer وreviewer على models متظبطة. Codex بيستخدم model config بتاعتك؛ burhan ما بيكتبهاش.
+‏burhan جاي بستة process skills (story وplan وbuild وdebug وreview وdone) وبيسطّبهم مع الـ kit. Claude Code يقدر يولّد roles planner وbuilder وexplorer وreviewer على models متظبطة. Codex بيستخدم model config بتاعتك؛ burhan ما بيكتبهاش.
 
 ‏sessions كتير تقدر تشتغل على tasks منفصلة. خليك task واحدة لكل session. الإعدادات والـ memory وtask folders المشتركة يعدوا على review؛ `.burhan/local/` شخصية.
 

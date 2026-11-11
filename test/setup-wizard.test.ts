@@ -9,6 +9,7 @@ import { parseConfig } from '../src/lib/config.js';
 import { CANCEL, numberedPrompter, scriptedPrompter, withFallback, type Choice, type Prompter } from '../src/lib/setup/prompter.js';
 import { runWizard } from '../src/lib/setup/wizard.js';
 import { docsPathError } from '../src/lib/setup/engine.js';
+import { messages } from '../src/lib/setup/messages.js';
 import { capture, tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-wiz-home-');
@@ -24,22 +25,17 @@ function tree(dir: string, base = dir, out: Record<string, string> = {}): Record
 const hash = (d: string): string => createHash('sha256').update(JSON.stringify(tree(d))).digest('hex');
 const cfg = (t: string) => parseConfig(readFileSync(join(t, '.burhan/workflow.config'), 'utf8')).values;
 
-for (const lang of ['en', 'ar'] as const) for (const present of [false, true]) {
-  test(`${lang}: wizard summary shows one Superpowers availability line, present=${present}`, async () => {
+for (const lang of ['en', 'ar'] as const) {
+  test(`${lang}: wizard summary shows the skills line once and writes nothing`, async () => {
     const target = fresh();
     const suppliedHome = tmpDir('burhan-wizard-optional-home-');
-    if (present) mkdirSync(join(suppliedHome, '.claude/plugins/superpowers'), { recursive: true });
     const before = hash(target);
     const beforeHome = hash(suppliedHome);
     const prompter = scriptedPrompter(['use', 'cancel']);
     const result = capture(target);
     assert.equal(await runWizard(target, result.io, prompter, lang, suppliedHome), 0);
     const output = prompter.shown.join('\n') + result.o.out;
-    const expected = present
-      ? lang === 'en'
-        ? "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building, verification before \"done\". Strongly recommended; turn off with WF_SKILLS='none'."
-        : "لقينا Superpowers — burhan هيستخدم الـ skills بتاعته في كل مرحلة: brainstorming قبل الـ story، و TDD وإنت بتكتب الكود، وتأكيد قبل ما يقول \"خلصت\". موصى به بقوة؛ وتقدر تقفله بـ WF_SKILLS='none'."
-      : '/plugin install superpowers@claude-plugins-official';
+    const expected = messages(lang).skills();
     assert.equal(output.split(expected).length - 1, 1);
     assert.equal(hash(target), before);
     assert.equal(hash(suppliedHome), beforeHome);
@@ -57,23 +53,6 @@ test('first screen: three outcome lines, "sends nothing", the recommended previe
   assert.match(s, /Check before commit: your agent sets this up on first use/);
   assert.match(s, /you'll see the full summary before anything is written/);
 });
-
-for (const lang of ['en', 'ar'] as const) {
-  test(`${lang}: wizard shows the explicit-none Superpowers line once`, async () => {
-    const t = fresh();
-    mkdirSync(join(t, '.burhan'));
-    writeFileSync(join(t, '.burhan/workflow.config'), "WF_SKILLS='none'\n");
-    const suppliedHome = tmpDir('burhan-wizard-disabled-home-');
-    mkdirSync(join(suppliedHome, '.claude/plugins/superpowers'), { recursive: true });
-    const p = scriptedPrompter(['use', 'cancel']); const { io } = capture(t);
-    assert.equal(await runWizard(t, io, p, lang, suppliedHome), 0);
-    const expected = lang === 'en'
-      ? "Superpowers found, but turned off for this project (WF_SKILLS='none'). To use it, set WF_SKILLS='superpowers'."
-      : "لقينا Superpowers، بس هو مقفول في المشروع ده (WF_SKILLS='none'). لو عايز تستخدمه، خلّيها WF_SKILLS='superpowers'.";
-    const output = p.shown.join('\n');
-    assert.equal(output.split(expected).length - 1, 1);
-  });
-}
 
 test('fast path: two answers, files written (AC-03)', async () => {
   const t = fresh(); const p = scriptedPrompter(['use', 'apply']); const { o, io } = capture(t);

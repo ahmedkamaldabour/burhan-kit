@@ -8,9 +8,9 @@ import { tmpDir } from '../helpers.js';
 // A story, plan or review written through the shell (`cat > file <<EOF`, `>`, `>>`, `tee`) gets the same skill reminder as one written with
 // the edit tools (item skills-link-and-shell-writes). The reminder rides on the Bash hook that is already installed (`pre-commit-check`).
 const D = 'AI_SPEC/docs';
-const BRAIN = 'superpowers:brainstorming';
-const PLANS = 'superpowers:writing-plans';
-const REVIEW = 'superpowers:requesting-code-review';
+const BRAIN = 'burhan-story';
+const PLANS = 'burhan-plan';
+const REVIEW = 'burhan-review';
 const STORY_CMD = `cat > ${D}/foo/foo-story.md <<'EOF'\n# story\nEOF`;
 const PLAN_CMD = `cat > ${D}/foo/foo-implementation-plan.md <<'EOF'\nplan\nEOF`;
 const REVIEW_CMD = `echo review | tee ${D}/foo/reviews/foo-review.md`;
@@ -20,7 +20,7 @@ function scene(extra: string[] = []): Scene {
   const project = tmpDir('burhan-shellw-project-');
   const store = tmpDir('burhan-shellw-store-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
-  writeFileSync(join(project, '.burhan/workflow.config'), [`WF_DOCS_DIR=${D}`, 'WF_DISCOVERY_DIR=AI_SPEC/discovery', 'WF_STATE_FILE=.burhan/local/PROGRESS.md', 'WF_SKILLS=superpowers', "WF_CHECK_CMD='node -v'", `WF_EVIDENCE_DIR='${store}'`, ...extra].join('\n') + '\n');
+  writeFileSync(join(project, '.burhan/workflow.config'), [`WF_DOCS_DIR=${D}`, 'WF_DISCOVERY_DIR=AI_SPEC/discovery', 'WF_STATE_FILE=.burhan/local/PROGRESS.md', "WF_CHECK_CMD='node -v'", `WF_EVIDENCE_DIR='${store}'`, ...extra].join('\n') + '\n');
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), '# s\n## Now\n## Waiting on you\n');
   return { project, store, env: { ...process.env, WF_EVIDENCE_DIR: store } };
 }
@@ -29,14 +29,14 @@ const core = async (s: Scene, command: string, skills: string[] = [], over: Reco
 const used = (s: Scene, skills: string[]) => run(['core', 'turn-audit'], JSON.stringify({ event: 'turn_end', session: 'S', project_dir: s.project, turn: { skills_used: skills, assistant_text: 'ok', files_created: [], files_edited: [], shell_commands: [], steps: [] } }), s.env);
 
 // ---- AC-01 / AC-02: the reminder, for the three file kinds ----
-test('a heredoc story without brainstorming prints the story line', async () => {
-  assert.match(await core(scene(), STORY_CMD), /Skill \(story\): invoke superpowers:brainstorming and read its instructions before you start/u);
+test('a heredoc story without burhan-story prints the story line', async () => {
+  assert.match(await core(scene(), STORY_CMD), /Skill \(story\): invoke burhan-story \(the Skill tool, or read \.burhan\/skills\/burhan-story\/SKILL\.md\) before you start/u);
 });
-test('a heredoc plan without writing-plans prints the plan line', async () => {
-  assert.match(await core(scene(), PLAN_CMD), /Skill \(plan\): invoke superpowers:writing-plans/u);
+test('a heredoc plan without burhan-plan prints the plan line', async () => {
+  assert.match(await core(scene(), PLAN_CMD), /Skill \(plan\): invoke burhan-plan/u);
 });
-test('a tee review without requesting-code-review prints the review line', async () => {
-  assert.match(await core(scene(), REVIEW_CMD), /Skill \(review\): invoke superpowers:requesting-code-review/u);
+test('a tee review without burhan-review prints the review line', async () => {
+  assert.match(await core(scene(), REVIEW_CMD), /Skill \(review\): invoke burhan-review/u);
 });
 test('an append (>>) to a story is covered too', async () => {
   assert.match(await core(scene(), `echo x >> ${D}/foo/foo-story.md`), /Skill \(story\)/u);
@@ -72,10 +72,6 @@ test('a story that already exists is not reminded (as for the edit tools)', asyn
   assert.equal(await core(s, STORY_CMD), '');
 });
 test('a subagent stays silent', async () => assert.equal(await core(scene(), STORY_CMD, [], { agent_id: 'a1' }), ''));
-test('with the skills off nothing is printed', async () => {
-  const s = scene(); writeFileSync(join(s.project, '.burhan/workflow.config'), `WF_DOCS_DIR=${D}\nWF_SKILLS=none\nWF_EVIDENCE_DIR='${s.store}'\n`);
-  assert.equal(await core(s, STORY_CMD), '');
-});
 
 // ---- AC-04: the git commit check is unchanged, and both can speak ----
 test('git commit alone: the pre-commit gate only', async () => {
@@ -113,16 +109,12 @@ test('adapter: a command that writes nothing is not read against the transcript'
     assert.ok(!e.turn?.skills_used?.length, `${command}: ${JSON.stringify(e.turn)}`);
   }
 });
-test('adapter: with the skills off the transcript is not read even for a story write', async () => {
-  const s = scene(); writeFileSync(join(s.project, '.burhan/workflow.config'), `WF_DOCS_DIR=${D}\nWF_SKILLS=none\n`);
-  assert.ok(!(await normalize(s, STORY_CMD, turnWith(BRAIN))).turn?.skills_used?.length);
-});
 test('adapter end to end: the installed Bash hook prints the line, and nothing once the skill was used', async () => {
   const s = scene();
   const env = { ...s.env, CLAUDE_PROJECT_DIR: s.project };
   const first = (await run(['claude', 'hook', 'pre-commit-check'], payload(s, STORY_CMD, ''), env)).stdout;
   assert.match(first, /"hookEventName":"PreToolUse"/u);
-  assert.match(first, /Skill \(story\): invoke superpowers:brainstorming/u);
+  assert.match(first, /Skill \(story\): invoke burhan-story/u);
   const s2 = scene();
   const second = (await run(['claude', 'hook', 'pre-commit-check'], payload(s2, STORY_CMD, turnWith(BRAIN)), { ...s2.env, CLAUDE_PROJECT_DIR: s2.project })).stdout;
   assert.equal(second, '');
@@ -136,25 +128,20 @@ function codexEnv(s: Scene, skillRead: string | null): NodeJS.ProcessEnv {
   const ledger = tmpDir('burhan-shellw-codex-');
   if (skillRead !== null) {
     mkdirSync(join(ledger, 'CS'), { recursive: true }); writeFileSync(join(ledger, '.burhan-ledger'), '');
-    writeFileSync(join(ledger, 'CS', 'CT.jsonl'), JSON.stringify({ tool_name: 'Bash', tool_input: { command: `sed -n 1,80p /home/u/.codex/superpowers/skills/${skillRead}/SKILL.md` }, tool_use_id: 'x', patch_exit: null }) + '\n');
+    writeFileSync(join(ledger, 'CS', 'CT.jsonl'), JSON.stringify({ tool_name: 'Bash', tool_input: { command: `sed -n 1,80p .burhan/skills/${skillRead}/SKILL.md` }, tool_use_id: 'x', patch_exit: null }) + '\n');
   }
   return { ...s.env, WF_CODEX_LEDGER_DIR: ledger };
 }
 const codexNormalize = async (s: Scene, command: string, skillRead: string | null): Promise<Record<string, any>[]> =>
   (await run(['codex', 'normalize'], codexPayload(s, command), codexEnv(s, skillRead))).stdout.split('\n').filter(Boolean).map((l) => JSON.parse(l));
 test('codex: a command that writes a story carries the skills read earlier in the turn', async () => {
-  const [e] = await codexNormalize(scene(), STORY_CMD, 'brainstorming');
+  const [e] = await codexNormalize(scene(), STORY_CMD, 'burhan-story');
   assert.equal(e?.event, 'pre_shell');
   assert.deepEqual(e?.turn?.skills_used, [BRAIN]);
 });
 test('codex: a command that writes nothing does not read the ledger', async () => {
-  const [e] = await codexNormalize(scene(), 'echo x > notes.txt', 'brainstorming');
+  const [e] = await codexNormalize(scene(), 'echo x > notes.txt', 'burhan-story');
   assert.equal(e?.event, 'pre_shell');
-  assert.ok(!e?.turn?.skills_used?.length);
-});
-test('codex: with the skills off nothing extra is attached', async () => {
-  const s = scene(); writeFileSync(join(s.project, '.burhan/workflow.config'), `WF_DOCS_DIR=${D}\nWF_SKILLS=none\n`);
-  const [e] = await codexNormalize(s, STORY_CMD, 'brainstorming');
   assert.ok(!e?.turn?.skills_used?.length);
 });
 
@@ -163,12 +150,12 @@ const endTurn = async (s: Scene, commands: string[], skills: string[] = [], extr
   (await run(['core', 'turn-audit'], JSON.stringify({ event: 'turn_end', session: 'S', project_dir: s.project, ...extra, turn: { skills_used: skills, assistant_text: 'written', files_created: [], files_edited: [], shell_commands: commands, steps: [] } }), s.env)).stdout;
 // A shell write is judged "created" by the Bash pre-write hook (the file did not exist yet); the turn end reads that marker (item shell-writes-followup).
 const shellTurn = async (s: Scene, command: string, skills: string[] = []): Promise<string> => { await core(s, command, skills); return endTurn(s, [command], skills); };
-test('turn end: a heredoc story with brainstorming never run → the story warning, worded for the shell', async () => {
+test('turn end: a heredoc story with burhan-story never run → the story warning, worded for the shell', async () => {
   const out = await shellTurn(scene(), STORY_CMD);
-  assert.match(out, /⚠ SKILL GATE \(story\): a story was written through the shell this turn without superpowers:brainstorming\. Invoke it now if it was skipped, or say when it ran\./u);
+  assert.match(out, /⚠ SKILL GATE \(story\): a story was written through the shell this turn without burhan-story\. Invoke it now if it was skipped, or say when it ran\./u);
 });
-test('turn end: a heredoc plan with writing-plans never run → the plan warning, worded for the shell', async () => {
-  assert.match(await shellTurn(scene(), PLAN_CMD), /⚠ SKILL GATE \(plan\): a plan was written through the shell this turn without superpowers:writing-plans\./u);
+test('turn end: a heredoc plan with burhan-plan never run → the plan warning, worded for the shell', async () => {
+  assert.match(await shellTurn(scene(), PLAN_CMD), /⚠ SKILL GATE \(plan\): a plan was written through the shell this turn without burhan-plan\./u);
 });
 test('turn end: the skill used in this turn or in an earlier turn → silent', async () => {
   assert.doesNotMatch(await shellTurn(scene(), STORY_CMD, [BRAIN]), /SKILL GATE/u);
@@ -182,13 +169,13 @@ test('turn end: a redirect to a non-work file, a source or the state file raises
   }
 });
 test('turn end: a review written through tee, by an agent that does not report its writes, is checked as before', async () => {
-  assert.match(await endTurn(scene(), [REVIEW_CMD]), /SKILL GATE: a review file was written this turn without superpowers:requesting-code-review/u);
+  assert.match(await endTurn(scene(), [REVIEW_CMD]), /SKILL GATE: a review file was written this turn without burhan-review/u);
 });
 test('turn end: a story created with the edit tool keeps its old wording', async () => {
   const s = scene();
   const file = join(s.project, D, 'foo/foo-story.md'); mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, '# s\n');
   const out = (await run(['core', 'turn-audit'], JSON.stringify({ event: 'turn_end', session: 'S', project_dir: s.project, turn: { skills_used: [], assistant_text: 'x', files_created: [file], files_edited: [], shell_commands: [], steps: [] } }), s.env)).stdout;
-  assert.match(out, /a story was CREATED this turn without superpowers:brainstorming/u);
+  assert.match(out, /a story was CREATED this turn without burhan-story/u);
 });
 
 // ---- created-only: an append or an overwrite of a story that already existed is not "written without the skill" (AC-01..AC-03) ----
@@ -225,12 +212,5 @@ test('turn end: the marker is spent by the audit — an append in a later turn t
 test('a subagent leaves no marker, so its turn-end check stays silent', async () => {
   const s = scene();
   await core(s, STORY_CMD, [], { agent_id: 'a1' });
-  assert.doesNotMatch(await endTurn(s, [STORY_CMD]), STORY_GATE);
-});
-test('with the skills off the pre-write hook leaves no marker', async () => {
-  const s = scene(); const cfg = join(s.project, '.burhan/workflow.config');
-  writeFileSync(cfg, `WF_DOCS_DIR=${D}\nWF_SKILLS=none\nWF_EVIDENCE_DIR='${s.store}'\n`);
-  await core(s, STORY_CMD);
-  writeFileSync(cfg, `WF_DOCS_DIR=${D}\nWF_SKILLS=superpowers\nWF_EVIDENCE_DIR='${s.store}'\n`);
   assert.doesNotMatch(await endTurn(s, [STORY_CMD]), STORY_GATE);
 });

@@ -11,11 +11,11 @@ const D = '.burhan/work';
 interface Opts { files: Record<string, string>; text?: string; skills?: string[]; code?: string; route?: string; extra?: Record<string, string> }
 
 /** Runs the built turn-audit hook in a scratch project whose turn created every file in `files`; returns its message. */
-async function audit({ files, text = 'saved', skills = ['superpowers:brainstorming', 'superpowers:writing-plans', 'superpowers:requesting-code-review', 'superpowers:verification-before-completion'], code = '', route = 'change / bounded', extra = {} }: Opts): Promise<string> {
+async function audit({ files, text = 'saved', skills = ['burhan-story', 'burhan-plan', 'burhan-review', 'burhan-done'], code = '', route = 'change / bounded', extra = {} }: Opts): Promise<string> {
   const project = tmpDir('burhan-sources-gates-project-');
   const store = tmpDir('burhan-sources-gates-store-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
-  const config = ['WF_DOCS_DIR=.burhan/work', 'WF_DISCOVERY_DIR=.burhan/disc', 'WF_STATE_FILE=.burhan/local/PROGRESS.md', 'WF_SKILLS=superpowers', `WF_EVIDENCE_DIR='${store}'`];
+  const config = ['WF_DOCS_DIR=.burhan/work', 'WF_DISCOVERY_DIR=.burhan/disc', 'WF_STATE_FILE=.burhan/local/PROGRESS.md', `WF_EVIDENCE_DIR='${store}'`];
   if (code !== '') config.push(`WF_CODE_REGEX='${code}'`);
   writeFileSync(join(project, '.burhan/workflow.config'), config.join('\n') + '\n');
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), `# s\n## Now\n### foo\n- **Route:** ${route}\n## Waiting on you\n`);
@@ -66,7 +66,7 @@ test('a source named *-story.md raises no story skill gate', async () => none(aw
 test('a source named *-implementation-plan.md raises no plan skill gate', async () => none(await audit({ files: { [`${D}/foo/sources/x-implementation-plan.md`]: 'p\n' }, skills: [] })));
 test('a source under sources/reviews/ raises no review skill gate', async () => none(await audit({ files: { [`${D}/foo/sources/reviews/z.md`]: 'r\n' }, skills: [] })));
 test('a source plus a completion claim raises no verify skill gate', async () => none(await audit({ files: { [`${D}/foo/sources/report.md`]: 'x\n' }, text: 'done, all tests pass', skills: [] })));
-test('control: a real story without brainstorming still raises the story skill gate', async () => {
+test('control: a real story without burhan-story still raises the story skill gate', async () => {
   assert.match(await audit({ files: { [`${D}/foo/foo-story.md`]: '**Status:** Draft\n' }, skills: [] }), /SKILL GATE \(story\)/u);
 });
 test('control: a real plan, review and a claim after real work still raise their skill gates', async () => {

@@ -2,12 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { skillFor } from '../src/hooks/core/item-stage.mjs';
 
-const B = 'superpowers:brainstorming';
-const P = 'superpowers:writing-plans';
-const T = 'superpowers:test-driven-development';
-const R = 'superpowers:requesting-code-review';
-const V = 'superpowers:verification-before-completion';
-const D = 'superpowers:systematic-debugging';
+const B = 'burhan-story';
+const P = 'burhan-plan';
+const T = 'burhan-build';
+const R = 'burhan-review';
+const V = 'burhan-done';
+const D = 'burhan-debug';
 const FEATURE = 'feature / architectural';
 const BUG = 'bug / bounded';
 const INV = 'investigation / bounded';

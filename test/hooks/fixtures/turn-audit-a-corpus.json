@@ -18,7 +18,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -47,7 +47,7 @@
      "shell_commands": [
       "ls"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "All done.",
      "steps": [
       {
@@ -82,7 +82,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -124,7 +124,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "fixed",
      "steps": [
       {
@@ -166,7 +166,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "passing",
      "steps": [
       {
@@ -208,7 +208,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "complete",
      "steps": [
       {
@@ -249,7 +249,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "completed",
      "steps": [
       {
@@ -290,7 +290,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "works now",
      "steps": [
       {
@@ -340,7 +340,7 @@
       "verify-it a",
       "verify-it b"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -389,7 +389,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -431,7 +431,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -473,7 +473,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -511,7 +511,7 @@
      "files_created": [],
      "files_edited": [],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -551,7 +551,7 @@
      "files_created": [],
      "files_edited": [],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -587,7 +587,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -616,7 +616,7 @@
      "shell_commands": [
       "ls"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -643,7 +643,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "(done!)",
      "steps": []
     }
@@ -670,7 +670,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "fixed now",
      "steps": []
     }
@@ -697,7 +697,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "passing.",
      "steps": []
     }
@@ -724,7 +724,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "passes!",
      "steps": []
     }
@@ -751,7 +751,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "complete.",
      "steps": []
     }
@@ -778,7 +778,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "completed!",
      "steps": []
     }
@@ -805,7 +805,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "works now.",
      "steps": []
     }
@@ -832,7 +832,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "Sub-unit ✅",
      "steps": []
     }
@@ -859,7 +859,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "كده، خلص!",
      "steps": []
     }
@@ -886,7 +886,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": " خلصت ",
      "steps": []
     }
@@ -913,7 +913,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "(اتصلح؟)",
      "steps": []
     }
@@ -940,7 +940,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "the abandoned path",
      "steps": []
     }
@@ -967,7 +967,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "مخلص",
      "steps": []
     }
@@ -994,7 +994,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "not done",
      "steps": []
     }
@@ -1021,7 +1021,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "isn't passing",
      "steps": []
     }
@@ -1048,7 +1048,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "no longer complete",
      "steps": []
     }
@@ -1075,7 +1075,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "not yet fully done",
      "steps": []
     }
@@ -1102,7 +1102,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "to be done",
      "steps": []
     }
@@ -1129,7 +1129,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "yet to be fixed",
      "steps": []
     }
@@ -1156,7 +1156,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "once that is done we merge",
      "steps": []
     }
@@ -1183,7 +1183,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "when it is complete",
      "steps": []
     }
@@ -1210,7 +1210,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "not quite done",
      "steps": []
     }
@@ -1237,7 +1237,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "almost fixed",
      "steps": []
     }
@@ -1264,7 +1264,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "is it done?",
      "steps": []
     }
@@ -1291,7 +1291,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "مش خلص",
      "steps": []
     }
@@ -1318,7 +1318,7 @@
      "shell_commands": [
       "cat > a.src <<EOF\nx\nEOF"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -1345,7 +1345,7 @@
       "./src/a.ts"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -1372,7 +1372,7 @@
       "tmp/../src/a.ts"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -1399,7 +1399,7 @@
       "@P/src/a.ts"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -1426,7 +1426,7 @@
       "/outside/src/a.ts"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -1453,7 +1453,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -1480,7 +1480,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -1507,7 +1507,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -1536,7 +1536,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -1577,7 +1577,7 @@
       "a.src"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": []
     }
@@ -1606,7 +1606,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -1649,7 +1649,7 @@
      "shell_commands": [
       "verify-it a"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "done",
      "steps": [
       {
@@ -1694,7 +1694,7 @@
       ".burhan/work/beta/beta-story.md"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1723,7 +1723,7 @@
       ".burhan/work/alpha/a.md"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": [
       {
@@ -1761,7 +1761,7 @@
      "shell_commands": [
       "burhan use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1786,7 +1786,7 @@
      "shell_commands": [
       "burhan-kit use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1811,7 +1811,7 @@
      "shell_commands": [
       "npx burhan-kit use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1836,7 +1836,7 @@
      "shell_commands": [
       "node ./kit/cli.js use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1861,7 +1861,7 @@
      "shell_commands": [
       "ASSIGN=value burhan use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1886,7 +1886,7 @@
      "shell_commands": [
       "echo nope && burhan use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1911,7 +1911,7 @@
      "shell_commands": [
       "false || burhan use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1936,7 +1936,7 @@
      "shell_commands": [
       "true; burhan use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1961,7 +1961,7 @@
      "shell_commands": [
       "printf x | burhan use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -1986,7 +1986,7 @@
      "shell_commands": [
       "( burhan use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2011,7 +2011,7 @@
      "shell_commands": [
       "echo 'burhan use alpha'"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2036,7 +2036,7 @@
      "shell_commands": [
       "grep \"burhan use alpha\" README.md"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2061,7 +2061,7 @@
      "shell_commands": [
       "echo burhan use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2086,7 +2086,7 @@
      "shell_commands": [
       "burhan use"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2111,7 +2111,7 @@
      "shell_commands": [
       "burhan use alpha extra"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2136,7 +2136,7 @@
      "shell_commands": [
       "npx other use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2161,7 +2161,7 @@
      "shell_commands": [
       "node ./kit/not-cli.js use alpha"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2186,7 +2186,7 @@
      "shell_commands": [
       "burhan use beta"
      ],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2211,7 +2211,7 @@
       ".burhan/work/alpha/a.md"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }
@@ -2235,7 +2235,7 @@
       ".burhan/work/alpha/a.md"
      ],
      "shell_commands": [],
-     "skills_used": [],
+     "skills_used": ["burhan-story", "burhan-plan", "burhan-build", "burhan-review", "burhan-done"],
      "assistant_text": "",
      "steps": []
     }

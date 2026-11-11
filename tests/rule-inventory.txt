@@ -186,7 +186,6 @@ R183|phases/close-out.md|One session per item
 R184|phases/close-out.md|shrinks to one line
 R185|phases/close-out.md|its details stay in the item's files
 R186|phases/close-out.md|fold closed lines into one line per release
-R187|WORKFLOW.md|invoke the matching skill before acting in each phase
 R188|phases/files.md|holds originals only
 R189|phases/files.md|go to `repro/`
 R190|phases/files.md|name it `<name>-summary`
@@ -265,3 +264,9 @@ R262|phases/files.md|`NNN-slug` for an item that `burhan item new` made
 R263|phases/files.md|refuses a number or a slug that two items share, naming them
 R264|commands/e2e.md|Try `$ARGUMENTS` as an id, a number or a slug
 R265|templates/bindings.md|runs the copy installed in the project
+R266|phases/skills.md|the kit's rules win over any other skill
+R267|phases/skills.md|there is no setting that turns the skills off
+R268|phases/skills.md|a managed copy in `.claude/skills/<skill>/SKILL.md` (a skill of yours with that name is never overwritten)
+R269|phases/enforcement.md|names the burhan skill to invoke before the item's next phase
+R270|phases/enforcement.md|without its skill (burhan-story, burhan-plan, burhan-review, burhan-build)
+R271|WORKFLOW.md|Invoke the burhan skill of each phase before acting

@@ -17,7 +17,7 @@ function setup(): { project: string; env: NodeJS.ProcessEnv } {
   const project = tmpDir('burhan-review-note-project-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), '## Now\n### alpha\n- **Route:** change / bounded\n');
-  return { project, env: { ...process.env, WF_EVIDENCE_DIR: tmpDir('burhan-review-note-evidence-'), WF_SKILLS: 'superpowers', WF_DOCS_DIR: '.burhan/work', WF_STATE_FILE: '.burhan/local/PROGRESS.md' } };
+  return { project, env: { ...process.env, WF_EVIDENCE_DIR: tmpDir('burhan-review-note-evidence-'), WF_DOCS_DIR: '.burhan/work', WF_STATE_FILE: '.burhan/local/PROGRESS.md' } };
 }
 interface T { agent?: string; created?: string[]; edited?: string[]; cmds?: string[]; steps?: Record<string, unknown>[]; skills?: string[] }
 let n = 0;
@@ -56,7 +56,7 @@ test('two review files, one a fix note and one created: fires once', async () =>
 });
 
 test('the skill, when used, silences it as before', async () => {
-  assert.doesNotMatch(await audit({ created: [REVIEW], skills: ['superpowers:requesting-code-review'], steps: [edit(REVIEW)] }), GATE);
+  assert.doesNotMatch(await audit({ created: [REVIEW], skills: ['burhan-review'], steps: [edit(REVIEW)] }), GATE);
 });
 
 test('Codex steps carry no text: an edit of a review file keeps today\'s rule (R-4)', async () => {

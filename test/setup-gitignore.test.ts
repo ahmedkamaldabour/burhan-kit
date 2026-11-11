@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { runChecks, type Probe } from '../src/lib/doctor.js';
 import { applySetup, ignoredCommittedSetupFiles, planSetup, renderSummary, type SetupAnswers } from '../src/lib/setup/engine.js';
+import { PHASES, skillName } from '../src/hooks/core/skill-table.mjs';
 import { tmpDir } from './helpers.js';
 
 const home = tmpDir('burhan-gitignore-home-');
@@ -94,4 +95,13 @@ test('AC-18: printed lines unignore planned kit files in a fresh repo', () => {
   applySetup(plan);
   for (const rel of ['.burhan/WORKFLOW.md', '.burhan/hooks/node/core/turn-audit.mjs', '.claude/settings.json', '.claude/commands/burhan/e2e.md', '.codex/hooks.json'])
     assert.notEqual(spawnSync('git', ['-C', target, 'check-ignore', '--quiet', '--no-index', '--', rel]).status, 0, `${rel} is no longer ignored after adding the printed lines`);
+});
+
+test('review 13: the managed skill copies are listed when git ignores .claude/skills', () => {
+  const target = repo('/.claude/*\n');
+  applySetup(planSetup(target, answers, home));
+  const lines = ignoredLines(renderSummary(planSetup(target, answers, home), 'en'));
+  for (const p of PHASES) assert.ok(lines.includes(`!/.claude/skills/${skillName(p)}/SKILL.md`), skillName(p));
+  const doctor = runChecks(target, probe).filter((check) => check.status === 'warn').flatMap((check) => ignoredLines(check.text));
+  assert.deepEqual(doctor, lines);
 });

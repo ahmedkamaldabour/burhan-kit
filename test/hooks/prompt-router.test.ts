@@ -10,37 +10,39 @@ const modeAuto = '• Mode switch → write `**Mode:** auto` in the story and th
 const bug = '• Bug → reproduce and find the root cause with evidence before proposing a fix; then a failing regression test first.';
 const access = '• Access/visibility work → record-level visibility is the highest-consequence check: a missing filter returns everything. Test allowed AND denied cases; verify as the affected identity (.burhan/phases/review.md).';
 const investigation = '• Investigation → read-only route (WORKFLOW §3): evidence → findings → limitations → conclusion. No application code changes (.burhan/phases/stage-story.md).';
-const noMatch = '• No phase keyword matched — run superpowers:using-superpowers before acting.';
 
 async function router(prompt: string, env: NodeJS.ProcessEnv = {}): Promise<string> {
   const result = await run(
     ['core', 'prompt-router'],
     JSON.stringify({ event: 'prompt', prompt, project_dir: project }),
-    { ...process.env, WF_SKILLS: 'none', ...env },
+    { ...process.env, ...env },
   );
   assert.equal(result.debug, '');
   return result.stdout;
 }
 
-const skillNoItem = '⚑ Skill (before a story): invoke superpowers:brainstorming and read its instructions before you start.';
+const skillNoItem = '⚑ Skill (before a story): invoke burhan-story (the Skill tool, or read .burhan/skills/burhan-story/SKILL.md) before you start.';
 /** The router block followed by the skill line (its own finding, so a blank line between). */
 const withSkill = (...lines: string[]): string => JSON.stringify({ message: [heading, ...lines].join('\n') + '\n\n' + skillNoItem }) + '\n';
 
+/** No item and no keyword: the router says nothing of its own and the skill line stands alone. */
+const skillOnly = JSON.stringify({ message: skillNoItem }) + '\n';
+
 function output(...lines: string[]): string {
-  return JSON.stringify({ message: [heading, ...lines].join('\n') }) + '\n';
+  return withSkill(...lines);
 }
 
 test('prompt-router: Arabic words require whitespace or punctuation bounds', async () => {
   for (const prompt of ['ممكن تشرح المعدل ده', 'شكرا يا مخلص']) {
-    assert.equal(await router(prompt), '');
+    assert.equal(await router(prompt), skillOnly);
   }
-  assert.equal(await router('مشكلة،'), output(bug));
-  assert.equal(await router('كده خلص؟'), output('• Wrapping up → review (.burhan/phases/review.md), then run the checks and SHOW the output before claiming done; commit only after the (a)/(b)/(c) checkpoint (.burhan/phases/close-out.md).'));
+  assert.equal(await router('مشكلة،'), output(`${bug} Skill: burhan-debug, then burhan-build.`));
+  assert.equal(await router('كده خلص؟'), output('• Wrapping up → no item yet: route first (type, scope, reason: .burhan/phases/stage-story.md); with one, review (.burhan/phases/review.md), then run the checks and SHOW the output before claiming done; commit only after the (a)/(b)/(c) checkpoint (.burhan/phases/close-out.md). Skill: burhan-review, then burhan-done.'));
 });
 
 test('prompt-router: end to end tests and negated auto phrases do not switch modes', async () => {
-  assert.equal(await router('add end to end tests for the role permissions page'), output(access, '• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.burhan/phases/stage-story.md).'));
-  assert.equal(await router("don't go end-to-end yet"), '');
+  assert.equal(await router('add end to end tests for the role permissions page'), output(access, '• New/changed behaviour → route it (type + scope + reason), then the gates it requires before any code (.burhan/phases/stage-story.md). Skill: burhan-story → burhan-plan → burhan-build.'));
+  assert.equal(await router("don't go end-to-end yet"), skillOnly);
 });
 
 test('prompt-router: step wins over auto', async () => {
@@ -48,7 +50,7 @@ test('prompt-router: step wins over auto', async () => {
 });
 
 test('prompt-router: keeps the first two suggestions in router order', async () => {
-  assert.equal(await router('add a fix for the broken role permission, investigate, then we are done'), output(access, investigation));
+  assert.equal(await router('add a fix for the broken role permission, investigate, then we are done'), output(access, `${investigation} Skill: burhan-debug.`));
 });
 
 test('prompt-router: skips system notifications and an empty prompt', async () => {
@@ -57,10 +59,9 @@ test('prompt-router: skips system notifications and an empty prompt', async () =
   }
 });
 
-test('prompt-router: adds skills suffixes and the no-keyword line only when skills are enabled', async () => {
-  assert.equal(await router('the upload is broken', { WF_SKILLS: 'superpowers' }), withSkill(`${bug} Skill: superpowers:systematic-debugging, then superpowers:test-driven-development.`));
-  assert.equal(await router('hello there', { WF_SKILLS: 'superpowers' }), withSkill(noMatch));
-  assert.equal(await router('hello there'), '');
+test('prompt-router: adds skills suffixes, and with no keyword says only the skill line', async () => {
+  assert.equal(await router('the upload is broken'), withSkill(`${bug} Skill: burhan-debug, then burhan-build.`));
+  assert.equal(await router('hello there'), skillOnly);
 });
 
 test('prompt-router: explicit auto mode is preserved', async () => {

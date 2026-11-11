@@ -16,7 +16,6 @@ check_eq "agent is codex" "$(norm "$FX/p-session.json" | jq -r .agent)" "codex"
 check_eq "project_dir from cwd" "$(norm "$FX/p-session.json" | jq -r .project_dir)" "/proj"
 check "UserPromptSubmit -> prompt" "$(norm "$FX/p-prompt.json" | jq -c '[.event,.prompt]')" has '["prompt","Do exactly'
 check_eq "PreToolUse Bash -> pre_shell" "$(norm "$FX/p-pre-bash.json" | jq -c '[.event,.command]')" '["pre_shell","echo capture-done"]'
-check_eq "PreToolUse apply_patch (skills off) -> nothing" "$(norm "$FX/p-pre-patch-add.json")" ""
 check_eq "PostToolUse apply_patch (add) -> post_edit" "$(norm "$FX/p-post-patch-add.json" | jq -c '[.event,.file]')" '["post_edit","/proj/notes.txt"]'
 check_eq "PostToolUse apply_patch (update) -> post_edit" "$(norm "$FX/p-post-patch-update.json" | jq -r .file)" "/proj/notes.txt"
 check_eq "multi-file patch -> one post_edit per added/updated/moved file" \
@@ -38,7 +37,7 @@ check "deleted file is NOT counted as edited" "$(jq -c '.files_edited' <<<"$t")"
 check "moved-from file is NOT counted as edited" "$(jq -c '.files_edited' <<<"$t")" lacks '"/proj/src/from.src"'
 check_eq "other turn's edit excluded (exact)" "$(jq -r '.files_edited[]' <<<"$t" | grep -c old-turn)" "0"
 check "shell commands captured" "$(jq -c '.shell_commands' <<<"$t")" has '"echo capture-done"'
-check_eq "skill read via SKILL.md -> skills_used" "$(jq -c '.skills_used' <<<"$t")" '["superpowers:test-driven-development"]'
+check_eq "skill read via SKILL.md -> skills_used" "$(jq -c '.skills_used' <<<"$t")" '["burhan-build"]'
 check_eq "assistant text = last_assistant_message" "$(jq -r '.assistant_text' <<<"$t")" "CAPTURE-MARKER-7f3a"
 check_eq "stop_hook_active -> reentrant" "$(jq -c '.stop_hook_active=true' "$FX/p-stop.json" | "${IMPL[@]}" normalize | jq -r .reentrant)" "true"
 check_eq "no ledger -> empty turn, still turn_end" "$(jq -c '.turn_id="nope"' "$FX/p-stop.json" | "${IMPL[@]}" normalize | jq -c '.turn.files_edited')" "[]"
@@ -135,14 +134,14 @@ check_eq "CRLF patch -> clean path (spaces kept)" "$("${IMPL[@]}" normalize < "$
 
 sk() { jq -c --arg c "sed -n 1,9p $1" '.tool_input.command=$c' "$FX/p-post-bash.json"; }
 L="$(t_tmp)/burhan/codex"
-for path in /h/.codex/plugins/cache/mkt/superpowers/6.3.0/skills/brainstorming/SKILL.md \
-            /h/.codex/superpowers/skills/test-driven-development/SKILL.md \
-            /h/.agents/skills/superpowers/writing-plans/SKILL.md \
+for path in /h/.codex/plugins/cache/mkt/plug/6.3.0/skills/burhan-story/SKILL.md \
+            /h/.codex/skills/burhan-build/SKILL.md \
+            /h/.agents/skills/burhan-plan/SKILL.md \
             /h/.codex/skills/foo/SKILL.md /proj/.agents/skills/bar/SKILL.md /h/.codex/skills/.system/baz/SKILL.md; do
   sk "$path" | WF_CODEX_LEDGER_DIR="$L" "${IMPL[@]}" hook record
 done
 check_eq "skill names by install layout" "$(WF_CODEX_LEDGER_DIR="$L" "${IMPL[@]}" normalize < "$FX/p-stop.json" | jq -c .turn.skills_used)" \
-  '["superpowers:brainstorming","superpowers:test-driven-development","superpowers:writing-plans","foo","bar","baz"]'
+  '["plug:burhan-story","burhan-build","burhan-plan","foo","bar","baz"]'
 
 P2="$(t_tmp)"; mkdir -p "$P2/.burhan"; printf '%s\n' "WF_CODE_REGEX='\\.src\$'" > "$P2/.burhan/workflow.config"
 out="$(jq -c --arg p "$P2" '.cwd=$p | (.. | strings) |= gsub("/proj"; $p)' "$FX/p-post-patch-multi.json" | WF_CODEX_LEDGER_DIR="$(t_tmp)" "${IMPL[@]}" hook post-edit-reminder | jq -r .hookSpecificOutput.additionalContext)"
@@ -179,15 +178,13 @@ check_eq "snippet command outside any project -> rc 0, silent (no output at all)
 check "no absolute home paths" "$(cat "$SN")" lacks "$HOME/"
 check_eq "no tool matchers (Codex tool names differ; the adapter filters)" "$(jq '[.. | .matcher? // empty] | length' "$SN")" "0"
 echo "codex normalize — pre-write (apply_patch)"
-# a project that turned the skills on: the event is built only for such a project
-PSK="$(t_tmp)"; mkdir -p "$PSK/.burhan"; printf 'WF_SKILLS=superpowers\n' > "$PSK/.burhan/workflow.config"
+PSK="$(t_tmp)"; mkdir -p "$PSK/.burhan"
 normp() { WF_PROJECT_ROOT="$PSK" "${IMPL[@]}" normalize < "$1" 2>/dev/null; }
 check_eq "PreToolUse apply_patch (add) -> pre_edit" "$(normp "$FX/p-pre-patch-add.json" | jq -c '[.event,.file]')" '["pre_edit","/proj/notes.txt"]'
 check_eq "PreToolUse apply_patch (update) -> pre_edit" "$(normp "$FX/p-pre-patch-update.json" | jq -r '.event')" "pre_edit"
-check_eq "PreToolUse apply_patch with the skills off -> nothing" "$(norm "$FX/p-pre-patch-add.json")" ""
 PL="$(t_tmp)"
-jq -c '.tool_input.command = "cat /h/.codex/superpowers/skills/brainstorming/SKILL.md"' "$FX/p-post-bash.json" | WF_CODEX_LEDGER_DIR="$PL" "${IMPL[@]}" hook record >/dev/null 2>&1
-check_eq "a skill read earlier in the turn is carried" "$(WF_CODEX_LEDGER_DIR="$PL" WF_PROJECT_ROOT="$PSK" "${IMPL[@]}" normalize < "$FX/p-pre-patch-add.json" | jq -c '.turn.skills_used')" '["superpowers:brainstorming"]'
+jq -c '.tool_input.command = "cat /h/.codex/skills/burhan-story/SKILL.md"' "$FX/p-post-bash.json" | WF_CODEX_LEDGER_DIR="$PL" "${IMPL[@]}" hook record >/dev/null 2>&1
+check_eq "a skill read earlier in the turn is carried" "$(WF_CODEX_LEDGER_DIR="$PL" WF_PROJECT_ROOT="$PSK" "${IMPL[@]}" normalize < "$FX/p-pre-patch-add.json" | jq -c '.turn.skills_used')" '["burhan-story"]'
 check_eq "no skill read -> none" "$(normp "$FX/p-pre-patch-add.json" | jq -c '.turn.skills_used')" '[]'
 
 t_summary

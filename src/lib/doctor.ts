@@ -16,6 +16,7 @@ import { ignoredCommittedSetupFiles } from './setup/engine.js';
 import { readBaseline, readProjectFile } from '../hooks/core/baseline.mjs';
 import { ereRefusal } from '../hooks/core/ere.mjs';
 import { inspect } from './inspect.js';
+import { PHASES, skillName } from '../hooks/core/skill-table.mjs';
 import { checkMemory, factFreshness } from './memory.js';
 import { readCodexConfig, stateTableNames, trustedEvents, type CodexConfigSkip } from './codex-trust.js';
 import { countMatches, listProjectFiles } from './project-files.js';
@@ -148,6 +149,10 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     const t = readText(join(target, rel));
     if (t === null) { if (unreadable(join(target, rel))) add('fail', `unreadable: ${rel} — the hooks cannot read the config; check its permissions`); continue; }
     const r = parseConfig(t, rel);
+    if ('WF_SKILLS' in r.values) {
+      const at = t.split('\n').findIndex((l) => /^[ \t]*WF_SKILLS=/.test(l)) + 1;
+      add('warn', `${rel}:${at}: WF_SKILLS="${r.values.WF_SKILLS}" is a key the kit no longer reads — burhan's own skills are always on; delete that line`);
+    }
     if (rel === TEAM_CONFIG) team = r.values;
     Object.assign(cfg.values, r.values);
     cfg.problems.push(...r.problems);
@@ -157,7 +162,7 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
     add('warn', `${f}: CRLF line endings (${cfg.problems.filter((p) => p.file === f && p.reason.startsWith('CRLF')).length} lines) — save it with LF endings; the hooks cannot read those lines`);
   for (const p of cfg.problems.filter((q) => !q.reason.startsWith('CRLF'))) add('warn', `${p.file}:${p.line}: ${p.reason} — the hooks ignore this line`);
   const example = Object.keys(parseConfig(readFileSync(join(kitDir(), 'workflow.config.example'), 'utf8')).values);
-  const legacy = ['WF_FORBIDDEN_REGEX', 'WF_FORBIDDEN_REASON', 'WF_SINGLE_TEST_HINT', 'WF_HOOK_RUNTIME'];
+  const legacy = ['WF_FORBIDDEN_REGEX', 'WF_FORBIDDEN_REASON', 'WF_SINGLE_TEST_HINT', 'WF_HOOK_RUNTIME', 'WF_SKILLS'];
   if (team === null) { if (!unreadable(join(target, TEAM_CONFIG))) add('warn', `${TEAM_CONFIG} missing — run burhan upgrade --apply to create it from the example`); }
   else {
     const missing = example.filter((k) => !(k in team));
@@ -192,6 +197,9 @@ export function runChecks(targetIn: string, probe: Probe = realProbe): Check[] {
   if (((cfg.values.WF_TEST_REGEX ?? '') !== '' || (cfg.values.WF_EVIDENCE_REGEX ?? '') !== '') && (cfg.values.WF_FULL_TEST_REGEX ?? '') === '')
     add('warn', "WF_FULL_TEST_REGEX is empty while WF_TEST_REGEX or WF_EVIDENCE_REGEX is set — `full run:` in guide and evidence says \"cannot tell\"; name the command that runs the whole test suite: setup --set full='^<command>$'");
 
+  { const missing = PHASES.map(skillName).filter((s) => !existsSync(join(target, `.burhan/skills/${s}/SKILL.md`)));
+    if (missing.length) add('warn', `.burhan/skills/: missing ${missing.join(', ')} — run burhan upgrade --apply`);
+    else add('ok', '.burhan/skills/: the six process skills are present'); }
   // ---- per agent (only the agents burhan is installed for)
   for (const agent of ['claude', 'codex'] as const) {
     if (!agentInstalled(target, agent)) { add('skip', `${agent}: not installed`); continue; }

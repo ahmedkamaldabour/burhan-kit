@@ -31,7 +31,7 @@ function world(): World {
   const dir = tmpDir('burhan-reaudit-transcripts-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), '## Now\n### alpha\n- **Route:** change / bounded\n');
-  const env = { ...process.env, CLAUDE_PROJECT_DIR: project, WF_EVIDENCE_DIR: root, WF_SKILLS: 'superpowers', WF_DOCS_DIR: '.burhan/work', WF_STATE_FILE: '.burhan/local/PROGRESS.md', WF_CODE_REGEX: '\\.src$', WF_EVIDENCE_LEDGER: 'on' };
+  const env = { ...process.env, CLAUDE_PROJECT_DIR: project, WF_EVIDENCE_DIR: root, WF_DOCS_DIR: '.burhan/work', WF_STATE_FILE: '.burhan/local/PROGRESS.md', WF_CODE_REGEX: '\\.src$', WF_EVIDENCE_LEDGER: 'on' };
   return { project, root, env, dir };
 }
 function session(w: World, id: string): { id: string; path: string; add: (...recs: (Rec | Rec[])[]) => void } {
@@ -210,7 +210,7 @@ test('the evidence folder named only in workflow.config is the one the marker us
 
 test('a skill used in an earlier part of the user turn still counts in a later part (the gates ask "this turn")', async () => {
   const w = world(); const s = session(w, 'S1');
-  s.add(prompt('review it'), call('Skill', { skill: 'superpowers:requesting-code-review' }, {}), say('dispatching'));
+  s.add(prompt('review it'), call('Skill', { skill: 'burhan-review' }, {}), say('dispatching'));
   await stop(w, s);
   s.add(wake('t1'), editReview(w), say('wrote the review'));
   assert.doesNotMatch(await stop(w, s), REVIEW_GATE, 'the skill was used earlier in this same user turn');
@@ -220,6 +220,6 @@ test('a skill used in an earlier part of the user turn still counts in a later p
   o.add(wake('t1'), editReview(other), say('wrote the review'));
   assert.match(await stop(other, o), REVIEW_GATE, 'without the skill it fires');
   const text = readFileSync(marker(w, 'S1'), 'utf8');
-  assert.match(text, /requesting-code-review/u);
+  assert.match(text, /burhan-review/u);
   assert.doesNotMatch(text, /review it/u, 'names only, no prompt text');
 });

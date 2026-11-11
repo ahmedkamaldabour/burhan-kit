@@ -104,8 +104,7 @@ export function prepareClaude(stdin: string, env: NodeJS.ProcessEnv): StopWindow
       }
       case 'PreToolUse': {
         if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool)) {
-          // Before a write: the file, and what this user turn has used so far (skills, the assistant's own text). The transcript is parsed only
-          // for a project that turned the skills on; a write of the state file is always passed on (the core takes its baseline).
+          // Before a write: the file, and what this user turn has used so far (skills, the assistant's own text); a write of the state file also carries its baseline.
           const event = base('pre_edit', payload, env);
           const project = plainProject(event.project_dir);
           const cfg = loadHookConfig(project, env);
@@ -114,7 +113,6 @@ export function prepareClaude(stdin: string, env: NodeJS.ProcessEnv): StopWindow
           const writesState = state !== '' && event.file !== '' && relPath(event.file, project).replace(/\\/g, '/') === state;
           // A whole-file Write of the state file carries its new content (the core checks it against the live blocks); nothing else does.
           const content = tool === 'Write' && writesState ? { content: j(() => idx(payload.tool_input, 'content')) } : {};
-          if (cfg.WF_SKILLS !== 'superpowers') return writesState ? plain(encoded({ ...event, ...content, agent_id: j(() => payload.agent_id) })) : none;
           const { turn_key: _key, ...turn } = { ...event.turn, ...turnOf(j(() => payload.transcript_path), null).turn } as TurnData;
           event.turn = turn;
           // Set when the write comes from a subagent: it has no Skill tool, so the check says nothing to it.
@@ -124,12 +122,12 @@ export function prepareClaude(stdin: string, env: NodeJS.ProcessEnv): StopWindow
         const event = base('pre_shell', payload, env);
         event.command = alt(idx(payload.tool_input, 'command'), '');
         // A shell write of a story, plan or review is reminded like an edit-tool write: the transcript is read only then (a text test first,
-        // so an ordinary command costs nothing), and only for a project that turned the skills on.
+        // so an ordinary command costs nothing).
         const command = String(event.command);
         if (/>|\btee\b/u.test(command)) {
           const cfg = loadHookConfig(plainProject(event.project_dir), env);
           const docs = cfg.WF_DOCS_DIR ?? '';
-          if (cfg.WF_SKILLS === 'superpowers' && docs !== '' && command.includes(docs)) {
+          if (docs !== '' && command.includes(docs)) {
             const { turn_key: _key, ...turn } = { ...event.turn, ...turnOf(j(() => payload.transcript_path), null).turn } as TurnData;
             return plain(encoded({ ...event, turn, agent_id: j(() => payload.agent_id) }));
           }

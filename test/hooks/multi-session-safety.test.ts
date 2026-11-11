@@ -200,31 +200,27 @@ test('the pre-write step never prints anything in this sub-unit and never blocks
   assert.equal(await beforeWrite(s), '');
 });
 
-// ---- the adapters hand the state-file write to the core, also with Superpowers off (R5) ----
+// ---- the adapters hand the state-file write to the core (R5) ----
 const claudePre = (s: Scene, tool: string, path: string): Record<string, unknown> | null => {
   const out = normalizeClaude(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { file_path: path }, session_id: 'S', cwd: s.project }), { ...s.env, CLAUDE_PROJECT_DIR: s.project });
   return out === '' ? null : JSON.parse(out) as Record<string, unknown>;
 };
-test('Claude: a write of the state file with Superpowers off → a pre_edit event with the file', () => {
+test('Claude: a write of the state file → a pre_edit event with the file', () => {
   const s = scene();
   for (const tool of ['Write', 'Edit', 'MultiEdit']) assert.deepEqual([claudePre(s, tool, s.state)?.event, claudePre(s, tool, s.state)?.file], ['pre_edit', s.state], tool);
 });
-test('Claude: a write of another file with Superpowers off → no event (unchanged)', () => {
-  assert.equal(claudePre(scene(), 'Write', join('/x', 'src/app.ts')), null);
-});
-test('Claude: with Superpowers on, other files still get their event', () => {
-  const s = scene(['WF_SKILLS=superpowers']);
+test('Claude: other files get their event', () => {
+  const s = scene();
   assert.equal(claudePre(s, 'Write', join(s.project, 'src/app.ts'))?.event, 'pre_edit');
 });
 const patchOf = (path: string): string => `*** Begin Patch\n*** Update File: ${path}\n@@\n-a\n+b\n*** End Patch`;
 const codexPre = (s: Scene, path: string): Record<string, unknown>[] =>
   normalizeCodexEvents(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'apply_patch', tool_input: { command: patchOf(path) }, session_id: 'S', cwd: s.project }), { ...s.env, CODEX_PROJECT_DIR: s.project, PWD: s.project })
     .map((line) => JSON.parse(line) as Record<string, unknown>);
-test('Codex: a patch of the state file with Superpowers off → a pre_edit event for it; another file → none', () => {
+test('Codex: a patch of the state file → a pre_edit event for it', () => {
   const s = scene();
   const events = codexPre(s, STATE);
   assert.deepEqual(events.map((e) => [e.event, String(e.file).endsWith(STATE)]), [['pre_edit', true]]);
-  assert.deepEqual(codexPre(s, 'src/app.ts'), []);
 });
 
 // ---- sub-unit 2: a warning before a whole-file write that drops a live session's block (AC-04, R6, R7) ----
@@ -320,17 +316,14 @@ test('AC-04: a malformed foreign session directory does not hide another live on
   assert.match(warned(await writeOf(s, file('foo'))), DROPS);
 });
 
-test('AC-04 Claude adapter: a Write of the state file carries its content; another file does not; nothing is sent with Superpowers off for other files', () => {
+test('AC-04 Claude adapter: a Write of the state file carries its content; another file does not', () => {
   const s = scene();
   const ev = (path: string): Record<string, unknown> | null => {
     const out = normalizeClaude(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: path, content: 'NEW' }, session_id: 'S', cwd: s.project }), { ...s.env, CLAUDE_PROJECT_DIR: s.project });
     return out === '' ? null : JSON.parse(out) as Record<string, unknown>;
   };
   assert.equal(ev(s.state)?.content, 'NEW');
-  assert.equal(ev(join(s.project, 'src/app.ts')), null);
-  const on = scene(['WF_SKILLS=superpowers']);
-  const withSkills = normalizeClaude(JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(on.project, 'src/app.ts'), content: 'BIG' }, session_id: 'S', cwd: on.project }), { ...on.env, CLAUDE_PROJECT_DIR: on.project });
-  assert.equal((JSON.parse(withSkills) as Record<string, unknown>).content, undefined, 'content is sent for the state file only');
+  assert.equal(ev(join(s.project, 'src/app.ts'))?.content, undefined, 'content is sent for the state file only');
 });
 
 test('AC-04 shell: only the tee itself decides "append" (a later grep -a does not), --append is an append, a second heredoc is found', async () => {

@@ -9,6 +9,7 @@ import { BurhanError } from './errors.js';
 import { isWritable, putFile, realTarget, replaceDir, resolveWritePath } from './fs-safe.js';
 import { agentInstalled, burhanHookKeys, mergeHooks, validHooksFile, type Settings } from './hooks-merge.js';
 import { kitDir, nodeHooksDir, readVersion } from './kit.js';
+import { PHASES, skillName } from '../hooks/core/skill-table.mjs';
 
 /** The Kit command row of bindings.md names how this project runs the kit CLI. */
 export const KIT_COMMAND = '`npx burhan-kit`';
@@ -21,6 +22,7 @@ const SNIPPET: Record<Agent, string> = { claude: 'hooks/adapters/claude/settings
 /** The directories a 0.2.x install holds for the bash hooks (removed in 0.3.0) — an upgrade deletes them. */
 const BASH_DIRS = ['hooks/core', ...AGENTS.map((a) => `hooks/adapters/${a}`)];
 const NODE_DIR = 'hooks/node';
+const PROCESS_SKILLS = PHASES.map(skillName);
 const BOOT_FILE: Record<Agent, string> = { claude: 'CLAUDE.md', codex: 'AGENTS.md' };
 const COMMANDS = ['e2e', 'qc', 'onboard'];
 
@@ -126,6 +128,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
   const checkCmd = team.WF_CHECK_CMD ?? '';
   // Team file only, like WF_CHECK_TIMEOUT: the hook commands are committed, so every machine must install the same ones.
   const runtimeValue = team.WF_HOOK_RUNTIME;
+  const skillsValue = team.WF_SKILLS;
   const staleDirs = BASH_DIRS.filter((d) => existsSync(join(W, d)));
   // The bash hooks live beside the Node ones in `.burhan/hooks/`: when they are removed, EVERY installed agent's hook file must move
   // to the Node entries, or an agent left out of a partial --agents list would keep pointing at the directories that were just removed.
@@ -134,7 +137,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
   const agents = staleDirs.length > 0 ? [...new Set([...requested, ...installedAgents])] : requested;
   if (agents.length === 0) throw new BurhanError('no agents given and none installed — pass --agents claude[,codex]');
   const alsoSwitched = agents.filter((a) => !requested.includes(a));
-  const kitDirs = ['phases', 'templates', 'commands', NODE_DIR];
+  const kitDirs = ['phases', 'templates', 'commands', 'skills', NODE_DIR];
   const MODEL_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/; // a leading letter or digit: `model: -` is YAML for a list
   const notes: string[] = [];
   // Managed Claude files beside the commands. Each either should exist with this text, or should not
@@ -159,6 +162,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
     managed.push(checkCmd
       ? { rel: '.claude/skills/burhan-verify/SKILL.md', text: withManagedMark(readFileSync(join(kit, 'skills/claude/burhan-verify/SKILL.md'), 'utf8').split('{{CHECK_CMD}}').join(checkCmd)), why: '' }
       : { rel: '.claude/skills/burhan-verify/SKILL.md', text: null, why: 'WF_CHECK_CMD is not set in the team .burhan/workflow.config (set it there, then `burhan upgrade`)' });
+    for (const skill of PROCESS_SKILLS) managed.push({ rel: `.claude/skills/${skill}/SKILL.md`, text: withManagedMark(readFileSync(join(kit, `skills/shared/${skill}/SKILL.md`), 'utf8')), why: '' });
   }
   const ownedOld = (rel: string): boolean => {
     const f = join(target, rel);
@@ -244,11 +248,12 @@ export function planInstall(o: InstallOptions): InstallPlan {
   for (const f of ['WORKFLOW.md', 'SETUP.md', 'VERSION']) file(`.burhan/${f}`, 'kit');
   for (const d of kitDirs) file(`.burhan/${d}/`, 'kit');
   for (const d of staleDirs) file(`.burhan/${d}/`, 'kit', true);
-  step('kit files → .burhan/ (WORKFLOW.md, SETUP.md, VERSION, phases/, templates/, commands/, hooks/node/)', () => {
+  step('kit files → .burhan/ (WORKFLOW.md, SETUP.md, VERSION, phases/, templates/, commands/, skills/, hooks/node/)', () => {
     putFile(join(W, 'WORKFLOW.md'), readFileSync(join(kit, 'WORKFLOW.md')));
     putFile(join(W, 'SETUP.md'), readFileSync(join(kit, 'SETUP.md')));
     putFile(join(W, 'VERSION'), version + '\n');
     for (const d of ['phases', 'templates', 'commands']) replaceDir(join(kit, d), join(W, d));
+    replaceDir(join(kit, 'skills/shared'), join(W, 'skills'));
     replaceDir(nodeHooksDir(), join(W, NODE_DIR));
   });
   if (staleDirs.length) step(`removed the bash hooks (${staleDirs.map((d) => `.burhan/${d}/`).join(', ')}) — the Node hooks in .burhan/hooks/node/ replace them`, () => {
@@ -258,6 +263,7 @@ export function planInstall(o: InstallOptions): InstallPlan {
   });
   if (runtimeValue === 'bash') step('NOTE: WF_HOOK_RUNTIME=bash — the bash hooks were removed in 0.3.0; the hooks are Node now. Remove the key from the team workflow.config.');
   else if (runtimeValue !== undefined && runtimeValue !== 'node') step(`NOTE: WF_HOOK_RUNTIME "${runtimeValue}" is no longer used — the hooks are Node. Remove the key from the team workflow.config.`);
+  if (skillsValue !== undefined) step(`NOTE: WF_SKILLS "${skillsValue}" is no longer read — burhan's own skills are always on. Delete the line from the team workflow.config.`);
 
   if (giNeeded) file('.burhan/.gitignore', 'gitignore');
   if (giNeeded)

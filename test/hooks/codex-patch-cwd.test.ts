@@ -26,10 +26,10 @@ test('unchanged: session folder is the project root, a path already absolute, a 
   assert.deepEqual(files(post(OUTSIDE), env()), ['src/a.ts']);
   assert.deepEqual(files(post(''), env()), ['src/a.ts']);
 });
-test('the pre-edit event rebases too (skills on, so the patch is passed on)', () => {
+test('the pre-edit event rebases too (the patch is passed on)', () => {
   const pre = { ...post(SUB), hook_event_name: 'PreToolUse' };
   delete (pre as Record<string, unknown>).tool_response;
-  assert.deepEqual(files(pre, { ...env(), WF_SKILLS: 'superpowers' }), [EXPECTED]);
+  assert.deepEqual(files(pre, env()), [EXPECTED]);
 });
 test('the turn end sees the rebased file in files_created and in its edit steps, using the folder the patch ran in', () => {
   const e = env();

@@ -6,7 +6,7 @@ cd "$T_KIT" || exit 1
 EXPECTED="bindings story plan build-spec findings discovery progress review qc verification docs-index project context-area"
 KEYS="WF_DOCS_DIR WF_DISCOVERY_DIR WF_STATE_FILE WF_STATE_BUDGET WF_CHECK_CMD WF_CHECK_TIMEOUT
 WF_EVIDENCE_REGEX WF_FULL_TEST_REGEX WF_CODE_REGEX WF_TEST_REGEX WF_SENSITIVE_REGEX WF_SENSITIVE_NOTE
-WF_ITEM_CONTRACT WF_SKILLS WF_MODEL_CLAUDE_REVIEWER WF_EVIDENCE_LEDGER WF_EVIDENCE_DIR WF_MODE_DEFAULT WF_REVIEWER_AGENT WF_MODEL_CLAUDE_PLANNER WF_MODEL_CLAUDE_BUILDER WF_MODEL_CLAUDE_EXPLORER WF_STACK_SETUP"
+WF_ITEM_CONTRACT WF_MODEL_CLAUDE_REVIEWER WF_EVIDENCE_LEDGER WF_EVIDENCE_DIR WF_MODE_DEFAULT WF_REVIEWER_AGENT WF_MODEL_CLAUDE_PLANNER WF_MODEL_CLAUDE_BUILDER WF_MODEL_CLAUDE_EXPLORER WF_STACK_SETUP"
 
 wf="$(cat WORKFLOW.md phases/*.md 2>/dev/null)"   # the agreement = the core + the phase files
 
@@ -196,7 +196,6 @@ echo "team layout"
 echo "canonical install namespace and guidance"
 for file in "$T_ROOT/README.md" "$T_ROOT/README.ar.md" "$T_ROOT/docs/configuration.md"; do
   check "$file names the canonical root" "$(cat "$file")" has '.burhan/'
-  check "$file offers the optional Claude Code plugin" "$(cat "$file")" has '/plugin install superpowers@claude-plugins-official'
 done
 for mark in '<!-- burhan:start -->' '<!-- burhan:end -->'; do
   check "configuration documents exact Markdown marker $mark" "$(cat "$T_ROOT/docs/configuration.md")" has "$mark"

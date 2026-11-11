@@ -147,30 +147,26 @@ export function normalizeCodexEvents(stdin: string, env: NodeJS.ProcessEnv): str
       }
       case 'PreToolUse': {
         if (tool === 'apply_patch') {
-          // Before a patch: the files it writes, and the skills read earlier in this turn (from the ledger). The ledger is read only for a
-          // project that turned the skills on; a patch of the state file is always passed on (the core takes its baseline). Codex's pre-tool
+          // Before a patch: the files it writes, and the skills read earlier in this turn (from the ledger). Codex's pre-tool
           // payload has no assistant text, so the patch lane cannot be seen here.
           const first = base('pre_edit', payload, env);
           const project = first.project_dir.length > 1 && first.project_dir.endsWith('/') ? first.project_dir.slice(0, -1) : first.project_dir;
           const cfg = loadHookConfig(project, env);
-          const skillsOn = cfg.WF_SKILLS === 'superpowers';
-          const state = cfg.WF_STATE_FILE ?? '';
-          const skills = skillsOn ? ledgerSkills(first, env) : [];
+          const skills = ledgerSkills(first, env);
           const patch = (() => { try { return rawText(alt(idx(payload.tool_input, 'command'), null)); } catch { return ''; } })();
           return patchFiles(patch).filter((file) => nonBlank(file.path)).map((file) => rebasePath(file.path, payload.cwd, project))
-            .filter((path) => skillsOn || (state !== '' && relPath(path, project).replace(/\\/g, '/') === state))
             .map((path) => encoded({ ...first, file: path, turn: { ...first.turn, skills_used: skills } }));
         }
         if (tool !== 'Bash') return [];
         const event = base('pre_shell', payload, env);
         event.command = alt(idx(payload.tool_input, 'command'), '');
         // A shell write of a story, plan or review is reminded like a patch: the skills read earlier in this turn come from the ledger, read only
-        // for such a command (a text test first) and only for a project that turned the skills on.
+        // for such a command (a text test first).
         const command = String(event.command);
         if (/>|\btee\b/u.test(command)) {
           const cfg = loadHookConfig(event.project_dir.length > 1 && event.project_dir.endsWith('/') ? event.project_dir.slice(0, -1) : event.project_dir, env);
           const docs = cfg.WF_DOCS_DIR ?? '';
-          if (cfg.WF_SKILLS === 'superpowers' && docs !== '' && command.includes(docs)) return [encoded({ ...event, turn: { ...event.turn, skills_used: ledgerSkills(event, env) } })];
+          if (docs !== '' && command.includes(docs)) return [encoded({ ...event, turn: { ...event.turn, skills_used: ledgerSkills(event, env) } })];
         }
         return [encoded(event)];
       }

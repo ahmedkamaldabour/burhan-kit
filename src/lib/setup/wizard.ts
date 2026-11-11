@@ -77,7 +77,7 @@ export async function runWizard(target: string, io: Io, p: Prompter, lang: 'en' 
       a = r;
     }
     const plan = planSetup(target, a, home);
-    p.note(renderSummary(plan, lang, undefined, allowOutside));
+    p.note(renderSummary(plan, lang, allowOutside));
     const next = await p.select(w.applyOrChange, [{ value: 'apply', label: w.apply }, { value: 'change', label: w.change }, { value: 'cancel', label: w.cancel }], 'apply');
     if (next === CANCEL || next === 'cancel') return cancelled();
     if (next === 'change') { asking = true; continue; }

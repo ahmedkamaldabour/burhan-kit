@@ -19,13 +19,12 @@ test('the CLI and the hooks share one parser', () => {
   assert.equal(cliParse, hookParse);
 });
 test('defaults (wf_init), also for empty values', () => {
-  const c = loadHookConfig(proj(['WF_DOCS_DIR=""', 'WF_SKILLS=']), {});
+  const c = loadHookConfig(proj(['WF_DOCS_DIR=""']), {});
   assert.equal(c.WF_DOCS_DIR, '.burhan/work');
   assert.equal(c.WF_DISCOVERY_DIR, '.burhan/discovery');
   assert.equal(c.WF_STATE_FILE, '.burhan/local/PROGRESS.md');
   assert.equal(c.WF_STATE_BUDGET, '80');
   assert.equal(c.WF_CHECK_TIMEOUT, '60');
-  assert.equal(c.WF_SKILLS, 'none');
 });
 test('missing config -> defaults', () => {
   assert.equal(loadHookConfig(proj(null), {}).WF_DOCS_DIR, '.burhan/work');

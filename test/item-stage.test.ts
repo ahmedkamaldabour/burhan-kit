@@ -128,7 +128,7 @@ test('burhan guide --json with no item or several keeps the keys of an item and 
   assert.deepEqual(none.items, []);
   assert.equal(none.stage, 'no item');
   assert.equal(none.authorized, false);
-  assert.equal(none.skill, null);
+  assert.equal(none.skill, 'burhan-story');
   for (const key of ['route', 'why', 'next', 'fullRun']) assert.ok(key in none, key);
   const dir = await projectWithItem();
   write(join(dir, STATE), '## Now\n\n### foo\n- x\n\n### bar\n- y\n\n## Waiting on you\n');
@@ -137,14 +137,14 @@ test('burhan guide --json with no item or several keeps the keys of an item and 
   assert.equal(two.stage, 'several items');
 });
 
-test('burhan guide with no item names the story skill when the project uses Superpowers', async () => {
+test('burhan guide with no item names the story skill', async () => {
   const dir = project();
-  write(join(dir, '.burhan', 'workflow.config'), 'WF_SKILLS=superpowers\n');
+  write(join(dir, '.burhan', 'workflow.config'), '');
   const r = await guide(dir);
   assert.equal(r.code, 0);
-  assert.match(r.out, /^skill: superpowers:brainstorming — run it before the story/m);
+  assert.match(r.out, /^skill: burhan-story — run it before the story/m);
   const j = JSON.parse((await guide(dir, '--json')).out) as { skill: string | null };
-  assert.equal(j.skill, 'superpowers:brainstorming');
+  assert.equal(j.skill, 'burhan-story');
 });
 
 test('burhan guide on a named item is unchanged by the no-item answer', async () => {

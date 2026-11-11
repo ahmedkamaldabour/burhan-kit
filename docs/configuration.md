@@ -13,6 +13,7 @@
             PROJECT.md context/                               project memory, only when the memory workflow creates it
 .claude/settings.json · .claude/commands/burhan/{e2e,qc,onboard}.md · CLAUDE.md block    (claude)
 .claude/agents/burhan-reviewer.md · .claude/skills/burhan-verify/SKILL.md (if WF_CHECK_CMD is set)   (claude)
+.claude/skills/burhan-{story,plan,build,debug,review,done}/SKILL.md · .burhan/skills/        (claude; the second for every agent)
 .claude/agents/burhan-{planner,builder,explorer}.md (if WF_MODEL_CLAUDE_* is set)                (claude)
 .codex/hooks.json · AGENTS.md block                                           (codex)
 docs/burhan/work/ docs/burhan/discovery/                        optional shared work and discoveries
@@ -100,7 +101,6 @@ holds personal overrides, read after the team file, key by key.
 | `WF_SENSITIVE_REGEX`, `WF_SENSITIVE_NOTE` | access-control paths and the reminder after editing one |
 | `WF_STACK_SETUP` | `pending` = the agent sets up the project checks on first use (`setup --stack`); empty or `done` = nothing to do |
 | `WF_ITEM_CONTRACT` | `on` to check the item files the agent writes against the written contract and to warn when code is edited before the plan is approved; `off` (also when the key is absent) leaves existing projects unchanged |
-| `WF_SKILLS` | `superpowers` to bind the process-skill mapping, or `none` (see below) |
 | `WF_MODE_DEFAULT`, `WF_MODE_<TYPE>_<SCOPE>` | the mode when an item does not set one: `step` (default) or `auto`; any other value = `step`. E.g. `WF_MODE_BUG_BOUNDED=auto` |
 | `WF_MODEL_CLAUDE_REVIEWER` | model for the generated `burhan-reviewer` subagent (team-only); empty = the session's model |
 | `WF_MODEL_CLAUDE_PLANNER`, `…_BUILDER`, `…_EXPLORER` | generate the `burhan-planner` / `-builder` / `-explorer` subagent on that model (team-only); empty = not generated |
@@ -121,9 +121,9 @@ worktree or when setup changes hooks during a session, so the new session reads 
 | Hook | Moment | Behaviour |
 |---|---|---|
 | `session-gates` | session start | Re-injects the gates; shows the state file's `Now` section and the item's mode |
-| `prompt-router` | your prompt | Suggests the phase for the request (English and Arabic phrases, max 2 lines; a separate baseline reminder is printed outside that cap) — a suggestion only. With Superpowers it adds one more line, outside the cap, naming the skill to invoke before the item's next phase |
+| `prompt-router` | your prompt | Suggests the phase for the request (English and Arabic phrases, max 2 lines; a separate baseline reminder is printed outside that cap) — a suggestion only. It adds one more line, outside the cap, naming the burhan skill to invoke before the item's next phase |
 | `pre-commit-check` | before `git commit` | **Runs** your fast check and reports the measured result, plus the commit checkpoint. It counts `git … commit` only where it starts a command (after `;`, `&&`, `|`, `(`, `$(`, a backtick, `then`/`do`/`else`/`{`/`!`, `sudo`/`env`/`nice`-style prefixes with their options or `NAME=value`, with or without a path, and inside `bash -c "…"` or `bash -lc '…'`); a command that only mentions the words, such as `grep "git commit"`, does not run it, while a quoted text holding `; git commit` still does. A commit hidden behind an alias, a function, `xargs` or `ssh … "git commit"` is not seen |
-| `pre-edit-skill` | before a write | With Superpowers: before a new story, plan or review, or a code file, is written without its skill, says so once per session and item. A skill run earlier in the session, or before any item existed, counts here and in the turn-end story, plan and review checks; the completion check still needs the verification skill in the same turn. A story, plan or review written through the shell (`>`, `>>`, `tee`) is covered too, by the Bash hook that is already installed (the turn-end check words it "written through the shell", and raises it only for a story or plan the command created: an append to, or an overwrite of, one that already existed is not flagged); `sed -i`, generators and moves are not seen. With or without Superpowers, a write of the state file takes the Now list the turn-end "You removed the … block" check compares with (so a removal by another session before this session's first write, or after its last, is not blamed on this one), and a whole-file write (the Write tool, or a shell `>`/`tee` with a heredoc) that drops a block of another session active in the last 24 h is warned about first; an `Edit` gets the Now list and the turn-end check but no warning before it; a `printf`/`echo` redirection is seen like any `>` write; `cp`, `sed -i` or a script writing the state file is not seen. The post-edit hook saves the list after each such write (the entry that already exists); when the turn wrote the state file through a shell redirection, or a write failed, the check reads the file at the turn end instead. Never blocks |
+| `pre-edit-skill` | before a write | Before a new story, plan or review, or a code file, is written without its skill, says so once per session and item. A skill run earlier in the session, or before any item existed, counts here and in the turn-end story, plan and review checks; the completion check still needs burhan-done in the same turn. A story, plan or review written through the shell (`>`, `>>`, `tee`) is covered too, by the Bash hook that is already installed (the turn-end check words it "written through the shell", and raises it only for a story or plan the command created: an append to, or an overwrite of, one that already existed is not flagged); `sed -i`, generators and moves are not seen. A write of the state file takes the Now list the turn-end "You removed the … block" check compares with (so a removal by another session before this session's first write, or after its last, is not blamed on this one), and a whole-file write (the Write tool, or a shell `>`/`tee` with a heredoc) that drops a block of another session active in the last 24 h is warned about first; an `Edit` gets the Now list and the turn-end check but no warning before it; a `printf`/`echo` redirection is seen like any `>` write; `cp`, `sed -i` or a script writing the state file is not seen. The post-edit hook saves the list after each such write (the entry that already exists); when the turn wrote the state file through a shell redirection, or a write failed, the check reads the file at the turn end instead. Never blocks |
 | `post-edit-reminder` | after an edit | Test-first nudge, sensitive-path note; after a write of the state file it also saves the Now list for the turn-end removed-block check (never prints that part) |
 | `turn-audit` | end of turn | Flags unverified "done" (no passing evidence after the last code edit), state not updated, state file over budget, contradictory status, skipped process skills, code written during read-only work, QC provenance, the BASELINE GATE (a story or code written while a project with code has no Approved or Waived baseline) |
 
@@ -263,24 +263,13 @@ timeout is part of its definition.
 - `init` writes the bootstrap block to each agent's own file: `CLAUDE.md` for Claude Code,
   `AGENTS.md` for Codex.
 
-## Optional integration: Superpowers
+## Process skills
 
-With `WF_SKILLS=superpowers`, the working agreement maps each phase to the matching process skill of
-the [Superpowers](https://github.com/obra/superpowers) plugin (brainstorming, plans, test-driven
-development, debugging, review), and the turn audit notes a skipped skill. With `none` (or empty)
-no skill is referenced.
+burhan ships six process skills and installs them with the kit, so there is nothing to install or set: `burhan-story` before a story, `burhan-plan` before a plan, `burhan-build` while building (test first), `burhan-debug` for a bug or a failing test, `burhan-review` for a sub-unit's review and `burhan-done` before saying done. They live in `.burhan/skills/<skill>/SKILL.md` for every agent and, for Claude Code, also as managed project skills in `.claude/skills/<skill>/SKILL.md` (a skill of yours with that name is never overwritten; `burhan uninstall` removes only what burhan wrote). Codex reads the same `.burhan/skills/` file. `burhan-verify`, the fast check before a commit, is separate.
 
-Setup checks plugin availability read-only, independently of the saved skills preference. If it finds a Superpowers plugin folder under `~/.claude/plugins`,
-it says: "Superpowers found — burhan uses its skills at each step: brainstorming before a story, TDD while building,
-verification before "done". Strongly recommended; turn off with `WF_SKILLS='none'`." If it finds one but the project
-explicitly has `WF_SKILLS='none'`, it says: "Superpowers found, but turned off for this project (`WF_SKILLS='none'`). To
-use it, set `WF_SKILLS='superpowers'`." If absent, it says Superpowers is strongly recommended, and optional (burhan
-never installs it), and, when Claude Code is selected, gives one command: `/plugin install superpowers@claude-plugins-official`.
-Detection looks only under `~/.claude/plugins` (Claude Code); setup never reads `~/.codex`. So, unless Superpowers is
-turned off, whenever Codex is selected, and always in `setup --agent` (it runs before the agents are answered),
-the line adds the official Codex route, worded conditionally:
-"if it is not installed yet: in Codex CLI run `/plugins`, search `superpowers`, choose Install Plugin". It never installs plugins, writes plugin files or overrides an
-explicit `WF_SKILLS` value.
+The hooks read one table, phase to skill (`.burhan/phases/skills.md`): the prompt router and `burhan guide` name the skill of the item's next phase, `pre-edit-skill` says so before a story, plan, review or code file is written without it, and the turn audit reports a skipped one as a `SKILL GATE` line. These are reports and none blocks. Other plugins' skills may run beside these, and the kit's rules win over any other skill.
+
+`WF_SKILLS` is gone. A config that still has it works as before otherwise; `burhan doctor` and `burhan upgrade` name the line to delete.
 
 ## Project memory
 

@@ -11,7 +11,7 @@ function scene(): { project: string; store: string; env: NodeJS.ProcessEnv } {
   const project = tmpDir('burhan-skill-env-project-');
   const store = tmpDir('burhan-skill-env-store-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
-  writeFileSync(join(project, '.burhan/workflow.config'), `WF_SKILLS=superpowers\nWF_EVIDENCE_DIR='${store}'\n`);
+  writeFileSync(join(project, '.burhan/workflow.config'), `WF_EVIDENCE_DIR='${store}'\n`);
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), '# s\n## Now\n### foo\n- **Route:** feature / bounded\n### bar\n- **Route:** bug / bounded\n## Waiting on you\n');
   // the process environment points somewhere else: the config must win
   return { project, store, env: { ...process.env, WF_EVIDENCE_DIR: tmpDir('burhan-skill-env-other-') } };
@@ -22,7 +22,7 @@ test('the router finds the session link in the store the config names, not the e
   const { project, store, env } = scene();
   linkItem(project, 'S1', 'bar', ['foo', 'bar'], { ...env, WF_EVIDENCE_DIR: store });
   const out = await core('prompt-router', { event: 'prompt', prompt: 'continue', project_dir: project, session: 'S1' }, env);
-  assert.match(out, /Skill \(investigate\): invoke superpowers:systematic-debugging/u);
+  assert.match(out, /Skill \(investigate\): invoke burhan-debug/u);
 });
 
 test('the pre-write marker is written in the store the config names', async () => {
@@ -30,7 +30,7 @@ test('the pre-write marker is written in the store the config names', async () =
   const out = await core('pre-edit-skill', { event: 'pre_edit', file: join(project, 'app.ts'), project_dir: project, session: 'S2', turn: { skills_used: [], assistant_text: '' } }, { ...env });
   assert.equal(out, '', 'a non-code file in this project says nothing; the story file below does');
   const story = await core('pre-edit-skill', { event: 'pre_edit', file: join(project, '.burhan/work/foo/foo-story.md'), project_dir: project, session: 'S2', turn: { skills_used: [], assistant_text: '' } }, env);
-  assert.match(story, /brainstorming/u);
+  assert.match(story, /burhan-story/u);
   const found = (dir: string): boolean => existsSync(dir) && readdirSync(dir, { recursive: true }).some((f) => String(f).endsWith('skilltold'));
   assert.equal(found(store), true, 'the marker is in the configured store');
   assert.equal(found(env.WF_EVIDENCE_DIR!), false, 'and not in the environment\'s');

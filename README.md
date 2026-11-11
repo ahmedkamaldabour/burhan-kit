@@ -44,7 +44,7 @@ You choose the proposed checks. The agent names the route (how much process this
 
 **Requirements:** Node 22+; Claude Code 2.1.139 or newer and/or Codex with its hooks trusted; the kit installed in the project (`npm i -D burhan-kit`) or on the PATH (`npm i -g burhan-kit`). In these docs `burhan` means the project's kit command, the one in `.burhan/bindings.md`: `npx burhan-kit` runs the copy installed in the project, and a plain `burhan` works only where it is on the PATH. burhan does not run npm: when setup finds no kit command it prints the install command for you to run.
 
-1. Optional, recommended: install Superpowers first, so setup can switch its skills on. burhan never installs it. In Claude Code use `/plugin install superpowers@claude-plugins-official`; in Codex use `/plugins`, search `superpowers` and install it; after step 2, also set `WF_SKILLS='superpowers'` in `.burhan/workflow.config` (setup cannot see Codex plugins). Superpowers is a plugin of process skills for the agent; burhan maps its phases to them.
+1. Nothing else to install: burhan ships its own process skills (story, plan, build, debug, review, done) and step 2 installs them.
 
 2. In the project root, with Node 22 or newer, run:
 
@@ -230,7 +230,7 @@ Onboarding scans the project and drafts `.burhan/PROJECT.md` plus fact files in 
 
 Claude Code uses `/burhan:e2e`, `/burhan:qc`, and `/burhan:onboard`; Codex follows installed command files through `AGENTS.md`. Codex hook results need trust. A command with no recorded result is not passing.
 
-Superpowers is optional. When enabled, burhan maps phases to brainstorming, planning, test-first, debugging, review, and verification skills. Claude Code can generate planner, builder, explorer, and reviewer roles on configured models. Codex uses your own model configuration; burhan never writes it.
+burhan ships six process skills (story, plan, build, test-first debugging, review and done) and installs them with the kit. Claude Code can generate planner, builder, explorer, and reviewer roles on configured models. Codex uses your own model configuration; burhan never writes it.
 
 Several sessions can work on separate tasks. Keep one task per session. Shared configuration, memory, and shared task folders go through review; `.burhan/local/` stays personal.
 

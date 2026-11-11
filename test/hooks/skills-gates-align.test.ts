@@ -9,18 +9,18 @@ import { tmpDir } from '../helpers.js';
 // The skill check before a write and the one after it read the same memory (item skills-gates-align): a skill run in an earlier
 // turn counts, also one run before any item existed. History only answers "was the skill invoked" (never "was the work done").
 const D = 'AI_SPEC/docs';
-const BRAIN = 'superpowers:brainstorming';
-const PLANS = 'superpowers:writing-plans';
-const REVIEW = 'superpowers:requesting-code-review';
-const VERIFY = 'superpowers:verification-before-completion';
+const BRAIN = 'burhan-story';
+const PLANS = 'burhan-plan';
+const REVIEW = 'burhan-review';
+const VERIFY = 'burhan-done';
 
 interface Scene { project: string; store: string; env: NodeJS.ProcessEnv; story: string; plan: string; review: string }
-/** A scratch project with Superpowers on. `item`: the state file has a block `foo` and the session is linked to it; null: no block, no item. */
+/** A scratch project. `item`: the state file has a block `foo` and the session is linked to it; null: no block, no item. */
 function scene(item: 'foo' | null, extra: string[] = []): Scene {
   const project = tmpDir('burhan-align-project-');
   const store = tmpDir('burhan-align-store-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
-  writeFileSync(join(project, '.burhan/workflow.config'), [`WF_DOCS_DIR=${D}`, 'WF_DISCOVERY_DIR=AI_SPEC/discovery', 'WF_STATE_FILE=.burhan/local/PROGRESS.md', 'WF_SKILLS=superpowers', `WF_EVIDENCE_DIR='${store}'`, ...extra].join('\n') + '\n');
+  writeFileSync(join(project, '.burhan/workflow.config'), [`WF_DOCS_DIR=${D}`, 'WF_DISCOVERY_DIR=AI_SPEC/discovery', 'WF_STATE_FILE=.burhan/local/PROGRESS.md', `WF_EVIDENCE_DIR='${store}'`, ...extra].join('\n') + '\n');
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), item === null ? '# s\n## Now\n## Waiting on you\n' : '# s\n## Now\n### foo\n- **Route:** change / bounded\n## Waiting on you\n');
   const env = { ...process.env, WF_EVIDENCE_DIR: store };
   if (item !== null) { const link = join(store, projectKey(project), 'S', 'item'); mkdirSync(dirname(link), { recursive: true }); writeFileSync(link, 'foo\n'); }
@@ -42,7 +42,7 @@ const createdOnly = (s: Scene, file: string, skills: string[] = [], text = 'writ
 // ---- the memory: a skill run before any item exists is kept for the session (AC-03) ----
 test('a phase skill run with no item is remembered and returned for an item of the same session', () => {
   const { project, env } = scene(null);
-  rememberPhaseSkills(project, 'S', '', [BRAIN, 'superpowers:not-a-phase-skill'], env);
+  rememberPhaseSkills(project, 'S', '', [BRAIN, 'other:not-a-phase-skill'], env);
   assert.deepEqual(rememberedPhaseSkills(project, 'S', 'foo', env), [BRAIN]);
   assert.deepEqual(rememberedPhaseSkills(project, 'S', '', env), [BRAIN]);
 });
@@ -60,7 +60,7 @@ test('an unsafe item id still remembers nothing', () => {
 });
 
 // ---- pre-write: no reminder for a skill already used (AC-01 pre-write half, AC-03) ----
-test('no item: brainstorming used in an earlier turn → no pre-write line for the first story', async () => {
+test('no item: burhan-story used in an earlier turn → no pre-write line for the first story', async () => {
   const s = scene(null);
   await used(s, [BRAIN]);
   assert.equal(await before(s, s.story), '');
@@ -68,19 +68,19 @@ test('no item: brainstorming used in an earlier turn → no pre-write line for t
 test('no item: a skill that never ran is still reminded, once', async () => {
   const s = scene(null);
   await used(s, [BRAIN]);
-  assert.match(await before(s, s.plan), /Skill \(plan\): invoke superpowers:writing-plans/u, 'brainstorming does not stand in for writing-plans');
+  assert.match(await before(s, s.plan), /Skill \(plan\): invoke burhan-plan/u, 'burhan-story does not stand in for burhan-plan');
   assert.equal(await before(s, s.plan), '', 'shown once per session and item');
 });
-test('with an item: brainstorming used in an earlier turn → no pre-write line for the story', async () => {
+test('with an item: burhan-story used in an earlier turn → no pre-write line for the story', async () => {
   const s = scene('foo');
   await used(s, [BRAIN]);
   assert.equal(await before(s, s.story), '');
 });
 test('with an item: nothing used → the story line is printed (wording unchanged)', async () => {
   const s = scene('foo');
-  assert.match(await before(s, s.story), /Skill \(story\): invoke superpowers:brainstorming and read its instructions before you start/u);
+  assert.match(await before(s, s.story), /Skill \(story\): invoke burhan-story \(the Skill tool, or read \.burhan\/skills\/burhan-story\/SKILL\.md\) before you start/u);
 });
-test('no item: requesting-code-review used earlier → no pre-write line for a review file', async () => {
+test('no item: burhan-review used earlier → no pre-write line for a review file', async () => {
   const s = scene(null);
   await used(s, [REVIEW]);
   assert.equal(await before(s, s.review), '');
@@ -94,23 +94,23 @@ test('an unsafe item id also reads nothing', () => {
 
 // ---- turn-end: a skill run in an earlier turn counts (AC-01, AC-03; h1 is the first case) ----
 const gates = (out: string): string => (out.match(/⚠ [A-Z][A-Z\- ]*GATE( \([a-z]+\))?/gu) ?? []).join(' | ');
-test('h1: brainstorming in turn 1, the story written in turn 2 → no SKILL GATE (story)', async () => {
+test('h1: burhan-story in turn 1, the story written in turn 2 → no SKILL GATE (story)', async () => {
   const s = scene('foo');
   await used(s, [BRAIN]);
   const out = await createdOnly(s, s.story);
   assert.doesNotMatch(out, /SKILL GATE/u, gates(out));
 });
-test('writing-plans in an earlier turn, the plan written later → no SKILL GATE (plan)', async () => {
+test('burhan-plan in an earlier turn, the plan written later → no SKILL GATE (plan)', async () => {
   const s = scene('foo');
   await used(s, [PLANS]);
   assert.doesNotMatch(await createdOnly(s, s.plan), /SKILL GATE/u);
 });
-test('requesting-code-review in an earlier turn, a review written later → no review SKILL GATE', async () => {
+test('burhan-review in an earlier turn, a review written later → no review SKILL GATE', async () => {
   const s = scene('foo');
   await used(s, [REVIEW]);
   assert.doesNotMatch(await createdOnly(s, s.review), /SKILL GATE/u);
 });
-test('no item: brainstorming before any item existed, the first story written later → no SKILL GATE (story)', async () => {
+test('no item: burhan-story before any item existed, the first story written later → no SKILL GATE (story)', async () => {
   const s = scene(null);
   await used(s, [BRAIN]);
   assert.doesNotMatch(await createdOnly(s, s.story), /SKILL GATE/u);
@@ -120,14 +120,14 @@ test('no item: brainstorming before any item existed, the first story written la
 test('nothing used: the story, plan and review warnings keep their wording', async () => {
   for (const item of ['foo', null] as const) {
     const s = scene(item);
-    assert.match(await createdOnly(s, s.story), /⚠ SKILL GATE \(story\): a story was CREATED this turn without superpowers:brainstorming\. Invoke it now if it was skipped, or say when it ran\./u);
+    assert.match(await createdOnly(s, s.story), /⚠ SKILL GATE \(story\): a story was CREATED this turn without burhan-story\. Invoke it now if it was skipped, or say when it ran\./u);
     const p = scene(item);
-    assert.match(await createdOnly(p, p.plan), /⚠ SKILL GATE \(plan\): a plan was CREATED this turn without superpowers:writing-plans\./u);
+    assert.match(await createdOnly(p, p.plan), /⚠ SKILL GATE \(plan\): a plan was CREATED this turn without burhan-plan\./u);
     const r = scene(item);
-    assert.match(await createdOnly(r, r.review), /⚠ SKILL GATE: a review file was written this turn without superpowers:requesting-code-review\./u);
+    assert.match(await createdOnly(r, r.review), /⚠ SKILL GATE: a review file was written this turn without burhan-review\./u);
   }
 });
-test('a different phase skill earlier does not stand in: brainstorming earlier, the plan still warns', async () => {
+test('a different phase skill earlier does not stand in: burhan-story earlier, the plan still warns', async () => {
   const s = scene('foo');
   await used(s, [BRAIN]);
   assert.match(await createdOnly(s, s.plan), /SKILL GATE \(plan\)/u);
@@ -135,9 +135,9 @@ test('a different phase skill earlier does not stand in: brainstorming earlier, 
 
 // ---- the two checks agree on the same history (AC-04) ----
 for (const [name, history, phase, shown] of [
-  ['story, nothing used', [], 'story', true], ['story, brainstorming earlier', [BRAIN], 'story', false],
-  ['plan, nothing used', [], 'plan', true], ['plan, writing-plans earlier', [PLANS], 'plan', false], ['plan, brainstorming earlier', [BRAIN], 'plan', true],
-  ['review, nothing used', [], 'review', true], ['review, requesting-code-review earlier', [REVIEW], 'review', false],
+  ['story, nothing used', [], 'story', true], ['story, burhan-story earlier', [BRAIN], 'story', false],
+  ['plan, nothing used', [], 'plan', true], ['plan, burhan-plan earlier', [PLANS], 'plan', false], ['plan, burhan-story earlier', [BRAIN], 'plan', true],
+  ['review, nothing used', [], 'review', true], ['review, burhan-review earlier', [REVIEW], 'review', false],
 ] as const) {
   for (const item of ['foo', null] as const) {
     test(`parity (${item ?? 'no item'}): ${name} → the pre-write line and the turn-end warning are ${shown ? 'both shown' : 'both silent'}`, async () => {
@@ -165,7 +165,7 @@ test('verification in the same turn still silences it', async () => {
 });
 test('an earlier skill does not hide the VERIFICATION GATE for code with a claim and no evidence', async () => {
   const s = scene('foo', ["WF_CODE_REGEX='\\.ts$'"]);
-  await used(s, [BRAIN, VERIFY, 'superpowers:test-driven-development']);
+  await used(s, [BRAIN, VERIFY, 'burhan-build']);
   const out = await createdOnly(s, join(s.project, 'src/app.ts'), [], 'done and passing');
   assert.match(out, /VERIFICATION GATE/u, gates(out));
 });

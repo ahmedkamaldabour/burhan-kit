@@ -11,7 +11,7 @@ import { AGENTS } from './install.js';
 
 const HOOKS_FILE: Record<Agent, string> = { claude: '.claude/settings.json', codex: '.codex/hooks.json' };
 const BOOT_FILE: Record<Agent, string> = { claude: 'CLAUDE.md', codex: 'AGENTS.md' };
-const KIT = ['WORKFLOW.md', 'SETUP.md', 'VERSION', 'phases', 'templates', 'commands', 'hooks']; // .gitignore: handled apart (I-5)
+const KIT = ['WORKFLOW.md', 'SETUP.md', 'VERSION', 'phases', 'templates', 'commands', 'skills', 'hooks']; // .gitignore: handled apart (I-5)
 const PROJECT = ['workflow.config', 'bindings.md', 'local']; // R-9: kept unless --all
 const MAX_MARK_SCAN = 1_000_000;
 /** What a plain uninstall leaves in .burhan/ (plus project memory, which uninstall never removes). */

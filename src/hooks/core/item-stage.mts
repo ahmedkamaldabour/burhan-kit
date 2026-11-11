@@ -1,6 +1,7 @@
 /** Where an item is, what the workflow allows now, and the next step: one answer for `burhan guide` and for the hooks (AC-06, D-4).
  *  Pure — the caller reads the files. Code edits are authorized when the route's gates allow them: a patch always, a read-only route never,
  *  anything else only while its plan is Approved or In progress. */
+import { SKILLS, type Phase } from './skill-table.mjs';
 import { hasContractMarker, storyIsApproved } from './item-contract.mjs';
 import { openDeviations, overallStatus, qcAccepted, qcVerdict, planRoute, routeAllowed, routeNeeds, units } from './item-model.mjs';
 
@@ -80,13 +81,13 @@ export function stageOf(i: StageInput): Stage {
 export const routeOf = (story: string | null, plan: string | null, findings: string | null): string => planRoute(story ?? '') || planRoute(plan ?? '') || planRoute(findings ?? '');
 
 export interface SkillChoice { skill: string; why: string }
-const choice = (skill: string, why: string): SkillChoice => ({ skill: `superpowers:${skill}`, why });
-const BRAINSTORM = choice('brainstorming', 'before the story');
-const PLANS = choice('writing-plans', 'before the plan and the build spec');
-const TDD = choice('test-driven-development', 'before the failing test and the code');
-const REVIEW = choice('requesting-code-review', 'to review the sub-unit');
-const VERIFY = choice('verification-before-completion', 'before you claim the item is done or passing');
-const DEBUG = choice('systematic-debugging', 'before you look for the cause');
+const choice = (phase: Phase): SkillChoice => ({ skill: SKILLS[phase].name, why: SKILLS[phase].why });
+const STORY = choice('story');
+const PLAN = choice('plan');
+const BUILD = choice('build');
+const REVIEW = choice('review');
+const DONE = choice('done');
+const DEBUG = choice('debug');
 const NONE = /^(route not allowed|plan Paused|plan Superseded|deviation open|QC passed, not accepted|QC accepted|findings concluded|plan status not recognised)$/;
 
 /** The process skill to run before the next write at a stage (phases/skills.md), or null. One table for the CLI (`burhan guide` and the commands that open a stage).
@@ -97,12 +98,12 @@ export function skillFor(st: Pick<Stage, 'stage'>, route: string): SkillChoice |
   const type = route.split(' / ')[0] ?? '';
   if (route.endsWith(' / patch') || NONE.test(s)) return null;
   if (s === 'QC failed') return DEBUG;
-  if (s === 'plan completed' || s === 'awaiting QC' || s === 'all sub-units reviewed') return VERIFY;
+  if (s === 'plan completed' || s === 'awaiting QC' || s === 'all sub-units reviewed') return DONE;
   if (/^Sub-unit \d+ implemented$/.test(s)) return REVIEW;
-  if (s === 'build spec missing') return PLANS;
+  if (s === 'build spec missing') return PLAN;
   if (type === 'bug' || type === 'investigation') return DEBUG;
-  if (s === 'no item files' || s === 'no story' || s === 'story draft') return BRAINSTORM;
-  if (s === 'story approved, no plan' || s === 'no plan' || s === 'plan draft') return PLANS;
-  if (/^Sub-unit \d+ (to start|in progress|has no status)$/.test(s) || s === 'plan without sub-units') return TDD;
+  if (s === 'no item files' || s === 'no story' || s === 'story draft') return STORY;
+  if (s === 'story approved, no plan' || s === 'no plan' || s === 'plan draft') return PLAN;
+  if (/^Sub-unit \d+ (to start|in progress|has no status)$/.test(s) || s === 'plan without sub-units') return BUILD;
   return null;
 }

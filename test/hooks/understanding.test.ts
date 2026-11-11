@@ -17,7 +17,7 @@ function project(o: { sources?: number; baseline?: string | null; state?: string
   mkdirSync(join(p, 'src'), { recursive: true });
   for (let i = 0; i < (o.sources ?? 12); i++) writeFileSync(join(p, 'src', `f${i}.ts`), 'x');
   mkdirSync(join(p, '.burhan/local'), { recursive: true });
-  writeFileSync(join(p, '.burhan/workflow.config'), `WF_DOCS_DIR='.burhan/work'\nWF_CODE_REGEX='^src/'\nWF_SKILLS='none'\nWF_EVIDENCE_DIR='${evidence}'\n`);
+  writeFileSync(join(p, '.burhan/workflow.config'), `WF_DOCS_DIR='.burhan/work'\nWF_CODE_REGEX='^src/'\nWF_EVIDENCE_DIR='${evidence}'\n`);
   if (o.baseline !== null) writeFileSync(join(p, '.burhan/PROJECT.md'), `# P\n${o.baseline ?? '- **Baseline:** Draft'}\n`);
   if (o.state !== undefined) writeFileSync(join(p, '.burhan/local/PROGRESS.md'), o.state);
   return p;
@@ -112,7 +112,7 @@ test('I-1: the patch lane declared in the turn text (no item in the state file) 
   const p = project({ baseline: '- **Baseline:** Draft' });
   assert.ok(!(await turnEnd(p, { files_edited: ['src/f1.ts'], assistant_text: 'patch — typo in a message' })).includes(GATE));
   const q = project({ baseline: '- **Baseline:** Draft' });
-  writeFileSync(join(q, '.burhan/workflow.config'), `WF_DOCS_DIR='.burhan/work'\nWF_CODE_REGEX='^src/'\nWF_SKILLS='none'\nWF_EVIDENCE_DIR='${evidence}'\nWF_SENSITIVE_REGEX='^src/f1'\nWF_SENSITIVE_NOTE='money'\n`);
+  writeFileSync(join(q, '.burhan/workflow.config'), `WF_DOCS_DIR='.burhan/work'\nWF_CODE_REGEX='^src/'\nWF_EVIDENCE_DIR='${evidence}'\nWF_SENSITIVE_REGEX='^src/f1'\nWF_SENSITIVE_NOTE='money'\n`);
   assert.ok((await turnEnd(q, { files_edited: ['src/f1.ts'], assistant_text: 'patch — typo' })).includes(GATE), 'a sensitive path is never a patch');
 });
 
@@ -128,7 +128,7 @@ test('M-1/M-3: the Arabic onboarding phrases silence the reminder; a word that o
 
 test('M-6: an approved project is never walked — a tree that takes about a second to walk costs nothing', async () => {
   const p = project({ sources: 0, baseline: '- **Baseline:** Approved — Ahmed · 2026-10-19' });
-  writeFileSync(join(p, '.burhan/workflow.config'), `WF_DOCS_DIR='.burhan/work'\nWF_CODE_REGEX='.{1000}~'\nWF_SKILLS='none'\nWF_EVIDENCE_DIR='${evidence}'\n`);
+  writeFileSync(join(p, '.burhan/workflow.config'), `WF_DOCS_DIR='.burhan/work'\nWF_CODE_REGEX='.{1000}~'\nWF_EVIDENCE_DIR='${evidence}'\n`);
   for (let d = 0; d < 20; d++) { mkdirSync(join(p, `d${d}`)); for (let i = 0; i < 150; i++) writeFileSync(join(p, `d${d}`, `${'n'.repeat(200)}${i}.txt`), 'x'); }
   let t0 = performance.now(); await prompt(p); const approved = performance.now() - t0;
   writeFileSync(join(p, '.burhan/PROJECT.md'), '# P\n');

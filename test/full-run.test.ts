@@ -146,20 +146,17 @@ function ledger(dir: string, recs: Array<Record<string, unknown>>): void {
 const config = (dir: string, extra = ''): void => writeFileSync(join(dir, '.burhan', 'workflow.config'), `WF_CODE_REGEX='[.]ts$'\nWF_FULL_TEST_REGEX='^npm test$'\n${extra}`);
 const RUNS = [{ kind: 'edit', ts: '2026-10-28T10:00:00Z', file: 'src/a.ts' }, { kind: 'cmd', ts: '2026-10-28T10:05:00Z', cmd: 'npm test', exit: 0, status: 'ok' }];
 
-test('guide prints the full run line and a fullRun object, with or without WF_SKILLS', async () => {
+test('guide prints the full run line and a fullRun object', async () => {
   const dir = await projectWithItem();
   config(dir);
   ledger(dir, RUNS);
   const g = await cli(dir, ['guide', 'foo']);
   assert.equal(g.code, 0, g.err);
   assert.match(g.out, /^full run: yes — npm test passed at 2026-10-28T10:05:00Z after the last code edit \(src\/a\.ts, 2026-10-28T10:00:00Z\)/m);
-  assert.doesNotMatch(g.out, /^skill:/m);
-  const j = JSON.parse((await cli(dir, ['guide', 'foo', '--json'])).out) as { fullRun: { state: string; command: string; edit: { file: string } }; skill: null };
+  const j = JSON.parse((await cli(dir, ['guide', 'foo', '--json'])).out) as { fullRun: { state: string; command: string; edit: { file: string } } };
   assert.equal(j.fullRun.state, 'yes');
   assert.equal(j.fullRun.command, 'npm test');
   assert.equal(j.fullRun.edit.file, 'src/a.ts');
-  config(dir, 'WF_SKILLS=superpowers\n');
-  assert.match((await cli(dir, ['guide', 'foo'])).out, /^full run: yes — /m);
 });
 
 test('guide says it cannot tell when the key is missing, and the command still succeeds', async () => {

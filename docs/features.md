@@ -28,7 +28,7 @@ A `spike` is exploratory: only an investigation or a bug diagnosis may be one, a
 - **What it is:** the agent writes a **story** (what and why, with acceptance criteria) and a **plan** (how, in two files: the decisions, the criteria-to-tests table and the rules for whoever builds, and a build spec with the complete code of every step) and asks for your explicit yes to both before code. On bounded work they are one gate; on architectural work the story and the plan are separate.
 - **When it shows up:** after intake, before any code.
 - **Example:** in the recorded run the agent wrote both files, showed a one-screen "decision card" and waited ([the walkthrough](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md)).
-- **Limit:** behavioural. No hook stops an agent that ignores it; a story or plan written without the planning skill is flagged at the end of the turn when Superpowers is on.
+- **Limit:** behavioural. No hook stops an agent that ignores it; a story or plan written without the planning skill is flagged at the end of the turn.
 
 ### Commands that own the task files
 - **What it is:** commands for the files of a task, so their shape is always the one the checks read: `item new` makes the story, plan or findings from the templates in the folder `<docs>/NNN-slug/` (the next number in three digits; the index and `guide` show it as `#012 · slug`; every command takes the id, the number or the plain slug, and refuses one that two items share, naming them), `item set` moves a status one step along its ladder, `gate tick` ticks a gate when its evidence exists, `review add` writes a review, QC or verification with *Performed by* in the exact form, `approve` writes your approval (it refuses an agent's name, and a story, plan or build spec that still has the template's placeholders; the name check is a list, not proof of who typed it), `item finish` completes a plan only with every sub-unit reviewed, no open deviation and a passing proof (`item set` does not complete a plan), `deviation add` records a step that did not go as the build spec said (the executor stops until you decide; `deviation resolve` writes your decision; with `--apply "<why no decision is needed>"` the agent records a row it fixed itself because no decision was needed, as `applied` and never as `approved`, and `guide` and `item finish` list it for you), `finding add` writes a review or QC finding as a row of its Findings table (or the line `No findings.`), `finding decide` writes your decision on it (fixed, a discovery, or accepted with your reason; a Critical is never accepted), `finding discover` opens a discovery for every finding you left undecided (a Critical is never included), `finding list` shows the open ones as one question, `guide` says the stage, the next step and whether code edits are authorized, `item check` names every fault in a task's files, `burhan state set` changes one line of your item's block and `burhan state close` shrinks the block to its closed line, both under a lock with an atomic write, so two sessions on two items do not lose each other's block, `burhan state show` prints a block, and `burhan state compact` shortens the old lines of closed tasks in your state file: it is a dry run unless `--apply` is given, it never touches a `### ` block (another session's), and the old text goes to the task's `<slug>-state-notes.md` first. A closed task's line has one shape: `- <slug> · <type> / <scope> · <outcome> · <commit id, or uncommitted> · <folder>`.
@@ -60,11 +60,11 @@ A `spike` is exploratory: only an investigation or a bug diagnosis may be one, a
 - **Example:** a found bug is a `Planned` file in your discovery folder until you approve a routed item for it.
 - **Limit:** behavioural for discoveries; the read-only warning only sees edits and commands the agent reports.
 
-### Superpowers (optional)
-- **What it is:** with `WF_SKILLS=superpowers`, each phase maps to a Superpowers skill (brainstorming before a story, planning before a plan, test-driven development for code, review before a review file) and a skipped one is flagged at the end of the turn. burhan never installs Superpowers.
-- **When it shows up:** at each phase, if the plugin is installed and the setting is on.
-- **Example:** `⚠ SKILL GATE (story): a story was CREATED this turn without superpowers:brainstorming.`
-- **Limit:** without the plugin nothing is referenced; setup detects only a plugin folder under `~/.claude/plugins`.
+### Process skills
+- **What it is:** six skills that ship with the kit (`burhan-story`, `burhan-plan`, `burhan-build`, `burhan-debug`, `burhan-review`, `burhan-done`), one per phase; the hooks name the skill of the phase and a skipped one is flagged at the end of the turn. Nothing to install and no setting.
+- **When it shows up:** at each phase.
+- **Example:** `⚠ SKILL GATE (story): a story was CREATED this turn without burhan-story.`
+- **Limit:** behavioural. A report, never a block: an agent can ignore it, and Codex learns a skill only by reading its `SKILL.md`.
 
 ## Prove what was done
 

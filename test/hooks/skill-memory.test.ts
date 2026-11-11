@@ -9,14 +9,14 @@ import { run } from '../../src/hooks/main.mjs';
 // The code SKILL GATE counts TDD / debugging from an earlier turn of the same item in the same session
 // (alerts-and-texts SU2, AC-04 – AC-06). No config file: the WF_* values come from the environment.
 const GATE = 'SKILL GATE (code)';
-const TDD = 'superpowers:test-driven-development';
+const TDD = 'burhan-build';
 
 function setup(now: string): { project: string; env: NodeJS.ProcessEnv; root: string } {
   const project = tmpDir('burhan-skill-memory-project-');
   const root = tmpDir('burhan-skill-memory-evidence-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), `## Now\n${now}`);
-  return { project, root, env: { ...process.env, WF_EVIDENCE_DIR: root, WF_SKILLS: 'superpowers', WF_CODE_REGEX: '\\.src$', WF_EVIDENCE_LEDGER: 'on' } };
+  return { project, root, env: { ...process.env, WF_EVIDENCE_DIR: root, WF_CODE_REGEX: '\\.src$', WF_EVIDENCE_LEDGER: 'on' } };
 }
 const TWO = '### alpha\n- **Route:** change / bounded\n### beta\n- **Route:** change / bounded\n';
 const ONE = '### alpha\n- **Route:** change / bounded\n';
@@ -44,7 +44,7 @@ test('a skill from an earlier turn of the same item in the same session counts f
 test('a skill used only in a continuation after a hook block (reentrant Stop) is remembered too', async () => {
   const s = setup(TWO);
   await stop(s, 'S1', { link: 'alpha' });
-  await stop(s, 'S1', { skills: ['superpowers:systematic-debugging'], reentrant: true });
+  await stop(s, 'S1', { skills: ['burhan-debug'], reentrant: true });
   assert.doesNotMatch(await stop(s, 'S1', { code: true }), /SKILL GATE \(code\)/);
 });
 
@@ -70,7 +70,7 @@ test('no leak to a slug sharing a prefix, and only the two exact skill names are
   await stop(prefix, 'S1', { link: 'alpha-2' });
   assert.match(await stop(prefix, 'S1', { code: true }), /SKILL GATE \(code\)/, 'alpha-2 does not see alpha');
   const lookalike = setup(ONE);
-  await stop(lookalike, 'S1', { skills: ['superpowers:test-driven-development-x', 'superpowers:brainstorming'] });
+  await stop(lookalike, 'S1', { skills: ['burhan-build-x', 'burhan-story'] });
   assert.match(await stop(lookalike, 'S1', { code: true }), /SKILL GATE \(code\)/, 'a look-alike skill is not remembered');
 });
 
@@ -86,7 +86,7 @@ test('one item in Now resolves without a link, so its memory counts; WF_EVIDENCE
 
 test('the gate itself is unchanged: no skill at all fires the same message; an unwritable store fails open', async () => {
   const s = setup(ONE);
-  assert.match(await stop(s, 'S1', { code: true }), /⚠ SKILL GATE \(code\): code was written this turn without superpowers:test-driven-development or superpowers:systematic-debugging\. Confirm the skill was used, or invoke it before continuing\./);
+  assert.match(await stop(s, 'S1', { code: true }), /⚠ SKILL GATE \(code\): code was written this turn without burhan-build or burhan-debug\. Confirm the skill was used, or invoke it before continuing\./);
   if (process.platform === 'win32' || process.getuid?.() === 0) return;
   const locked = setup(ONE);
   const dir = join(locked.root, projectKey(locked.project));
@@ -98,8 +98,8 @@ test('the gate itself is unchanged: no skill at all fires the same message; an u
   } finally { chmodSync(dir, 0o700); }
 });
 
-test('the code-skill memory does not stand in for brainstorming: a story created later without brainstorming still fires', async () => {
-  // skills-gates-align: brainstorming run in an earlier turn now counts for the story (test/hooks/skills-gates-align.test.ts); a code skill alone does not.
+test('the code-skill memory does not stand in for burhan-story: a story created later without burhan-story still fires', async () => {
+  // skills-gates-align: burhan-story run in an earlier turn now counts for the story (test/hooks/skills-gates-align.test.ts); a code skill alone does not.
   const s = setup(ONE);
   await stop(s, 'S1', { skills: [TDD] });
   const story = join(s.project, '.burhan/work/alpha/alpha-story.md');

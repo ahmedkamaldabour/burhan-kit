@@ -6,13 +6,13 @@ import { tmpDir } from './helpers.js';
 import { run } from '../src/hooks/main.mjs';
 
 // QC finding on AC-02: a phase skill used in an EARLIER turn of the same item in the same session counts for the pre-write check.
-const BRAIN = 'superpowers:brainstorming';
+const BRAIN = 'burhan-story';
 function setup(): { project: string; env: NodeJS.ProcessEnv } {
   const project = tmpDir('burhan-phase-memory-project-');
   const root = tmpDir('burhan-phase-memory-store-');
   mkdirSync(join(project, '.burhan/local'), { recursive: true });
   writeFileSync(join(project, '.burhan/local/PROGRESS.md'), '## Now\n### alpha\n- **Route:** feature / bounded\n### beta\n- **Route:** feature / bounded\n');
-  return { project, env: { ...process.env, WF_EVIDENCE_DIR: root, WF_SKILLS: 'superpowers', WF_EVIDENCE_LEDGER: 'on' } };
+  return { project, env: { ...process.env, WF_EVIDENCE_DIR: root, WF_EVIDENCE_LEDGER: 'on' } };
 }
 let n = 0;
 async function stop(s: ReturnType<typeof setup>, session: string, o: { skills?: string[]; link?: string } = {}): Promise<void> {
@@ -26,7 +26,7 @@ async function writeStory(s: ReturnType<typeof setup>, session: string, item: st
   return r.stdout;
 }
 
-test('brainstorming used in an earlier turn of the same item and session -> no line before the story', async () => {
+test('burhan-story used in an earlier turn of the same item and session -> no line before the story', async () => {
   const s = setup();
   await stop(s, 'S1', { link: 'alpha', skills: [BRAIN] });
   assert.equal(await writeStory(s, 'S1', 'alpha'), '');
@@ -35,19 +35,19 @@ test('brainstorming used in an earlier turn of the same item and session -> no l
 test('control: nothing was used earlier -> the line', async () => {
   const s = setup();
   await stop(s, 'S1', { link: 'alpha' });
-  assert.match(await writeStory(s, 'S1', 'alpha'), /brainstorming/u);
+  assert.match(await writeStory(s, 'S1', 'alpha'), /burhan-story/u);
 });
 
 test('a skill remembered for another item does not count', async () => {
   const s = setup();
   await stop(s, 'S1', { link: 'alpha', skills: [BRAIN] });
   await stop(s, 'S1', { link: 'beta' });
-  assert.match(await writeStory(s, 'S1', 'beta'), /brainstorming/u);
+  assert.match(await writeStory(s, 'S1', 'beta'), /burhan-story/u);
 });
 
 test('another session does not inherit it', async () => {
   const s = setup();
   await stop(s, 'S1', { link: 'alpha', skills: [BRAIN] });
   await stop(s, 'S2', { link: 'alpha' });
-  assert.match(await writeStory(s, 'S2', 'alpha'), /brainstorming/u);
+  assert.match(await writeStory(s, 'S2', 'alpha'), /burhan-story/u);
 });

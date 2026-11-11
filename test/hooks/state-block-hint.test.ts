@@ -21,7 +21,7 @@ async function audit(state: string | null, files: string[], over: { stateWritten
   const made = files.map((f) => join(project, f));
   for (const f of made) { mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, 'plain text\n'); }
   const edited = over.stateWritten ? [join(project, '.burhan/local/PROGRESS.md')] : [];
-  const turn = { files_created: made, files_edited: edited, shell_commands: [], skills_used: [], assistant_text: 'saved', steps: [] };
+  const turn = { files_created: made, files_edited: edited, shell_commands: [], skills_used: ['burhan-story'], assistant_text: 'saved', steps: [] };
   return (await run(['core', 'turn-audit'], JSON.stringify({ event: 'turn_end', session: 'S', project_dir: project, turn }), { ...process.env, WF_EVIDENCE_DIR: store })).stdout;
 }
 const EMPTY = '# s\n## Now\n## Waiting on you\n';

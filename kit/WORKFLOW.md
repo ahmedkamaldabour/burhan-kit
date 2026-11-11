@@ -164,7 +164,7 @@ fix a discovery** — document it, get approval, then act (`phases/discoveries.m
 | A status change, close-out, handoff | `phases/close-out.md` |
 | Something the task did not ask for | `phases/discoveries.md` |
 | Project facts, knowledge review | `phases/memory.md` |
-| `WF_SKILLS` is set | `phases/skills.md` |
+| A phase with a skill starts | `phases/skills.md` |
 | A hook's finding, evidence ledger | `phases/enforcement.md` |
 
-With `WF_SKILLS=superpowers`, invoke the matching skill before acting in each phase (table in `phases/skills.md`); a hook reminds you, it does not do it for you.
+Invoke the burhan skill of each phase before acting (table in `phases/skills.md`); a hook reminds you, it does not do it for you.

@@ -32,7 +32,7 @@ test('a summary with a file that lands outside names it and does not claim that 
 
 test('the same summary with the allow flag says it will be written because of the flag', { skip }, () => {
   const { target } = withOutsideClaudeMd();
-  const text = renderSummary(planSetup(target, answers, home), 'en', undefined, true);
+  const text = renderSummary(planSetup(target, answers, home), 'en', true);
   assert.doesNotMatch(text, EN_CLAIM);
   assert.match(text, /written because of --allow-outside-links/u);
 });
@@ -44,7 +44,7 @@ test('Arabic: no "nothing changes outside" line either, and the flag is named', 
   assert.ok(refused.includes(real));
   assert.ok(!refused.includes(AR_CLAIM), refused);
   assert.match(refused, /--allow-outside-links/u);
-  const allowed = renderSummary(plan, 'ar', undefined, true);
+  const allowed = renderSummary(plan, 'ar', true);
   assert.ok(!allowed.includes(AR_CLAIM));
   assert.match(allowed, /--allow-outside-links/u);
 });

@@ -178,7 +178,7 @@ test('item new writes the full id in the files, the plan lines and the block, an
   assert.equal(r.code, 0, r.err);
   assert.match(r.out, /^item new: created #001 · foo \(feature \/ architectural, mode /);
   assert.match(r.out, /state: added "### 001-foo" under Now/);
-  assert.match(r.out, /next: fill the files, then burhan item check 001-foo\n$/);
+  assert.match(r.out, /next: fill the files, then burhan item check 001-foo\nskill: burhan-story .*\n$/);
   const plan = read(join(dir, WORK, '001-foo', '001-foo-implementation-plan.md'));
   assert.match(plan, /^# 001-foo — Implementation Plan$/m);
   assert.match(plan, /^- \*\*Story:\*\* \.\/001-foo-story\.md$/m);

@@ -17,13 +17,13 @@
    "name": "stop + garbage-lines.jsonl",
    "payload": "p-stop.json",
    "transcript": "garbage-lines.jsonl",
-   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1}]},\"reentrant\":false}\n"
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[],\"skills_used\":[\"burhan-build\"],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1}]},\"reentrant\":false}\n"
   },
   {
    "name": "stop reentrant + garbage-lines.jsonl",
    "payload": "p-stop-reentrant.json",
    "transcript": "garbage-lines.jsonl",
-   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[],\"skills_used\":[],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1}]},\"reentrant\":true}\n"
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[],\"files_edited\":[\"/proj/a.src\"],\"shell_commands\":[],\"skills_used\":[\"burhan-build\"],\"assistant_text\":\"ok\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/a.src\",\"seq\":1}]},\"reentrant\":true}\n"
   },
   {
    "name": "stop + notification.jsonl",
@@ -77,13 +77,13 @@
    "name": "stop + single-turn.jsonl",
    "payload": "p-stop.json",
    "transcript": "single-turn.jsonl",
-   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/src/new.src\"],\"files_edited\":[\"/proj/src/old.src\",\"/proj/src/multi.src\",\"/proj/nb.ipynb\"],\"shell_commands\":[\"verify-it src/new.src\"],\"skills_used\":[\"superpowers:test-driven-development\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/src/new.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/src/old.src\",\"seq\":2},{\"kind\":\"edit\",\"file\":\"/proj/src/multi.src\",\"seq\":3},{\"kind\":\"edit\",\"file\":\"/proj/nb.ipynb\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"verify-it src/new.src\",\"exit\":0,\"status\":\"ok\",\"seq\":5}]},\"reentrant\":false}\n"
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/src/new.src\"],\"files_edited\":[\"/proj/src/old.src\",\"/proj/src/multi.src\",\"/proj/nb.ipynb\"],\"shell_commands\":[\"verify-it src/new.src\"],\"skills_used\":[\"burhan-build\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/src/new.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/src/old.src\",\"seq\":2},{\"kind\":\"edit\",\"file\":\"/proj/src/multi.src\",\"seq\":3},{\"kind\":\"edit\",\"file\":\"/proj/nb.ipynb\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"verify-it src/new.src\",\"exit\":0,\"status\":\"ok\",\"seq\":5}]},\"reentrant\":false}\n"
   },
   {
    "name": "stop reentrant + single-turn.jsonl",
    "payload": "p-stop-reentrant.json",
    "transcript": "single-turn.jsonl",
-   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/src/new.src\"],\"files_edited\":[\"/proj/src/old.src\",\"/proj/src/multi.src\",\"/proj/nb.ipynb\"],\"shell_commands\":[\"verify-it src/new.src\"],\"skills_used\":[\"superpowers:test-driven-development\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/src/new.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/src/old.src\",\"seq\":2},{\"kind\":\"edit\",\"file\":\"/proj/src/multi.src\",\"seq\":3},{\"kind\":\"edit\",\"file\":\"/proj/nb.ipynb\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"verify-it src/new.src\",\"exit\":0,\"status\":\"ok\",\"seq\":5}]},\"reentrant\":true}\n"
+   "expected": "{\"event\":\"turn_end\",\"agent\":\"claude\",\"project_dir\":\"/proj\",\"session\":\"s\",\"turn_id\":\"\",\"turn_scope\":\"whole\",\"prompt\":\"\",\"command\":\"\",\"file\":\"\",\"turn\":{\"files_created\":[\"/proj/src/new.src\"],\"files_edited\":[\"/proj/src/old.src\",\"/proj/src/multi.src\",\"/proj/nb.ipynb\"],\"shell_commands\":[\"verify-it src/new.src\"],\"skills_used\":[\"burhan-build\"],\"assistant_text\":\"All done ✅\",\"steps\":[{\"kind\":\"edit\",\"file\":\"/proj/src/new.src\",\"seq\":1},{\"kind\":\"edit\",\"file\":\"/proj/src/old.src\",\"seq\":2},{\"kind\":\"edit\",\"file\":\"/proj/src/multi.src\",\"seq\":3},{\"kind\":\"edit\",\"file\":\"/proj/nb.ipynb\",\"seq\":4},{\"kind\":\"cmd\",\"cmd\":\"verify-it src/new.src\",\"exit\":0,\"status\":\"ok\",\"seq\":5}]},\"reentrant\":true}\n"
   },
   {
    "name": "stop + steps-fail.jsonl",
