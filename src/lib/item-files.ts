@@ -4,9 +4,9 @@ import { BurhanError } from './errors.js';
 import { isSlug, SLUG_RULE } from './item-io.js';
 import { matchItem, type Match } from '../hooks/core/item-id.mjs';
 
-import { deviations, fenced, openDeviations, overallStatus, planRoute, qcAccepted, qcVerdict, routeNeeds, RUNGS, setFieldLine, units, withDeviationResolved, withDeviationRow, withRung } from '../hooks/core/item-model.mjs';
+import { deviations, fenced, openDeviations, overallStatus, planRoute, qcAccepted, qcVerdict, routeNeeds, RUNGS, setFieldLine, traceProblem, traceUnit, units, untracedDeviations, withDeviationResolved, withDeviationRow, withDeviationTrace, withRung } from '../hooks/core/item-model.mjs';
 export type { Unit } from '../hooks/core/item-model.mjs';
-export { deviations, fenced, openDeviations, overallStatus, planRoute, qcAccepted, qcVerdict, routeNeeds, RUNGS, setFieldLine, units, withDeviationResolved, withDeviationRow, withRung };
+export { deviations, fenced, openDeviations, overallStatus, planRoute, qcAccepted, qcVerdict, routeNeeds, RUNGS, setFieldLine, traceProblem, traceUnit, units, untracedDeviations, withDeviationResolved, withDeviationRow, withDeviationTrace, withRung };
 
 /** The item folders of the docs location: every directory (a link to a directory too) whose name does not start with a dot, sorted. A missing docs folder has none. */
 export function folderNames(docsAbs: string): string[] {

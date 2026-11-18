@@ -31,7 +31,7 @@ The complete test code, ready to paste.
 - **Why it fails:** <the missing behaviour, not a typo>
 
 ### Implementation
-The complete code. For a purely mechanical edit, use "### Edit" and give the exact text before and after.
+The complete code. For a purely mechanical edit (a word, a line, a path), change this heading to "### Edit" and give the exact text before and after in one fenced block: the old text under a line `before:`, the new text under a line `after:`. No other code is invented. The Test part and this part both need a fenced block, which `burhan item check` looks for.
 ```
 <the complete implementation code>
 ```

@@ -4,12 +4,13 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { verifyFile, type VerifyRecord } from '../src/lib/verify.js';
-import { cli, itemDir, projectWithItem, STATE } from './item-fixture.js';
+import { cli, itemDir, projectWithItem, setPlanStatus, STATE } from './item-fixture.js';
 
 const NODE = process.execPath;
 const records = (dir: string): VerifyRecord[] => readFileSync(verifyFile(itemDir(dir), 'foo'), 'utf8').trim().split('\n').map((l) => JSON.parse(l) as VerifyRecord);
 async function gitItem(): Promise<string> {
   const dir = await projectWithItem();
+  setPlanStatus(dir, 'In progress'); // verify refuses an item before build, and the fixture's plan is a Draft
   spawnSync('git', ['init', '-q'], { cwd: dir });
   return dir;
 }
@@ -59,6 +60,7 @@ test('writing the record, the state file and .burhan/local do not change the cod
 
 test('outside a git checkout the record says there is no code state', async () => {
   const dir = await projectWithItem();
+  setPlanStatus(dir, 'In progress'); // verify refuses an item before build
   const r = await verify(dir, NODE, '-e', '0');
   assert.equal(r.code, 0, r.err);
   assert.match(r.out, /no code state/);

@@ -40,10 +40,10 @@ test('a 200,000-character line is read in linear time', () => {
 
 test('the outcomes are a fixed list: it cannot be changed at run time, and a closed line with another outcome does not compile', () => {
   assert.throws(() => (OUTCOMES as unknown as string[]).push('Done'), TypeError);
-  assert.deepEqual([...OUTCOMES], ['QC PASS', 'Done (no QC)', 'Paused', 'Superseded']);
+  assert.deepEqual([...OUTCOMES], ['QC PASS', 'Done (no QC)', 'Paused', 'Superseded', 'Already satisfied']);
   assert.equal(isOutcome('QC PASS'), true);
   assert.equal(isOutcome('Done'), false);
-  // @ts-expect-error "Done" is not one of the four index states, so it is not an Outcome
+  // @ts-expect-error "Done" is not one of the five index states, so it is not an Outcome
   const wrong: ClosedLine = { ...ok, outcome: 'Done' };
   assert.equal(parseClosedLine(formatClosedLine(wrong)), null, 'a line with another outcome is not read back');
 });

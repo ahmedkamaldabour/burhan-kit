@@ -28,12 +28,27 @@ the human asks for a fully read-only pass, write nothing at all and report what 
 Output: `<slug>-findings.md` from `templates/findings.md`. Mark the item `**Read-only:** yes` in the
 state file (core §5). To implement a finding, open a new routed item.
 
+## A story the code already satisfies
+
+When the facts you checked show that the code already does what the story asks, plan nothing and build nothing: tell the owner and put two choices to them, closing the item or changing the story. Closing is theirs to decide, with `burhan item close <slug> --already-satisfied "<reason>" --by <owner name>` (phases/close-out.md · Already satisfied); write the reason with the file and line that show it.
+
 ## The patch lane
 
 For one obvious change (core §3 · `patch`). The state file records it as a `Now` entry
 `### <slug>` with `- **Route:** <type> / patch` — or not at all when it is committed in the same turn. A patch that grows (an
 escalator, a sensitive path, a second concern, any doubt) is promoted to `bounded` at once, and the
 promotion is **said out loud** in the reply.
+
+## Routing examples
+
+| The request | Route | Why |
+|---|---|---|
+| Correct a typo in a message, or change the value of one setting | `change / patch` | One obvious change to what exists, with no escalator, nothing sensitive and no doubt. |
+| Add one option that prints one more line of an existing report | `feature / bounded` | A one-line feature is bounded, never patch: it adds behaviour, so it has a story and a plan. |
+| Add a method to a class its module exports, when nothing outside the module imports it | a doubt, not a settled escalator | Whether it is a public API is the owner's to settle, as the paragraph below says. |
+| Change who may see a record, in one line | `change / architectural` | A visibility rule is an escalator, however small the change. |
+
+When it is unclear whether a change meets a scope escalator, the agent does not settle it. It puts one question to the owner, with its recommendation, in the question round; it keeps the lighter route provisionally and says so in the story; the owner's answer settles the route.
 
 ## Decision card — the first lines of a story and a plan
 

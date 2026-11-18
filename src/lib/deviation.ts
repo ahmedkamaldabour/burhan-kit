@@ -2,7 +2,7 @@ import type { Io } from '../main.js';
 import { BurhanError } from './errors.js';
 import { putFile, realTarget } from './fs-safe.js';
 import { person } from './approve.js';
-import { deviations, itemFolder, overallStatus, planPath, readOr, units, withDeviationResolved, withDeviationRow } from './item-files.js';
+import { deviations, itemFolder, overallStatus, planPath, readOr, traceUnit, units, withDeviationResolved, withDeviationRow, withDeviationTrace } from './item-files.js';
 import { assertInside, today } from './item-io.js';
 import { docsLocation } from './status.js';
 
@@ -82,5 +82,33 @@ export function deviationResolve(target: string, slug: string | undefined, n: st
   assertInside(project, file);
   putFile(file, updated);
   io.stdout(`deviation: row ${n} ${o.approved === true ? 'approved' : 'rejected'} by ${by}; it was run from the shell, so the turn-end report lists it as agent-run: it must be the decision you were given. ${o.approved === true ? 'Update the plan and the build spec first, then the code.' : ''}\n`);
+  return 0;
+}
+
+/** `burhan deviation done <slug> <n> --in unit:<N>`: writes where an approved row was carried out, in its `Carried out in` cell. Only an approved row takes it (an open row waits for the owner, a rejected row has nothing to carry out, an applied row was fixed before it was written), the sub-unit must be one of the plan, and a trace that is there is not overwritten. It carries no owner's name: the trace is the agent's own claim, and `item check` reads only its form. */
+export function deviationDone(target: string, slug: string | undefined, n: string | undefined, o: { in?: string; by?: string; docs?: string }, io: Io): number {
+  const project = realTarget(target);
+  const { slug: s, dir } = itemFolder(docsLocation(target, o.docs).abs, slug, 'deviation done');
+  if (n === undefined || !/^\d+$/.test(n)) throw new BurhanError('deviation done needs the row number: deviation done <slug> <n> --in unit:<N>');
+  const unit = o.in === undefined ? null : traceUnit(o.in);
+  if (unit === null) throw new BurhanError('--in is needed, in the form unit:<N>: the sub-unit of the plan that carried the approved change out');
+  if (o.by !== undefined) throw new BurhanError('deviation done carries no owner\'s name: leave out --by (the trace is your own claim, not the owner\'s decision)');
+  const file = planPath(dir, s);
+  const plan = readOr(file);
+  if (plan === null) throw new BurhanError(`item "${s}" has no implementation plan`);
+  const row = deviations(plan).find((d) => d.n === Number(n));
+  if (row === undefined) throw new BurhanError(`the Deviations table has no row ${n}`);
+  if (row.status === 'open') throw new BurhanError(`Deviations row ${n} is open: the owner decides it first (burhan deviation resolve ${s} ${n} --approved --by <owner's name>); only an approved row is traced`);
+  if (row.status === 'rejected') throw new BurhanError(`Deviations row ${n} is rejected: there is nothing to carry out, so it has no trace`);
+  if (row.status === 'applied') throw new BurhanError(`Deviations row ${n} is applied: it was fixed before it was written (its Sub-unit cell says where), so it has no trace`);
+  if (row.status !== 'approved') throw new BurhanError(`Deviations row ${n} is "${row.status}": only an approved row is traced`);
+  if (row.trace !== '') throw new BurhanError(`Deviations row ${n} already has a trace (${row.trace.slice(0, 40)}): a trace is not overwritten`);
+  if (!units(plan).some((u) => u.n === unit)) throw new BurhanError(`the plan has no Sub-unit ${unit}`);
+  const updated = withDeviationTrace(plan, Number(n), unit);
+  if (updated === null) throw new BurhanError(`the Deviations table has no row ${n}`);
+  assertInside(project, file);
+  putFile(file, updated);
+  const what = row.what.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ');
+  io.stdout(`deviation: row ${n} (sub-unit ${row.unit}: ${what.length > 70 ? `${what.slice(0, 69)}…` : what}) is carried out in unit:${unit}. This is your own claim: item check reads only its form, so the sub-unit review and the owner judge whether the change was really carried out.\n`);
   return 0;
 }

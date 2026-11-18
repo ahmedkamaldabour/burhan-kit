@@ -20,9 +20,11 @@ import { stateCompact } from './lib/state-compact.js';
 import { stateClose, stateSet, stateShow } from './lib/state-set.js';
 import { reviewAdd } from './lib/review-add.js';
 import { approve } from './lib/approve.js';
-import { deviationAdd, deviationResolve } from './lib/deviation.js';
+import { deviationAdd, deviationDone, deviationResolve } from './lib/deviation.js';
 import { findingAdd, findingDecide, findingDiscover, findingList } from './lib/finding.js';
 import { itemFinish } from './lib/item-finish.js';
+import { itemList } from './lib/item-list.js';
+import { itemClose } from './lib/item-close.js';
 import { itemIdForReport, itemRecordsQuiet, verify } from './lib/verify.js';
 import { guide } from './lib/guide.js';
 import { printAdvice } from './lib/skill-advice.js';
@@ -112,6 +114,10 @@ export const USAGE = `usage: burhan <command> [options]
                        run a proof command without a shell, show how it ended, and record it in the item's folder (command, exit code, time, code state)
   item finish <slug> [--evidence <text>]
                        complete the plan: every sub-unit Reviewed, every gate the route needs ticked, a proof (a burhan verify record on the current code state, or the hook ledger)
+  item list [dir] [--docs <path>]
+                       one line per work item: the full id, the route and the state (the rows of status, in the same order; read-only, nothing is written)
+  item close <slug> --already-satisfied <reason> --by <owner name> [--docs <path>]
+                       close an item whose story the code already satisfies: the owner's decision (an agent's name is refused), with a written reason kept in <slug>-already-satisfied.md; refused for a plan In progress, Completed, Paused or Superseded
   review add <slug> --kind review|qc|verification --by <who> [--unit N] [--verdict V] [--round N] [--text T]
                        write a review section or report with Performed by in the exact form
   approve story|plan|qc <slug> --by <name>
@@ -120,6 +126,8 @@ export const USAGE = `usage: burhan <command> [options]
                        record a step that did not go as the build spec said: the executor stops until the owner decides; with --apply the row is applied at once (a problem that needs no decision: the agent fixes it and reports it)
   deviation resolve <slug> <n> --approved|--rejected --by <name> [--decision <t>]
                        write the owner's decision on an open deviation (the decision is a person's)
+  deviation done <slug> <n> --in unit:<N>
+                       write where an approved deviation was carried out in its row (your own claim: item finish asks for it, item check reads only its form)
   finding add <slug> --in review:<unit>|qc[:<round>] (--severity <S> --text <t> | --none)
                        add one finding to a review section or QC report (a row of its findings table, with no decision), or write "No findings."
   finding list <slug>  every finding with its decision, and the grouped question for the owner about the ones with none (read-only)
@@ -130,9 +138,38 @@ export const USAGE = `usage: burhan <command> [options]
   item check <slug> [--docs <path>]
                        check an item's files against the written contract; names every fault (exit 1 only for a file with **Contract:** 1)
   --version | --help
+  <command> --help | -h   the usage lines of that command; <command> <subcommand> --help prints those of one subcommand
 
 Without --apply, init, upgrade and uninstall are a dry run: they print what they would do and change nothing.
 `;
+
+const USAGE_SUBCOMMANDS = ['item', 'state', 'deviation', 'finding', 'review', 'gate', 'memory'];
+
+/** The usage lines of one command, or of one subcommand of it: the entries of `USAGE` itself, so there is one wording and it cannot drift. An entry is a line with two spaces and a
+ *  lowercase word, then the lines indented further. null when `USAGE` has no entry for the command. A subcommand that names no entry gives all the entries of the command. */
+export function usageFor(command: string, sub?: string): string | null {
+  const entries: Array<{ command: string; sub: string | null; text: string }> = [];
+  for (const line of USAGE.split('\n')) {
+    const head = /^ {2}([a-z][a-z-]*)(?: ([a-z]+))?/.exec(line);
+    if (head !== null) entries.push({ command: head[1]!, sub: USAGE_SUBCOMMANDS.includes(head[1]!) ? head[2] ?? null : null, text: line });
+    else if (/^ {10,}\S/.test(line) && entries.length > 0) entries[entries.length - 1]!.text += `\n${line}`;
+  }
+  const own = entries.filter((e) => e.command === command);
+  if (own.length === 0) return null;
+  const one = sub === undefined ? [] : own.filter((e) => e.sub === sub);
+  return `${(one.length > 0 ? one : own).map((e) => e.text).join('\n')}\n`;
+}
+
+/** `--help` or `-h` after a command and before any `--` (what follows `--` is the command's own): the text to print, or null when it is not a help request. */
+function helpText(cmd: string | undefined, rest: string[]): string | null {
+  if (cmd === undefined || cmd.startsWith('-') || cmd === 'help') return null;
+  const cut = rest.indexOf('--');
+  const own = cut === -1 ? rest : rest.slice(0, cut);
+  if (!own.includes('--help') && !own.includes('-h')) return null;
+  const all = usageFor(cmd);
+  for (const a of own) { if (a.startsWith('-')) continue; const one = usageFor(cmd, a); if (one !== all) return one; } // the first word that names a subcommand: an option's value before it names none
+  return all;
+}
 
 /** `seams` are for tests: `unnumberedItems` makes `item new` use the plain slug as the folder name (an item in the older shape), so the tests of the other commands keep their names. */
 export interface Seams { unnumberedItems?: boolean }
@@ -151,6 +188,8 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
     return (here = found);
   };
   const advise = (code: number, slug: string | undefined, docs: string | undefined, withNext = true): number => { if (code === 0) printAdvice(here ?? io.cwd, slug, io, docs, withNext); return code; };
+  const help = helpText(cmd, rest);
+  if (help !== null) { io.stdout(help); return 0; }
   try {
     switch (cmd) {
       case 'init': case 'upgrade': {
@@ -242,12 +281,14 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
       }
       case 'item': {
         const [sub, ...args] = rest;
-        if (sub !== 'check' && sub !== 'new' && sub !== 'set' && sub !== 'finish') throw new BurhanError(`item needs a subcommand: check, new, set or finish${sub === undefined ? '' : `, not "${sub}"`}`);
-        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, ...(sub === 'new' ? { type: { type: 'string' }, scope: { type: 'string' } } : {}), ...(sub === 'finish' ? { evidence: { type: 'string' } } : {}), ...(sub === 'set' ? { reopen: { type: 'string' } } : {}) } });
+        if (sub !== 'check' && sub !== 'new' && sub !== 'set' && sub !== 'finish' && sub !== 'list' && sub !== 'close') throw new BurhanError(`item needs a subcommand: check, new, set, finish, list or close${sub === undefined ? '' : `, not "${sub}"`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, ...(sub === 'new' ? { type: { type: 'string' }, scope: { type: 'string' } } : {}), ...(sub === 'finish' ? { evidence: { type: 'string' } } : {}), ...(sub === 'set' ? { reopen: { type: 'string' } } : {}), ...(sub === 'close' ? { 'already-satisfied': { type: 'string' }, by: { type: 'string' } } : {}) } });
         if (sub === 'set') return advise(itemSet(at(), positionals[0], positionals.slice(1), io, values.docs, (values as { reopen?: string }).reopen), positionals[0], values.docs);
         if (positionals.length > 1) throw new BurhanError(`unexpected argument: ${positionals[1]}`);
         if (sub === 'finish') return advise(itemFinish(at(), positionals[0], io, { evidence: (values as { evidence?: string }).evidence, docs: values.docs }), positionals[0], values.docs, false);
         if (sub === 'new') return advise(itemNew(at(), { slug: positionals[0], type: values.type as string | undefined, scope: values.scope as string | undefined, docs: values.docs }, io, seams.unnumberedItems === true ? positionals[0] ?? null : null), positionals[0], values.docs, false);
+        if (sub === 'list') return itemList({ target: at(positionals[0]), docs: values.docs }, io);
+        if (sub === 'close') return itemClose(at(), positionals[0], { alreadySatisfied: (values as { 'already-satisfied'?: string })['already-satisfied'], by: (values as { by?: string }).by, docs: values.docs }, io);
         return itemCheck(at(), positionals[0], io, values.docs);
       }
       case 'guide': {
@@ -269,10 +310,13 @@ export async function runCli(argv: string[], io: Io, setupFilesystem?: SetupFile
       }
       case 'deviation': {
         const [sub, ...args] = rest;
-        if (sub !== 'add' && sub !== 'resolve') throw new BurhanError(`deviation needs a subcommand: add or resolve${sub === undefined ? '' : `, not "${sub}"`}`);
-        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, unit: { type: 'string' }, what: { type: 'string' }, where: { type: 'string' }, output: { type: 'string' }, apply: { type: 'string' }, approved: { type: 'boolean' }, rejected: { type: 'boolean' }, by: { type: 'string' }, decision: { type: 'string' } } });
+        if (sub !== 'add' && sub !== 'resolve' && sub !== 'done') throw new BurhanError(`deviation needs a subcommand: add, resolve or done${sub === undefined ? '' : `, not "${sub}"`}`);
+        const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { docs: { type: 'string' }, unit: { type: 'string' }, what: { type: 'string' }, where: { type: 'string' }, output: { type: 'string' }, apply: { type: 'string' }, approved: { type: 'boolean' }, rejected: { type: 'boolean' }, by: { type: 'string' }, decision: { type: 'string' }, in: { type: 'string' } } });
+        if (values.in !== undefined && sub !== 'done') throw new BurhanError('--in is only for deviation done');
         if (positionals.length > (sub === 'add' ? 1 : 2)) throw new BurhanError(`unexpected argument: ${positionals[sub === 'add' ? 1 : 2]}`);
-        return sub === 'add' ? deviationAdd(at(), positionals[0], values, io) : advise(deviationResolve(at(), positionals[0], positionals[1], values, io), positionals[0], values.docs);
+        if (sub === 'add') return deviationAdd(at(), positionals[0], values, io);
+        if (sub === 'done') return advise(deviationDone(at(), positionals[0], positionals[1], values, io), positionals[0], values.docs);
+        return advise(deviationResolve(at(), positionals[0], positionals[1], values, io), positionals[0], values.docs);
       }
       case 'finding': {
         const [sub, ...args] = rest;

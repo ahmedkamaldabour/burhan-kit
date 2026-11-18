@@ -270,3 +270,26 @@ R268|phases/skills.md|a managed copy in `.claude/skills/<skill>/SKILL.md` (a ski
 R269|phases/enforcement.md|names the burhan skill to invoke before the item's next phase
 R270|phases/enforcement.md|without its skill (burhan-story, burhan-plan, burhan-review, burhan-build)
 R271|WORKFLOW.md|Invoke the burhan skill of each phase before acting
+R272|core|(examples: phases/stage-story.md)
+R273|phases/stage-story.md|keeps the lighter route provisionally and says so in the story
+R274|phases/stage-story.md|A one-line feature is bounded, never patch
+R275|templates/plan.md|holds the codes alone
+R276|templates/plan.md|Knowledge review: decide at close-out
+R277|templates/build-spec.md|in one fenced block
+R278|templates/story.md|none (no PROJECT.md)
+R279|templates/plan.md|none yet
+R280|phases/close-out.md|ticks the plan's Close-out box
+R281|phases/stage-plan.md|`<command> --help`
+R288|phases/stage-plan.md|`burhan deviation done <slug> <n> --in unit:<N>` writes the sub-unit that carried it out
+R289|phases/stage-plan.md|whether the change was really carried out is judged by the sub-unit reviewer and by the owner
+R290|phases/stage-build.md|the trace says where, not whether
+R291|templates/plan.md|An approved row also says in `Carried out in` which sub-unit carried it out
+R292|phases/close-out.md|is `Legacy`: it was finished before routes and QC were recorded
+R293|phases/close-out.md|`Legacy` is derived only; no command writes it, and it is never an outcome of `state close`.
+R294|phases/close-out.md|it folds the `Legacy` items under one block headed `N old items`
+R282|phases/stage-finish.md|`burhan verify` refuses an item before build
+R283|phases/close-out.md|A block never keeps a sentence about a step that is done.
+R284|phases/close-out.md|`burhan item close <slug> --already-satisfied
+R285|phases/files.md|`<slug>-already-satisfied.md`
+R286|phases/stage-story.md|## A story the code already satisfies
+R287|phases/stage-plan.md|`item close <slug> --already-satisfied

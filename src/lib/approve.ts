@@ -12,6 +12,7 @@ import { assertInside, oneLine, today } from './item-io.js';
 import { latestQcFile } from './items.js';
 import { readProjectConfig } from './config.js';
 import { docsLocation } from './status.js';
+import { retireIntakeFor } from './state-set.js';
 
 // A name that starts like a model or a tool is not a person (a known limit: it cannot list every spelling, and it refuses a person called "Claude Monet").
 const AGENT_NAME = /^(claude|codex|haiku|sonnet|opus|fable|gpt|chatgpt|gemini|copilot|grok|anthropic|openai|llama|deepseek|cursor|agent|ai|assistant|bot|burhan|model|me|human)(?!\p{L})/iu;
@@ -61,6 +62,8 @@ export function approve(target: string, what: string | undefined, slug: string |
     putFile(path, updated);
     if (plan !== null) { assertInside(project, planFile); putFile(planFile, tickMatching(plan, /^Story approved/i)); }
     io.stdout(`approve: story approved by ${by}; ${NOTICE}\n`);
+    const moved = retireIntakeFor(project, s);
+    if (moved !== null) io.stdout(`  ${moved}\n`);
     return 0;
   }
 

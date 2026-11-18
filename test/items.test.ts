@@ -38,7 +38,7 @@ test('state derivation follows the status vocabulary in phases/close-out.md', ()
   assert.equal(state({ 'foo-implementation-plan.md': plan('In progress') }), 'In progress');
   assert.equal(state({ 'foo-story.md': story('Approved'), 'foo-implementation-plan.md': plan('Completed') }), 'Awaiting QC', 'Q route, no QC yet');
   assert.equal(state({ 'foo-story.md': story('Approved', 'refactor / bounded'), 'foo-implementation-plan.md': plan('Completed') }), 'Done (no QC)', 'route without Q');
-  assert.equal(state({ 'foo-implementation-plan.md': plan('Completed') }), 'Awaiting QC', 'unknown route never claims no-QC');
+  assert.equal(state({ 'foo-implementation-plan.md': plan('Completed') }), 'Legacy', 'no route and no QC file: finished before routes were recorded');
   assert.equal(state({ 'foo-story.md': story('Approved'), 'foo-implementation-plan.md': plan('Completed'), 'reviews/foo-qc.md': qc('PASS') }), 'Awaiting QC', 'proposed PASS, not accepted');
   assert.equal(state({ 'foo-story.md': story('Approved'), 'foo-implementation-plan.md': plan('Completed'), 'reviews/foo-qc.md': qc('**PASS**', 'Sam · 2026-10-11') }), 'QC PASS');
   assert.equal(state({ 'foo-story.md': story('Approved'), 'foo-implementation-plan.md': plan('Completed'), 'reviews/foo-qc.md': qc('pass', 'Sam · 2026-10-11') }), 'QC PASS', 'verdict case: index = stats');
@@ -68,7 +68,7 @@ test('type/scope, parent, depends on come from the story', () => {
 
 test('listItems: directories only, sorted, dot-dirs skipped', () => {
   const d = tmpDir('burhan-docs-');
-  for (const n of ['b', 'a', '.hidden']) mkdirSync(join(d, n));
+  for (const n of ['b', 'a', '.hidden']) { mkdirSync(join(d, n)); writeFileSync(join(d, n, `${n}-story.md`), 'x'); }
   writeFileSync(join(d, 'README.md'), 'x');
   assert.deepEqual(listItems(d, d).map((i) => i.slug), ['a', 'b']);
 });

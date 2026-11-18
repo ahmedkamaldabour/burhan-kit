@@ -1,7 +1,7 @@
 /** The written contract for the files of a work item: text in, named faults out. Pure — no file access — so the CLI (`burhan item check`,
  *  and the commands that write these files) and the hooks ask the same question and get the same answer. It imports only its sibling
  *  `item-model.mts`: hook files are copied into projects (src/hooks/core/lib.mts). */
-import { deviations, fenced, routeNeeds, units as planUnits } from './item-model.mjs';
+import { deviations, fenced, routeNeeds, traceProblem, units as planUnits, untracedDeviations } from './item-model.mjs';
 
 /** Written into a file by `burhan item new`; a file without it is legacy: checked as advice, never failed (AC-08). */
 export const CONTRACT_VERSION = 1;
@@ -185,6 +185,12 @@ function checkPlan(text: string): Fault[] {
     if (!['open', 'approved', 'rejected', 'applied'].includes(d.status)) out.push({ code: 'deviation-status', message: `Deviations row ${d.n}: status "${d.status}" is not open, approved, rejected or applied` });
     else if (d.unit < 0 || d.what === '' || d.where === '' || d.output === '' || (d.status !== 'open' && d.decision === '')) out.push({ code: 'deviation-incomplete', message: `Deviations row ${d.n} has an empty field (sub-unit, what, where, output${d.status === 'open' ? '' : ', decision'})` });
     if (d.status === 'open') out.push({ code: 'deviation-open', message: `Deviations row ${d.n} (sub-unit ${d.unit}) is open: STOP and ask the owner — ${d.what}` });
+  }
+
+  // The trace of an approved row is asked for when the work is over: every sub-unit Reviewed (and there is one), or the plan Completed. Before that it would nag between the approval and the carrying out.
+  const built = planUnits(text);
+  if (overall === 'Completed' || (built.length > 0 && built.every((u) => u.rung === 4))) {
+    for (const d of untracedDeviations(text)) out.push({ code: 'deviation-untraced', message: traceProblem(d, '<slug>') });
   }
 
   const gates = section(text, 'Gate checklist');

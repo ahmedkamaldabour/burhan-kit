@@ -41,6 +41,6 @@ export function changed(o: { target: string; item?: string; docs?: string; json:
   if (!ok(diff) || !ok(untracked)) return recheck('git could not list the changes');
   const files = [...new Set([...diff.stdout.split('\n'), ...untracked.stdout.split('\n')])]
     .filter((f) => f && !(docsRel && (f === docsRel || f.startsWith(docsRel + '/')))).sort();
-  if (files.length === 0) return say(`${id}: no change since ${sha} — the story's code facts still hold.`, { item: id, sha, files });
+  if (files.length === 0) return say(`${id}: no change since ${sha} — no file changed, but this compares files only: it cannot tell whether the story's facts were right when they were written.`, { item: id, sha, files });
   return say(`${id}: changed since ${sha} (${files.length}) — re-check only the facts about these:\n${files.map((f) => `  ${f}`).join('\n')}`, { item: id, sha, files });
 }

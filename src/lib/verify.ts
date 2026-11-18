@@ -6,8 +6,10 @@ import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { codeState, type CodeState } from './fingerprint.js';
 import { realTarget } from './fs-safe.js';
-import { itemFolder, resolveId } from './item-files.js';
+import { itemFolder, overallStatus, planPath, planRoute, readOr, resolveId } from './item-files.js';
 import { assertInside, isSlug } from './item-io.js';
+import { storyIsApproved } from '../hooks/core/item-contract.mjs';
+import { routeAllowed } from '../hooks/core/item-model.mjs';
 import { docsLocation } from './status.js';
 import { launchFor, runLaunch } from './verify-run.js';
 
@@ -119,6 +121,22 @@ export function itemRecordsQuiet(target: string, slug: string, docs?: string): I
 /** True unless the edit provably came no later than the record: a time that cannot be read counts as later, the safe side (a stated record then does not count). */
 export const editAfter = (editAt: string, recordAt: string): boolean => !(Date.parse(editAt) <= Date.parse(recordAt));
 
+/** The stage an item is at when `burhan verify` must refuse it because nothing is built yet, or null (verify goes on). Only a route that has a plan is judged, and only on what its files say
+ *  exactly: a story with no plan yet (`story draft`, `story approved, no plan`), a plan that is Draft, a plan that is Approved. A plan In progress (the first
+ *  `burhan item set <slug> unit N in-progress` moves an Approved plan there), Completed, Paused or Superseded, a route with no plan (a patch, a read-only route), a route that
+ *  cannot be read exactly and a plan status that is not a known word are left alone: a refusal needs positive evidence. */
+export function beforeBuild(dir: string, slug: string): string | null {
+  const story = readOr(join(dir, `${slug}-story.md`));
+  const plan = readOr(planPath(dir, slug));
+  const route = planRoute(story ?? '') || planRoute(plan ?? '');
+  if (route === '' || !routeAllowed(route)) return null;
+  const [type = '', scope = ''] = route.split(' / ');
+  if (scope === 'patch' || type === 'investigation' || (type === 'bug' && scope === 'spike')) return null;
+  if (plan === null) return story === null ? null : storyIsApproved(story) ? 'story approved, no plan' : 'story draft';
+  const status = overallStatus(plan);
+  return status === 'Draft' ? 'plan draft' : status === 'Approved' ? 'plan approved, nothing started' : null;
+}
+
 /** `burhan verify <slug> -- <command> [args]`: runs the command in the project without a shell, shows its output and how it ended, and appends one record to the item's
  *  `<slug>-verify.jsonl`: the command, exit code, time and the code state before the run. Exit 0 on a pass, 1 on a failure or a command that could not start, 2 on a
  *  refusal (nothing is recorded then). It runs with the user's rights: it is not a sandbox. */
@@ -126,6 +144,11 @@ export function verify(target: string, slug: string | undefined, argv: string[],
   const project = realTarget(target);
   const { slug: s, dir } = itemFolder(docsLocation(target, o.docs).abs, slug, 'verify');
   if (argv.length === 0 || argv[0] === '') throw new BurhanError(`verify needs a command after --: burhan verify ${s} -- <command> [args]`);
+  const stage = beforeBuild(dir, s);
+  if (stage !== null) {
+    const next = stage.startsWith('story') ? 'write and approve the plan first' : `start the first sub-unit with burhan item set ${s} unit 1 in-progress`;
+    throw new BurhanError(`item "${s}" is before build (${stage}): nothing is built yet, so a proof now proves nothing; ${next}, then run burhan verify again. Nothing was recorded`);
+  }
   const platform = o.platform ?? process.platform;
   const env = o.env ?? process.env;
   const launch = launchFor(argv, { platform, env, cwd: project });

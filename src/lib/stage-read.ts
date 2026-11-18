@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { itemSlugs, nowSection } from '../hooks/core/lib.mjs';
 import { routeOf, stageOf, type Stage } from '../hooks/core/item-stage.mjs';
+import { satisfiedClose } from '../hooks/core/item-model.mjs';
 import { readProjectConfig } from './config.js';
 import { BurhanError } from './errors.js';
 import { realTarget } from './fs-safe.js';
@@ -36,6 +37,6 @@ export function readItemStage(target: string, slug: string | undefined, docs: st
   const route = routeOf(story, plan, findings);
   const read = plan !== null ? readItemFindings(dir, s) : null;
   const gates = read === null || plan === null ? null : { review: gateOf(read, 'review', units(plan).filter((u) => u.rung === 4).map((u) => u.n)), qc: gateOf(read, 'qc') };
-  const st = stageOf({ slug: s, route, story, plan, findings, qc: readOr(latestQcFile(dir, s)), spec: readOr(join(dir, `${s}-build-spec.md`)), ...(gates === null ? {} : { undecided: { review: gateOpen(gates.review), qc: gateOpen(gates.qc) } }) });
+  const st = stageOf({ slug: s, route, story, plan, findings, qc: readOr(latestQcFile(dir, s)), spec: readOr(join(dir, `${s}-build-spec.md`)), satisfied: satisfiedClose(readOr(join(dir, `${s}-already-satisfied.md`))) !== null, ...(gates === null ? {} : { undecided: { review: gateOpen(gates.review), qc: gateOpen(gates.qc) } }) });
   return { slug: s, route, st, story, plan, findings: gates };
 }

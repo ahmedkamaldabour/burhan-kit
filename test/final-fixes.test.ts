@@ -68,7 +68,7 @@ test('item check names placeholders in the story, plan and spec once they are Ap
 test('a filled item passes: the placeholder check is exact, not a ban on angle brackets in prose', async () => {
   const dir = await projectWithItem();
   write(planFile(dir), read(planFile(dir)).replace('## 8. Limitations\n', '## 8. Limitations\nThe `Array<string>` type and <html> tags are plain text here.\n'));
-  assert.match(read(planFile(dir)), /^Knowledge review: none </m); // the knowledge review comes after QC: an unchanged line is no placeholder at plan time
+  assert.match(read(planFile(dir)), /^Knowledge review: decide at close-out </m); // the knowledge review comes after QC: an unchanged line is no placeholder at plan time
   assert.equal((await cli(dir, ['approve', 'story', 'foo', '--by', 'dev-dabour'])).code, 0);
   const r = await cli(dir, ['approve', 'plan', 'foo', '--by', 'dev-dabour']);
   assert.equal(r.code, 0, r.err);

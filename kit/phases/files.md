@@ -12,6 +12,7 @@ In these paths `<slug>` is the item's id, its folder name: `NNN-slug` for an ite
 | `<slug>-implementation-plan.md` (decisions, coverage, rulings, executor rules, deviations) | `templates/plan.md` | ③ |
 | `<slug>-build-spec.md` (the code per sub-unit; approved with the plan) | `templates/build-spec.md` | ③ |
 | `<slug>-findings.md` (read-only routes) | `templates/findings.md` | instead of ②–⑦ |
+| `<slug>-already-satisfied.md` (the owner's written reason for closing the item as already satisfied; made by `burhan item close`) | — | instead of ③ |
 | `reviews/<slug>-review.md` (one per item, a section per sub-unit; older items may have `reviews/<slug>-<sub-unit>.md`) | `templates/review.md` | ⑤ |
 | `reviews/evidence/<slug>-su<N>.md` (long probe output of a review; not read by default) | — | ⑤ |
 | `reviews/<slug>-verification.md` | `templates/verification.md` | ⑥ |
@@ -50,9 +51,10 @@ whole **Now** when there is none).
 | `Mode` | `step` or `auto` | state file | session start (anything else = `step`) |
 | `Read-only` | `yes` or `no` — on an `investigation` or `bug / spike` route anything but `no` counts as `yes` | state file | read-only check |
 | `Accepted by` | `<name> · YYYY-MM-DD` — written only after the human accepts | QC | stats, docs index |
-| `Baseline` | PROJECT.md: `Draft`, `Approved — <name> · YYYY-MM-DD` or `Waived — <name> · YYYY-MM-DD` (the name has a letter and no `<` or `·`); story: the same Approved or Waived form, or `n/a (greenfield)`. Older projects: `Memory status: Approved YYYY-MM-DD` counts as Approved (no name), any other `Memory status:` value counts as `Draft` | `.burhan/PROJECT.md`, story | memory check, reminders, turn-end warning, doctor |
+| `Baseline` | PROJECT.md: `Draft`, `Approved — <name> · YYYY-MM-DD` or `Waived — <name> · YYYY-MM-DD` (the name has a letter and no `<` or `·`); story: the same Approved or Waived form, `n/a (greenfield)` or `none (no PROJECT.md)`. Older projects: `Memory status: Approved YYYY-MM-DD` counts as Approved (no name), any other `Memory status:` value counts as `Draft` | `.burhan/PROJECT.md`, story | memory check, reminders, turn-end warning, doctor |
 | `Reopened after PASS` | `YYYY-MM-DD — why`, or `—` | plan | stats (escaped defects) |
 | `Performed by` | `<agent> · <model> · <context>` — context: `fresh subagent`, `other agent`, `human` or `same session` | review, QC, verification | QC provenance check, stats |
+| `Closed by` | `<name> · YYYY-MM-DD`, with a `**Reason:**` line that has words | `<slug>-already-satisfied.md` | the index state `Already satisfied`, `guide` |
 
 ## Files stay readable
 

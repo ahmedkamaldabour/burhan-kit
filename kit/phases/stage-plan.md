@@ -35,6 +35,10 @@ Findings: `burhan finding add <slug> --in review:<N>|qc[:<round>] --severity <S>
 
 Deviations: `burhan deviation add <slug> --unit N --what … --where … --output …` records an open row (class B: the owner decides it with `deviation resolve`); with `--apply "<why no decision is needed>"` it records an `applied` row at once (class A: the agent fixes the problem and reports it; a reason of at least three words, no owner's name; `guide` and `item finish` list the row). The two classes are in `.burhan/phases/stage-build.md` · A problem found while building.
 
+Traces: once a sub-unit has carried out an approved row, `burhan deviation done <slug> <n> --in unit:<N>` writes the sub-unit that carried it out in the row's `Carried out in` cell; only an approved row takes it, it carries no owner's name, and it is not overwritten. `burhan item finish` refuses a plan that has an approved row with no trace, and `burhan item check` reports one (`deviation-untraced`) once every sub-unit is Reviewed. The check reads only the form of the trace, `unit:<N>` with N a sub-unit of the plan: whether the change was really carried out is judged by the sub-unit reviewer and by the owner.
+
+To see how a command is used, run `<command> --help`, or `<command> <sub> --help` for one subcommand: it only prints. To see every item with its state, run `item list`: one line per item (id, route, state), read-only. The owner closes an item the code already satisfies with `item close <slug> --already-satisfied "<reason>" --by <owner's name>`: the owner decides, so never your own name.
+
 ## Sub-units
 
 Plan the fewest sub-units that leave each one inside one scope: when two pieces cause no problem together they are one sub-unit, and a sub-unit never covers more than one scope. A piece is its own sub-unit only when at least one of the reasons below holds, and the plan says which in the sub-unit's line `- **Why separate:** A1`, `A2`, `A3` or a list such as `A1, A3`.

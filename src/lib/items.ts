@@ -1,6 +1,6 @@
-import { acceptedForm } from '../hooks/core/item-model.mjs';
+import { acceptedForm, satisfiedClose } from '../hooks/core/item-model.mjs';
 import { displayId } from '../hooks/core/item-id.mjs';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -11,7 +11,7 @@ export const INDEX_HEADER = [
   `${GENERATED_MARK} — do not edit; run \`burhan status --write\` to refresh -->`,
   '# Work items — index',
   "One line per item, generated from the item files (phases/close-out.md). Detail lives in the item's own files.",
-  'States: Draft · Spec ready · Plan ready · In progress · Awaiting QC · QC PASS · Done (no QC) · Paused · Superseded',
+  'States: Draft · Spec ready · Plan ready · In progress · Awaiting QC · QC PASS · Done (no QC) · Paused · Superseded · Already satisfied · Legacy',
   '',
   '| Item | Route | Parent | Depends on | State | Last activity |',
   '|------|-------|--------|------------|-------|---------------|',
@@ -58,11 +58,14 @@ export function routeHasQ(typeScope: string): boolean {
 }
 export const read = (p: string): string => { try { return readFileSync(p, 'utf8'); } catch { return ''; } };
 
-function deriveState(story: string | null, plan: string | null, findings: string | null, qc: 'PASS' | 'FAIL' | null, accepted: boolean, hasQ: boolean): string {
+function deriveState(story: string | null, plan: string | null, findings: string | null, qc: 'PASS' | 'FAIL' | null, accepted: boolean, hasQ: boolean, legacy: boolean, satisfied: boolean): string {
+  // The owner closed the item with a written reason (item close): the code already does what the story asks. A plan In progress or Completed shows its own state: the build wins.
+  if (satisfied && (plan === null || plan === 'Draft' || plan === 'Approved')) return 'Already satisfied';
   switch (plan) {
     case 'Completed':
       if (qc === 'FAIL') return 'In progress';
       if (qc === 'PASS' && accepted) return 'QC PASS';
+      if (legacy) return 'Legacy';
       return hasQ ? 'Awaiting QC' : 'Done (no QC)';
     case 'In progress': return 'In progress';
     case 'Approved': return 'Plan ready';
@@ -134,23 +137,31 @@ export function readItem(dir: string, slug: string, projectDir: string): Item {
   const story = read(join(dir, `${slug}-story.md`));
   const plan = read(join(dir, `${slug}-implementation-plan.md`));
   const findings = read(join(dir, `${slug}-findings.md`));
-  const qc = read(latestQcFile(dir, slug));
+  const qcFile = latestQcFile(dir, slug);
+  const qc = read(qcFile);
   const typeScope = itemRoute(story, plan, findings) ?? '—';
+  const satisfied = satisfiedClose(read(join(dir, `${slug}-already-satisfied.md`))) !== null;
   return {
     slug,
     typeScope,
     parent: filled(field(story, 'Parent')) ?? '—',
     dependsOn: filled(field(story, 'Depends on')) ?? '—',
     state: deriveState(statusWord(field(story, 'Status')), statusWord(field(plan, 'Overall status')), statusWord(field(findings, 'Status')),
-      verdict(field(qc, 'Verdict')), accepted(fieldLine(qc, 'Accepted by')), routeHasQ(typeScope)),
+      verdict(field(qc, 'Verdict')), accepted(fieldLine(qc, 'Accepted by')), routeHasQ(typeScope), typeScope === '—' && !existsSync(qcFile), satisfied),
     lastActivity: lastActivity(projectDir, dir),
   };
 }
 
-/** Work-item folders: directories only, sorted, dot-dirs skipped. */
+const isFile = (p: string): boolean => { try { return statSync(p).isFile(); } catch { return false; } };
+
+/** The files that make a folder a work item: `<folder>-story.md`, `<folder>-implementation-plan.md` or `<folder>-findings.md`. */
+const ITEM_FILES = ['story', 'implementation-plan', 'findings'] as const;
+const holdsItemFile = (docsDir: string, name: string): boolean => ITEM_FILES.some((kind) => isFile(join(docsDir, name, `${name}-${kind}.md`)));
+
+/** Work items: directories that hold an item file, sorted, dot-dirs skipped. Lookup by slug or number (`folderNames`, item-files.ts) still sees every folder. */
 export function itemSlugs(docsDir: string): string[] {
   return readdirSync(docsDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .filter((d) => d.isDirectory() && !d.name.startsWith('.') && holdsItemFile(docsDir, d.name))
     .map((d) => d.name)
     .sort();
 }
@@ -159,8 +170,13 @@ export function listItems(docsDir: string, projectDir: string): Item[] {
   return itemSlugs(docsDir).map((slug) => readItem(join(docsDir, slug), slug, projectDir));
 }
 
+const TABLE_HEAD = INDEX_HEADER.slice(-2);
+
+/** The index: Legacy items (a finished plan from before routes and QC were recorded) are folded under one counted block after the table; every other item is listed. */
 export function renderIndex(items: Item[]): string {
   const cell = (s: string) => s.replace(/\|/g, '\\|');
-  const rows = items.map((i) => `| [${cell(displayId(i.slug))}](${encodeURI(i.slug)}/) | ${cell(i.typeScope)} | ${cell(i.parent)} | ${cell(i.dependsOn)} | ${i.state} | ${i.lastActivity} |`);
-  return [...INDEX_HEADER, ...rows].join('\n') + '\n';
+  const row = (i: Item): string => `| [${cell(displayId(i.slug))}](${encodeURI(i.slug)}/) | ${cell(i.typeScope)} | ${cell(i.parent)} | ${cell(i.dependsOn)} | ${i.state} | ${i.lastActivity} |`;
+  const old = items.filter((i) => i.state === 'Legacy');
+  const fold = old.length === 0 ? [] : ['', '<details>', `<summary>${old.length} old item${old.length === 1 ? '' : 's'}</summary>`, '', ...TABLE_HEAD, ...old.map(row), '', '</details>'];
+  return [...INDEX_HEADER, ...items.filter((i) => i.state !== 'Legacy').map(row), ...fold].join('\n') + '\n';
 }

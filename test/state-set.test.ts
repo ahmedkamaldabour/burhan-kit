@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cli, project, STATE, write } from './item-fixture.js';
+import { cli, project, read, STATE, write } from './item-fixture.js';
 
 const DOCS = '.burhan/work';
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'cli.js');
@@ -132,4 +132,155 @@ test('eight processes setting eight blocks at once change only their own lines',
   for (const s of slugs) expected = expected.replace(`### ${s}\n- **Next action:** old\n`, `### ${s}\n- **Next action:** new-${s}\n`);
   assert.equal(state(dir), expected);
   assert.deepEqual(readdirSync(join(dir, '.burhan', 'local')), ['PROGRESS.md']);
+});
+
+// --- `state close` ticks the plan's Close-out box (item 005) ---
+const EVIDENCE = 'closed line in the state file (burhan state close)';
+const BOX = '- [ ] Close-out in the state file';
+const alphaPlan = (dir: string): string => join(dir, DOCS, 'alpha', 'alpha-implementation-plan.md');
+/** A plan with a gate checklist. A second Close-out line sits after it, outside the checklist: it must never change. */
+const withChecklist = (route: string, status: string, box = BOX, eol = '\n'): string =>
+  ['# p', `- **Route:** ${route}`, `- **Overall status:** ${status}`, '- **Contract:** 1', '', '## Gate checklist', '- [x] Plan approved', box, '', '## 1. Decisions', BOX, ''].join(eol);
+const CLOSE = ['state', 'close', 'alpha', '--outcome', 'Done (no QC)', '--commit', '5ae9a09', '--folder', '.burhan/work/alpha'];
+const CLOSED_LINE = '- alpha · refactor / bounded · Done (no QC) · 5ae9a09 · .burhan/work/alpha';
+const ticked = (before: string): string => before.replace(BOX, `- [x] Close-out in the state file — ${EVIDENCE}`); // the first (checklist) box only
+const canLock = process.platform !== 'win32' && process.getuid?.() !== 0; // a read-only file stops neither root nor Windows
+
+test('close ticks the plan\'s Close-out box for Done (no QC)', async () => { // T1
+  const dir = setup();
+  const before = withChecklist('refactor / bounded', 'Completed');
+  write(alphaPlan(dir), before);
+  const r = await cli(dir, CLOSE);
+  assert.equal(r.code, 0, r.err);
+  assert.ok(state(dir).split('\n').includes(CLOSED_LINE));
+  assert.match(r.out, /\n {2}plan: the Close-out box is ticked\n$/);
+  assert.equal(read(alphaPlan(dir)), ticked(before)); // one line differs: the checklist box; the Close-out line after the checklist is untouched
+});
+
+test('close ticks the plan\'s Close-out box for QC PASS', async () => { // T2
+  const dir = setup();
+  const before = withChecklist('feature / architectural', 'Completed');
+  write(alphaPlan(dir), before);
+  write(join(dir, DOCS, 'alpha', 'reviews', 'alpha-qc.md'), '# q\n- **Verdict:** PASS\n- **Accepted by:** dev-dabour · 2026-11-11\n');
+  const r = await cli(dir, ['state', 'close', 'alpha', '--outcome', 'QC PASS', '--commit', 'uncommitted', '--folder', '.burhan/work/alpha']);
+  assert.equal(r.code, 0, r.err);
+  assert.ok(state(dir).split('\n').includes('- alpha · feature / architectural · QC PASS · uncommitted · .burhan/work/alpha'));
+  assert.match(r.out, /plan: the Close-out box is ticked/);
+  assert.equal(read(alphaPlan(dir)), ticked(before));
+});
+
+test('close for Paused and Superseded leaves the box open and says so', async () => { // T3
+  for (const outcome of ['Paused', 'Superseded']) {
+    const dir = setup();
+    const before = withChecklist('refactor / bounded', outcome);
+    write(alphaPlan(dir), before);
+    const r = await cli(dir, ['state', 'close', 'alpha', '--outcome', outcome, '--commit', 'uncommitted', '--folder', '.burhan/work/alpha']);
+    assert.equal(r.code, 0, `${outcome}: ${r.err}`);
+    assert.ok(state(dir).split('\n').includes(`- alpha · refactor / bounded · ${outcome} · uncommitted · .burhan/work/alpha`), outcome);
+    assert.match(r.out, new RegExp(`plan: the Close-out box stays open: ${outcome} does not tick it`), outcome);
+    assert.equal(read(alphaPlan(dir)), before, outcome);
+  }
+});
+
+test('a refused close leaves the plan and the state file as they were', async () => { // T4
+  const dir = setup();
+  const before = withChecklist('refactor / bounded', 'Completed');
+  write(alphaPlan(dir), before);
+  const gamma = join(dir, DOCS, 'gamma', 'gamma-implementation-plan.md'); // a folder and a plan, but no block under Now
+  write(gamma, before);
+  const base = ['--commit', '5ae9a09', '--folder', '.burhan/work/alpha'];
+  const cases: Array<[string[], RegExp]> = [
+    [['state', 'close', 'alpha', '--outcome', 'Nope', ...base], /not one of/],
+    [['state', 'close', 'alpha', '--outcome', 'QC PASS', ...base], /not "QC PASS"/],
+    [['state', 'close', 'alpha', '--outcome', 'Done (no QC)', '--commit', 'zzz', '--folder', 'f'], /would not be a closed line/],
+    [['state', 'close', 'alpha', '--outcome', 'Done (no QC)', '--commit', '5ae9a09', '--folder', 'a\nb'], /control character/],
+    [['state', 'close', 'alpha', '--outcome', 'Done (no QC)'], /needs --outcome, --commit and --folder/],
+    [['state', 'close', 'beta', '--outcome', 'Done (no QC)', ...base], /has no folder/],
+    [['state', 'close', 'gamma', '--outcome', 'Done (no QC)', ...base], /no "### gamma" block/],
+  ];
+  for (const [args, message] of cases) {
+    const r = await cli(dir, args);
+    assert.equal(r.code, 2, args.join(' '));
+    assert.match(r.err, message, args.join(' '));
+    assert.equal(state(dir), FILE, args.join(' '));
+    assert.equal(read(alphaPlan(dir)), before, args.join(' '));
+    assert.equal(read(gamma), before, args.join(' '));
+  }
+  if (canLock) { // a state file that cannot be written: refused, and the plan is not reached
+    chmodSync(join(dir, STATE), 0o444);
+    try {
+      const r = await cli(dir, CLOSE);
+      assert.equal(r.code, 2);
+      assert.match(r.err, /not writable/);
+      assert.equal(state(dir), FILE);
+      assert.equal(read(alphaPlan(dir)), before);
+    } finally { chmodSync(join(dir, STATE), 0o644); }
+  }
+});
+
+test('close with no checklist, no Close-out box, two boxes or no plan file still closes and says why', async () => { // T5
+  const plain = planOf('refactor / bounded', 'Completed');
+  const cases: Array<[string, Record<string, string>, RegExp]> = [
+    ['no checklist', { 'alpha-implementation-plan.md': plain }, /plan: the Close-out box was not ticked: the plan has no "## Gate checklist" section\n$/],
+    ['no box', { 'alpha-implementation-plan.md': `${plain}\n## Gate checklist\n- [x] Plan approved\n` }, /plan: the Close-out box was not ticked: the checklist has no Close-out box\n$/],
+    ['two boxes', { 'alpha-implementation-plan.md': `${plain}\n## Gate checklist\n${BOX}\n${BOX}\n` }, /plan: the Close-out box was not ticked: the checklist has more than one Close-out box\n$/],
+    ['a box inside a fence only', { 'alpha-implementation-plan.md': `${plain}\n## Gate checklist\n- [x] Plan approved\n\`\`\`\n${BOX}\n\`\`\`\n` }, /plan: the Close-out box was not ticked: the checklist has no Close-out box\n$/],
+    ['no plan file', { 'alpha-findings.md': '# f\n- **Route:** investigation / bounded\n- **Status:** Concluded\n' }, /plan: the Close-out box was not ticked: alpha has no implementation plan file\n$/],
+  ];
+  for (const [label, files, message] of cases) {
+    const dir = setup();
+    for (const [name, text] of Object.entries(files)) write(join(dir, DOCS, 'alpha', name), text);
+    const r = await cli(dir, CLOSE);
+    assert.equal(r.code, 0, `${label}: ${r.err}`);
+    assert.match(state(dir), /^- alpha · .* · Done \(no QC\) · 5ae9a09 · \.burhan\/work\/alpha$/m, label);
+    assert.match(r.out, message, label);
+    for (const [name, text] of Object.entries(files)) assert.equal(read(join(dir, DOCS, 'alpha', name)), text, `${label}: ${name} changed`);
+  }
+});
+
+test('close leaves a box that is already ticked as it is', async () => { // T6
+  const dir = setup();
+  const before = withChecklist('refactor / bounded', 'Completed', '- [x] Close-out in the state file — by hand');
+  write(alphaPlan(dir), before);
+  const r = await cli(dir, CLOSE);
+  assert.equal(r.code, 0, r.err);
+  assert.ok(state(dir).split('\n').includes(CLOSED_LINE));
+  assert.match(r.out, /plan: the Close-out box was already ticked: left as it is\n$/);
+  assert.equal(read(alphaPlan(dir)), before);
+});
+
+test('a second close is refused and changes neither file', async () => { // T7
+  const dir = setup();
+  write(alphaPlan(dir), withChecklist('refactor / bounded', 'Completed'));
+  assert.equal((await cli(dir, CLOSE)).code, 0);
+  const stateAfter = state(dir);
+  const planAfter = read(alphaPlan(dir));
+  const again = await cli(dir, CLOSE);
+  assert.equal(again.code, 2);
+  assert.match(again.err, /no "### alpha" block/);
+  assert.equal(state(dir), stateAfter);
+  assert.equal(read(alphaPlan(dir)), planAfter);
+});
+
+test('close whose plan write fails keeps the closed line and names the gate tick command', { skip: canLock ? false : 'a read-only file stops neither root nor Windows' }, async () => { // T8
+  const dir = setup();
+  const before = withChecklist('refactor / bounded', 'Completed');
+  write(alphaPlan(dir), before);
+  chmodSync(alphaPlan(dir), 0o444);
+  let r: { code: number; out: string; err: string };
+  try { r = await cli(dir, CLOSE); } finally { chmodSync(alphaPlan(dir), 0o644); }
+  assert.equal(r.code, 0, r.err);
+  assert.ok(state(dir).split('\n').includes(CLOSED_LINE)); // the close stands
+  assert.match(r.out, /plan: the Close-out box was not ticked: .*EACCES.*; run: burhan gate tick alpha "Close-out" --evidence "<text>"\n$/);
+  assert.equal(read(alphaPlan(dir)), before);
+});
+
+test('close keeps the line endings of a CRLF plan', async () => { // T9
+  const dir = setup();
+  const before = withChecklist('refactor / bounded', 'Completed', BOX, '\r\n');
+  write(alphaPlan(dir), before);
+  const r = await cli(dir, CLOSE);
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /plan: the Close-out box is ticked/);
+  assert.equal(read(alphaPlan(dir)), before.replace(BOX, `- [x] Close-out in the state file — ${EVIDENCE}`)); // the \r of that line stays
 });

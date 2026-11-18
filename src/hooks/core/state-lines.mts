@@ -1,10 +1,10 @@
 /** The one shape of a closed item's line in the state file (phases/close-out.md):
  *  `- <slug> · <type> / <scope> · <outcome> · <commit id or "uncommitted"> · <folder>`. One split, no backtracking: a long line costs its length. */
-export const OUTCOMES = Object.freeze(['QC PASS', 'Done (no QC)', 'Paused', 'Superseded'] as const);
+export const OUTCOMES = Object.freeze(['QC PASS', 'Done (no QC)', 'Paused', 'Superseded', 'Already satisfied'] as const);
 export type Outcome = (typeof OUTCOMES)[number];
 export interface ClosedLine { slug: string; route: string; outcome: Outcome; commit: string; folder: string }
 
-/** True when `s` is one of the four index states a closed line may carry. */
+/** True when `s` is one of the five index states a closed line may carry. */
 export const isOutcome = (s: string): s is Outcome => (OUTCOMES as readonly string[]).includes(s);
 
 const SLUG = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;

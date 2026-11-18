@@ -17,7 +17,7 @@ t_sha()   { { sha256sum 2>/dev/null || shasum -a 256; } | cut -d' ' -f1; }   # s
 t_sedi()  { local f="${!#}" t; t="$(mktemp)"; sed "${@:1:$#-1}" "$f" > "$t" && cat "$t" > "$f"; rm -f "$t"; }  # sed -i, keeps the file's mode
 t_mode()  { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }            # octal permission bits
 t_timeout() { if command -v timeout >/dev/null; then timeout "$@"; else gtimeout "$@"; fi; }  # GNU timeout or Homebrew's gtimeout
-t_age()   { local d="$1" ts; shift; ts="$(date -d "$d days ago" +%Y%m%d%H%M 2>/dev/null || date -v-"$d"d +%Y%m%d%H%M)"; touch -t "$ts" "$@"; }  # set mtime N days back
+t_age()   { local d="$1" ts; shift; ts="$(date -u -d "$d days ago" +%Y%m%d%H%M 2>/dev/null || date -u -v-"$d"d +%Y%m%d%H%M)"; TZ=UTC touch -t "$ts" "$@"; }  # set mtime N days back (a UTC stamp: no local hour can be ambiguous)
 
 # Repository root, for tests that need to read the kit itself.
 T_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

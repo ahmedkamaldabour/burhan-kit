@@ -310,4 +310,27 @@ check "configuration: burhan does not run npm" "$cfgdoc" has 'burhan does not ru
 check "configuration: setup --set lists full=" "$cfgdoc" has '[evidence=<re>] [full=<re>]'
 check "configuration: setup --set full= saves the whole-suite pattern" "$cfgdoc" has "setup --set full='^<command>\$'"
 
+echo "close-out-gate-tick: state close ticks the plan's Close-out box"
+check "features: state close ticks the Close-out box of the task's plan" "$(cat docs/features.md)" has 'then ticks the Close-out box of the task'
+
+echo "cli-agent-guesses: --help for every command, item list"
+check "configuration: every command answers --help" "$cfgdoc" has 'Every command answers `--help`'
+check "configuration: the item list row" "$cfgdoc" has '| `burhan item list [dir] [--docs <path>]` |'
+check "features: item list and --help are described" "$(cat docs/features.md)" has '`item list` prints one line per task'
+
+echo "old-items-legacy-state: the index lists items only, and Legacy is folded"
+check "features: Legacy is folded under an N old items block" "$(cat docs/features.md)" has 'shows `Legacy` and is folded with the other old items under one "N old items" block'
+check "configuration: a folder with no item file is not an item" "$cfgdoc" has 'a folder without a story, plan or findings file is not an item'
+check "configuration: stats reads the same folders as status" "$cfgdoc" has 'Items (the same folders as `status`) per route'
+check "configuration: verify refuses an item before build and records nothing" "$cfgdoc" has 'is refused with the stage named and nothing recorded'
+
+check "features: approve story retires the intake line" "$(cat docs/features.md)" has '`approve story` also replaces the intake line of the task'"'"'s block'
+
+echo "cli-agent-guesses: item close, the Already satisfied outcome, the changed wording"
+check "configuration: the item close row" "$cfgdoc" has '| `burhan item close <slug> --already-satisfied <reason> --by <owner name>` |'
+check "configuration: changed says it compares files only" "$cfgdoc" has 'it compares files only and cannot tell whether a fact was right when it was written'
+check "features: item close is described" "$(cat docs/features.md)" has '`item close <slug> --already-satisfied "<reason>" --by <your name>` closes a task'
+check "features: the outcome list names Already satisfied" "$(cat docs/features.md)" has '`Superseded` or `Already satisfied`'
+check "the docs index template lists the new state" "$(cat kit/templates/docs-index.md)" has '· Superseded · Already satisfied'
+
 t_summary

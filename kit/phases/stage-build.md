@@ -109,6 +109,8 @@ The agent fixes a class A problem at once, without asking, records it with `burh
 
 A security, data or money problem is class B even inside the item's scope, and a problem that fits both lists is class B.
 
+When a sub-unit has carried out an approved deviation, the agent runs `burhan deviation done <slug> <n> --in unit:<N>`; the review of that sub-unit reads the diff for the change, because the trace says where, not whether.
+
 The brakes of `auto` are class B only: "the plan must change" and "the same test fails twice in a row" stop it only when the cause is class B. A finding outside the item's scope is a discovery: when the plan's "Decisions taken at approval" says what it becomes, `auto` writes it (`.burhan/phases/discoveries.md`) and goes on; when it does not say, ask.
 
 ## When the intent changes mid-flight

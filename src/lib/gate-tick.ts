@@ -26,6 +26,32 @@ export function tickMatching(plan: string, pattern: RegExp): string {
   return lines.join('\n');
 }
 
+/** What `tickCloseOut` found in a plan: the plan with the box ticked, a box that was already ticked, or why there is no single box to tick. */
+export type CloseOutTick = { kind: 'ticked'; plan: string } | { kind: 'already' } | { kind: 'absent'; why: string };
+
+/** For `burhan state close`: ticks the checklist's Close-out box once the closed line is in the state file. The box is looked for only in the
+ *  "## Gate checklist" section, outside code fences, by the word the checklist starts it with (the prefix `item finish` skips); none or more than
+ *  one is reported, never guessed. The text goes on the line as ` — <evidence>`, as `gate tick --evidence` does; nothing else in the plan changes. */
+export function tickCloseOut(plan: string, evidence: string): CloseOutTick {
+  const lines = plan.split('\n');
+  const inFence = fenced(lines);
+  const start = lines.findIndex((l, i) => !inFence[i] && /^## Gate checklist\s*$/.test(l.replace(/\r$/, '')));
+  if (start === -1) return { kind: 'absent', why: 'the plan has no "## Gate checklist" section' };
+  const end = lines.findIndex((l, i) => i > start && /^## /.test(l));
+  const found: number[] = [];
+  for (let i = start + 1; i < (end === -1 ? lines.length : end); i++) {
+    if (!inFence[i] && /^[ \t]*- \[[ xX]\][ \t]+Close-out/i.test(lines[i]!.replace(/\r$/, ''))) found.push(i);
+  }
+  if (found.length === 0) return { kind: 'absent', why: 'the checklist has no Close-out box' };
+  if (found.length > 1) return { kind: 'absent', why: 'the checklist has more than one Close-out box' };
+  const at = found[0]!;
+  const line = lines[at]!;
+  if (!/^[ \t]*- \[ \]/.test(line)) return { kind: 'already' };
+  const eol = line.endsWith('\r') ? '\r' : '';
+  lines[at] = `${line.replace(/\r$/, '').replace('- [ ]', '- [x]')} — ${evidence}${eol}`;
+  return { kind: 'ticked', plan: lines.join('\n') };
+}
+
 const CHECKS: Array<[RegExp, Check]> = [
   [/^Route stated/i, (c) => (/^- \*\*Route:\*\* (feature|bug|investigation|change|refactor|release) \/ (spike|bounded|architectural|patch)(?: ·|$)/m.test(c.plan) ? null : 'the plan has no exact **Route:** "<type> / <scope>"')],
   [/^Story approved/i, (c) => (c.story !== null && storyIsApproved(c.story) ? null : 'the story is not Approved in the form "Approved — <name> · YYYY-MM-DD"')],

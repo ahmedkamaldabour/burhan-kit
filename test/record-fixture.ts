@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { projectKey } from '../src/lib/evidence.js';
 import { tmpDir } from './helpers.js';
-import { cli, projectWithItem } from './item-fixture.js';
+import { cli, planFile, projectWithItem, read, setPlanStatus } from './item-fixture.js';
 
 export const NODE = process.execPath;
 
@@ -19,7 +19,10 @@ export async function recordProject(full = 'process[.]exitCode', extra = ''): Pr
 }
 
 /** `burhan verify foo -- node -e process.exitCode=<code>`: a real record of item foo (the code state is taken now). */
-export const verifyRun = (dir: string, code: number) => cli(dir, ['verify', 'foo', '--', NODE, '-e', `process.exitCode=${code}`]);
+export const verifyRun = (dir: string, code: number) => {
+  if (/^- \*\*Overall status:\*\* (Draft|Approved)\b/m.test(read(planFile(dir)))) setPlanStatus(dir, 'In progress'); // verify refuses an item before build
+  return cli(dir, ['verify', 'foo', '--', NODE, '-e', `process.exitCode=${code}`]);
+};
 
 /** Steps in the hook ledger of `dir`, for item foo, written the way the turn-audit hook writes them. */
 export function ledgerFor(dir: string, recs: object[]): void {

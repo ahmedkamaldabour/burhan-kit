@@ -8,7 +8,8 @@ import { openDeviations, overallStatus, qcAccepted, qcVerdict, planRoute, routeA
 /** `spec`: the build spec's text, null when the file is missing, left out when the caller does not read it. */
 /** `undecided`: how many findings of the sub-unit reviews (`review`) and of the QC reports (`qc`) have no decision, the caller counts them and the hooks leave it out
  *  (they read no review file), so a hook's answer is the one it always gave. */
-export interface StageInput { slug?: string; route: string; story: string | null; plan: string | null; findings: string | null; qc: string | null; spec?: string | null; undecided?: { review: number; qc: number } }
+/** `satisfied`: the item has a valid reason file (`<slug>-already-satisfied.md`), the caller reads it; the hooks leave it out. */
+export interface StageInput { slug?: string; route: string; story: string | null; plan: string | null; findings: string | null; qc: string | null; spec?: string | null; undecided?: { review: number; qc: number }; satisfied?: boolean }
 export interface Stage { stage: string; authorized: boolean; why: string; next: string }
 
 const field = (text: string, label: string): string => new RegExp(`\\*\\*${label}:\\*\\*[ \\t]*([^\\r\\n]*)`).exec(text)?.[1]?.replace(/\*/g, '').trim() ?? '';
@@ -31,6 +32,8 @@ export function stageOf(i: StageInput): Stage {
       : no('investigating', why, 'record the evidence, findings, limitations and conclusion in the findings file, then set it Concluded');
   }
 
+  // The owner closed the item as already satisfied (the caller read its reason file): nothing is planned or built, whatever the story or the plan still say.
+  if (i.satisfied === true && (i.plan === null || ['Draft', 'Approved'].includes(overallStatus(i.plan) ?? ''))) return no('already satisfied', 'the item was closed as already satisfied: the code already does what its story asks, so nothing is built for it', 'nothing to build; if the story changed, open a new item with burhan item new');
   const needs = routeNeeds(i.route);
   if (i.plan === null && i.story === null) return no('no item files', 'there is no approved story or plan yet', `burhan item new ${slug} --type ${type || '<type>'} --scope ${scope || '<scope>'}`);
   if (needs.story) {
@@ -88,7 +91,7 @@ const BUILD = choice('build');
 const REVIEW = choice('review');
 const DONE = choice('done');
 const DEBUG = choice('debug');
-const NONE = /^(route not allowed|plan Paused|plan Superseded|deviation open|QC passed, not accepted|QC accepted|findings concluded|plan status not recognised)$/;
+const NONE = /^(route not allowed|plan Paused|plan Superseded|deviation open|QC passed, not accepted|QC accepted|findings concluded|plan status not recognised|already satisfied)$/;
 
 /** The process skill to run before the next write at a stage (phases/skills.md), or null. One table for the CLI (`burhan guide` and the commands that open a stage).
  *  It follows the prompt router's `skillLine` (skill-line.mts), which reads the same phases from the item's files, except in the stages it is finer than the router:

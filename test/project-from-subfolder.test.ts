@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { projectKey, projectRoot } from '../src/lib/evidence.js';
-import { cli, project, projectWithItem, STATE } from './item-fixture.js';
+import { cli, project, projectWithItem, setPlanStatus, STATE } from './item-fixture.js';
 import { tmpDir } from './helpers.js';
 
 /** Marks a fixture as an install: the file the commands look for when they walk up. */
@@ -43,6 +43,7 @@ test('a folder argument walks up too; a write command from a subfolder writes in
   const rv = await cli(s, ['review', 'add', 'foo', '--kind', 'review', '--unit', '1', '--by', 'a · m · fresh subagent', '--text', 'ok']);
   assert.equal(rv.code, 0, rv.err);
   assert.ok(existsSync(join(dir, '.burhan', 'work', 'foo', 'reviews', 'foo-review.md')));
+  setPlanStatus(dir, 'In progress'); // verify refuses an item before build
   const vf = await cli(s, ['verify', 'foo', '--', process.execPath, '-e', '0']);
   assert.equal(vf.code, 0, vf.err);
   assert.ok(existsSync(join(dir, '.burhan', 'work', 'foo', 'foo-verify.jsonl')));

@@ -8,7 +8,7 @@ import { BurhanError } from './errors.js';
 import { ereToJs, isPiped, ledgerDir, tryReadLedger, type LedgerRecord } from './evidence.js';
 import { putFile, realTarget } from './fs-safe.js';
 import { gateOf, gateOpen, gateSentence, readItemFindings } from './findings.js';
-import { fenced, itemFolder, openDeviations, overallStatus, planPath, planRoute, readOr, routeNeeds, setFieldLine, units } from './item-files.js';
+import { fenced, itemFolder, openDeviations, overallStatus, planPath, planRoute, readOr, routeNeeds, setFieldLine, traceProblem, units, untracedDeviations } from './item-files.js';
 import { assertInside, oneLine } from './item-io.js';
 import { docsLocation } from './status.js';
 import { editAfter, itemRecords, judgeVerify } from './verify.js';
@@ -33,10 +33,13 @@ export function itemFinish(target: string, slug: string | undefined, io: Io, o: 
   const stated = oneLine(o.evidence, '--evidence');
 
   const open: string[] = [];
-  const faults = checkText('plan', plan);
+  // An untraced approved row gets its own sentence below (the row and the command), so the contract sentence leaves it out.
+  const faults = checkText('plan', plan).filter((f) => f.code !== 'deviation-untraced');
   if (faults.length > 0 && hasContractMarker(plan)) open.push(`the plan breaks the contract: ${faults.map((f) => f.code).join(', ')} (burhan item check ${s})`);
   const stops = openDeviations(plan);
   if (stops.length > 0) open.push(`a deviation is open (Deviations row ${stops.map((d) => d.n).join(', ')}): the owner decides it first (burhan deviation resolve ${s})`);
+  // An approved row says which sub-unit carried it out (burhan deviation done). It is asked for whatever the plan's Contract line says: only the form of the trace is read.
+  for (const d of untracedDeviations(plan)) open.push(traceProblem(d, s));
   const all = units(plan);
   if (all.length === 0) open.push('the plan has no sub-unit heading that is read');
   else { const notReviewed = all.filter((u) => u.rung !== 4).map((u) => `Sub-unit ${u.n}`); if (notReviewed.length > 0) open.push(`not every sub-unit is Reviewed: ${notReviewed.join(', ')}`); }

@@ -49,6 +49,7 @@ test('CLI: stats --docs on a project without burhan config, and --json', async (
 test('CLI: --docs may be absolute inside the project, never outside it', async () => {
   const p = tmpDir('burhan-stats-');
   mkdirSync(join(p, 'items/x'), { recursive: true });
+  writeFileSync(join(p, 'items/x/x-story.md'), 'x');
   const a = capture();
   assert.equal(await runCli(['stats', p, '--docs', join(p, 'items')], a.io), 0);
   assert.match(a.o.out, /· 1 items/);

@@ -62,7 +62,7 @@ Legend — **S** story gate · **P** plan gate · **S+P** one combined gate · *
 **`patch` — the smallest lane** (`change`, `bug`, `refactor`): one obvious change (text, config, a
 typo, one line), **no scope escalator, nothing in `WF_SENSITIVE_REGEX`, no doubt**. No story or plan:
 a routing line (`patch — <reason>`), the change, evidence after it, the commit checkpoint. Anything
-more, or any doubt → `bounded`.
+more, or any doubt → `bounded` (examples: phases/stage-story.md).
 
 **Read-only work (investigation, bug + spike):** **no application code is modified** →
 `<slug>-findings.md` (phases/stage-story.md).

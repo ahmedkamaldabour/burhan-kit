@@ -9,7 +9,7 @@
 
 - **Story:** ./<slug>-story.md
 - **Build spec:** ./<slug>-build-spec.md (approved with this plan)
-- **Branch:** <branch>
+- **Branch:** <branch, or `none yet` while the work has no branch>
 - **Overall status:** Draft → Approved → In progress → Completed
 - **Reopened after PASS:** <exactly "YYYY-MM-DD — why", or —> (an item reopened after its QC PASS counts as an escaped defect)
 
@@ -61,11 +61,11 @@ Corrections from reading the real code, each with file:line. Write "None." when 
 |--------|--------|---------------|
 
 ## 5. Sub-unit breakdown
-Status ladder: ⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed. Files, tests and code are in the build spec, not here.
+Status ladder: ⬜ Draft → 🟡 Approved → 🔵 In progress → 🟢 Implemented → ✅ Reviewed. Files, tests and code are in the build spec, not here. The `Why separate:` line holds the codes alone; write the reason, if it needs one, as a paragraph under the sub-unit heading.
 
 ### Sub-unit 1 — <name> · ⬜ Draft
 - **Covers:** <AC ids, e.g. AC-01, AC-02>
-- **Why separate:** <A1 | A2 | A3, one or more: what makes it its own sub-unit (phases/stage-plan.md · Sub-units)>
+- **Why separate:** <A1 | A2 | A3, one or more (their meaning: phases/stage-plan.md · Sub-units)>
 - **Review group:** <letter, or — (phases/review.md · Review groups: decided here, short lane only)>
 
 ## 6. Security re-read
@@ -78,15 +78,15 @@ What could not be inspected or verified, and why.
 ## 9. Executor rules
 1. Follow this plan and the build spec exactly: the same files, the same code, the same order, the same commands. No improvising, no extra scope, no refactoring.
 2. A step that fails unexpectedly — a RED that does not fail as the spec says, a GREEN that fails, a file that differs from what the spec expects — is classified first (phases/stage-build.md · A problem found while building). A class B problem, one that needs a decision, means STOP: do not fix it on your own.
-3. Record the deviation in section 10 (what, where, the output). Class B: leave the row open and ask the owner; an approved deviation updates this plan and the spec first, then the code. Class A, a problem whose answer is already known: record the row with `--apply`, fix it, report it, and go on.
+3. Record the deviation in section 10 (what, where, the output). Class B: leave the row open and ask the owner; an approved deviation updates this plan and the spec first, then the code. Class A, a problem whose answer is already known: record the row with `--apply`, fix it, report it, and go on. Once an approved change is carried out, write where with `burhan deviation done <slug> <n> --in unit:<N>`.
 4. The brakes are those of phases/stage-build.md · Modes, for a class B problem only: a scope escalator, a discovery outside the item (unless "Decisions taken at approval" says what it becomes), a plan change, the same test failing twice, an irreversible action.
 5. After a sub-unit run only its test files, then the fast check; the full suite at QC, before a commit, or when a fix lands outside the covered tests. A passing full run is reused (phases/stage-finish.md · Reusing a full run).
 
 ## 10. Deviations
-Empty until a step deviates. Status is open, approved, rejected or applied.
+Empty until a step deviates. Status is open, approved, rejected or applied. An approved row also says in `Carried out in` which sub-unit carried it out (`unit:<N>`, written by `burhan deviation done`).
 
-| # | Sub-unit | What | Where | Output | Status | Decision |
-|---|----------|------|-------|--------|--------|----------|
+| # | Sub-unit | What | Where | Output | Status | Decision | Carried out in |
+|---|----------|------|-------|--------|--------|----------|--------------|
 
 ## 11. Impact log
 Only if the approved intent changed mid-flight (phases/stage-build.md · intent changes).
@@ -95,7 +95,7 @@ Only if the approved intent changed mid-flight (phases/stage-build.md · intent 
 |------|--------|-------|-----------|--------|
 
 ## 12. Knowledge review
-Knowledge review: none <keep this line only after deciding nothing new and durable was learned; otherwise replace it with the table below (phases/memory.md)>
+Knowledge review: decide at close-out <leave this line until QC is done; then replace it with "Knowledge review: none" when nothing new and durable was learned, or with the table below (phases/memory.md)>
 
 | Candidate | Evidence | Relation (new / reconfirms / supersedes / disputes) | Decision (promoted / rejected) |
 |-----------|----------|------|----------|

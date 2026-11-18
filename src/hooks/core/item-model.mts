@@ -121,7 +121,7 @@ export function gatesFor(route: string): string[] | null {
 }
 
 /** One row of the plan's Deviations table (a step that did not go as the spec said). `line` is its index in the plan's lines. */
-export interface Deviation { n: number; unit: number; what: string; where: string; output: string; status: string; decision: string; line: number }
+export interface Deviation { n: number; unit: number; what: string; where: string; output: string; status: string; decision: string; trace: string; line: number }
 
 /** The cells of a table row: split on a pipe that is not escaped (`\|` is a pipe inside a cell). null when the line is not a table row. */
 export function rowCells(line: string): string[] | null {
@@ -161,19 +161,39 @@ export function deviations(plan: string): Deviation[] {
     const c = rowCells(lines[i]!);
     // The header row (# …) and the separator row are not data; every other row is, even one whose number or status cannot be read (it then stops the work).
     if (c === null || (c[0] ?? '') === '#' || c.every((x) => /^:?-+:?$/.test(x) || x === '')) continue;
-    out.push({ n: Number(/\d+/.exec(c[0] ?? '')?.[0] ?? 0), unit: /^\d+$/.test(c[1] ?? '') ? Number(c[1]) : -1, what: c[2] ?? '', where: c[3] ?? '', output: c[4] ?? '', status: (c[5] ?? '').replace(/\*/g, '').trim().toLowerCase(), decision: c[6] ?? '', line: i });
+    out.push({ n: Number(/\d+/.exec(c[0] ?? '')?.[0] ?? 0), unit: /^\d+$/.test(c[1] ?? '') ? Number(c[1]) : -1, what: c[2] ?? '', where: c[3] ?? '', output: c[4] ?? '', status: (c[5] ?? '').replace(/\*/g, '').trim().toLowerCase(), decision: c[6] ?? '', trace: c[7] ?? '', line: i });
   }
   return out;
 }
 
-const rowText = (n: number, unit: number, what: string, where: string, output: string, status: string, decision: string): string =>
-  `| ${n} | ${unit} | ${deviationCell(what)} | ${deviationCell(where)} | ${deviationCell(output)} | ${status} | ${deviationCell(decision)} |`;
+const rowText = (n: number, unit: number, what: string, where: string, output: string, status: string, decision: string, trace = ''): string =>
+  `| ${n} | ${unit} | ${deviationCell(what)} | ${deviationCell(where)} | ${deviationCell(output)} | ${status} | ${deviationCell(decision)} | ${deviationCell(trace)} |`;
+
+const TRACE_HEADER = 'Carried out in';
+
+/** A plan made before the eighth cell has a seven-cell header: the header row and its separator row get the cell, so a trace is not cut off when the table is shown. No other line changes; a line end is kept. */
+function widenHeader(lines: string[], range: [number, number]): void {
+  for (let i = range[0] + 1; i < range[1]; i++) {
+    const cells = rowCells(lines[i]!);
+    if (cells === null || (cells[0] ?? '') !== '#') continue;
+    const cr = lines[i]!.endsWith('\r') ? '\r' : '';
+    const head = lines[i]!.replace(/\r$/, '').trimEnd();
+    if (cells.length !== 7 || !head.endsWith('|')) return;
+    lines[i] = `${head} ${TRACE_HEADER} |${cr}`;
+    const next = lines[i + 1];
+    const sep = next === undefined ? null : rowCells(next);
+    const rest = next === undefined ? '' : next.replace(/\r$/, '').trimEnd();
+    if (next !== undefined && sep !== null && sep.length === 7 && sep.every((x) => /^:?-+:?$/.test(x)) && rest.endsWith('|')) lines[i + 1] = `${rest}${'-'.repeat(TRACE_HEADER.length)}|${cr}`;
+    return;
+  }
+}
 
 /** The plan with a row added to the Deviations table (numbered after the last), or null when the plan has no such table. The row is open, or applied when `applied` (the decision text the caller built: who, when, why) is given. */
 export function withDeviationRow(plan: string, r: { unit: number; what: string; where: string; output: string; applied?: string }): { text: string; n: number } | null {
   const lines = plan.split('\n');
   const range = deviationRange(lines);
   if (range === null) return null;
+  widenHeader(lines, range);
   let last = -1;
   for (let i = range[0] + 1; i < range[1]; i++) if (rowCells(lines[i]!) !== null) last = i;
   if (last === -1) return null;
@@ -187,8 +207,45 @@ export function withDeviationResolved(plan: string, n: number, status: 'approved
   const row = deviations(plan).find((d) => d.n === n);
   if (row === undefined) return null;
   const lines = plan.split('\n');
-  lines[row.line] = rowText(row.n, row.unit, row.what, row.where, row.output, status, decision) + (lines[row.line]!.endsWith('\r') ? '\r' : '');
+  const range = deviationRange(lines);
+  if (range === null) return null;
+  widenHeader(lines, range);
+  lines[row.line] = rowText(row.n, row.unit, row.what, row.where, row.output, status, decision, row.trace) + (lines[row.line]!.endsWith('\r') ? '\r' : '');
   return lines.join('\n');
+}
+
+/** The plan with row `n`'s trace written as `unit:<unit>`, or null when the row is not there. Every other cell keeps its text (a seven-cell row gets the eighth cell) and the header is widened. */
+export function withDeviationTrace(plan: string, n: number, unit: number): string | null {
+  const row = deviations(plan).find((d) => d.n === n);
+  if (row === undefined) return null;
+  const lines = plan.split('\n');
+  const range = deviationRange(lines);
+  if (range === null) return null;
+  widenHeader(lines, range);
+  const cells = rowCells(lines[row.line]!) ?? [];
+  const kept = Array.from({ length: 7 }, (_, i) => deviationCell(cells[i] ?? ''));
+  lines[row.line] = `| ${kept.join(' | ')} | unit:${unit} |` + (lines[row.line]!.endsWith('\r') ? '\r' : '');
+  return lines.join('\n');
+}
+
+/** The sub-unit number of a trace (`unit:<N>`, the only form), or null when the text is not that form. */
+export const traceUnit = (trace: string): number | null => {
+  const m = /^unit:(\d+)$/.exec(trace.trim());
+  return m === null ? null : Number(m[1]);
+};
+
+/** The approved rows with no readable trace: the cell is empty, or it is not `unit:<N>` with N a sub-unit of the plan. Only the form is read; whether the change was carried out is for the reviewer and the owner. */
+export function untracedDeviations(plan: string): Deviation[] {
+  const have = new Set(units(plan).map((u) => u.n));
+  return deviations(plan).filter((d) => d.status === 'approved' && !have.has(traceUnit(d.trace) ?? -1));
+}
+
+/** One sentence for an untraced approved row: the row, what is wrong, and what to run or correct. `slug` is the item (a plain `<slug>` when the caller has none). */
+export function traceProblem(d: Deviation, slug: string): string {
+  const shown = d.trace.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').slice(0, 40);
+  return d.trace === ''
+    ? `Deviations row ${d.n} (sub-unit ${d.unit}) is approved and has no trace of where it was carried out: run burhan deviation done ${slug} ${d.n} --in unit:<N>`
+    : `Deviations row ${d.n} (sub-unit ${d.unit}) is approved and its trace "${shown}" is not unit:<N> of a sub-unit of the plan: correct the Carried out in cell to unit:<N>, a sub-unit of the plan (a trace is not overwritten by deviation done)`;
 }
 
 /** The rows that stop the work: every row nobody has decided. Only exactly approved, rejected or applied (the agent's own row, for a problem that needs no decision) lets the work go on, so a row that cannot be read stops it too. */
@@ -256,4 +313,14 @@ export function acceptedForm(value: string): boolean {
   if (/[<·]/.test(name) || !/\p{L}/u.test(name) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
   const d = new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))));
   return d.getUTCFullYear() === Number(date.slice(0, 4)) && d.getUTCMonth() === Number(date.slice(5, 7)) - 1 && d.getUTCDate() === Number(date.slice(8, 10));
+}
+
+/** The reason file of an item the owner closed as already satisfied (`<slug>-already-satisfied.md`, made by `burhan item close`): a line `- **Closed by:** <name> · YYYY-MM-DD` in the exact form of an acceptance and a
+ *  line `- **Reason:** <words>`. null when the file is missing or either line is not as written: such a file closes nothing. */
+export function satisfiedClose(text: string | null): { by: string; reason: string } | null {
+  if (text === null) return null;
+  const line = (label: string): string => new RegExp(`^- \\*\\*${label}:\\*\\*(.*)$`, 'm').exec(text)?.[1]?.trim() ?? '';
+  const by = line('Closed by');
+  const reason = line('Reason');
+  return acceptedForm(by) && reason !== '' ? { by, reason } : null;
 }

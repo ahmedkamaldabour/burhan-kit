@@ -61,6 +61,7 @@ test('item finish accepts approved, rejected and applied rows, prints the applie
   assert.match(refused.err, /a deviation is open \(Deviations row 3\)/);
   assert.doesNotMatch(refused.err, /Deviations row 1/);
   await cli(dir, ['deviation', 'resolve', 'foo', '3', '--rejected', '--by', OWNER]);
+  assert.equal((await cli(dir, ['deviation', 'done', 'foo', '2', '--in', 'unit:1'])).code, 0); // the approved row is traced: item finish asks for it now
   const done = await cli(dir, ['item', 'finish', 'foo', '--evidence', 'ran by hand']);
   assert.equal(done.code, 0, done.err);
   assert.match(done.out, /^item finish: applied by the agent without asking \(1\): row 1, sub-unit 1: a count in the spec — the spec counted six tests and the file has seven$/m);
@@ -71,6 +72,7 @@ test('item finish prints no applied line when no row was applied (AC-17)', async
   const dir = await building();
   await open(dir);
   await cli(dir, ['deviation', 'resolve', 'foo', '1', '--approved', '--by', OWNER]);
+  assert.equal((await cli(dir, ['deviation', 'done', 'foo', '1', '--in', 'unit:1'])).code, 0); // the approved row is traced: item finish asks for it now
   await readyToFinish(dir);
   const done = await cli(dir, ['item', 'finish', 'foo', '--evidence', 'ran by hand']);
   assert.equal(done.code, 0, done.err);
