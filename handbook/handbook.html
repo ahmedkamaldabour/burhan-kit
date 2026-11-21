@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>دليل مالك burhan-kit</title>
+<style>
+:root{color-scheme:light dark;--bg:#edf1f7;--paper:#fff;--ink:#182338;--muted:#58677d;--line:#d5dce8;--brand:#105c76;--accent:#067d72;--code:#eef2f7;--warn:#915f00}
+@media(prefers-color-scheme:dark){:root{--bg:#101722;--paper:#172131;--ink:#e8eef9;--muted:#aebbd0;--line:#334258;--brand:#70d8e9;--accent:#6ed8bf;--code:#0e1622;--warn:#f1c568}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 Tahoma,Arial,"Noto Sans Arabic",sans-serif}
+.book{max-width:960px;margin:0 auto;background:var(--paper);padding:48px 60px;box-shadow:0 0 40px #18233816}
+.cover{border-bottom:4px solid var(--brand);padding-bottom:24px}
+h1,h2,h3{line-height:1.4;margin:0 0 .65em}
+h1{font-size:2.6rem}
+h2{font-size:1.65rem;border-bottom:2px solid var(--line);padding-bottom:.3em}
+h3{font-size:1.2rem;margin-top:1.3em}
+p{margin:.5em 0 .9em}
+.lead{font-size:1.1rem;max-width:64ch}
+.stamp{color:var(--muted);font-size:.9rem}
+.chapter{margin-top:48px}
+.toc ol{columns:2;gap:32px;padding-right:1.4em;padding-left:0}
+a{color:var(--brand)}
+.box{border-right:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--paper));padding:12px 16px;margin:16px 0}
+.source{font-size:.84rem;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;margin-top:18px}
+.source b{color:var(--ink)}
+.scroll{overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:right}
+th{color:var(--brand);background:color-mix(in srgb,var(--brand) 9%,var(--paper))}
+code,pre{direction:ltr;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--code);font-size:.88em}
+code{border-radius:4px;padding:.1em .3em;unicode-bidi:isolate}
+pre{padding:12px;border-radius:9px;overflow:auto;white-space:pre-wrap;text-align:left}
+li{margin:.3em 0}
+ul,ol{padding-right:1.4em;padding-left:0}
+@page{size:A4;margin:15mm 14mm}
+@media print{:root{color-scheme:light}body{background:#fff}.book{max-width:none;box-shadow:none;padding:0}.toc{break-after:page}h2,h3{break-after:avoid}pre,tr,.box{break-inside:avoid}.chapter{margin-top:28px}a{color:inherit;text-decoration:none}.scroll{overflow:visible}}
+@media(max-width:700px){.book{padding:28px 18px}.toc ol{columns:1}h1{font-size:2rem}}
+</style>
+</head>
+<body>
+<main class="book">
+<header class="cover" id="top">
+<p><a href="en/handbook.html" lang="en" dir="ltr">English</a> · النسخة الإنجليزي هي <code>handbook/en/handbook.html</code> و<code>handbook/en/burhan-handbook-en.pdf</code></p>
+<h1>دليل مالك burhan-kit</h1>
+<p class="lead">إزاي المهمة بتمشي من طلبك لحد الـ commit، وإيه اللي إنت بس بتقرره، وكل command وكل setting، وفين burhan بيقف. الـ README هو الفصل الأول؛ والباقي بيدخل في تفاصيل أكتر وبيقول كل معلومة جاية منين.</p>
+<p class="stamp">اتفحص في 2026-11-21 على burhan-kit <code>0.9.1</code>، مبني من الـ source بتاع الـ commit <code>6362a7b</code>، وهو الـ release commit للـ version دي. الأمثلة للتوضيح، مش سجلات تشغيل حقيقية.</p>
+</header>
+<nav class="toc" id="toc">
+<h2>الفهرس</h2>
+<ol>
+<li><a href="#idea">إيه هو burhan</a></li>
+<li><a href="#install">التسطيب وأول setup</a></li>
+<li><a href="#first-task">أول مهمة ليك</a></li>
+<li><a href="#flow">الـ flow بالتفصيل</a></li>
+<li><a href="#decide">إيه اللي إنت بس بتقرره</a></li>
+<li><a href="#proof">الـ skills والـ hooks والإثبات</a></li>
+<li><a href="#commands">كل command</a></li>
+<li><a href="#settings">الإعدادات</a></li>
+<li><a href="#team">الذاكرة والحالة والشغل الجماعي</a></li>
+<li><a href="#package">الـ package: الـ CI والـ release</a></li>
+<li><a href="#limits">المشاكل والحدود</a></li>
+</ol>
+</nav>
+
+<section class="chapter" id="idea">
+<h2>1. إيه هو burhan</h2>
+<p>الـ coding agents بتقول “done” من غير دليل. burhan هو spec-driven development لـ Claude Code وCodex. الـ story والـ plan هما الـ spec: إنت بتوافق عليهم قبل أي كود، وكل acceptance criterion مربوط بـ test، وكل خطوة build بتتراجع، وأي خطوة بتخرج عن الـ plan بتتسجّل. أوامر المهمة والـ hooks (scripts صغيرة بتبلّغ في لحظات محددة) بتحتفظ بالسجل.</p>
+<div class="box"><b>خلّي أربع حاجات منفصلة.</b> الاتفاق بيقول إيه المفروض يحصل. الـ hooks بتبلّغ. الـ ledger بيسجّل اللي اتشغّل. وإنت اللي بتملك الموافقات والـ commit وقرارات المخاطرة.</div>
+<p><b>المصطلحات.</b> الـ <b>sub-unit</b> هي خطوة build صغيرة متخططة. الـ <b>gate</b> نقطة الـ agent بيستنى عندها إنت أو إثبات (S story، P plan، T بناء test-first، R review، V verification، Q QC، K knowledge). الـ <b>QC</b> هو الفحص النهائي المستقل إن كل acceptance criterion اتسلّم. الـ <b>baseline</b> هو السجل اللي وافقت عليه (أو تنازلت عنه) لفهم الـ agent للمشروع. والـ <b>knowledge review</b> هو المكان اللي الـ agent بيقترح فيه دروس تستاهل تتحفظ وإنت بتحتفظ بيها أو بترفضها.</p>
+<h3>اللي burhan مابيدّعيهوش</h3>
+<p>مفيش hook بيمنع أي إجراء: الـ hooks بتبلّغ وبتفشل مفتوحة (fail open). أوامر المهمة بترفض خطوة غلط في الـ lifecycle، لكن الـ agent ممكن يتخطاها، والـ block اللي <code>init</code> بيكتبه في <code>CLAUDE.md</code> أو <code>AGENTS.md</code> تعليمات، مش قفل. burhan مايقدرش يثبت شغل محدش بلّغ عنه.</p>
+<p class="source"><b>المصدر:</b> <code>README.md</code> (Problem and answer, Limits) · <code>kit/phases/enforcement.md</code></p>
+</section>
+
+<section class="chapter" id="install">
+<h2>2. التسطيب وأول setup</h2>
+<p><b>المتطلبات:</b> Node 22+؛ و Claude Code 2.1.139 أو أحدث و/أو Codex بعد ما توافق على الـ hooks بتاعته؛ والـ kit مسطّب في المشروع (<code>npm i -D burhan-kit</code>) أو على الـ PATH (<code>npm i -g burhan-kit</code>). هنا <code>burhan</code> معناها الـ <em>kit command</em> بتاع المشروع، اللي مكتوب في <code>.burhan/bindings.md</code>: <code>npx burhan-kit</code> بيشغّل النسخة المسطّبة في المشروع، و<code>burhan</code> لوحدها بس لو موجودة على الـ PATH. burhan عمره ما بيشغّل npm: ولو مفيش kit command بيطبع الـ setup أمر التسطيب وإنت اللي تشغّله.</p>
+<ol>
+<li>في جذر المشروع شغّل <code>npx burhan-kit</code> وبعدها <code>npx burhan-kit doctor</code>. الـ setup بيسأل أربع أسئلة (خمسة لو بتستخدم الـ agentين)، ويعرض summary، ومابيكتبش غير بعد ما تأكّد. setup سليم يقول <code>all 6 hooks wired</code>.</li>
+<li>Codex بس: وافق على الـ hooks بتاعة المشروع من <code>/hooks</code>، غير كده مش هتشتغل؛ ووافق عليها تاني بعد أي upgrade بيغيّر واحد.</li>
+<li>افتح session جديدة للـ agent واكتب <code>start</code> (أو <code>/burhan:onboard</code> في Claude Code). الـ agent بيقترح checks المشروع وbaseline عشان توافق عليهم.</li>
+<li>ابدأ مهمة بـ <code>/burhan:e2e &lt;slug&gt;</code> في Claude Code؛ وفي Codex اتبع الـ command file جوه <code>.burhan/commands/</code>. الـ process skills الستة جايين مع الـ kit؛ مفيش حاجة تانية تسطّبها.</li>
+</ol>
+<h3>إيه اللي بينزل في مشروعك</h3>
+<div class="scroll"><table>
+<tr><th>المسار</th><th>إيه هو، ومين بيملكه</th></tr>
+<tr><td><code>.burhan/</code> <span dir="ltr">WORKFLOW.md SETUP.md VERSION phases/ templates/ commands/ skills/ hooks/</span></td><td>اتفاق الشغل والـ templates والـ skills وscripts الـ hooks؛ بتاعة الـ kit و<code>upgrade</code> بيجدّدها</td></tr>
+<tr><td><code>.burhan/bindings.md</code>, <code>.burhan/workflow.config</code></td><td>قيم المشروع؛ بتاعتك، و<code>upgrade</code> عمره ما بيكتب فوقها</td></tr>
+<tr><td><code>.burhan/PROJECT.md</code>, <code>.burhan/context/</code></td><td>ذاكرة المشروع المشتركة</td></tr>
+<tr><td><code>.burhan/local/PROGRESS.md</code></td><td>ملف الحالة الحي؛ لكل developer، وgit-ignored</td></tr>
+<tr><td><code>.burhan/work/NNN-slug/</code>, <code>.burhan/discovery/</code></td><td>ملفات المهام والـ findings الجانبية؛ خاصة بعد <code>init</code>؛ والـ setup wizard بيوصي بـ git</td></tr>
+<tr><td><code>.claude/</code> أو <code>.codex/</code></td><td>إعدادات الـ hooks؛ وفي Claude Code كمان <code>.claude/skills/burhan-*/</code></td></tr>
+<tr><td><code>CLAUDE.md</code> أو <code>AGENTS.md</code></td><td>block متعلّم بتاع burhan؛ والكلام اللي بره منه فضل بتاعك</td></tr>
+</table></div>
+<h3>الـ upgrade والـ uninstall والروابط</h3>
+<p><code>init</code> و<code>upgrade</code> و<code>uninstall</code> مابيغيّروش حاجة لحد ما تزوّد <code>--apply</code>. <code>upgrade</code> بيجدّد ملفات الـ kit وإدخالات الـ hooks والـ skills وبيسيب الـ hooks بتاعتك؛ شغّل <code>npx burhan-kit upgrade --apply</code> بعد كل release. <code>uninstall</code> بيشيل مداخل الـ kit تحت <code>.burhan/</code> (<code>WORKFLOW.md</code> و<code>SETUP.md</code> و<code>VERSION</code> و<code>phases</code> و<code>templates</code> و<code>commands</code> و<code>skills</code> و<code>hooks</code>) وتحت <code>.claude/</code> بيشيل بس الملفات اللي عليها علامة burhan؛ وبيسيب <code>workflow.config</code> و<code>bindings.md</code> و<code>.burhan/local/</code> وملفات مهامك إلا لو زوّدت <code>--all</code>. أي أمر بيكتب (<code>init</code> و<code>upgrade</code> و<code>setup</code>) بيرفض كتابة هتوصل لبره المشروع عن طريق symbolic link، وبيكمّل بس مع <code>--allow-outside-links</code>.</p>
+<p class="source"><b>المصدر:</b> <code>README.md</code> (Quick start, Safety and rollback) · <code>docs/upgrading.md</code> · <code>docs/configuration.md</code> · <code>src/lib/uninstall.ts</code></p>
+</section>
+
+<section class="chapter" id="first-task">
+<h2>3. أول مهمة ليك</h2>
+<p>اطلب حاجة صغيرة، زي function ومعاها test. الـ agent بيمشي في الوقفات اللي تحت وبيستناك عند كل واحدة؛ العمود الأخير هو اللي بيشغّله. في وضع <code>step</code> بتشوف كل وقفة.</p>
+<div class="scroll"><table>
+<tr><th>الوقفة</th><th>إنت بتقرر</th><th>الـ agent بيشغّل</th></tr>
+<tr><td>1 · Intake</td><td>الـ route (type وscope والسبب) مناسب ولا لأ</td><td><code>item new &lt;slug&gt; --type feature --scope bounded</code>، وبعدها <code>guide &lt;slug&gt;</code></td></tr>
+<tr><td>2 · Story وplan</td><td>تجاوب على أسئلته، وتقرا الكارت، وتقول آه، وبعدها تشغّل <code>approve story &lt;slug&gt; --by &lt;name&gt;</code> و<code>approve plan &lt;slug&gt; --by &lt;name&gt;</code> باسمك (الـ agent بيوريك الأمر)</td><td>بيكتب story وplan وbuild spec، وبعدها <code>item check &lt;slug&gt;</code></td></tr>
+<tr><td>3 · Sub-unit واحدة</td><td>تكمّل ولا لأ (<code>step</code> بيقف بعد كل واحدة)</td><td>الـ test متشاف بيفشل (RED)، والكود، والـ test بينجح (GREEN)، وfast check؛ <code>item set &lt;slug&gt; unit 1 in-progress</code>، وبعدين <code>implemented</code></td></tr>
+<tr><td>4 · Review</td><td>كل finding: اتصلّحت، أو discovery، أو مقبولة بسببك</td><td>reviewer جديد: <code>review add &lt;slug&gt; --kind review --unit 1 --by "&lt;agent · model · context&gt;"</code>، <code>finding add</code>؛ وإنت بترد بـ <code>finding decide</code>؛ وبعدين <code>item set &lt;slug&gt; unit 1 reviewed</code></td></tr>
+<tr><td>5 · مفاجأة</td><td>بس المشكلة اللي محتاجة قرار هي اللي بتوقّف الشغل</td><td>حل معروف: <code>deviation add &lt;slug&gt; … --apply "&lt;why&gt;"</code> والبناء يكمّل؛ واختيار حقيقي: <code>deviation add</code> من غير <code>--apply</code>، ووقفة لحد ما تشغّل <code>deviation resolve</code></td></tr>
+<tr><td>6 · Verify</td><td>مين يعمل الفحص الحقيقي (الـ agent بيسأل الأول)</td><td><code>verify &lt;slug&gt; -- npm test</code> (أمرك إنت)، وبعدها <code>review add &lt;slug&gt; --kind verification</code></td></tr>
+<tr><td>7 · QC</td><td>تقبل PASS، أو ترجّع المهمة للـ build</td><td>reviewer جديد: <code>review add &lt;slug&gt; --kind qc --verdict PASS</code> و<code>finding add &lt;slug&gt; --in qc --none</code>؛ وإنت بتقبلها بـ <code>approve qc &lt;slug&gt; --by &lt;name&gt;</code></td></tr>
+<tr><td>8 · الإقفال</td><td>أي دروس تتحفظ؛ commit دلوقتي أو بعدين أو بنفسك</td><td><code>item finish &lt;slug&gt;</code> (بيسمّي كل gate لسه مفتوح؛ وتعلّم واحد بـ <code>gate tick</code>)، وبعدها <code>state close &lt;slug&gt; --outcome &lt;state&gt; --commit &lt;id&gt; --folder &lt;path&gt;</code></td></tr>
+</table></div>
+<p>الـ route الأصغر بتعدّي على وقفات مش محتاجاها. وفي أي لحظة <code>guide &lt;slug&gt;</code> بيقول المرحلة، وتعديل الكود مسموح ولا لأ، والخطوة الجاية.</p>
+<p class="source"><b>المصدر:</b> <code>README.md</code> (Your first task) · <code>docs/first-task.md</code> (a recorded run)</p>
+</section>
+
+<section class="chapter" id="flow">
+<h2>4. الـ flow بالتفصيل</h2>
+<pre>you ask → Intake → Story ✋ → Plan ✋ → Build ⇄ Review (each sub-unit)
+        → Verify ✋ → QC ✋ → Knowledge ✋ → Commit ✋
+✋ always you, in both modes</pre>
+<h3>الـ routes</h3>
+<p>كل طلب بياخد route قبل الشغل: type (feature وbug وchange وrefactor وrelease وinvestigation، وهي للقراءة بس) وscope (bounded أو architectural؛ وpatch لتغيير واضح واحد؛ وspike للقراءة بس ولـ investigation أو تشخيص bug بس) وسبب في سطر. تقدر تصحّحه. الـ feature الـ bounded ليها موافقة واحدة على الـ story والـ plan، وبعدها build وreview وverify وQC وknowledge؛ والـ architectural ليها story وplan منفصلين، والـ plan بيعرض خيارات تصميم. أي scope escalator واحد بيخلّي المهمة architectural مهما كان حجمها: الأمان أو الخصوصية، الصلاحيات أو الرؤية، data model أو migration، الفلوس، derived state مشترك، عقود التكامل أو الـ public APIs، سلوك مايترجعش فيه، concurrency. الـ <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/README.md">README</a> بيسرد رحلة كل route.</p>
+<h3>الـ modes</h3>
+<p><code>step</code>، وهو الافتراضي، بيقف كمان بعد build وreview كل sub-unit. <code>auto</code> بيكمّل بعد الـ story والـ plan، وبيحافظ على الوقفات اللي بتاعتك وبيفرمل بس لمشكلة class B (تحت). الـ commit بيقف دايمًا. قول <bdi>“go end to end”</bdi> لـ <code>auto</code>، و<bdi>“wait for my approval”</bdi> لـ <code>step</code>. الـ mode مش صلاحيات الـ agent.</p>
+<h3>folder المهمة</h3>
+<pre>work/NNN-slug/
+  NNN-slug-story.md                Draft → Approved                          approve story
+  NNN-slug-implementation-plan.md  Draft → Approved → In progress → Completed   approve plan; item set; item finish
+  NNN-slug-build-spec.md           exact tests, code, commands               approved with the plan
+  NNN-slug-verify.jsonl            every proof run: command, exit code, time  verify
+  reviews/                         review, verification and QC reports, each with a findings table
+  sources/  repro/                 what you gave the agent; its scripts and logs
+  NNN-slug-state-notes.md · NNN-slug-already-satisfied.md   when used</pre>
+<p><code>item new</code> بياخد الرقم اللي بعده. أي أمر بيقبل الرقم أو الـ slug العادي أو الاسم الكامل، وبيرفض واحد فيه folderين بنفس الرقم. مهمة قديمة خلصت من غير route line ومن غير ملف QC بتظهر <code>Legacy</code> في <code>status</code> و<code>item list</code>.</p>
+<h3>الـ plan والـ sub-units</h3>
+<p>الـ plan ملفين: القرارات وbuild spec فيه test وكود كامل لكل sub-unit. الـ sub-unit بتمشي Draft → Approved → In progress → Implemented → Reviewed، درجة واحدة كل مرة بـ <code>item set</code>. الـ sub-unit مابتبقاش خطوة لوحدها غير لسبب مكتوب: A1 بتلمس مسار حساس أو scope escalator، A2 بتكتب قرارك أو حالة gate، A3 سلوكها محتاج test بيفشل لوحده. ستة على الأكتر؛ و<code>item check</code> بيبلّغ عن سبب ناقص.</p>
+<h3>لما خطوة تغلط</h3>
+<p>الـ agent بيسأل الأول: المشكلة دي محتاجة قرار؟ <b>Class A</b>، من غير قرار: finding جوه المهمة وحلها بيحافظ على الـ story، أو كلام في الـ spec مش مطابق للكود، أو bug جوه الـ scope. الـ agent بيصلّحها، وبيسجّلها بـ <code>deviation add … --apply "&lt;why no decision is needed&gt;"</code> وبيكمّل؛ و<code>guide</code> و<code>item finish</code> بيعرضوا لك كل row زي كده. <b>Class B</b>، قرار: تغيير في النية أو الـ scope، اختيار حقيقي، أمان، data، فلوس، أي حاجة مايترجعش فيها، تعديل test قديم، finding برّه المهمة. الـ agent بيسجّل row مفتوح بـ <code>deviation add</code> وبيقف؛ و<code>guide</code> بيقول إن الكود مش مسموح لحد ما تشغّل <code>deviation resolve</code>. لو في شك فهي class B. <code>deviation done &lt;slug&gt; &lt;n&gt; --in unit:&lt;N&gt;</code> بيكتب فين اتنفّذ تغيير اتوافق عليه، و<code>item finish</code> بيرفض row موافَق عليه من غير الأثر ده.</p>
+<h3>الـ reviews والـ findings والـ QC</h3>
+<p>reviewer جديد بيقرا diff كل sub-unit وبيكتب تقرير فيه <b>Performed by</b> وبينتهي بجدول findings: <code>finding add</code> بيكتب row (Critical أو Important أو Minor) أو <code>No findings.</code>. كل row بتستنى قرارك (اتصلّحت، أو discovery، أو مقبولة بسببك، ومش مقبولة لـ Critical أبدًا)؛ و<code>item finish</code> و<code>approve qc</code> بيستنوا كلهم. الـ QC النهائي بيشتغل على الـ routes اللي بتطلبه، في context جديد، وبيقترح PASS أو FAIL: الـ PASS دليل، مش ضمان. QC اتكتب في نفس الـ session اللي كتبت الكود بيتحسب مراجعة ذاتية.</p>
+<h3>الإقفال</h3>
+<p>الـ knowledge review بيقترح دروس؛ وإنت بتحتفظ أو بترفض. <code>state close</code> بيصغّر block المهمة في ملف الحالة لسطر واحد مقفول؛ والنتيجة واحدة من QC PASS أو Done (no QC) أو Paused أو Superseded أو Already satisfied. إنت بتقفل مهمة الكود حقّق الـ story بتاعتها فعلًا بـ <code>item close &lt;slug&gt; --already-satisfied "&lt;reason&gt;" --by &lt;your name&gt;</code>.</p>
+<p class="source"><b>المصدر:</b> <code>kit/phases/lifecycle.md</code> · <code>kit/phases/stage-build.md</code> · <code>kit/phases/stage-plan.md</code> · <code>kit/phases/review.md</code> · <code>docs/features.md</code> · <code>README.md</code> (Life of a task, Routes, Reviews)</p>
+</section>
+
+<section class="chapter" id="decide">
+<h2>5. إيه اللي إنت بس بتقرره</h2>
+<div class="scroll"><table>
+<tr><th>القرار</th><th>burhan بيحفظه إزاي</th></tr>
+<tr><td>Story وplan</td><td><code>approve</code> بيسجّل اسمك وبيرفض اسم الـ agent؛ والـ agent بيوريك الأمر</td></tr>
+<tr><td>الـ Baseline</td><td>الـ agent بيكتبه بس بعد ما توافق أو تصحّح أو تتنازل</td></tr>
+<tr><td>مين بيعمل الـ verification</td><td>الـ agent بيسألك قبل أي verification حقيقي</td></tr>
+<tr><td>حكم الـ QC</td><td>الـ QC بيقترح PASS أو FAIL؛ وإنت بتقبله بـ <code>approve qc</code></td></tr>
+<tr><td>finding في review أو QC</td><td><code>finding decide</code>: اتصلّحت، أو discovery، أو مقبولة بسببك (مش لـ Critical أبدًا)</td></tr>
+<tr><td>Deviation</td><td>row مفتوح بيوقّف الشغل لحد <code>deviation resolve</code>؛ وحل معروف بيتعرض عليك، مش بيتسأل فيه</td></tr>
+<tr><td>Discovery</td><td>حاجة المهمة ماطلبتهاش بتروح لملفها؛ ومابتتصلّحش بالسكوت</td></tr>
+<tr><td>مهمة الكود محققها فعلًا</td><td><code>item close --already-satisfied</code> بسبب مكتوب واسمك</td></tr>
+<tr><td>الـ Commit</td><td>دلوقتي أو بعدين أو بنفسك؛ “finish” مش موافقة</td></tr>
+<tr><td>Push أو pull request</td><td>بس لما تطلب</td></tr>
+<tr><td>ثقة Codex في الـ hooks</td><td>إنت اللي بتدّيها؛ burhan عمره ما بيعملها</td></tr>
+</table></div>
+<p class="source"><b>المصدر:</b> <code>README.md</code> (What only you decide) · <code>docs/features.md</code> (Commands that own the task files)</p>
+</section>
+
+<section class="chapter" id="proof">
+<h2>6. الـ skills والـ hooks والإثبات</h2>
+<h3>ست process skills</h3>
+<div class="scroll"><table>
+<tr><th>الـ skill</th><th>الـ agent بيفتحها</th><th>لـ</th></tr>
+<tr><td><code>burhan-story</code></td><td>طلب بيغيّر سلوك</td><td>جولة أسئلة واحدة، والـ route، وstory</td></tr>
+<tr><td><code>burhan-plan</code></td><td>الـ story اتوافق عليها</td><td>plan المنفّذ يقدر يمشي عليه كلمة كلمة</td></tr>
+<tr><td><code>burhan-build</code></td><td>قبل كود الـ sub-unit</td><td>الـ test الأول ومتشاف بيفشل</td></tr>
+<tr><td><code>burhan-debug</code></td><td>bug أو test بيفشل أو QC فشل</td><td>السبب الجذري قبل أي إصلاح</td></tr>
+<tr><td><code>burhan-review</code></td><td>sub-unit اتنفّذت</td><td>راجع الـ diff وسجّل findings</td></tr>
+<tr><td><code>burhan-done</code></td><td>قبل ما تقول done</td><td>مفيش ادعاء من غير أمر اتشغّل دلوقتي</td></tr>
+</table></div>
+<p>بتنزل في <code>.burhan/skills/</code>، وفي Claude Code كمان كنسخ في <code>.claude/skills/</code>؛ وskill بتاعتك بنفس الاسم عمرها ما بتتكتب فوقها. الـ skill المتخطّاة بتتبلّغ، ومابتمنعش حاجة.</p>
+<h3>ست hooks</h3>
+<div class="scroll"><table>
+<tr><th>اللحظة</th><th>الـ hook</th><th>الغرض</th></tr>
+<tr><td>بداية الـ session</td><td><code>session-gates</code></td><td>gates وحالة المهام وsetup أول استخدام وkit command ناقص</td></tr>
+<tr><td>رسالتك</td><td><code>prompt-router</code></td><td>اقتراح phase وmode؛ وتذكير بالـ baseline</td></tr>
+<tr><td>قبل الـ commit</td><td><code>pre-commit-check</code></td><td>الـ fast check واختيارك للـ commit</td></tr>
+<tr><td>قبل الكتابة</td><td><code>pre-edit-skill</code></td><td>skill ناقصة، وstate block بتاع session تانية</td></tr>
+<tr><td>بعد التعديل</td><td><code>post-edit-reminder</code></td><td>تذكير بالـ test الأول وبالمسارات الحساسة</td></tr>
+<tr><td>آخر الـ turn</td><td><code>turn-audit</code></td><td>فحص الدليل والـ lifecycle والإكمال</td></tr>
+</table></div>
+<h3>إثبات “done”</h3>
+<p>الـ hooks بتشتغل على Node، من غير bash ولا <code>jq</code>، وكل واحد بيفشل مفتوح. لما turn يعدّل كود ويقول إنه خلّص، <code>turn-audit</code> بيتأكد إن أمر دليل ناجح اتشغّل بعد آخر تعديل كود؛ وبيعلّم كمان على state قديم وكود قبل baseline متقرر وskills متخطّاة وإثبات QC ضعيف وعقود ملفات مهام مكسورة.</p>
+<pre>⚠ VERIFICATION GATE: completion was claimed, but the last run of `npm test 2>&amp;1 | tail -15` was blocked and never ran. Run it, show the output — or retract the claim.</pre>
+<p><code>verify &lt;slug&gt; -- &lt;command&gt;</code> بيشغّل أمر الإثبات بنفسه وبيسجّل exit code بتاعه في <code>NNN-slug-verify.jsonl</code>؛ و<code>item finish</code> بيقبل التسجيل ده، فمشروع من غير hooks بردو بياخد إثبات مسجّل. وبيرفض مهمة ماوصلتش للـ build. الـ ledger برّه المشروع، تحت <code>~/.local/state/burhan/evidence/</code>: تعديلات متبلّغ عنها وسطور أوامر وexit codes، مش output الأوامر أبدًا. <code>evidence --item &lt;slug&gt;</code> بيطبعه، وزي <code>guide</code> بيخلص بسطر <code>full run:</code>: فيه run ناجح للـ suite كلها بعد آخر تعديل كود ولا لأ (بيحتاج <code>WF_FULL_TEST_REGEX</code>).</p>
+<p class="source"><b>المصدر:</b> <code>README.md</code> (Proof, Reference) · <code>docs/features.md</code> · <code>kit/phases/skills.md</code> · <code>kit/phases/enforcement.md</code> · <code>kit/skills/shared/</code></p>
+</section>
+
+<section class="chapter" id="commands">
+<h2>7. كل command</h2>
+<p>كل command بيرد على <code>--help</code> وبيطبع بس. <code>&lt;slug&gt;</code> هو الاسم المختصر للمهمة أو رقمها أو اسم الـ folder بتاعها. أي command ماعدا <code>init</code> بيلاقي المشروع من أي subfolder.</p>
+<div class="scroll"><table>
+<tr><th>الـ command</th><th>بيعمل إيه</th></tr>
+<tr><td><code>init [dir]</code></td><td>يسطّب الـ kit؛ dry run لحد <code>--apply</code></td></tr>
+<tr><td><code>upgrade [dir]</code></td><td>يجدّد مشروع مسطّب؛ dry run لحد <code>--apply</code></td></tr>
+<tr><td><code>uninstall [dir]</code></td><td>يشيل burhan؛ وبيسيب config وbindings وlocal وملفات الشغل إلا لو <code>--all</code></td></tr>
+<tr><td><code>setup [dir]</code></td><td>setup موجّه؛ وكمان <code>--agent</code> و<code>--answers &lt;file&gt;</code> و<code>--stack</code> و<code>--set check=… full=…</code></td></tr>
+<tr><td><code>doctor [dir]</code></td><td>فحص صحة للقراءة بس؛ exit 1 عند fail</td></tr>
+<tr><td><code>guide [slug]</code></td><td>المرحلة، وتعديل الكود مسموح ولا لأ، والخطوة الجاية</td></tr>
+<tr><td><code>use &lt;slug&gt;</code></td><td>يربط الـ session دي بمهمة شغّالة</td></tr>
+<tr><td><code>item list [dir]</code></td><td>سطر لكل مهمة: id وroute وstate</td></tr>
+<tr><td><code>item new &lt;slug&gt;</code></td><td>ينشئ ملفات المهمة وstate block بتاعها</td></tr>
+<tr><td><code>item set &lt;slug&gt; …</code></td><td>ينقل حالة plan أو sub-unit درجة واحدة</td></tr>
+<tr><td><code>item check &lt;slug&gt;</code></td><td>يسمّي كل خطأ في ملفات المهمة</td></tr>
+<tr><td><code>item finish &lt;slug&gt;</code></td><td>يكمّل الـ plan: units Reviewed وgates اتعلّمت وإثبات</td></tr>
+<tr><td><code>item close &lt;slug&gt;</code></td><td>يقفل مهمة الكود حقّق الـ story بتاعتها فعلًا</td></tr>
+<tr><td><code>gate tick &lt;slug&gt; &lt;gate&gt;</code></td><td>يعلّم gate لما دليله يبقى موجود</td></tr>
+<tr><td><code>approve story|plan|qc &lt;slug&gt; --by &lt;name&gt;</code></td><td>يكتب موافقتك؛ واسم الـ agent بيترفض</td></tr>
+<tr><td><code>review add &lt;slug&gt;</code></td><td>يكتب تقرير فيه <b>Performed by</b></td></tr>
+<tr><td><code>finding add &lt;slug&gt;</code></td><td>يضيف row finding، أو <code>No findings.</code> بـ <code>--none</code></td></tr>
+<tr><td><code>finding list &lt;slug&gt;</code></td><td>كل finding وقرارها؛ والمفتوحة كسؤال واحد</td></tr>
+<tr><td><code>finding decide &lt;slug&gt; &lt;n&gt; --by &lt;name&gt;</code></td><td>قرارك: <code>--fixed</code> أو <code>--discovery</code> أو <code>--accepted</code>؛ ومقبولة مش لـ Critical أبدًا</td></tr>
+<tr><td><code>finding discover &lt;slug&gt;</code></td><td>يفتح discovery لكل finding من غير قرار (ماعدا Critical)</td></tr>
+<tr><td><code>deviation add &lt;slug&gt;</code></td><td>يسجّل خطوة خرجت عن الـ spec (<code>--unit</code> و<code>--what</code> و<code>--where</code> و<code>--output</code>)؛ و<code>--apply</code> لما مفيش قرار مطلوب</td></tr>
+<tr><td><code>deviation resolve &lt;slug&gt; &lt;n&gt; --by &lt;name&gt;</code></td><td>قرارك: <code>--approved</code> أو <code>--rejected</code></td></tr>
+<tr><td><code>deviation done &lt;slug&gt; &lt;n&gt; --in unit:&lt;N&gt;</code></td><td>يكتب فين اتنفّذ deviation متوافق عليه</td></tr>
+<tr><td><code>verify &lt;slug&gt; -- &lt;command&gt;</code></td><td>يشغّل أمر إثبات من غير shell ويسجّل انتهى إزاي</td></tr>
+<tr><td><code>state show [&lt;slug&gt;]</code></td><td>يطبع block مهمة، أو يعرض الـ blocks</td></tr>
+<tr><td><code>state set &lt;slug&gt; &lt;Label&gt; &lt;value&gt;</code></td><td>يغيّر سطر واحد في الـ block، تحت lock</td></tr>
+<tr><td><code>state close &lt;slug&gt;</code></td><td>يبدّل الـ block بسطره المقفول (<code>--outcome</code> و<code>--commit</code> و<code>--folder</code>)</td></tr>
+<tr><td><code>state compact [--apply]</code></td><td>يقصّر سطور المهام المقفولة القديمة؛ dry run لحد <code>--apply</code></td></tr>
+<tr><td><code>status [dir]</code></td><td>يعرض المهام؛ و<code>--write</code> يعيد كتابة الـ index</td></tr>
+<tr><td><code>stats [dir]</code></td><td>routes وأحكام QC وعيوب هربت وتوقيت</td></tr>
+<tr><td><code>changed --item &lt;slug&gt;</code></td><td>ملفات اتغيّرت من وقت verify الـ story</td></tr>
+<tr><td><code>evidence [--item &lt;slug&gt;]</code></td><td>الـ ledger: كل أمر بـ exit code بتاعه</td></tr>
+<tr><td><code>pr-body --item &lt;slug&gt;</code></td><td>وصف pull request من ملفات المهمة</td></tr>
+<tr><td><code>inspect [dir]</code></td><td>نظرة للقراءة بس على الشجرة، بالأسماء بس</td></tr>
+<tr><td><code>memory check [dir]</code></td><td>يفحص ذاكرة المشروع؛ exit 1 عند fail</td></tr>
+<tr><td><code>memory status [dir]</code></td><td>كل fact: fresh أو changed أو missing أو unchecked</td></tr>
+<tr><td><code>memory affected [dir] --since &lt;ref&gt;</code></td><td>الـ facts اللي ملفاتها اتغيّرت من git ref</td></tr>
+</table></div>
+<p><code>item check</code> بيطلع exit 1 بس لملف عليه <code>**Contract:** 1</code>. الـ agent بيشغّل دول كـ <code>npx burhan-kit</code> وبعده الـ command؛ وإنت كمان تقدر.</p>
+<p class="source"><b>المصدر:</b> <code>node dist/cli.js --help</code> (the forms above are the ones it prints) · <code>README.md</code> (Reference, Commands) · <code>docs/features.md</code></p>
+</section>
+
+<section class="chapter" id="settings">
+<h2>8. الإعدادات</h2>
+<p><code>.burhan/workflow.config</code> فيه سطور <code>KEY=value</code> حرفية؛ و<code>.burhan/local/workflow.config</code> git-ignored وبيغطي عليه مفتاح مفتاح. أي check مفتاحه فاضي بيفضل ساكت. <code>setup --set</code> بيحفظ الـ check وإعدادات الكود والـ test والإثبات والـ suite الكاملة والمسارات الحساسة من غير تعديل يدوي.</p>
+<div class="scroll"><table>
+<tr><th>المفتاح</th><th>بيعمل إيه</th></tr>
+<tr><td><code>WF_DOCS_DIR</code>, <code>WF_DISCOVERY_DIR</code></td><td>فين folders المهام وملفات الـ discovery</td></tr>
+<tr><td><code>WF_STATE_FILE</code>, <code>WF_STATE_BUDGET</code></td><td>ملف الحالة الحي وميزانية سطوره (الافتراضي 80)</td></tr>
+<tr><td><code>WF_CHECK_CMD</code>, <code>WF_CHECK_TIMEOUT</code></td><td>الـ fast check قبل كل commit، ومهلته (الافتراضي 60؛ للفريق بس، شغّل <code>upgrade</code> بعد التغيير)</td></tr>
+<tr><td><code>WF_STACK_SETUP</code></td><td><code>pending</code> طول ما setup أول استخدام لسه متعملش</td></tr>
+<tr><td><code>WF_CODE_REGEX</code>, <code>WF_TEST_REGEX</code></td><td>أنهي مسارات كود وأنهي tests؛ ولو فاضيين تذكير الـ test الأول وتحذير “done” بيسكتوا</td></tr>
+<tr><td><code>WF_EVIDENCE_REGEX</code>, <code>WF_FULL_TEST_REGEX</code></td><td>أنهي أوامر بتتحسب إثبات، وأنهي واحد بيشغّل الـ suite كلها</td></tr>
+<tr><td><code>WF_SENSITIVE_REGEX</code>, <code>WF_SENSITIVE_NOTE</code></td><td>مسارات بتأثر على الصلاحيات أو الرؤية، والتذكير بعد تعديل واحد منها</td></tr>
+<tr><td><code>WF_ITEM_CONTRACT</code></td><td><code>on</code>: الـ audit بيفحص ملفات المهام على العقد وبيحذّر لو كود اتعدّل و<code>guide</code> بيقول مش مسموح؛ <code>init</code> بيكتب <code>on</code>؛ وغيابه معناه off</td></tr>
+<tr><td><code>WF_MODE_DEFAULT</code>, <code>WF_MODE_&lt;TYPE&gt;_&lt;SCOPE&gt;</code></td><td><code>step</code> أو <code>auto</code>؛ والشكل التاني بيحدد route واحد</td></tr>
+<tr><td><code>WF_MODEL_CLAUDE_REVIEWER</code>, <code>WF_MODEL_CLAUDE_PLANNER</code>, <code>WF_MODEL_CLAUDE_BUILDER</code>, <code>WF_MODEL_CLAUDE_EXPLORER</code></td><td>الـ model لكل role agent في Claude Code؛ فاضي يخلّي model الـ session</td></tr>
+<tr><td><code>WF_REVIEWER_AGENT</code></td><td>مين بيشغّل QC: <code>same</code> أو <code>other</code> أو <code>claude</code> أو <code>codex</code></td></tr>
+<tr><td><code>WF_EVIDENCE_LEDGER</code>, <code>WF_EVIDENCE_DIR</code></td><td><code>on</code> أو <code>off</code> للـ ledger، ومسار مطلق حرفي لنقله</td></tr>
+</table></div>
+<p class="source"><b>المصدر:</b> <code>kit/workflow.config.example</code> (every key and its default) · <code>docs/configuration.md</code></p>
+</section>
+
+<section class="chapter" id="team">
+<h2>9. الذاكرة والحالة والشغل الجماعي</h2>
+<h3>ذاكرة المشروع</h3>
+<p><code>/burhan:onboard</code> بيخلّي الـ agent يكتب مسودة <code>.burhan/PROJECT.md</code> وملفات facts في <code>.burhan/context/</code>؛ وإنت بتوافق أو تصحّح أو تتنازل عن الـ baseline. الـ fact بيذكر مسار ملف وhash قصير، مش محتوى الملف أبدًا. <code>memory status</code> بيعلّم كل fact: fresh أو changed أو missing أو unchecked؛ و<code>memory check</code> ممكن يشتغل في CI.</p>
+<h3>الحالة والـ sessions</h3>
+<p>ملف الحالة <code>.burhan/local/PROGRESS.md</code> لقطة لكل developer فيها block لكل مهمة. الـ agent بيغيّر الـ block بتاعه بس عن طريق <code>state set</code> و<code>state close</code>، تحت lock؛ والتعديل اليدوي لسه ممكن ومفيش حاجة بتمنعه. خلّي مهمة واحدة لكل session.</p>
+<h3>الفرق والـ agents</h3>
+<p>بتتعمل لها commit وبتتراجع زي الكود: <code>bindings.md</code> و<code>workflow.config</code> وfolders المهام (لكل واحد مالك) و<code>PROJECT.md</code> و<code>context/</code>. الشخصي: <code>.burhan/local/</code>. عمرك ما تستخدم <code>merge=union</code> على الملفات دي؛ بيخبّي التكرار. Claude Code بيبقى معاه <code>/burhan:e2e</code> و<code>/burhan:qc</code> و<code>/burhan:onboard</code>؛ وCodex بيتبع command files عن طريق <code>AGENTS.md</code> وبيستخدم إعدادات الـ model بتاعتك إنت، اللي burhan عمره ما بيكتبها.</p>
+<p class="source"><b>المصدر:</b> <code>README.md</code> (Project memory, Claude Code and Codex) · <code>docs/features.md</code> (Memory and team)</p>
+</section>
+
+<section class="chapter" id="package">
+<h2>10. الـ package: الـ CI والـ release</h2>
+<h3>الـ CI</h3>
+<p><code>.github/workflows/ci.yml</code> بيشتغل على كل push وpull request. jobs على <code>ubuntu-24.04</code> و<code>macos-latest</code>، الاتنين على Node 24، بتشغّل الـ lint والـ test suite كلها و<code>npm pack --dry-run</code>. وjob على <code>windows-latest</code>، Node 24، بتشغّل الـ Node suite وbash و<code>jq</code> متشالين من الـ PATH. Node 22، الحد الأدنى، مابيتشغلش هناك.</p>
+<h3>الـ release</h3>
+<p><code>.github/workflows/release.yml</code> بيبدأ لما tag بيطابق <code>v*</code> يتعمله push. <code>guard</code> بيفحص الـ tag على <code>package.json</code> والـ CHANGELOG والـ branch وnpm. <code>verify</code> بيشغّل lint وtests على Node 22 و24. <code>pack</code> بيسطّب الـ tarball المتعمل وبيشغّل <code>burhan --version</code>. <code>publish</code> بيشتغل على environment اسمه <code>npm-release</code>: بيستنى موافقتك بس لو ضفت نفسك مرة واحدة كـ required reviewer للـ environment ده على GitHub (من غير كده مفيش وقفة؛ و<code>docs/releasing.md</code> فيه خطوات الإعداد لمرة واحدة)، وبعدين بينشر بـ <code>--provenance</code>، على <code>next</code> للـ prerelease وعلى <code>latest</code> غير كده. <code>github-release</code> بيكتب GitHub Release من الـ CHANGELOG. إنت اللي بتعمل push للـ tag، وإنت اللي بتوافق على النشر لما الـ environment يطلب كده.</p>
+<p>الـ handbook ده مش في الـ npm package. <code>tests/handbook.test.sh</code>، جزء من <code>npm test</code>، بيفشل لو command من <code>--help</code> ناقص منه.</p>
+<p class="source"><b>المصدر:</b> <code>.github/workflows/ci.yml</code> · <code>.github/workflows/release.yml</code> · <code>docs/releasing.md</code> · <code>docs/ci-and-windows.md</code> · <code>package.json</code></p>
+</section>
+
+<section class="chapter" id="limits">
+<h2>11. المشاكل والحدود</h2>
+<h3>لما حاجة تبان غلط</h3>
+<div class="scroll"><table>
+<tr><th>اللي بتشوفه</th><th>تعمل إيه</th></tr>
+<tr><td><code>doctor</code> بيفشل أو بيحذّر</td><td>اقرا السطر اللي بيسمّيه؛ وsetup سليم يقول <code>all 6 hooks wired</code></td></tr>
+<tr><td>hooks بتاعة Codex مابتعملش حاجة</td><td>وافق عليها من <code>/hooks</code></td></tr>
+<tr><td><code>KIT COMMAND NOT FOUND</code> في أول الـ session</td><td>شغّل أمر التسطيب اللي <code>setup</code> أو <code>doctor</code> بيطبعه</td></tr>
+<tr><td><code>guide</code> بيقول الكود مش مسموح</td><td>الـ story أو الـ plan لسه ماتوافقش عليه، أو deviation مفتوح مستني <code>deviation resolve</code></td></tr>
+<tr><td><code>item finish</code> بيرفض</td><td>بيسمّي السبب: unit مش Reviewed، أو gate مش معلّم، أو deviation مفتوح، أو واحد موافَق عليه من غير <code>deviation done</code>، أو finding من غير قرار، أو مفيش إثبات ناجح</td></tr>
+<tr><td><code>verify</code> بيطلع exit 2</td><td>المهمة ماوصلتش للـ build؛ ومفيش حاجة اتسجّلت</td></tr>
+<tr><td><code>full run:</code> cannot tell</td><td>احفظ أمر الـ suite الكاملة: <code>setup --set full=&lt;regex&gt;</code></td></tr>
+</table></div>
+<h3>الحدود</h3>
+<ul>
+<li>الـ hooks عمرها ما بتمنع؛ وأوامر المهمة بترفض خطوة غلط؛ والـ agent يقدر يتخطى الاتنين.</li>
+<li>الـ hooks بتشوف بس النشاط اللي الـ agent بيبلّغ عنه؛ وتعديلات الـ shell بتظهر بس عن طريق <code>&gt;</code> و<code>&gt;&gt;</code> و<code>tee</code>.</li>
+<li>نتايج hooks بتاعة Codex محتاجة ثقة، وأمر من غير نتيجة مسجّلة مش نجاح.</li>
+<li>الـ CI بيشغّل الـ Node suite على <code>windows-latest</code> من غير bash ولا <code>jq</code>: مش session حقيقية لـ agent على Windows أو macOS.</li>
+<li>الـ ledger بيكبر لحد ما تمسحه.</li>
+<li>الـ handbook ده لقطة: الـ stamp على الغلاف بيقول اتفحص على أنهي version.</li>
+</ul>
+<h3>اقرا بعد كده</h3>
+<p><a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/README.md">README</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md">Features</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md">Configuration</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md">A recorded first task</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/upgrading.md">Upgrading</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/releasing.md">Releasing</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/ci-and-windows.md">CI and Windows</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md">Roadmap</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/issues">Issues</a></p>
+<p class="source"><b>المصدر:</b> <code>README.md</code> (Limits, Safety and rollback) · <code>docs/ci-and-windows.md</code> · <code>docs/upgrading.md</code></p>
+</section>
+</main>
+</body>
+</html>

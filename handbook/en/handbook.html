@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>burhan-kit owner handbook</title>
+<style>
+:root{color-scheme:light dark;--bg:#edf1f7;--paper:#fff;--ink:#182338;--muted:#58677d;--line:#d5dce8;--brand:#105c76;--accent:#067d72;--code:#eef2f7;--warn:#915f00}
+@media(prefers-color-scheme:dark){:root{--bg:#101722;--paper:#172131;--ink:#e8eef9;--muted:#aebbd0;--line:#334258;--brand:#70d8e9;--accent:#6ed8bf;--code:#0e1622;--warn:#f1c568}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 Tahoma,Arial,sans-serif}
+.book{max-width:960px;margin:0 auto;background:var(--paper);padding:48px 60px;box-shadow:0 0 40px #18233816}
+.cover{border-bottom:4px solid var(--brand);padding-bottom:24px}
+h1,h2,h3{line-height:1.28;margin:0 0 .65em}
+h1{font-size:2.6rem;letter-spacing:-1px}
+h2{font-size:1.65rem;border-bottom:2px solid var(--line);padding-bottom:.3em}
+h3{font-size:1.2rem;margin-top:1.3em}
+p{margin:.5em 0 .9em}
+.lead{font-size:1.1rem;max-width:64ch}
+.stamp{color:var(--muted);font-size:.9rem}
+.chapter{margin-top:48px}
+.toc ol{columns:2;gap:32px;padding-left:1.4em}
+a{color:var(--brand)}
+.box{border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--paper));padding:12px 16px;margin:16px 0}
+.source{font-size:.84rem;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;margin-top:18px}
+.source b{color:var(--ink)}
+.scroll{overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+th{color:var(--brand);background:color-mix(in srgb,var(--brand) 9%,var(--paper))}
+code,pre{direction:ltr;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--code);font-size:.88em}
+code{border-radius:4px;padding:.1em .3em;unicode-bidi:isolate}
+pre{padding:12px;border-radius:9px;overflow:auto;white-space:pre-wrap;text-align:left}
+li{margin:.3em 0}
+ul,ol{padding-left:1.4em}
+@page{size:A4;margin:15mm 14mm}
+@media print{:root{color-scheme:light}body{background:#fff}.book{max-width:none;box-shadow:none;padding:0}.toc{break-after:page}h2,h3{break-after:avoid}pre,tr,.box{break-inside:avoid}.chapter{margin-top:28px}a{color:inherit;text-decoration:none}.scroll{overflow:visible}}
+@media(max-width:700px){.book{padding:28px 18px}.toc ol{columns:1}h1{font-size:2rem}}
+</style>
+</head>
+<body>
+<main class="book">
+<header class="cover" id="top">
+<p><a href="../handbook.html" lang="ar" dir="rtl">العربية</a> · the Arabic copy is <code>handbook/handbook.html</code> and <code>handbook/burhan-handbook.pdf</code></p>
+<h1>burhan-kit owner handbook</h1>
+<p class="lead">How a task moves from your request to a commit, what only you decide, every command and setting, and where burhan stops. The README is the first chapter; the rest goes deeper and says where each claim comes from.</p>
+<p class="stamp">Checked on 2026-11-21 against burhan-kit <code>0.9.1</code>, built from the source of commit <code>6362a7b</code>, the release commit of that version. Examples are instructional, not records of real runs.</p>
+</header>
+<nav class="toc" id="toc">
+<h2>Contents</h2>
+<ol>
+<li><a href="#idea">What burhan is</a></li>
+<li><a href="#install">Install and first setup</a></li>
+<li><a href="#first-task">Your first task</a></li>
+<li><a href="#flow">The flow in detail</a></li>
+<li><a href="#decide">What only you decide</a></li>
+<li><a href="#proof">Skills, hooks and proof</a></li>
+<li><a href="#commands">Every command</a></li>
+<li><a href="#settings">Settings</a></li>
+<li><a href="#team">Memory, state and teamwork</a></li>
+<li><a href="#package">The package: CI and release</a></li>
+<li><a href="#limits">Problems and limits</a></li>
+</ol>
+</nav>
+
+<section class="chapter" id="idea">
+<h2>1. What burhan is</h2>
+<p>Coding agents say “done” without proof. burhan is spec-driven development for Claude Code and Codex. The story and the plan are the spec: you approve them before any code, each acceptance criterion maps to a test, every build step is reviewed, and a step that departs from the plan is recorded. Task commands and hooks (small scripts that report at set moments) keep the record.</p>
+<div class="box"><b>Keep four things apart.</b> The agreement says what should happen. Hooks report. The ledger records what ran. You own the approvals, the commit and the risk decisions.</div>
+<p><b>Terms.</b> A <b>sub-unit</b> is one small planned build step. A <b>gate</b> is a point where the agent waits for you or for a proof (S story, P plan, T test-first build, R review, V verification, Q QC, K knowledge). <b>QC</b> is the final independent check that every acceptance criterion is delivered. The <b>baseline</b> is your approved (or waived) record of what the agent understood about the project. A <b>knowledge review</b> is where the agent proposes lessons worth keeping and you keep or reject them.</p>
+<h3>What it does not claim</h3>
+<p>No hook blocks an action: hooks report and fail open. Task commands refuse a wrong lifecycle step, but an agent can skip them, and the block that <code>init</code> writes into <code>CLAUDE.md</code> or <code>AGENTS.md</code> is an instruction, not a lock. burhan cannot prove work nobody reported.</p>
+<p class="source"><b>source:</b> <code>README.md</code> (Problem and answer, Limits) · <code>kit/phases/enforcement.md</code></p>
+</section>
+
+<section class="chapter" id="install">
+<h2>2. Install and first setup</h2>
+<p><b>Requirements:</b> Node 22+; Claude Code 2.1.139 or newer and/or Codex with its hooks trusted; the kit installed in the project (<code>npm i -D burhan-kit</code>) or on the PATH (<code>npm i -g burhan-kit</code>). Here <code>burhan</code> means the project's <em>kit command</em>, the one <code>.burhan/bindings.md</code> names: <code>npx burhan-kit</code> runs the copy installed in the project, and a plain <code>burhan</code> only where it is on the PATH. burhan does not run npm: with no kit command, setup prints the install command for you to run.</p>
+<ol>
+<li>In the project root run <code>npx burhan-kit</code>, then <code>npx burhan-kit doctor</code>. Setup asks four questions (five with both agents), shows a summary and writes only after you confirm. A healthy setup says <code>all 6 hooks wired</code>.</li>
+<li>Codex only: trust the project hooks in <code>/hooks</code>, or they do not run; trust them again after an upgrade that changes one.</li>
+<li>Open a new agent session and type <code>start</code> (or <code>/burhan:onboard</code> in Claude Code). The agent proposes the project's checks and a baseline for your approval.</li>
+<li>Start a task with <code>/burhan:e2e &lt;slug&gt;</code> in Claude Code; in Codex follow the command file under <code>.burhan/commands/</code>. The six process skills ship with the kit; there is nothing else to install.</li>
+</ol>
+<h3>What lands in your project</h3>
+<div class="scroll"><table>
+<tr><th>Path</th><th>What it is, and who owns it</th></tr>
+<tr><td><code>.burhan/</code> WORKFLOW.md SETUP.md VERSION phases/ templates/ commands/ skills/ hooks/</td><td>the working agreement, templates, skills and hook scripts; kit-owned, refreshed by <code>upgrade</code></td></tr>
+<tr><td><code>.burhan/bindings.md</code>, <code>.burhan/workflow.config</code></td><td>the project's values; yours, never overwritten by <code>upgrade</code></td></tr>
+<tr><td><code>.burhan/PROJECT.md</code>, <code>.burhan/context/</code></td><td>shared project memory</td></tr>
+<tr><td><code>.burhan/local/PROGRESS.md</code></td><td>the live state file; per developer, git-ignored</td></tr>
+<tr><td><code>.burhan/work/NNN-slug/</code>, <code>.burhan/discovery/</code></td><td>task files and side findings; private after <code>init</code>; the setup wizard recommends git</td></tr>
+<tr><td><code>.claude/</code> or <code>.codex/</code></td><td>hook settings; for Claude Code also <code>.claude/skills/burhan-*/</code></td></tr>
+<tr><td><code>CLAUDE.md</code> or <code>AGENTS.md</code></td><td>a marked burhan block; text outside it stays yours</td></tr>
+</table></div>
+<h3>Upgrade, uninstall and links</h3>
+<p><code>init</code>, <code>upgrade</code> and <code>uninstall</code> change nothing until you add <code>--apply</code>. <code>upgrade</code> refreshes the kit-owned files, hook entries and skills and keeps your own hooks; run <code>npx burhan-kit upgrade --apply</code> after each release. <code>uninstall</code> removes the kit entries under <code>.burhan/</code> (<code>WORKFLOW.md</code>, <code>SETUP.md</code>, <code>VERSION</code>, <code>phases</code>, <code>templates</code>, <code>commands</code>, <code>skills</code>, <code>hooks</code>) and, under <code>.claude/</code>, only files that carry burhan's mark; it keeps <code>workflow.config</code>, <code>bindings.md</code>, <code>.burhan/local/</code> and your task files unless you add <code>--all</code>. Every writer (<code>init</code>, <code>upgrade</code>, <code>setup</code>) refuses a write that would land outside the project through a symbolic link, and goes on only with <code>--allow-outside-links</code>.</p>
+<p class="source"><b>source:</b> <code>README.md</code> (Quick start, Safety and rollback) · <code>docs/upgrading.md</code> · <code>docs/configuration.md</code> · <code>src/lib/uninstall.ts</code></p>
+</section>
+
+<section class="chapter" id="first-task">
+<h2>3. Your first task</h2>
+<p>Ask for something small, such as a function with a test. The agent walks the stops below and waits for you at each one; the right column is what it runs. In <code>step</code> mode you see every stop.</p>
+<div class="scroll"><table>
+<tr><th>Stop</th><th>You decide</th><th>The agent runs</th></tr>
+<tr><td>1 · Intake</td><td>whether the route (type, scope, reason) fits</td><td><code>item new &lt;slug&gt; --type feature --scope bounded</code>, then <code>guide &lt;slug&gt;</code></td></tr>
+<tr><td>2 · Story and plan</td><td>answer its questions, read the card, say yes, then run <code>approve story &lt;slug&gt; --by &lt;name&gt;</code> and <code>approve plan &lt;slug&gt; --by &lt;name&gt;</code> with your name (the agent shows you the command)</td><td>writes the story, the plan and the build spec, then <code>item check &lt;slug&gt;</code></td></tr>
+<tr><td>3 · One sub-unit</td><td>whether to go on (<code>step</code> stops after each)</td><td>the test seen failing (RED), the code, the test passing (GREEN), the fast check; <code>item set &lt;slug&gt; unit 1 in-progress</code>, then <code>implemented</code></td></tr>
+<tr><td>4 · Review</td><td>every finding: fixed, a discovery, or accepted with your reason</td><td>a fresh reviewer: <code>review add &lt;slug&gt; --kind review --unit 1 --by "&lt;agent · model · context&gt;"</code>, <code>finding add</code>; you answer with <code>finding decide</code>; then <code>item set &lt;slug&gt; unit 1 reviewed</code></td></tr>
+<tr><td>5 · A surprise</td><td>only a problem that needs a decision stops the work</td><td>a known fix: <code>deviation add &lt;slug&gt; … --apply "&lt;why&gt;"</code> and the build goes on; a real choice: <code>deviation add</code> without <code>--apply</code>, a stop until you run <code>deviation resolve</code></td></tr>
+<tr><td>6 · Verify</td><td>who runs the real check (the agent asks first)</td><td><code>verify &lt;slug&gt; -- npm test</code> (your own command), then <code>review add &lt;slug&gt; --kind verification</code></td></tr>
+<tr><td>7 · QC</td><td>accept PASS, or send the task back to build</td><td>a fresh reviewer: <code>review add &lt;slug&gt; --kind qc --verdict PASS</code> and <code>finding add &lt;slug&gt; --in qc --none</code>; you accept with <code>approve qc &lt;slug&gt; --by &lt;name&gt;</code></td></tr>
+<tr><td>8 · Close</td><td>which lessons to keep; commit now, later, or yourself</td><td><code>item finish &lt;slug&gt;</code> (it names each gate still open; tick one with <code>gate tick</code>), then <code>state close &lt;slug&gt; --outcome &lt;state&gt; --commit &lt;id&gt; --folder &lt;path&gt;</code></td></tr>
+</table></div>
+<p>A smaller route skips stops it does not need. At any point <code>guide &lt;slug&gt;</code> says the stage, whether code edits are authorized, and the next step.</p>
+<p class="source"><b>source:</b> <code>README.md</code> (Your first task) · <code>docs/first-task.md</code> (a recorded run)</p>
+</section>
+
+<section class="chapter" id="flow">
+<h2>4. The flow in detail</h2>
+<pre>you ask → Intake → Story ✋ → Plan ✋ → Build ⇄ Review (each sub-unit)
+        → Verify ✋ → QC ✋ → Knowledge ✋ → Commit ✋
+✋ always you, in both modes</pre>
+<h3>Routes</h3>
+<p>Every request gets a route before work: a type (feature, bug, change, refactor, release, or investigation, which is read-only), a scope (bounded or architectural; a patch for one obvious change; a spike, read-only, only for an investigation or a bug diagnosis) and a one-line reason. You can correct it. A bounded feature has one story-and-plan approval, then build, review, verify, QC and knowledge; an architectural one has a separate story and plan, and the plan offers design options. Any one scope escalator makes a task architectural whatever its size: security or privacy, authorization or visibility, data model or migration, money, shared derived state, integration contracts or public APIs, irreversible behaviour, concurrency. The <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/README.md">README</a> lists every route's journey.</p>
+<h3>Modes</h3>
+<p><code>step</code>, the default, also pauses after every sub-unit's build and review. <code>auto</code> runs on after the story and plan, keeping the stops that are yours and braking only for a class B problem (below). The commit always stops. Say “go end to end” for <code>auto</code>, “wait for my approval” for <code>step</code>. A mode is not the agent's permission mode.</p>
+<h3>The task folder</h3>
+<pre>work/NNN-slug/
+  NNN-slug-story.md                Draft → Approved                          approve story
+  NNN-slug-implementation-plan.md  Draft → Approved → In progress → Completed   approve plan; item set; item finish
+  NNN-slug-build-spec.md           exact tests, code, commands               approved with the plan
+  NNN-slug-verify.jsonl            every proof run: command, exit code, time  verify
+  reviews/                         review, verification and QC reports, each with a findings table
+  sources/  repro/                 what you gave the agent; its scripts and logs
+  NNN-slug-state-notes.md · NNN-slug-already-satisfied.md   when used</pre>
+<p><code>item new</code> takes the next number. Every command accepts the number, the plain slug or the full name, and refuses one that two folders share. An old finished task with no route line and no QC file shows as <code>Legacy</code> in <code>status</code> and <code>item list</code>.</p>
+<h3>Plan and sub-units</h3>
+<p>The plan is two files: the decisions and a build spec with each sub-unit's complete test and code. A sub-unit moves Draft → Approved → In progress → Implemented → Reviewed, one rung at a time with <code>item set</code>. A sub-unit is its own step only for a written reason: A1 it touches a sensitive path or a scope escalator, A2 it writes your decision or a gate state, A3 its behaviour needs its own failing test. At most six; <code>item check</code> reports a missing reason.</p>
+<h3>When a step goes wrong</h3>
+<p>The agent first asks whether a problem needs a decision. <b>Class A</b>, no decision: a finding inside the task whose fix keeps the story, a spec wording that does not match the code, a bug inside the scope. The agent fixes it, records it with <code>deviation add … --apply "&lt;why no decision is needed&gt;"</code> and goes on; <code>guide</code> and <code>item finish</code> list every such row for you. <b>Class B</b>, a decision: a change of intent or scope, a real choice, security, data, money, anything irreversible, an edit of an older test, a finding outside the task. The agent records an open row with <code>deviation add</code> and stops; <code>guide</code> says code is not authorized until you run <code>deviation resolve</code>. When in doubt it is class B. <code>deviation done &lt;slug&gt; &lt;n&gt; --in unit:&lt;N&gt;</code> writes where an approved change was carried out, and <code>item finish</code> refuses an approved row with no such trace.</p>
+<h3>Reviews, findings and QC</h3>
+<p>A fresh reviewer reads each sub-unit's diff and writes a report that records <b>Performed by</b> and ends with a findings table: <code>finding add</code> writes a row (Critical, Important or Minor) or <code>No findings.</code>. Every row waits for your decision (fixed, a discovery, or accepted with your reason, never for a Critical); <code>item finish</code> and <code>approve qc</code> wait for all of them. Final QC runs on the routes that require it, in a fresh context, and proposes PASS or FAIL: PASS is evidence, not a guarantee. A QC written in the session that wrote the code is counted as self-review.</p>
+<h3>Closing</h3>
+<p>Knowledge review proposes lessons; you keep or reject them. <code>state close</code> shrinks the item's block in the state file to one closed line; the outcome is one of QC PASS, Done (no QC), Paused, Superseded or Already satisfied. You close a task whose story the code already satisfies with <code>item close &lt;slug&gt; --already-satisfied "&lt;reason&gt;" --by &lt;your name&gt;</code>.</p>
+<p class="source"><b>source:</b> <code>kit/phases/lifecycle.md</code> · <code>kit/phases/stage-build.md</code> · <code>kit/phases/stage-plan.md</code> · <code>kit/phases/review.md</code> · <code>docs/features.md</code> · <code>README.md</code> (Life of a task, Routes, Reviews)</p>
+</section>
+
+<section class="chapter" id="decide">
+<h2>5. What only you decide</h2>
+<div class="scroll"><table>
+<tr><th>Decision</th><th>How burhan holds it</th></tr>
+<tr><td>Story and plan</td><td><code>approve</code> records your name and refuses an agent's; the agent shows you the command</td></tr>
+<tr><td>Baseline</td><td>the agent writes it only after you approve, correct or waive</td></tr>
+<tr><td>Who verifies</td><td>the agent asks before any real verification</td></tr>
+<tr><td>QC verdict</td><td>QC proposes PASS or FAIL; you accept it with <code>approve qc</code></td></tr>
+<tr><td>A review or QC finding</td><td><code>finding decide</code>: fixed, a discovery, or accepted with your reason (never for a Critical)</td></tr>
+<tr><td>A deviation</td><td>an open row stops the work until <code>deviation resolve</code>; a known fix is listed for you, not asked</td></tr>
+<tr><td>A discovery</td><td>something the task did not ask for goes to its own file; never fixed silently</td></tr>
+<tr><td>A task the code already satisfies</td><td><code>item close --already-satisfied</code> with a written reason and your name</td></tr>
+<tr><td>Commit</td><td>now, later, or yourself; “finish” is not approval</td></tr>
+<tr><td>Push or pull request</td><td>only when you ask</td></tr>
+<tr><td>Codex hook trust</td><td>you grant it; burhan never does</td></tr>
+</table></div>
+<p class="source"><b>source:</b> <code>README.md</code> (What only you decide) · <code>docs/features.md</code> (Commands that own the task files)</p>
+</section>
+
+<section class="chapter" id="proof">
+<h2>6. Skills, hooks and proof</h2>
+<h3>Six process skills</h3>
+<div class="scroll"><table>
+<tr><th>Skill</th><th>The agent opens it</th><th>For</th></tr>
+<tr><td><code>burhan-story</code></td><td>a request that changes behaviour</td><td>one round of questions, the route, a story</td></tr>
+<tr><td><code>burhan-plan</code></td><td>the story is approved</td><td>a plan a builder can follow word for word</td></tr>
+<tr><td><code>burhan-build</code></td><td>before the code of a sub-unit</td><td>the test first and seen failing</td></tr>
+<tr><td><code>burhan-debug</code></td><td>a bug, a failing test or a failed QC</td><td>the root cause before any fix</td></tr>
+<tr><td><code>burhan-review</code></td><td>a sub-unit is implemented</td><td>review the diff, record findings</td></tr>
+<tr><td><code>burhan-done</code></td><td>before saying done</td><td>no claim without a command run now</td></tr>
+</table></div>
+<p>They land in <code>.burhan/skills/</code> and, for Claude Code, as copies in <code>.claude/skills/</code>; a skill of yours with the same name is never overwritten. A skipped skill is reported and never blocks.</p>
+<h3>Six hooks</h3>
+<div class="scroll"><table>
+<tr><th>Moment</th><th>Hook</th><th>Purpose</th></tr>
+<tr><td>Session start</td><td><code>session-gates</code></td><td>gates, task state, first-use setup, a missing kit command</td></tr>
+<tr><td>Your prompt</td><td><code>prompt-router</code></td><td>phase and mode suggestion; baseline reminder</td></tr>
+<tr><td>Before a commit</td><td><code>pre-commit-check</code></td><td>the fast check and your commit choice</td></tr>
+<tr><td>Before a write</td><td><code>pre-edit-skill</code></td><td>a missing skill, another session's state block</td></tr>
+<tr><td>After an edit</td><td><code>post-edit-reminder</code></td><td>test-first and sensitive-path reminders</td></tr>
+<tr><td>End of turn</td><td><code>turn-audit</code></td><td>evidence, lifecycle and completion audit</td></tr>
+</table></div>
+<h3>Proof of “done”</h3>
+<p>The hooks run on Node, with no bash or <code>jq</code>, and every one fails open. When a turn edited code and claimed completion, <code>turn-audit</code> checks that a passing evidence command ran after the last code edit; it also flags stale state, code before a decided baseline, skipped skills, weak QC provenance and broken task-file contracts.</p>
+<pre>⚠ VERIFICATION GATE: completion was claimed, but the last run of `npm test 2>&amp;1 | tail -15` was blocked and never ran. Run it, show the output — or retract the claim.</pre>
+<p><code>verify &lt;slug&gt; -- &lt;command&gt;</code> runs a proof command itself and records its exit code in <code>NNN-slug-verify.jsonl</code>; <code>item finish</code> accepts that record, so a project without hooks still gets a recorded proof. It refuses an item that has not reached build. The ledger lives outside the project, under <code>~/.local/state/burhan/evidence/</code>: reported edits, command lines and exit codes, never command output. <code>evidence --item &lt;slug&gt;</code> prints it and, like <code>guide</code>, ends with a <code>full run:</code> line: is there a passing whole-suite run after the last code edit (it needs <code>WF_FULL_TEST_REGEX</code>).</p>
+<p class="source"><b>source:</b> <code>README.md</code> (Proof, Reference) · <code>docs/features.md</code> · <code>kit/phases/skills.md</code> · <code>kit/phases/enforcement.md</code> · <code>kit/skills/shared/</code></p>
+</section>
+
+<section class="chapter" id="commands">
+<h2>7. Every command</h2>
+<p>Every command answers <code>--help</code> and only prints. <code>&lt;slug&gt;</code> is a task's short name, number or folder name. Every command except <code>init</code> finds the project from any subfolder.</p>
+<div class="scroll"><table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>init [dir]</code></td><td>install the kit; a dry run until <code>--apply</code></td></tr>
+<tr><td><code>upgrade [dir]</code></td><td>refresh an installed project; a dry run until <code>--apply</code></td></tr>
+<tr><td><code>uninstall [dir]</code></td><td>remove burhan; keeps config, bindings, local and work files unless <code>--all</code></td></tr>
+<tr><td><code>setup [dir]</code></td><td>guided setup; also <code>--agent</code>, <code>--answers &lt;file&gt;</code>, <code>--stack</code>, <code>--set check=… full=…</code></td></tr>
+<tr><td><code>doctor [dir]</code></td><td>read-only health check; exit 1 on a fail</td></tr>
+<tr><td><code>guide [slug]</code></td><td>the stage, whether code edits are authorized, the next step</td></tr>
+<tr><td><code>use &lt;slug&gt;</code></td><td>link this session to an item in flight</td></tr>
+<tr><td><code>item list [dir]</code></td><td>one line per task: id, route, state</td></tr>
+<tr><td><code>item new &lt;slug&gt;</code></td><td>create the task's files and state block</td></tr>
+<tr><td><code>item set &lt;slug&gt; …</code></td><td>move a plan or sub-unit status one rung</td></tr>
+<tr><td><code>item check &lt;slug&gt;</code></td><td>name every fault in the task's files</td></tr>
+<tr><td><code>item finish &lt;slug&gt;</code></td><td>complete the plan: units Reviewed, gates ticked, proof</td></tr>
+<tr><td><code>item close &lt;slug&gt;</code></td><td>close a task the code already satisfies</td></tr>
+<tr><td><code>gate tick &lt;slug&gt; &lt;gate&gt;</code></td><td>tick a gate when its evidence exists</td></tr>
+<tr><td><code>approve story|plan|qc &lt;slug&gt; --by &lt;name&gt;</code></td><td>write your approval; an agent's name is refused</td></tr>
+<tr><td><code>review add &lt;slug&gt;</code></td><td>write a report with <b>Performed by</b></td></tr>
+<tr><td><code>finding add &lt;slug&gt;</code></td><td>add a finding row, or <code>No findings.</code> with <code>--none</code></td></tr>
+<tr><td><code>finding list &lt;slug&gt;</code></td><td>every finding and its decision; the open ones as one question</td></tr>
+<tr><td><code>finding decide &lt;slug&gt; &lt;n&gt; --by &lt;name&gt;</code></td><td>your decision: <code>--fixed</code>, <code>--discovery</code> or <code>--accepted</code>; never accepted for a Critical</td></tr>
+<tr><td><code>finding discover &lt;slug&gt;</code></td><td>open a discovery for each undecided finding (not a Critical)</td></tr>
+<tr><td><code>deviation add &lt;slug&gt;</code></td><td>record a step that left the spec (<code>--unit</code>, <code>--what</code>, <code>--where</code>, <code>--output</code>); <code>--apply</code> when no decision is needed</td></tr>
+<tr><td><code>deviation resolve &lt;slug&gt; &lt;n&gt; --by &lt;name&gt;</code></td><td>your decision: <code>--approved</code> or <code>--rejected</code></td></tr>
+<tr><td><code>deviation done &lt;slug&gt; &lt;n&gt; --in unit:&lt;N&gt;</code></td><td>write where an approved deviation was carried out</td></tr>
+<tr><td><code>verify &lt;slug&gt; -- &lt;command&gt;</code></td><td>run a proof command without a shell and record how it ended</td></tr>
+<tr><td><code>state show [&lt;slug&gt;]</code></td><td>print an item's block, or list the blocks</td></tr>
+<tr><td><code>state set &lt;slug&gt; &lt;Label&gt; &lt;value&gt;</code></td><td>change one line of the block, under a lock</td></tr>
+<tr><td><code>state close &lt;slug&gt;</code></td><td>replace the block with its closed line (<code>--outcome</code>, <code>--commit</code>, <code>--folder</code>)</td></tr>
+<tr><td><code>state compact [--apply]</code></td><td>shorten old lines of closed tasks; dry run until <code>--apply</code></td></tr>
+<tr><td><code>status [dir]</code></td><td>list the tasks; <code>--write</code> rewrites the index</td></tr>
+<tr><td><code>stats [dir]</code></td><td>routes, QC verdicts, escaped defects, timing</td></tr>
+<tr><td><code>changed --item &lt;slug&gt;</code></td><td>files changed since the story was verified</td></tr>
+<tr><td><code>evidence [--item &lt;slug&gt;]</code></td><td>the ledger: each command with its exit code</td></tr>
+<tr><td><code>pr-body --item &lt;slug&gt;</code></td><td>a pull-request description from the task files</td></tr>
+<tr><td><code>inspect [dir]</code></td><td>a read-only, names-only look at the tree</td></tr>
+<tr><td><code>memory check [dir]</code></td><td>check the project memory; exit 1 on a fail</td></tr>
+<tr><td><code>memory status [dir]</code></td><td>each fact fresh, changed, missing or unchecked</td></tr>
+<tr><td><code>memory affected [dir] --since &lt;ref&gt;</code></td><td>facts whose files changed since a git ref</td></tr>
+</table></div>
+<p><code>item check</code> exits 1 only for a file that carries <code>**Contract:** 1</code>. The agent runs these as <code>npx burhan-kit</code> followed by the command; you can too.</p>
+<p class="source"><b>source:</b> <code>node dist/cli.js --help</code> (the forms above are the ones it prints) · <code>README.md</code> (Reference, Commands) · <code>docs/features.md</code></p>
+</section>
+
+<section class="chapter" id="settings">
+<h2>8. Settings</h2>
+<p><code>.burhan/workflow.config</code> holds literal <code>KEY=value</code> lines; <code>.burhan/local/workflow.config</code> is git-ignored and overrides it key by key. A check whose key is empty stays silent. <code>setup --set</code> saves the check and the code, test, proof, whole-suite and sensitive-path settings without a hand edit.</p>
+<div class="scroll"><table>
+<tr><th>Key</th><th>What it does</th></tr>
+<tr><td><code>WF_DOCS_DIR</code>, <code>WF_DISCOVERY_DIR</code></td><td>where the task folders and the discovery files live</td></tr>
+<tr><td><code>WF_STATE_FILE</code>, <code>WF_STATE_BUDGET</code></td><td>the live state file and its line budget (default 80)</td></tr>
+<tr><td><code>WF_CHECK_CMD</code>, <code>WF_CHECK_TIMEOUT</code></td><td>the fast check run before every commit, and its timeout (default 60; team-only, run <code>upgrade</code> after a change)</td></tr>
+<tr><td><code>WF_STACK_SETUP</code></td><td><code>pending</code> while first-use setup is still to do</td></tr>
+<tr><td><code>WF_CODE_REGEX</code>, <code>WF_TEST_REGEX</code></td><td>which paths are code and tests; empty, the test-first reminder and the “done” warning stay silent</td></tr>
+<tr><td><code>WF_EVIDENCE_REGEX</code>, <code>WF_FULL_TEST_REGEX</code></td><td>which commands count as proof, and which one runs the whole suite</td></tr>
+<tr><td><code>WF_SENSITIVE_REGEX</code>, <code>WF_SENSITIVE_NOTE</code></td><td>paths that affect authorization or visibility, and the reminder after editing one</td></tr>
+<tr><td><code>WF_ITEM_CONTRACT</code></td><td><code>on</code>: the audit checks task files against the contract and warns on code edited while <code>guide</code> says not authorized; <code>init</code> writes <code>on</code>; absent means off</td></tr>
+<tr><td><code>WF_MODE_DEFAULT</code>, <code>WF_MODE_&lt;TYPE&gt;_&lt;SCOPE&gt;</code></td><td><code>step</code> or <code>auto</code>; the second form sets one route</td></tr>
+<tr><td><code>WF_MODEL_CLAUDE_REVIEWER</code>, <code>WF_MODEL_CLAUDE_PLANNER</code>, <code>WF_MODEL_CLAUDE_BUILDER</code>, <code>WF_MODEL_CLAUDE_EXPLORER</code></td><td>the model of each Claude Code role agent; empty keeps the session's model</td></tr>
+<tr><td><code>WF_REVIEWER_AGENT</code></td><td>who runs QC: <code>same</code>, <code>other</code>, <code>claude</code> or <code>codex</code></td></tr>
+<tr><td><code>WF_EVIDENCE_LEDGER</code>, <code>WF_EVIDENCE_DIR</code></td><td><code>on</code> or <code>off</code> for the ledger, and an absolute literal path to move it</td></tr>
+</table></div>
+<p class="source"><b>source:</b> <code>kit/workflow.config.example</code> (every key and its default) · <code>docs/configuration.md</code></p>
+</section>
+
+<section class="chapter" id="team">
+<h2>9. Memory, state and teamwork</h2>
+<h3>Project memory</h3>
+<p><code>/burhan:onboard</code> makes the agent draft <code>.burhan/PROJECT.md</code> and fact files in <code>.burhan/context/</code>; you approve, correct or waive the baseline. A fact cites a file path and a short hash, never file content. <code>memory status</code> marks each fact fresh, changed, missing or unchecked; <code>memory check</code> can run in CI.</p>
+<h3>State and sessions</h3>
+<p>The state file, <code>.burhan/local/PROGRESS.md</code>, is a per-developer snapshot with one block per item. The agent changes its own block only through <code>state set</code> and <code>state close</code>, under a lock; a hand edit is still possible and nothing stops it. Keep one task per session.</p>
+<h3>Teams and agents</h3>
+<p>Committed and reviewed like code: <code>bindings.md</code>, <code>workflow.config</code>, the task folders (one owner each), <code>PROJECT.md</code> and <code>context/</code>. Personal: <code>.burhan/local/</code>. Never use <code>merge=union</code> on these files; it hides duplicates. Claude Code gets <code>/burhan:e2e</code>, <code>/burhan:qc</code> and <code>/burhan:onboard</code>; Codex follows the command files through <code>AGENTS.md</code> and uses your own model configuration, which burhan never writes.</p>
+<p class="source"><b>source:</b> <code>README.md</code> (Project memory, Claude Code and Codex) · <code>docs/features.md</code> (Memory and team)</p>
+</section>
+
+<section class="chapter" id="package">
+<h2>10. The package: CI and release</h2>
+<h3>CI</h3>
+<p><code>.github/workflows/ci.yml</code> runs on every push and pull request. Jobs on <code>ubuntu-24.04</code> and <code>macos-latest</code>, both on Node 24, run the lint, the whole test suite and <code>npm pack --dry-run</code>. A job on <code>windows-latest</code>, Node 24, runs the Node suite with bash and <code>jq</code> removed from the PATH. Node 22, the minimum, is not run there.</p>
+<h3>Release</h3>
+<p><code>.github/workflows/release.yml</code> starts when a tag matching <code>v*</code> is pushed. <code>guard</code> checks the tag against <code>package.json</code>, the CHANGELOG, the branch and npm. <code>verify</code> runs lint and tests on Node 22 and 24. <code>pack</code> installs the packed tarball and runs <code>burhan --version</code>. <code>publish</code> runs on the <code>npm-release</code> environment: it waits for your approval only if you added yourself once as a required reviewer of that environment on GitHub (without that there is no pause; <code>docs/releasing.md</code> lists the one-time setup), then it publishes with <code>--provenance</code>, to <code>next</code> for a prerelease and <code>latest</code> otherwise. <code>github-release</code> writes the GitHub Release from the CHANGELOG. You push the tag, and you approve the publish when the environment requires it.</p>
+<p>This handbook is not in the npm package. <code>tests/handbook.test.sh</code>, part of <code>npm test</code>, fails when a command of <code>--help</code> is missing from it.</p>
+<p class="source"><b>source:</b> <code>.github/workflows/ci.yml</code> · <code>.github/workflows/release.yml</code> · <code>docs/releasing.md</code> · <code>docs/ci-and-windows.md</code> · <code>package.json</code></p>
+</section>
+
+<section class="chapter" id="limits">
+<h2>11. Problems and limits</h2>
+<h3>When something looks wrong</h3>
+<div class="scroll"><table>
+<tr><th>What you see</th><th>What to do</th></tr>
+<tr><td><code>doctor</code> fails or warns</td><td>read the line it names; a healthy setup says <code>all 6 hooks wired</code></td></tr>
+<tr><td>Codex hooks do nothing</td><td>trust them in <code>/hooks</code></td></tr>
+<tr><td><code>KIT COMMAND NOT FOUND</code> at session start</td><td>run the install command that <code>setup</code> or <code>doctor</code> prints</td></tr>
+<tr><td><code>guide</code> says code is not authorized</td><td>the story or plan is not approved yet, or a deviation is open and waits for <code>deviation resolve</code></td></tr>
+<tr><td><code>item finish</code> refuses</td><td>it names why: a unit not Reviewed, a gate not ticked, an open deviation, an approved one with no <code>deviation done</code>, an undecided finding, no passing proof</td></tr>
+<tr><td><code>verify</code> exits 2</td><td>the item has not reached build; nothing is recorded</td></tr>
+<tr><td><code>full run:</code> cannot tell</td><td>save the whole-suite command: <code>setup --set full=&lt;regex&gt;</code></td></tr>
+</table></div>
+<h3>Limits</h3>
+<ul>
+<li>Hooks never block; task commands refuse a wrong step; an agent can skip both.</li>
+<li>Hooks see only the activity the agent reports; shell edits show only through <code>&gt;</code>, <code>&gt;&gt;</code> and <code>tee</code>.</li>
+<li>Codex hook results need trust, and a command with no recorded result is not a pass.</li>
+<li>CI runs the Node suite on <code>windows-latest</code> without bash or <code>jq</code>: not a real agent session on Windows or macOS.</li>
+<li>The ledger grows until you delete it.</li>
+<li>This handbook is a snapshot: the stamp on the cover says which version it was checked against.</li>
+</ul>
+<h3>Read next</h3>
+<p><a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/README.md">README</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/features.md">Features</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md">Configuration</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/first-task.md">A recorded first task</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/upgrading.md">Upgrading</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/releasing.md">Releasing</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/ci-and-windows.md">CI and Windows</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/blob/main/ROADMAP.md">Roadmap</a> · <a href="https://github.com/ahmedkamaldabour/burhan-kit/issues">Issues</a></p>
+<p class="source"><b>source:</b> <code>README.md</code> (Limits, Safety and rollback) · <code>docs/ci-and-windows.md</code> · <code>docs/upgrading.md</code></p>
+</section>
+</main>
+</body>
+</html>

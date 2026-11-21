@@ -123,4 +123,10 @@ for f in "$EN" "$AR"; do
   check "$f: the first-task section is there and short (lines: $first_task_lines)" "$([ "$first_task_lines" -ge 8 ] && [ "$first_task_lines" -le 28 ] && echo yes)" has yes
 done
 
+# The handbook: one sentence in each README links the PDF to read and names the HTML path for a clone.
+check "English README links the handbook PDF" "$(cat "$EN")" has 'blob/main/handbook/en/burhan-handbook-en.pdf'
+check "English README names the handbook HTML path" "$(cat "$EN")" has '`handbook/en/handbook.html`'
+check "Arabic README links the handbook PDF" "$(cat "$AR")" has 'blob/main/handbook/burhan-handbook.pdf'
+check "Arabic README names the handbook HTML path" "$(cat "$AR")" has '`handbook/handbook.html`'
+
 t_summary
