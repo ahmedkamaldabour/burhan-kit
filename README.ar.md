@@ -2,7 +2,7 @@
 
 الـ coding agents بتقول “done” من غير دليل.
 
-‏burhan هو **spec-driven development (SDD)** لـ Claude Code وCodex. الـ story والـ plan هما الـ spec: إنت بتوافق عليهم قبل الكود، وكل acceptance criterion مربوط بـ test، والشغل اللي بيخرج عنهم بيقف وبيتسجّل. كل خطوة بتتراجع، والأوامر والـ hooks (scripts صغيرة بتبلّغ في لحظات محددة) بتحتفظ بدليل للي اتشغّل.
+‏burhan هو **spec-driven development (SDD)** لـ Claude Code وCodex. الـ story والـ plan هما الـ spec: إنت بتوافق عليهم قبل الكود، وكل acceptance criterion مربوط بـ test، وأي خطوة بتخرج عنهم بتتسجّل: مشكلة محتاجة قرارك بتوقّف الشغل، ومشكلة حلها معروف بتتصلّح وتتسجّل. كل خطوة بتتراجع، والأوامر والـ hooks (scripts صغيرة بتبلّغ في لحظات محددة) بتحتفظ بدليل للي اتشغّل.
 
 - **اتفق الأول:** وافق على الـ story (إيه وليه) والـ plan (إزاي) قبل الكود.
 - **ورّي الدليل:** سجّل التعديلات والأوامر؛ وعلّم على “done” من غير check ناجح.
@@ -57,26 +57,46 @@ agent  **Route:** feature / bounded. It's one pure function with no scope escala
 
 3. افتح **session جديدة** للـ agent جوه المشروع. اكتب `start` (أي رسالة أولى تنفع)؛ أو `/burhan:onboard` في Claude Code؛ أو `Follow .burhan/commands/onboard.md` في Codex. الـ agent يقترح checks وفهم للمشروع عشان توافق عليهم.
 
-ابدأ مهمة بـ `/burhan:e2e <slug>` في Claude Code. في Codex اتبع command file جوه `.burhan/commands/`.
+ابدأ مهمة بـ `/burhan:e2e <slug>` في Claude Code. في Codex اتبع command file جوه `.burhan/commands/`. القسم اللي بعده بيمشّيك في أول مهمة؛ والأقسام اللي بعده بتشرح كل جزء، وقسم مرجع في الآخر للبحث.
+
+## أول مهمة ليك
+
+بعد الـ setup، اطلب حاجة صغيرة، زي function ومعاها test. الـ agent بيمشي في الوقفات اللي تحت وبيستناك عند كل واحدة؛ العمود الأخير هو اللي بيشغّله (كل command ليه `--help` بيطبع طريقة استخدامه). في وضع `step`، وهو الافتراضي، بتشوف كل وقفة.
+
+| الوقفة | إنت بتقرر | الـ agent بيشغّل |
+| --- | --- | --- |
+| 1 · Intake | الـ route (type وscope والسبب) مناسب ولا لأ | `item new <slug> --type feature --scope bounded`، وبعدها `guide <slug>` |
+| 2 · Story وplan | تجاوب على أسئلته، وتقرا الكارت اللي في شاشة واحدة، وتقول آه، وبعدها تشغّل إنت `approve story <slug> --by <name>` و`approve plan <slug> --by <name>` باسمك (الـ agent بيوريك الأمر) | بيكتب story وplan وbuild spec، وبعدها `item check <slug>` |
+| 3 · Sub-unit واحدة | تكمّل ولا لأ (`step` بيقف بعد كل واحدة) | الـ test الأول ومتشاف بيفشل (RED)، وبعدين الكود، وبعدين نفس الـ test بينجح (GREEN)، وfast check؛ و`item set <slug> unit 1 in-progress` قبل، و`item set <slug> unit 1 implemented` بعد |
+| 4 · Review | كل finding: اتصلّحت، أو discovery، أو مقبولة بسببك | reviewer جديد: `review add <slug> --kind review --unit 1 --by "<agent · model · context>"` و`finding add`؛ وإنت بترد بـ `finding decide`؛ وبعدين `item set <slug> unit 1 reviewed` |
+| 5 · A surprise (في أي وقفة) | بس المشكلة اللي محتاجة قرار هي اللي بتوقّف الشغل | حل معروف بيتصلّح ويتسجّل بـ `deviation add <slug> … --apply` والبناء يكمّل؛ واختيار حقيقي بـ `deviation add <slug> …` ووقفة لحد ما تشغّل `deviation resolve` |
+| 6 · Verify | مين يعمل الفحص الحقيقي (الـ agent بيسأل الأول) | `verify <slug> -- npm test` (أمر مشروعك إنت)، وبعدها `review add <slug> --kind verification` |
+| 7 · QC | تقبل PASS، أو ترجّع المهمة للـ build | reviewer جديد: `review add <slug> --kind qc --verdict PASS` و`finding add <slug> --in qc --none`؛ وإنت بتقبلها بـ `approve qc <slug> --by <name>` |
+| 8 · الإقفال | أي دروس تتحفظ؛ commit دلوقتي أو بعدين أو بنفسك | `item finish <slug>` (بيسمّي كل gate لسه مفتوح؛ وتعلّم واحد بـ `gate tick <slug> <gate> --evidence <proof>`) وبعدها `state close <slug> --outcome <state> --commit <id> --folder <path>` |
+
+الـ route الأصغر بتعدّي على الوقفات اللي مش محتاجاها (شوف المسارات). وفي أي لحظة `burhan guide <slug>` بيقول المرحلة، وتعديل الكود مسموح ولا لأ، والخطوة الجاية.
 
 ## إيه اللي برهان بيحطه في مشروعك
 
 ```text
 .burhan/
-  WORKFLOW.md SETUP.md VERSION phases/ templates/ commands/ hooks/  kit-owned; upgrade refreshes
+  WORKFLOW.md SETUP.md VERSION phases/ templates/ commands/ skills/ hooks/  kit-owned; upgrade refreshes
   bindings.md workflow.config                                     بتوعك؛ يتعمل لهم commit وreview
   PROJECT.md context/                                             project memory مشتركة، بعد onboarding
   local/PROGRESS.md                                               لكل developer؛ git-ignored
-  work/<task>/                                                    task files خاصة افتراضيًا
-  discovery/                                                      findings جانبية خاصة افتراضيًا
+  work/NNN-slug/                                                  task files؛ خاصة مع init، وفي git لو اخترت كده في setup
+  discovery/                                                      findings جانبية؛ خاصة مع init، وفي git لو اخترت كده في setup
   .gitignore                                                      بيتجاهل local/, work/, discovery/
 .claude/ or .codex/                                               hook settings وagent bindings
+.claude/skills/burhan-*/                                          Claude Code بس: نسخ managed من الـ skills
 CLAUDE.md or AGENTS.md                                            marked burhan block؛ النص برا يفضل بتاعك
 ```
 
 ماتعدّلش ملفات الـ kit. `upgrade` بيجدّدها. خليك عامل version control لـ `bindings.md` و`workflow.config` وmemory وtask files المشتركة.
 
-افتراضيًا work وdiscovery خاصين. لو عايز تشاركهم، خلّي `WF_DOCS_DIR` لمسار زي `docs/burhan/work` و`WF_DISCOVERY_DIR` لـ `docs/burhan/discovery`؛ راجع [configuration](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#workflowconfig).
+فولدر الـ task اسمه `NNN-slug`، مثلًا `work/012-slugify/`: `item new` بياخد الرقم اللي بعده (أعلى رقم زائد واحد)، وكل command بيقبل الرقم أو الـ slug لوحده أو الاسم الكامل. الفولدر اللي اتعمل قبل الترقيم بيفضل باسمه. `skills/` فيه الـ process skills الستة اللي جاية مع الـ kit (شوف مرجع)؛ وskill بتاعتك بنفس الاسم في `.claude/skills/` عمرها ما بتتكتب فوقها.
+
+`init` بيخلّي work وdiscovery خاصين؛ والـ setup wizard بيقترح تحطهم في git. في الحالتين `WF_DOCS_DIR` و`WF_DISCOVERY_DIR` بيحدّدوا المجلدات، مثلًا `docs/burhan/work` و`docs/burhan/discovery`؛ راجع [configuration](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#workflowconfig).
 
 ## برهان بيشتغل إزاي
 
@@ -92,7 +112,13 @@ CLAUDE.md or AGENTS.md                                            marked burhan 
 | QC | فحص الجودة المستقل الأخير |
 | Knowledge review | الـ agent بيقترح دروس تستاهل تتحفظ؛ إنت تحتفظ بيها أو ترفضها |
 | Baseline | سجلك المعتمد (أو المتنازل عنه) لفهم الـ agent للمشروع |
-| Deviation | خطوة خرجت عن الـ plan المعتمدة |
+| Deviation | خطوة ما مشيتش زي ما الـ build spec قال، بتتسجّل كصف في الـ plan |
+| Deviation, applied | مشكلة حلها معروف: الـ agent بيصلّحها وبيسجّلها بـ `deviation add --apply`، والبناء يكمّل |
+| Deviation, open | مشكلة محتاجة قرار: الشغل بيقف لحد ما تقرر فيها |
+| Finding | مشكلة الـ review أو الـ QC بتبلّغ عنها، ومعاها severity: Critical أو Important أو Minor |
+| Decision | ردك المسجّل على finding: اتصلّحت، أو discovery، أو مقبولة بسبب (عمرها ما تتقبل لو Critical) |
+| Discovery | حاجة اتلقت والمهمة ما طلبتهاش؛ بتروح لملف لوحدها وبتتعمل كمهمة لوحدها |
+| Legacy | حالة مهمة قديمة خلصت من غير سطر route ولا ملف QC؛ الفهرس بيطويها في block واحد |
 | RED / GREEN | ‏test بيفشل زي المتوقع / نفس الـ test بينجح |
 | Hook | ‏script صغير بيبلّغ في لحظة محددة |
 | Ledger | سجل التعديلات والأوامر اللي الـ agent بيبلّغ بيها |
@@ -123,21 +149,24 @@ auto  بيكمّل اللوب وبيحافظ على وقفات ✋؛ وكمان 
 ## حياة المهمة
 
 ```text
-work/<task>/
-  <task>-story.md                Draft → Approved                 approve story
-  <task>-implementation-plan.md  Draft → Approved → In progress → Completed   approve plan; item set; item finish
-  <task>-build-spec.md           tests, code, commands بالضبط     تعتمد مع plan
-  reviews/                       reports للـ review وverification وQC   review add
-  sources/                       الأصلي اللي إنت اديته للـ agent؛ مابيتعدلش
-  repro/                         scripts وlogs بتوع الـ agent
-.burhan/local/PROGRESS.md        block حالة حالي لكل task
+work/NNN-slug/
+  NNN-slug-story.md                Draft → Approved                 approve story
+  NNN-slug-implementation-plan.md  Draft → Approved → In progress → Completed   approve plan; item set; item finish
+  NNN-slug-build-spec.md           tests, code, commands بالضبط     تعتمد مع plan
+  NNN-slug-verify.jsonl            كل تشغيل إثبات: command وexit code ووقت   verify
+  reviews/                         reports للـ review وverification وQC، كل واحدة فيها findings table   review add; finding add
+  sources/                         الأصلي اللي إنت اديته للـ agent؛ مابيتعدلش
+  repro/                           scripts وlogs بتوع الـ agent
+  NNN-slug-state-notes.md          النص الكامل لسطور الـ state اللي state compact قصّرها (لو اتستخدم)
+  NNN-slug-already-satisfied.md    سببك المكتوب، لو الكود كان محقق الـ story أصلًا (لو اتستخدم)
+.burhan/local/PROGRESS.md          block حالة حالي لكل task
 ```
 
 كل sub-unit بتمشي **Draft → Approved → In progress → Implemented → Reviewed**. `item set` بيسمح بدرجة واحدة كل مرة. لازم section review قبل `Reviewed`.
 
-الـ plan ملفين: القرارات (ومعاها coverage لمعايير القبول وrulings) وbuild spec. الـ spec بتدي لكل sub-unit الملفات وtest وcode كاملين وأوامر RED وGREEN والـ expected output والـ interfaces.
+الـ plan ملفين: القرارات (ومعاها coverage لمعايير القبول وrulings) وbuild spec. الـ spec بتدي لكل sub-unit الملفات وtest وcode كاملين وأوامر RED وGREEN والـ expected output والـ interfaces. الـ sub-unit بتبقى خطوة لوحدها بس لسبب: بتلمس مسار حساس، أو بتكتب قرارك أو gate، أو سلوكها محتاج failing test لوحده. `item check` بيبلّغ عن sub-unit من غير سبب، وعن plan فيها أكتر من ست sub-units ومش قايلة ليه.
 
-نفّذ الـ spec بالضبط. لو RED ما فشلش زي المتوقع، أو GREEN فشل، أو ملف مختلف، قف. `deviation add` بيسجل الفرق. لحد ما تحله، `guide` بيقول إن تعديل الكود غير مسموح؛ والـ deviation المعتمدة بتحدّث الـ plan والـ spec الأول، وبعدين الكود.
+نفّذ الـ spec بالضبط. لو RED ما فشلش زي المتوقع، أو GREEN فشل، أو ملف مختلف، الـ agent الأول بيسأل نفسه: القرار محتاج ولا لأ. لو مش محتاج (كلام الـ spec مش مطابق للكود، أو review finding جوه المهمة وإصلاحها بيحافظ على الـ story)، بيصلّح المشكلة وبيسجّلها بـ `deviation add … --apply` وسبب مكتوب، والبناء يكمّل؛ و`guide` و`item finish` بيعرضوا لك كل صف من دول. أما تغيير النية المعتمدة أو الـ scope، أو اختيار حقيقي، أو security أو data أو فلوس، أو حاجة مش بترجع، أو تعديل test قديم، فمحتاج قرارك: الـ agent بيسجّل صف `deviation add` مفتوح وبيسألك، و`guide` بيقول إن تعديل الكود غير مسموح لحد ما تقرر بـ `deviation resolve`، والـ deviation المعتمدة بتحدّث الـ plan والـ spec الأول، وبعدين الكود. أول ما التغيير المعتمد يتنفّذ، `deviation done` بيكتب أنهي sub-unit نفّذته، و`item finish` بيرفض صف معتمد من غير الأثر ده.
 
 ## المسارات
 
@@ -165,7 +194,9 @@ work/<task>/
 | Baseline | الـ agent بيكتبها بس بعد ما توافق أو تصحح أو تتنازل |
 | مين يعمل verification | الـ agent لازم يسأل قبل verification حقيقي |
 | ‏verdict الـ QC | ‏QC تقترح PASS أو FAIL؛ إنت تقبله |
-| ‏deviation أو discovery | الشغل يقف؛ finding منفصلة ماتتصلحش في السر |
+| ‏finding في review أو QC | `finding decide` بيسجل ردك: اتصلّحت، أو discovery، أو مقبولة بسببك (عمرها ما تتقبل لو Critical)؛ و`item finish` و`approve qc` بيستنوا كل قرار |
+| ‏deviation أو discovery | مشكلة محتاجة قرارك بتوقّف الشغل؛ ومشكلة حلها معروف بتتصلّح وتتعرض عليك؛ وfinding منفصلة ماتتصلحش في السر |
+| قفل task الكود محققها أصلًا | `item close` مع `--already-satisfied` وسبب مكتوب واسمك؛ واسم agent بيترفض |
 | Commit | دلوقتي أو بعدين أو بنفسك؛ “finish” مش موافقة |
 | ‏Push أو pull request | بس لما تطلب |
 | Codex hook trust | إنت تديه؛ burhan عمره ما بيديه |
@@ -182,16 +213,16 @@ work/<task>/
 
 الـ reviewer بيقرأ task files والـ diff والـ ledger، وبعدها يكتب report. كل review تسجل `Performed by`: agent وmodel وcontext. الـ agent التاني يقدر يراجع لو متظبط. QC في نفس session بتتعلم وبتتحسب self-review.
 
-‏QC بتقترح `PASS` أو `FAIL — N issues`، ومعاها findings Critical أو Important أو Minor. PASS دليل مش ضمان. FAIL بترجع المهمة للـ build؛ QC الجاية تأكد الإصلاح أو توسع المراجعة.
+الـ review أو report الـ QC بتخلص بجدول findings: `finding add` بيكتب صف، أو سطر `No findings.`. كل صف بيستنى قرارك (شوف إيه اللي إنت بس بتقرره). ‏QC بتقترح `PASS` أو `FAIL — N issues`، ومعاها findings Critical أو Important أو Minor. PASS دليل مش ضمان. FAIL بترجع المهمة للـ build؛ QC الجاية تأكد الإصلاح أو توسع المراجعة.
 
 ## الإثبات
 
 الـ hooks بتبلّغ وبتفشل open؛ عمرها ما بتمنع. task commands بترفض خطوة lifecycle غلط، لكن الـ agent يقدر يتخطاهم.
-البلوك اللي بيكتبه `burhan init` في `CLAUDE.md` و`AGENTS.md` بيطلب من الـ agent يشغّل `burhan guide` قبل أي تعديل ويمشي على ردّه، والـ `guide` بيرد حتى لو مفيش item. ده تعليمة مش قفل: التعديل المباشر وكتابة الـ shell وهوية اللي وافق مش بتتمنع. `burhan verify <slug> -- <command>` بيشغّل أمر الإثبات بنفسه ويسجّل الـ exit code وحالة الكود اللي اشتغل عليها، و`item finish` بيقبل السجل ده، فالمشروع اللي من غير hooks بياخد إثبات مسجّل، أو يذكر إثبات بـ `--evidence`. السجل بيقول إن الأمر اشتغل وخلص إزاي، مش إنه بيختبر الحاجة الصح.
+البلوك اللي بيكتبه `burhan init` في `CLAUDE.md` و`AGENTS.md` بيطلب من الـ agent يشغّل `burhan guide` قبل أي تعديل ويمشي على ردّه، والـ `guide` بيرد حتى لو مفيش item. ده تعليمة مش قفل: التعديل المباشر وكتابة الـ shell وهوية اللي وافق مش بتتمنع. `burhan verify <slug> -- <command>` بيشغّل أمر الإثبات بنفسه ويسجّل الـ exit code وحالة الكود اللي اشتغل عليها، و`item finish` بيقبل السجل ده، فالمشروع اللي من غير hooks بياخد إثبات مسجّل، أو يذكر إثبات بـ `--evidence`. السجل بيقول إن الأمر اشتغل وخلص إزاي، مش إنه بيختبر الحاجة الصح. `verify` بيرفض item ماوصلتش للـ build: لسه مفيش حاجة اتبنت، فأي إثبات دلوقتي مايثبتش حاجة، ومفيش حاجة بتتسجّل.
 
 | اللحظة | Hook | الوظيفة |
 | --- | --- | --- |
-| بداية session | `session-gates` | ‏gates وحالة المهمة وأول setup والمهام المفتوحة |
+| بداية session | `session-gates` | ‏gates وحالة المهمة وأول setup والمهام المفتوحة وغياب الـ kit command |
 | رسالتك | `prompt-router` | اقتراح phase وmode وتذكير baseline |
 | قبل commit | `pre-commit-check` | ‏fast check واختيارك للـ commit |
 | قبل write | `pre-edit-skill` | ‏skill ناقصة وstate block بتاعة session تانية |
@@ -212,25 +243,51 @@ work/<task>/
 
 ## مرجع
 
+ارجع هنا للبحث؛ مش محتاجه في أول مهمة ليك.
+
 ### الإعدادات
 
-‏`WF_CHECK_CMD` هو fast pre-commit check. `WF_CODE_REGEX` و`WF_TEST_REGEX` بيحددوا code وtests. `WF_EVIDENCE_REGEX` بيقول أي commands تعتبر proof. `WF_FULL_TEST_REGEX` بيحدد whole suite. `WF_SENSITIVE_REGEX` و`WF_SENSITIVE_NOTE` بيضيفوا تذكير للمسار الحساس. لو code أو proof patterns فاضيين، تحذير “done” مش هيشتغل. المشروع اللي اتعمل بـ `burhan init` فيه task-file checks شغالة (`WF_ITEM_CONTRACT=on`).
+‏`WF_CHECK_CMD` هو fast pre-commit check. `WF_CODE_REGEX` و`WF_TEST_REGEX` بيحددوا code وtests. `WF_EVIDENCE_REGEX` بيقول أي commands تعتبر proof. `WF_FULL_TEST_REGEX` بيحدد whole suite. `WF_SENSITIVE_REGEX` و`WF_SENSITIVE_NOTE` بيضيفوا تذكير للمسار الحساس. لو code أو proof patterns فاضيين، تحذير “done” مش هيشتغل. المشروع اللي اتعمل بـ `burhan init` فيه task-file checks شغالة (`WF_ITEM_CONTRACT=on`). `burhan setup --set` بيحفظ الـ check وإعدادات code وtests وproof وwhole-suite والمسار الحساس من غير تعديل يدوي.
+
+`WF_STACK_SETUP` بيقول لو أول setup لسه مستني. `WF_MODE_DEFAULT` هو `step` أو `auto`؛ ومفتاح زي `WF_MODE_BUG_BOUNDED=auto` بيظبط route واحدة. `WF_MODEL_CLAUDE_PLANNER` و`WF_MODEL_CLAUDE_BUILDER` و`WF_MODEL_CLAUDE_EXPLORER` و`WF_MODEL_CLAUDE_REVIEWER` بيختاروا model لكل role في Claude Code؛ ولو فاضيين بيفضل model الـ session. `WF_REVIEWER_AGENT` بيقول مين بيشغّل QC. `WF_EVIDENCE_LEDGER` و`WF_EVIDENCE_DIR` بيشغّلوا الـ ledger ويحرّكوه. [Configuration](https://github.com/ahmedkamaldabour/burhan-kit/blob/main/docs/configuration.md#workflowconfig) فيه كل المفاتيح.
 
 ### الأوامر
 
-‏`item new` بينشئ files على شكل route. `approve` بيسجل قرار شخص. `item set` بينقل status مسموح. `review add` يحتاج reviewer provenance. `deviation add` بيجمّد code authorization لحد الحل. `item finish` يحتاج units Reviewed وgates ومن غير deviation مفتوحة وproof حديث. `item check` بيبلغ عن مشاكل task files. `state compact` بيقصّر سطور المهام المقفولة في الـ state file (dry run لحد `--apply`).
+كل command ليه `--help` (`burhan item --help` و`burhan finding add --help`)؛ بيطبع طريقة الاستخدام بس. في الجدول، `<slug>` هو الاسم المختصر للمهمة أو رقمها أو اسم الفولدر الكامل.
 
-تقارير read-only: `status` (ومعاه `--write` بيكتب فهرس المهام) و`stats` و`evidence` و`changed` و`pr-body` و`memory` و`inspect` و`doctor`. `use <slug>` بيربط session بمهمة. الـ agent بيشغّلهم كـ `npx burhan-kit <command>`؛ وإنت تقدر كمان. كل command ما عدا `init` بيلاقي المشروع من أي مجلد فرعي زي git: بيطلع لأقرب مجلد فيه `.burhan/WORKFLOW.md` وبيكتب اسمه على stderr.
+| إنت بتعمل إيه | الأوامر |
+| --- | --- |
+| ابدأ ودوّر على طريقك | `item new` بينشئ files على شكل route وblock المهمة في الـ state file بتاعك؛ `guide` بيقول المرحلة، وتعديل الكود مسموح ولا لأ، والـ skill اللي تتشغّل، والخطوة الجاية؛ `use <slug>` بيربط session بمهمة؛ `item list` بيطبع سطر لكل مهمة (id وroute وstate) ومابيكتبش حاجة |
+| قرر (بتاعك) | `approve` بيسجل موافقتك على story أو plan أو QC؛ `finding decide` و`finding discover` بيردوا على الـ findings؛ `deviation resolve` بيحسم deviation مفتوحة؛ `item close <slug> --already-satisfied` بيقفل مهمة الكود محققها أصلًا؛ وكلهم بياخدوا اسمك بـ `--by` وبيرفضوا اسم agent |
+| سجّل الشغل | `item set` بينقل status مسموح؛ `gate tick` بيعلّم gate لما دليلها يبقى موجود؛ `review add` بيكتب review أو QC أو verification مع reviewer provenance؛ `finding add` و`finding list`؛ `deviation add` (مع `--apply` لمشكلة مش محتاجة قرار) و`deviation done`؛ `verify <slug> -- <command>`؛ `item finish` يحتاج units Reviewed وgates معلّمة ومن غير deviation مفتوحة وproof حديث؛ `item check` بيسمّي كل مشكلة في task files |
+| الـ state file بتاعك | `state show` بيطبع block مهمتك؛ و`state set` و`state close` بيغيّروا بس الـ block ده، تحت lock؛ `state compact` بيقصّر سطور المهام المقفولة (dry run لحد `--apply`) |
+| تقارير read-only | `status` (ومعاه `--write` بيكتب فهرس المهام) و`stats` و`evidence` و`changed` و`pr-body` و`memory` و`inspect` و`doctor` |
+| التسطيب | `init` و`upgrade` و`uninstall` (dry runs لحد `--apply`)؛ و`setup` مع `--stack` أو `--set` أو `--agent` أو `--answers` |
+
+الـ agent بيغيّر block بتاعه في الـ state file بس عن طريق `burhan state`؛ والتعديل اليدوي لسه ممكن ومفيش حاجة بتمنعه. في `status`، المهمة القديمة اللي خلصت من غير سطر route ولا ملف QC بتظهر `Legacy` ومطوية في block واحد معدود. الـ agent بيشغّلهم كـ `npx burhan-kit` وبعده الـ command؛ وإنت تقدر كمان. كل command ما عدا `init` بيلاقي المشروع من أي مجلد فرعي زي git: بيطلع لأقرب مجلد فيه `.burhan/WORKFLOW.md` وبيكتب اسمه على stderr.
 
 ### ذاكرة المشروع
 
-‏Onboarding بيمسح المشروع ويعمل draft لـ `.burhan/PROJECT.md` وfact files في `.burhan/context/`. إنت توافق أو تصحح أو تعمل waive للـ baseline. كل fact فيها path وshort hash، مش محتوى الملف. `memory status` يقول fresh أو changed أو missing أو unchecked؛ و`memory check` ينفع للـ CI. knowledge review بتقترح دروس ثابتة عشان تقرر فيها.
+‏Onboarding بيمسح المشروع ويعمل draft لـ `.burhan/PROJECT.md` وfact files في `.burhan/context/`. إنت توافق أو تصحح أو تعمل waive للـ baseline. كل fact فيها path وshort hash، مش محتوى الملف. `memory status` يقول fresh أو changed أو missing أو unchecked؛ و`memory check` ينفع للـ CI؛ و`memory affected` بيسمّي الـ facts اللي ملفاتها اتغيّرت من git ref. knowledge review بتقترح دروس ثابتة عشان تقرر فيها.
 
 ### بين Claude Code وCodex
 
 ‏Claude Code بيستخدم `/burhan:e2e` و`/burhan:qc` و`/burhan:onboard`؛ Codex بيتبع command files المثبتة من خلال `AGENTS.md`. نتائج Codex hooks محتاجة trust. command من غير نتيجة مسجلة مش passing.
 
-‏burhan جاي بستة process skills (story وplan وbuild وdebug وreview وdone) وبيسطّبهم مع الـ kit. Claude Code يقدر يولّد roles planner وbuilder وexplorer وreviewer على models متظبطة. Codex بيستخدم model config بتاعتك؛ burhan ما بيكتبهاش.
+‏burhan جاي بستة process skills وبيسطّبهم مع الـ kit، فمفيش حاجة تضيفها من برا. كل واحدة checklist قصيرة الـ agent بيفتحها في أول phase، قبل ما يتصرف؛ والقواعد بتفضل في ملفات الـ phase.
+
+| Skill | الـ agent بيفتحها | وظيفتها |
+| --- | --- | --- |
+| `burhan-story` | طلب بيضيف أو يغيّر سلوك، قبل الـ story | جولة أسئلة واحدة، والـ route، وstory تقدر توافق عليها في قراءة واحدة |
+| `burhan-plan` | الـ story اتعتمدت، قبل الـ plan والـ build spec | plan الـ builder يمشي عليها كلمة كلمة، في أقل عدد sub-units |
+| `burhan-build` | قبل كود sub-unit | الـ test الأول ومتشاف بيفشل |
+| `burhan-debug` | bug أو test بيفشل أو QC فشلت | دوّر على الـ root cause قبل أي إصلاح |
+| `burhan-review` | sub-unit اتنفّذت | راجع الـ diff وسجّل الـ findings |
+| `burhan-done` | قبل ما تقول done أو fixed أو passing | مفيش claim من غير command اتشغّل دلوقتي |
+
+بتنزل في `.burhan/skills/` للـ agent-ين وفي Claude Code كمان كنسخ managed في `.claude/skills/`؛ وCodex بيقرا الملف اللي في `.burhan/skills/` لما الـ phase تبدأ. وskill بتاعتك بنفس الاسم عمرها ما بتتكتب فوقها، و`uninstall` بيمسح بس اللي burhan كتبه. الـ skill المتخطية بتتبلّغ في آخر الـ turn ومابتمنعش.
+
+Claude Code يقدر يولّد roles planner وbuilder وexplorer وreviewer على models متظبطة. Codex بيستخدم model config بتاعتك؛ burhan ما بيكتبهاش.
 
 ‏sessions كتير تقدر تشتغل على tasks منفصلة. خليك task واحدة لكل session. الإعدادات والـ memory وtask folders المشتركة يعدوا على review؛ `.burhan/local/` شخصية.
 
@@ -238,7 +295,7 @@ work/<task>/
 
 ‏`init` و`upgrade` و`uninstall` dry runs لحد `--apply`. setup بتتحقق قبل أول write. upgrade بتجدّد kit files وبتدمج exact hook entries من غير ما تكتب فوق `workflow.config` أو `bindings.md`. write من خلال link خارج المشروع بيتمنع إلا لو إنت سمحت.
 
-‏uninstall بيمسح kit folders كاملة تحت `.burhan/`: `WORKFLOW.md` و`SETUP.md` و`VERSION` و`phases` و`templates` و`commands` و`hooks`. بيسيب `workflow.config` و`bindings.md` و`.burhan/local/` وtask files إلا مع `--all`. الـ `--all` بتمسح `work/` و`discovery/` الخاصين؛ وtask folder مشترك وجّهت `WF_DOCS_DIR` ليه عمره ما بيتمسح.
+‏uninstall بيمسح kit folders كاملة تحت `.burhan/`: `WORKFLOW.md` و`SETUP.md` و`VERSION` و`phases` و`templates` و`commands` و`skills` و`hooks`. وتحت `.claude/` بيمسح بس الملفات اللي عليها علامة burhan: نسخ الـ skills والـ commands والـ agents اللي burhan كتبها؛ وملف بتاعك عمره ما بيتمسح. بيسيب `workflow.config` و`bindings.md` و`.burhan/local/` وtask files إلا مع `--all`. الـ `--all` بتمسح `work/` و`discovery/` الخاصين؛ وtask folder مشترك وجّهت `WF_DOCS_DIR` ليه عمره ما بيتمسح.
 
 ### الحدود
 
