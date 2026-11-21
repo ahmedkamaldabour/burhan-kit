@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.9.1 — 2026-11-21
+
+The kit runs with no network, ships its own process skills, answers `--help` for every command, and fixes small gaps found since 0.9.0.
+
+### The kit runs with no network
+- The kit looks for its own command without touching the network: a file `burhan` in the project's `node_modules/.bin` (`burhan.cmd` or `.exe` on Windows), or a `burhan` on the PATH. `burhan setup` prints one step before its Step 3 block when it finds none: `npm i -D burhan-kit@<version>` in a project with a `package.json`, `npm i -g burhan-kit` in one without. `burhan doctor` gives a warning with the same command, never a failure. The session-start hook adds one line, `KIT COMMAND NOT FOUND`, that tells the agent not to install the kit without your yes and to ask you to run the command. burhan does not run npm and does not edit `package.json`.
+- The block in `CLAUDE.md` and `AGENTS.md`, the bindings template, the README and `docs/configuration.md` now name the kit command the same way (`npx burhan-kit` runs the copy installed in the project; a plain `burhan` works only where it is on the PATH). The README and `docs/configuration.md` also say what the tool needs: Node 22+, Claude Code 2.1.139 or newer and/or Codex with its hooks trusted, the kit installed in the project or on the PATH.
+- `burhan setup --set full=<regex>` lets a project name its whole-suite command, with the same pattern rules as `evidence=`. `full=` alone is accepted once a check is saved; before that it is refused and nothing is written, and a save with only an empty value is refused with "nothing to save". `burhan doctor` warns when a test or evidence pattern is set and the full pattern is empty, and the `full run: cannot tell` line of `guide` and `evidence` now names `setup --set full=`.
+
+### burhan ships its own process skills
+- Six skills, `burhan-story`, `burhan-plan`, `burhan-build`, `burhan-debug`, `burhan-review` and `burhan-done`, say for each phase when it applies, a short rule list, and the shortcuts a model tells itself with a one-line answer; each points to the phase file that holds the rules. burhan no longer depends on a separate plugin for its process skills. One phase-to-skill table is read by `guide`, the advice after a command and the hooks; the turn-end skill check only reports.
+- `burhan init` and `burhan upgrade` install the skills to `.burhan/skills/<name>/SKILL.md` and, for Claude, as managed `.claude/skills/<name>/SKILL.md`; Codex reads the same files. A skill of your own with the same name is never overwritten, a link that leads out of the project is refused, `uninstall` removes only what burhan wrote, and a missing `.burhan/skills/` is a `doctor` warning.
+- `WF_SKILLS` is removed: the skills are always on and nothing reads the line. A project that still has it gets it named by `doctor` and `upgrade`, and nothing breaks. `setup` no longer writes it and no longer mentions installing a plugin.
+- The prompt router's wrapping-up line now says to route first when there is no item.
+
+### The command line explains itself
+- `burhan <command> --help` prints the usage of that command, and `burhan item list` prints one line per work item (the same rows as `status`, read-only).
+- `burhan verify` refuses an item that has not reached the build (exit 2, nothing recorded).
+- `burhan approve story` retires the intake line of the state block.
+- `burhan changed` no longer says the story's facts still hold when it only compared files.
+
+### Closing an item
+- `burhan item close <slug> --already-satisfied "<reason>" --by <owner name>` closes an item whose story the code already satisfies. The reason is kept in the item folder, the new outcome is `Already satisfied`, an agent's name is refused as in `approve`, and the plan is never touched.
+- `burhan deviation done <slug> <n> --in unit:<N>` writes the `Carried out in` cell of an approved deviation row. `burhan item finish` refuses an approved row with no trace, and `burhan item check` reports `deviation-untraced`. The check reads only the form of the trace, not whether the change was really made.
+- `burhan state close` ticks the plan's Close-out box for the outcomes QC PASS and Done (no QC), and only those. The closed line is written first; a failure on the plan is said on one line and never fails the close.
+- An old folder stops looking like an item: a folder counts as one only if it holds `<slug>-story.md`, `-implementation-plan.md` or `-findings.md`. A Completed plan with no Route line and no QC file shows as the derived state `Legacy` (never an outcome of `state close`), and the status index folds the Legacy items under one counted block. `stats` and `state compact` use the same list.
+
+### Smaller changes
+- Kit text: the plan template shows the `Why separate:` codes alone and gives the Knowledge review line a wording that is valid at plan time; Branch and Baseline accept `none yet` and `none (no PROJECT.md)`; the story stage file has examples of a patch, of a one-line feature (bounded, never a patch) and of a public-API doubt.
+- With exactly one block in the state file and no live link, a turn that wrote only files of an item that has no block is recorded under no item, and so are the skills it used. `burhan evidence --item <block>` no longer shows that turn, and `burhan stats` counts it under "(no item)". A live link still wins; a turn that also wrote a code file, the docs index or a file of the block itself keeps the block, and so does a turn whose files were written only by a shell command, which are not read.
+- The README, in English and in Arabic, is rewritten for 0.9: a "Your first task" section, a table that names every command `burhan --help` prints, the numbered `work/NNN-slug/` folders, the skills in the install tree and the uninstall list, and the 0.9 decision model. One sentence is corrected: `init` keeps the work and discovery folders private, while the setup wizard recommends putting them in git. `tests/readme.test.sh` now fails when a command of `--help` is not named in both READMEs.
+- A test helper of this repository, `t_age` in `tests/lib.sh`, builds a UTC time stamp, so a local hour that is ambiguous no longer makes the tests fail.
+
+### Not measured
+- Windows and macOS for the new commands and the skill install, and a live Claude or Codex session reading the new help, the hook line and the skills.
+- A weak model reading the new hook line, and the skill check of the turn-end report on a weak model.
+- Codex loading a project skill folder by itself.
+- A hook that still reads the skill memory of a block before a file of a block-less item is written: at worst a reminder is skipped.
+- The setup wizard run interactively, the new README followed by a live agent, and the Arabic README read for style by a native reader.
+- A real project with about 99 old folders under the new item rule, and two closes of different items at the same time.
+- The six skills after their last fixes (the trials ran before them).
+- The kit has no skill yet for finishing a branch or for running agents in parallel.
+
+### Upgrading from 0.9.0
+- Installed projects need `upgrade --apply` (`npx burhan-kit upgrade --apply`) for the skills, the block text in `CLAUDE.md` and `AGENTS.md` and the kit text; the commands ship with the package.
+- If `.burhan/workflow.config` still has a `WF_SKILLS` line, delete it: it is no longer read.
+- A plan already in flight with an approved deviation row that has no `Carried out in` trace is now refused by `burhan item finish`; `burhan deviation done <slug> <n> --in unit:<N>` writes the trace.
+
 ## 0.9.0 — 2026-11-11
 
 Review findings you decide, shared state written safely, numbered work items, and a plan split by written criteria.
