@@ -41,13 +41,14 @@ export function itemClose(target: string, slug: string | undefined, o: { already
   if (plan !== null && status !== 'Draft' && status !== 'Approved') throw new BurhanError(`the plan of "${s}" is ${status ?? 'without a status'}: an item whose plan is In progress, Completed, Paused or Superseded is finished or paused the usual way (burhan item finish, burhan item set), not closed as already satisfied`);
   if (itemRoute(story, plan ?? '') === null) throw new BurhanError(`the route of item "${s}" cannot be read from its story or plan, so its closed line cannot be written: fix the Route line first (burhan item check ${s})`);
   const file = join(dir, satisfiedFile(s));
-  const where = relative(project, file).split(sep).join('/');
+  const dirReal = realTarget(dir); // `project` is a real path, `dir` may reach it through a link (macOS: /var is /private/var)
+  const where = relative(project, join(dirReal, satisfiedFile(s))).split(sep).join('/');
   const exists = ((): boolean => { try { lstatSync(file); return true; } catch { return false; } })();
   if (exists) throw new BurhanError(`item "${s}" already has ${where}: it was closed as already satisfied`);
   assertInside(project, file);
   writeNew(file, `# ${s} — closed as already satisfied\n- **Closed by:** ${by} · ${today()}\n- **Reason:** ${reason}\n- **Story:** ./${s}-story.md\n\nThe code already does what the story asks, so nothing was planned or built. The owner decided this with \`burhan item close\`; the item's index state is \`Already satisfied\`.\n`, where, s);
   io.stdout(`item close: ${displayId(s)} closed as already satisfied by ${by}\n  reason kept in ${where}\n`);
-  const folder = relative(project, dir).split(sep).join('/');
+  const folder = relative(project, dirReal).split(sep).join('/');
   if (!hasStateBlock(project, s)) io.stdout(`  state: no "### ${s}" block under Now in the state file, so no closed line was written there\n`);
   else {
     try { stateClose(project, s, { outcome: 'Already satisfied', commit: 'uncommitted', folder, docs: o.docs }, io); }

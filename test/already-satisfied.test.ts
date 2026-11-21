@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { OUTCOMES, parseClosedLine } from '../src/hooks/core/state-lines.mjs';
+import { symlinkSkipReason } from './helpers.js';
 import { cli, itemDir, planFile, projectWithItem, read, setPlanStatus, STATE, storyFile, write } from './item-fixture.js';
 
 const BY = ['--by', 'Sam Owner'];
@@ -17,6 +18,19 @@ async function storyOnly(): Promise<string> {
   rmSync(planFile(dir));
   return dir;
 }
+
+test('the project reached through a symlinked path (macOS: /var is a link to /private/var): the reason path and the closed line stay relative to the project', { skip: symlinkSkipReason() }, async () => {
+  const dir = await storyOnly();
+  const link = `${dir}-link`;
+  symlinkSync(dir, link, 'dir');
+  try {
+    const r = await close(link, ...OK);
+    assert.equal(r.code, 0, r.err);
+    assert.match(r.out, /reason kept in \.burhan\/work\/foo\/foo-already-satisfied\.md\n/);
+    const state = read(join(dir, STATE));
+    assert.ok(state.split('\n').includes(CLOSED), state);
+  } finally { unlinkSync(link); }
+});
 
 test('the owner closes a story-only item: a reason file, the index state and the closed line', async () => {
   const dir = await storyOnly();
