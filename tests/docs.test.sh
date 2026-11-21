@@ -245,6 +245,7 @@ check "features: names burhan state compact and says it is a dry run unless --ap
 check "features: says a dry run unless --apply" "$(cat docs/features.md)" has 'a dry run unless'
 check "upgrading: says item new writes the Gate checklist from the route" "$(cat docs/upgrading.md)" has '`item new` writes the Gate checklist from the route'
 check "features: the finding commands are described" "$(cat docs/features.md)" has '`finding decide` writes your decision on it'
+check "features: a turn that wrote only the files of an item with no block is recorded under no item" "$(cat docs/features.md)" has 'except a turn that wrote only the files of an item with no block'
 check "features: the findings gate applies to every task" "$(cat docs/features.md)" has 'The findings gate applies to every task: `item finish` refuses while a finding of its sub-unit reviews has no decision'
 check "features: no task is exempt from the findings gate" "$(cat docs/features.md)" lacks 'an older task is not gated'
 check "upgrading: no task is exempt from the findings gate" "$(cat docs/upgrading.md)" lacks 'is not gated'

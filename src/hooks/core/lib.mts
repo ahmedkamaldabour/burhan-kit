@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { HookConfig } from './config.mjs';
 import { rawText, shellText } from './jq.mjs';
+import { linkTarget } from './item-id.mjs';
 
 /** Everything a check gets. */
 export interface Ctx { ev: HookEvent; cfg: HookConfig; project: string; env: NodeJS.ProcessEnv }
@@ -117,6 +118,45 @@ export function itemResolved(now: string, linked: string): string {
   const slugs = itemSlugs(now);
   if (slugs.includes(linked)) return linked;
   return slugs.length === 1 ? slugs[0] : '';
+}
+
+/** Where one turn's record (the evidence ledger, the skill memory) is filed. A live per-session link always wins and several blocks with
+ *  no link have no item, exactly as in `itemResolved`. With exactly one block and no live link `itemResolved` falls back to that block;
+ *  this keeps that fallback except for a turn whose written files are ALL under `<docs>/<folder>/` with no folder naming the block: that
+ *  turn worked on an item that has no block, so it is filed under no item. A file outside `<docs>/`, a file directly in `<docs>/`
+ *  (the index) and a file of the block's own folder keep the fallback. A folder names the block as `burhan use` does (`linkTarget`):
+ *  the full id, the number or the plain slug. `files` are project-relative; `docs` is `WF_DOCS_DIR` ('' = unknown: the fallback stays). */
+export function itemForTurn(now: string, linked: string, files: readonly string[], docs: string): string {
+  const slugs = itemSlugs(now);
+  const chosen = itemResolved(now, linked);
+  if (slugs.length !== 1 || slugs.includes(linked) || docs === '' || files.length === 0) return chosen;
+  const block = slugs[0]!;
+  for (const file of files) {
+    if (!file.startsWith(`${docs}/`)) return chosen;
+    const parts = file.slice(docs.length + 1).split('/', 2);
+    if (parts.length < 2 || parts[0] === '') return chosen;
+    if (linkTarget(parts[0]!, slugs) === block) return chosen;
+  }
+  return '';
+}
+
+/** The project-relative files a turn edited: its `edit` steps (the ledger's own source); a turn with no steps at all falls back to its
+ *  created and edited files, as the turn-end link does. Shell writes are not read. */
+export function turnEditFiles(ctx: Ctx): string[] {
+  const turn = ctx.ev.raw.turn;
+  const t = turn !== null && typeof turn === 'object' && !Array.isArray(turn) ? turn as Record<string, unknown> : {};
+  const steps = Array.isArray(t.steps) ? t.steps : [];
+  if (steps.length === 0) return [...ctx.ev.list('.turn.files_created'), ...ctx.ev.list('.turn.files_edited')].map((file) => relPath(file, ctx.project)).filter(Boolean);
+  const out: string[] = [];
+  for (const raw of steps) {
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    const step = raw as Record<string, unknown>;
+    if (step.kind === 'edit' && typeof step.file === 'string' && step.file !== '') {
+      const file = relPath(step.file, ctx.project);
+      if (file !== '') out.push(file);
+    }
+  }
+  return out;
 }
 
 /** wf_item_now without a session link: retained for callers that inspect a bare Now block. */

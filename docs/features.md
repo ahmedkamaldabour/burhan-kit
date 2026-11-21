@@ -114,6 +114,7 @@ The audit also warns when a work-item file changed but the state file did not (`
 - **When it shows up:** at session start and at the end of turns.
 - **Example:** `⚑ ITEMS IN FLIGHT: a, b — this session isn't linked to one yet — say which, or run /burhan:e2e <slug>.`
 - **Close-out:** one session per item; when an item closes, its block shrinks to one line and its details stay in the item folder, so the file stays under its budget.
+- **One block, no link:** with exactly one block in `Now`, a session that is not linked is recorded under that block's item, except a turn that wrote only the files of an item with no block (`<docs>/<id>/…`): that turn, and the skills it used, are recorded under no item. A live link always wins; a turn that also wrote a code file or the docs index keeps the block, and so does a turn whose files were written only by a shell command (such as `cat >`), which are not read.
 - **Limit:** the state file is local and git-ignored; the durable record is the item folder.
 
 ### Team sharing

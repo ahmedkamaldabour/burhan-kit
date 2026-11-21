@@ -40,7 +40,7 @@ each command with its exit code, in order, tagged with the item in flight — to
 only, never their output). The same shape on every agent: Claude Code reports exit codes in its
 transcript, Codex in its rollout. On Claude Code a subagent's steps (a delegated build or review) are
 recorded in place of its call (a background one by time, or after the turn), marked with the
-subagent's name. `burhan evidence` reads it. It is written when a turn ends, so the steps of the current turn are not in it yet, and each record carries the time the turn ended, not the time of the step. The ledger is private to the user
+subagent's name. `burhan evidence` reads it. The item is the one the session is linked to; with no link and exactly one block in `Now` it is that block's item, but a turn that wrote only files under `<docs>/<id>/` of an item with no block is recorded under no item, and so are the skills it used (files written only by a shell command are not read, so such a turn keeps the block's item). It is written when a turn ends, so the steps of the current turn are not in it yet, and each record carries the time the turn ended, not the time of the step. The ledger is private to the user
 (directories 700) and turned off with `WF_EVIDENCE_LEDGER=off`. A session folder older than 30 days
 that holds only ledger files is removed; one that also holds session files stays until you delete it
 (in practice that is nearly every folder, so the ledger grows until you do). It stores

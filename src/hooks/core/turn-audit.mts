@@ -3,7 +3,7 @@ import { evidenceRecord } from './ledger.mjs';
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ere, ereTest } from './ere.mjs';
-import { itemBlock, itemField, itemResolved, itemRoute, itemSlugs, relPath, stateNow, type Check, type Ctx } from './lib.mjs';
+import { itemBlock, itemField, itemForTurn, itemResolved, itemRoute, itemSlugs, relPath, stateNow, turnEditFiles, type Check, type Ctx } from './lib.mjs';
 import { explicitLink } from './link.mjs';
 import { linkTarget } from './item-id.mjs';
 import { shellWrites } from './shell-writes.mjs';
@@ -78,6 +78,12 @@ const sessionSlug = (ctx: Ctx): string => {
   return itemResolved(now, linkedItem(ctx.project, ctx.ev.get('.session'), itemSlugs(now), ctx.env));
 };
 const resolvedSlug = (audit: Audit): string => sessionSlug(audit.ctx);
+/** The item the skill memory files this turn's skills under, and reads the earlier ones of: `sessionSlug`, except that a turn which wrote only the
+ *  files of an item with no block is filed under none (`itemForTurn`). The gates keep `sessionSlug`: they judge the session's item. */
+const skillSlug = (ctx: Ctx): string => {
+  const now = stateNow(ctx.project, ctx.cfg);
+  return itemForTurn(now, linkedItem(ctx.project, ctx.ev.get('.session'), itemSlugs(now), ctx.env), turnEditFiles(ctx), ctx.cfg.WF_DOCS_DIR ?? '');
+};
 /** wf_item_block: the block the field readers see (empty when blocks exist and none applies; the whole Now when there is no block). */
 const resolvedItemNow = (audit: Audit): string => {
   const now = stateNow(audit.ctx.project, audit.ctx.cfg);
@@ -507,7 +513,7 @@ const gates: Gate[] = [gateA, gateB, gateD, gateE, gateF, gateG, gateI, gateJ, g
 export const turnAudit: Check = (ctx) => {
   const auditCtx = { ...ctx, env: { ...ctx.env, ...ctx.cfg } };
   try {
-    const remember = (): void => { try { rememberSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); rememberPhaseSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); } catch { /* fail open */ } };
+    const remember = (): void => { try { rememberSkills(auditCtx.project, auditCtx.ev.get('.session'), skillSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); rememberPhaseSkills(auditCtx.project, auditCtx.ev.get('.session'), skillSlug(auditCtx), auditCtx.ev.list('.turn.skills_used'), auditCtx.env); } catch { /* fail open */ } };
     if (auditCtx.ev.get('.reentrant') === 'true') { clearStateSnapshot(auditCtx.project, auditCtx.ev.get('.session'), auditCtx.env); remember(); evidenceRecord(auditCtx); return []; }
     const cmds = auditCtx.ev.list('.turn.shell_commands');
     const created = [...new Set(auditCtx.ev.list('.turn.files_created').map((file) => relPath(file, auditCtx.project)).filter(Boolean))].sort(codePointCompare);
@@ -540,9 +546,9 @@ export const turnAudit: Check = (ctx) => {
     }
     const subWritten = steps.filter((step) => step.kind === 'edit' && step.by !== '').map((step) => step.file).filter((file) => !isSource(file));
     let skillsBefore: string[] = [];
-    try { skillsBefore = rememberedSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.env); } catch { /* fail open */ }
+    try { skillsBefore = rememberedSkills(auditCtx.project, auditCtx.ev.get('.session'), skillSlug(auditCtx), auditCtx.env); } catch { /* fail open */ }
     let skillsEarlier: string[] = [];
-    try { skillsEarlier = rememberedPhaseSkills(auditCtx.project, auditCtx.ev.get('.session'), sessionSlug(auditCtx), auditCtx.env); } catch { /* fail open */ }
+    try { skillsEarlier = rememberedPhaseSkills(auditCtx.project, auditCtx.ev.get('.session'), skillSlug(auditCtx), auditCtx.env); } catch { /* fail open */ }
     const audit: Audit = { ctx: auditCtx, written, created: created.filter((file) => !isSource(file)), cmds, skillsUsed: auditCtx.ev.list('.turn.skills_used'), skillsBefore, skillsEarlier, shellWritten: shell.filter((file) => !isSource(file)), text: auditCtx.ev.get('.turn.assistant_text'), steps: steps.filter((step) => step.kind !== 'edit' || !isSource(step.file)), subWritten };
     const findings: string[] = [];
     for (const gate of gates) try { findings.push(...gate(audit)); } catch { /* independent gates fail open */ }

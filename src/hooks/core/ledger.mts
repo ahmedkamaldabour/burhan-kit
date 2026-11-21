@@ -2,7 +2,7 @@
 import { chmodSync, existsSync, mkdirSync, readdirSync, realpathSync, rmdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { itemResolved, itemSlugs, stateNow, stripProject, type Ctx } from './lib.mjs';
+import { itemForTurn, itemSlugs, stateNow, stripProject, turnEditFiles, type Ctx } from './lib.mjs';
 import { atomicPrivateWrite, evidenceRoot, linkedItem, projectKey, safeId } from './store.mjs';
 
 const OFF = new Set(['off', 'no', 'false', '0']);
@@ -105,7 +105,7 @@ export function evidenceRecord(ctx: Ctx): void {
     }
 
     const now = stateNow(ctx.project, ctx.cfg);
-    const item = itemResolved(now, linkedItem(ctx.project, session, itemSlugs(now), ctx.env)) || null;
+    const item = itemForTurn(now, linkedItem(ctx.project, session, itemSlugs(now), ctx.env), turnEditFiles(ctx), ctx.cfg.WF_DOCS_DIR ?? '') || null;
     const phase = phaseNow(now) || null;
     const ts = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     const lines: string[] = [];

@@ -293,3 +293,4 @@ R284|phases/close-out.md|`burhan item close <slug> --already-satisfied
 R285|phases/files.md|`<slug>-already-satisfied.md`
 R286|phases/stage-story.md|## A story the code already satisfies
 R287|phases/stage-plan.md|`item close <slug> --already-satisfied
+R295|phases/enforcement.md|a turn that wrote only files under `<docs>/<id>/` of an item with no block is recorded under no item
